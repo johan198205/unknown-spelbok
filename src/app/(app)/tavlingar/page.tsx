@@ -1,10 +1,17 @@
+import Link from "next/link";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, EmptyState, Panel } from "@/components/ui/Panel";
 import { JoinCompetitionButton } from "@/components/bets/JoinCompetitionButton";
-import { formatMoney, formatRoi, nettoColor } from "@/lib/utils";
+import { CompetitionBoard } from "@/components/competitions/CompetitionBoard";
+import {
+  competitionStatus,
+  formatCountdown,
+  formatPeriod,
+  rankBoard,
+  rulesSummary,
+} from "@/lib/competitions";
 import type { Competition, LeaderboardRow } from "@/lib/types";
-import Link from "next/link";
 
 export default async function TavlingarPage() {
   await requireUser();
@@ -17,30 +24,42 @@ export default async function TavlingarPage() {
     .eq("active", true)
     .order("starts_at", { ascending: false });
 
-  const comps = (competitions || []) as Competition[];
+  const all = (competitions || []) as Competition[];
 
-  const entriesByComp: Record<string, boolean> = {};
-  if (profile && comps.length) {
+  const joinedIds = new Set<string>();
+  if (profile && all.length) {
     const { data: entries } = await supabase
       .from("competition_entries")
       .select("competition_id")
       .eq("user_id", profile.id)
       .in(
         "competition_id",
-        comps.map((c) => c.id)
+        all.map((c) => c.id)
       );
-    for (const e of entries || []) entriesByComp[e.competition_id] = true;
+    for (const entry of entries || []) joinedIds.add(entry.competition_id);
   }
 
+  // Invite-only competitions stay hidden unless you are already entered.
+  const comps = all.filter(
+    (c) => c.visibility !== "invite" || joinedIds.has(c.id)
+  );
+
   const boards: Record<string, LeaderboardRow[]> = {};
-  for (const c of comps) {
+  if (comps.length) {
     const { data } = await supabase
       .from("leaderboard")
       .select("*")
-      .eq("competition_id", c.id)
-      .order("roi", { ascending: false })
-      .limit(10);
-    boards[c.id] = (data || []) as LeaderboardRow[];
+      .in(
+        "competition_id",
+        comps.map((c) => c.id)
+      );
+    for (const row of (data || []) as LeaderboardRow[]) {
+      if (!row.competition_id) continue;
+      boards[row.competition_id] = [
+        ...(boards[row.competition_id] || []),
+        row,
+      ];
+    }
   }
 
   return (
@@ -75,15 +94,13 @@ export default async function TavlingarPage() {
         </EmptyState>
       ) : (
         comps.map((c) => {
-          const joined = !!entriesByComp[c.id];
-          const board = boards[c.id] || [];
-          const now = Date.now();
-          const ongoing =
-            +new Date(c.starts_at) <= now && now <= +new Date(c.ends_at);
-          const selfIdx = profile
-            ? board.findIndex((r) => r.user_id === profile.id)
-            : -1;
-          const top3 = board.slice(0, 3);
+          const joined = joinedIds.has(c.id);
+          const entries = rankBoard(boards[c.id] || [], c);
+          const status = competitionStatus(c);
+          const rules = rulesSummary(c);
+          const self = profile
+            ? entries.find((e) => e.user_id === profile.id)
+            : undefined;
 
           return (
             <Panel key={c.id} className="overflow-hidden">
@@ -93,18 +110,39 @@ export default async function TavlingarPage() {
                     <h2 className="font-display text-xl font-semibold">
                       {c.name}
                     </h2>
-                    <Badge tone={ongoing ? "cyan" : "muted"}>
-                      {ongoing ? "Pågår" : "Planerad"}
+                    <Badge
+                      tone={
+                        status === "live"
+                          ? "cyan"
+                          : status === "upcoming"
+                            ? "muted"
+                            : "yellow"
+                      }
+                    >
+                      {status === "live"
+                        ? "Pågår"
+                        : status === "upcoming"
+                          ? "Planerad"
+                          : "Avslutad"}
                     </Badge>
                   </div>
-                  <p className="mb-2 max-w-xl text-sm text-muted">
-                    {c.description}
-                  </p>
+                  {c.description ? (
+                    <p className="mb-2 max-w-xl text-sm text-muted">
+                      {c.description}
+                    </p>
+                  ) : null}
                   <div className="font-mono-num text-[12.5px] text-faint">
-                    {new Date(c.starts_at).toLocaleDateString("sv-SE")} –{" "}
-                    {new Date(c.ends_at).toLocaleDateString("sv-SE")} ·{" "}
-                    {board.length} deltagare
+                    {formatPeriod(c.starts_at, c.ends_at)} · {entries.length}{" "}
+                    deltagare · {formatCountdown(c)}
                   </div>
+                  {rules ? (
+                    <div className="mt-1 text-[12.5px] text-muted">{rules}</div>
+                  ) : null}
+                  {c.prize ? (
+                    <div className="mt-1 text-[12.5px] text-yellow">
+                      Pris: {c.prize}
+                    </div>
+                  ) : null}
                 </div>
                 {profile ? (
                   <div className="hidden lg:block">
@@ -118,30 +156,17 @@ export default async function TavlingarPage() {
 
               {/* Mobile mini leaderboard */}
               <div className="lg:hidden">
-                {top3.map((row, i) => (
-                  <div
-                    key={row.user_id}
-                    className={`flex items-center gap-3 border-b border-[#171E2C] px-4 py-3 ${
-                      profile && row.user_id === profile.id ? "bg-win/10" : ""
-                    }`}
-                  >
-                    <span className="font-display w-6 text-muted">{i + 1}</span>
-                    <span className="flex-1 font-semibold">{row.username}</span>
-                    <span
-                      className={`font-mono-num font-semibold ${nettoColor(Number(row.netto))}`}
-                    >
-                      {formatMoney(Number(row.netto))}
-                    </span>
-                  </div>
-                ))}
-                {selfIdx >= 3 ? (
-                  <div className="border-b border-[#171E2C] bg-win/10 px-4 py-3 text-sm font-semibold text-win">
-                    Du: plats {selfIdx + 1}
-                  </div>
-                ) : null}
-                {!board.length ? (
-                  <div className="px-4 py-8 text-center text-muted">
-                    Inga deltagare ännu.
+                <CompetitionBoard
+                  entries={entries.slice(0, 3)}
+                  rules={c}
+                  selfId={profile?.id}
+                  dense
+                />
+                {self && (self.rank === null || self.rank > 3) ? (
+                  <div className="border-b border-rowline bg-win/10 px-4 py-3 text-sm font-semibold text-win">
+                    {self.qualified
+                      ? `Du: plats ${self.rank}`
+                      : "Du: ej kvalificerad ännu"}
                   </div>
                 ) : null}
                 {profile ? (
@@ -156,35 +181,12 @@ export default async function TavlingarPage() {
               </div>
 
               {/* Desktop board */}
-              <div className="hidden lg:block">
-                {board.map((row, i) => (
-                  <div
-                    key={row.user_id}
-                    className="flex items-center gap-3 border-b border-[#171E2C] px-5 py-3"
-                  >
-                    <span className="font-display w-6 text-muted">{i + 1}</span>
-                    <span className="flex-1 font-semibold">{row.username}</span>
-                    <span className="text-[12px] text-muted">
-                      {row.bets_count} spel
-                    </span>
-                    <span
-                      className={`font-mono-num font-semibold ${nettoColor(Number(row.roi))}`}
-                    >
-                      {formatRoi(Number(row.roi))}
-                    </span>
-                    <span
-                      className={`min-w-[96px] text-right font-mono-num font-semibold ${nettoColor(Number(row.netto))}`}
-                    >
-                      {formatMoney(Number(row.netto))}
-                    </span>
-                  </div>
-                ))}
-                {!board.length ? (
-                  <div className="px-5 py-8 text-center text-muted">
-                    Inga deltagare ännu.
-                  </div>
-                ) : null}
-              </div>
+              <CompetitionBoard
+                entries={entries}
+                rules={c}
+                selfId={profile?.id}
+                className="hidden lg:block"
+              />
             </Panel>
           );
         })
