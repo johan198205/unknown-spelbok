@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BetForm, BetsTable } from "@/components/bets/BetForm";
 import { MobileBetCards } from "@/components/pwa/MobileBetCards";
 import { NewSheetForm } from "@/components/bets/NewSheetForm";
+import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, EmptyState, Kpi } from "@/components/ui/Panel";
 import {
   computeStats,
@@ -121,6 +122,17 @@ export default async function SpelbokPage({
                   value={formatMoney(bankroll).replace("+", "")}
                 />
               </div>
+
+              <AdSlot
+                placement="sheet"
+                className="hidden h-[90px] lg:flex"
+                label="ANNONSPLATS 970×90"
+              />
+              <AdSlot
+                placement="sheet"
+                className="h-[100px] lg:hidden"
+                label="ANNONSPLATS 320×100"
+              />
 
               <div className="hidden lg:block">
                 <BetForm

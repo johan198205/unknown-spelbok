@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { StatCard } from "./StatCard";
 
-export { AdSlot } from "./AdSlot";
 export { Badge } from "./Badge";
 export type { BadgeTone } from "./Badge";
 export { ResultButtons } from "./ResultButtons";

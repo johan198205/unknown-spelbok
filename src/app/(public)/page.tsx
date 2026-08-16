@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
-import { AdSlot, Badge, Panel } from "@/components/ui/Panel";
+import { AdSlot } from "@/components/ui/AdSlot";
+import { Badge, Panel } from "@/components/ui/Panel";
 import { createClient } from "@/lib/supabase/server";
 import {
   computeStats,
@@ -331,7 +332,11 @@ export default async function LandingPage() {
                 </div>
               ) : null}
             </Panel>
-            <AdSlot className="h-[250px]" label="ANNONSPLATS 300×250" />
+            <AdSlot
+              placement="home"
+              className="h-[250px]"
+              label="ANNONSPLATS 300×250"
+            />
           </div>
         </div>
       </section>

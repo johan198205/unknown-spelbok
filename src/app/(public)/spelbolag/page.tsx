@@ -1,4 +1,5 @@
 import { BookmakersGrid } from "@/components/bets/BookmakersGrid";
+import { AdSlot } from "@/components/ui/AdSlot";
 import { createClient } from "@/lib/supabase/server";
 import type { Bookmaker } from "@/lib/types";
 
@@ -33,6 +34,11 @@ export default async function SpelbolagPage() {
           Spelpaus
         </a>
       </div>
+      <AdSlot
+        placement="spelbolag"
+        className="mb-5 h-[90px]"
+        label="ANNONSPLATS 970×90"
+      />
       <BookmakersGrid bookmakers={bookmakers} />
     </div>
   );

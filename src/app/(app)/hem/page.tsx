@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { AdSlot, Badge } from "@/components/ui/Panel";
+import { AdSlot } from "@/components/ui/AdSlot";
+import { Badge } from "@/components/ui/Panel";
 import { NettoChart } from "@/components/bets/NettoChart";
 import {
   betNetto,
@@ -157,7 +158,11 @@ export default async function HemPage() {
         </div>
       </div>
 
-      <AdSlot className="h-[100px]" label="ANNONSPLATS 320×100" />
+      <AdSlot
+        placement="home"
+        className="h-[100px]"
+        label="ANNONSPLATS 320×100"
+      />
 
       {openToday.length ? (
         <div>

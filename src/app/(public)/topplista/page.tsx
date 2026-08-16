@@ -1,7 +1,16 @@
 import Link from "next/link";
-import { AdSlot, EmptyState, Panel } from "@/components/ui/Panel";
+import { AdSlot } from "@/components/ui/AdSlot";
+import { EmptyState, Panel } from "@/components/ui/Panel";
+import { CompetitionBoard } from "@/components/competitions/CompetitionBoard";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
+import {
+  formatCountdown,
+  formatPeriod,
+  rankBoard,
+  rulesSummary,
+  type BoardEntry,
+} from "@/lib/competitions";
 import {
   computeStats,
   formatMoney,
@@ -9,18 +18,41 @@ import {
   initialOf,
   nettoColor,
 } from "@/lib/utils";
-import type { Bet } from "@/lib/types";
+import type { Bet, Competition, LeaderboardRow } from "@/lib/types";
 import { StickySelfRank } from "@/components/pwa/StickySelfRank";
 
 export default async function TopplistaPage() {
   const profile = await getProfile();
   const supabase = await createClient();
-  const { data: sheets } = await supabase
-    .from("sheets")
-    .select(
-      "id, name, user_id, currency, profiles(username, avatar_url), bets(stake, payout, result, odds)"
-    )
-    .eq("is_public", true);
+  const nowIso = new Date().toISOString();
+
+  const [{ data: sheets }, { data: competitions }] = await Promise.all([
+    supabase
+      .from("sheets")
+      .select(
+        "id, name, user_id, currency, profiles(username, avatar_url), bets(stake, payout, result, odds)"
+      )
+      .eq("is_public", true),
+    supabase
+      .from("competitions")
+      .select("*")
+      .eq("active", true)
+      .eq("visibility", "public")
+      .lte("starts_at", nowIso)
+      .gte("ends_at", nowIso)
+      .order("ends_at", { ascending: true })
+      .limit(1),
+  ]);
+
+  const competition = ((competitions || []) as Competition[])[0] ?? null;
+  let compEntries: BoardEntry[] = [];
+  if (competition) {
+    const { data } = await supabase
+      .from("leaderboard")
+      .select("*")
+      .eq("competition_id", competition.id);
+    compEntries = rankBoard((data || []) as LeaderboardRow[], competition);
+  }
 
   const board = (sheets || [])
     .map((sheet) => {
@@ -79,10 +111,47 @@ export default async function TopplistaPage() {
       </div>
 
       <AdSlot
-        className="mb-5 hidden h-[90px] lg:block"
+        placement="topplista"
+        className="mb-5 hidden h-[90px] lg:flex"
         label="ANNONSPLATS 970×90"
       />
-      <AdSlot className="mb-4 h-[100px] lg:hidden" label="ANNONSPLATS 320×100" />
+      <AdSlot
+        placement="topplista"
+        className="mb-4 h-[100px] lg:hidden"
+        label="ANNONSPLATS 320×100"
+      />
+
+      {competition ? (
+        <Panel className="mb-5 overflow-hidden">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 lg:px-5">
+            <div>
+              <div className="mb-1 text-[10.5px] uppercase tracking-[0.12em] text-dim">
+                Pågående tävling
+              </div>
+              <h2 className="font-display text-xl font-semibold">
+                {competition.name}
+              </h2>
+              <div className="font-mono-num text-[12.5px] text-faint">
+                {formatPeriod(competition.starts_at, competition.ends_at)} ·{" "}
+                {formatCountdown(competition)}
+              </div>
+              {rulesSummary(competition) ? (
+                <div className="mt-1 text-[12.5px] text-muted">
+                  {rulesSummary(competition)}
+                </div>
+              ) : null}
+            </div>
+            <Link href="/tavlingar" className="text-[13.5px]">
+              Alla tävlingar
+            </Link>
+          </div>
+          <CompetitionBoard
+            entries={compEntries}
+            rules={competition}
+            selfId={profile?.id}
+          />
+        </Panel>
+      ) : null}
 
       <Panel className="hidden overflow-hidden lg:block">
         <div className="grid grid-cols-[40px_1fr_80px_100px_100px] gap-3 border-b border-line bg-bg-soft px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted">
