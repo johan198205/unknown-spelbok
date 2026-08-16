@@ -49,6 +49,10 @@ src/
       banners/page.tsx        # CRUD banners + bilduppladdning + placering
       sidor/page.tsx          # CRUD pages, markdown-editor, publicera
       tavlingar/page.tsx      # CRUD competitions
+      statistik/page.tsx      # KPI:er, aktiva per dag, klick, ligor, konvertering
+      sattling/page.tsx       # manuell sättlingskö, väntande spel, fixtures-cache
+      installningar/page.tsx  # allmänt, API-nycklar, notiser, loggar
+    underhall/page.tsx        # visas när underhållsläget är på (rewrite i middleware)
     api/
       fixtures/route.ts       # cachad proxy mot API-Football (se nedan)
   lib/
@@ -78,21 +82,23 @@ Klienten anropar alltid `/api/fixtures`, aldrig API-Football direkt.
 2. Är datan äldre än 10 minuter hämtar routen från API-Football med `APIFOOTBALL_KEY`, skriver till tabellen via service role-klienten och svarar sedan.
 3. Alla användare delar samma cache: 5 000 besökare kostar lika många API-anrop som 1.
 
-## Automatisk sättling (nästa steg, redan förberett)
+## Automatisk sättling (byggd)
 
-Schemat har `fixture_id` på varje spel och `settled_by ('user','auto')`. När det är dags:
+Edge-funktionen ligger i `supabase/functions/settle-bets/index.ts`. Den hämtar resultat för fixtures där avsparken passerat men slutstatus saknas, uppdaterar `fixtures` och rättar öppna spel vars tips går att maskinläsa (1X2 och totalen Över/Under). Allt annat — dubbelchans, DNB, handikapp, hörnor, kort, halvlek, målskytt — hamnar i `settle_queue` och hanteras i `/admin/sattling`.
 
-1. Skapa en Supabase Edge Function `settle-bets` som hämtar resultat för fixtures med status LIVE/NS där kickoff passerat, uppdaterar `fixtures` och sätter `result` på öppna spel med matchande `fixture_id`.
-2. Schemalägg med `pg_cron` var 15:e minut:
-   ```sql
-   select cron.schedule('settle-bets', '*/15 * * * *',
-     $$ select net.http_post(
-          url := 'https://DITT-PROJEKT.supabase.co/functions/v1/settle-bets',
-          headers := '{"Authorization": "Bearer SERVICE_ROLE_KEY"}'::jsonb
-        ) $$);
-   ```
+```bash
+supabase functions deploy settle-bets
+supabase secrets set APIFOOTBALL_KEY=din-nyckel
+```
 
-Inget på Vercel behöver ändras, sättlingen sker helt i Supabase.
+Schemaläggningen (var 15:e minut via `pg_cron` + `pg_net`) står färdig och kommenterad i `db/cron.sql` — fyll i projekt-ref och service role-nyckel och kör blocket. Inget på Vercel behöver ändras, sättlingen sker helt i Supabase.
+
+## SQL som ska köras (i ordning)
+
+1. `supabase-schema.sql` — grundschemat
+2. `db/admin-migration.sql` — admin: klick, bannerstatistik, loggar, inställningar, sättlingskö
+3. `db/site-settings-policy.sql` — låter utloggade läsa nyckeln `site` (underhållsläge + öppen registrering)
+4. `db/cron.sql` — schemalägg `settle-bets` (kommenterad, kräver dina nycklar)
 
 ## Import av spelbolagen
 
