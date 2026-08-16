@@ -230,6 +230,14 @@ function formatLogAction(action: string, target: string | null) {
       return `Konto avstängt: ${t}`;
     case "bookmaker.updated":
       return `Spelbolag uppdaterat: ${t}`;
+    case "bookmaker.created":
+      return `Spelbolag skapat: ${t}`;
+    case "bookmaker.published":
+      return `Spelbolag publicerat: ${t}`;
+    case "bookmaker.unpublished":
+      return `Spelbolag avpublicerat: ${t}`;
+    case "bookmaker.reordered":
+      return `Spelbolag omsorterade: ${t}`;
     case "page.published":
       return `Sida publicerad: ${t}`;
     case "page.deleted":
