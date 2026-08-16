@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="crests.js"></script>
+<script src="fixtures.js"></script>
+<script src="marks.js"></script>
+<script src="bookmakers.js"></script>
+<style>
+html,body{margin:0;padding:0;background:#0B0E14;}
+*{box-sizing:border-box;}
+a{color:#4C8DFF;text-decoration:none;}
+a:hover{color:#7FB0FF;text-decoration:underline;}
+input,select,textarea,button{font-family:inherit;}
+@keyframes sbpulse{0%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(1.5)}100%{opacity:1;transform:scale(1)}}
+@keyframes sbfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#0B0E14;color:#E6EAF2;font-family:Barlow,Helvetica,sans-serif;display:flex;flex-direction:column;font-size:15px">
+
+  <sc-if value="{{ booting }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:80px 20px;color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:13px;letter-spacing:.14em">LADDAR SPELBOK …</div>
+  </sc-if>
+  <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid #1C2333">
+        <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:22px;letter-spacing:.14em">SPELBOK</div>
+        <div style="display:flex;gap:14px;align-items:center">
+          <button onClick="{{ goBooks }}" style="background:transparent;border:none;color:#C3CBDB;font-weight:600;font-size:14.5px;cursor:pointer;padding:8px 4px">Spelbolag</button>
+          <sc-if value="{{ loggedOut }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ goLogin }}" style="background:transparent;border:1px solid #2A3346;color:#E6EAF2;padding:9px 16px;border-radius:8px;font-weight:600;cursor:pointer;transition:all .15s" style-hover="border-color:#4C8DFF">Logga in</button>
+          </sc-if>
+          <sc-if value="{{ loggedOut }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ goRegister }}" style="background:#66E38A;border:none;color:#08140C;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;transition:transform .15s" style-hover="transform:translateY(-1px)">Skapa konto</button>
+          </sc-if>
+          <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goDash }}" style="background:#66E38A;border:none;color:#08140C;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer">Till dashboard</button>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:64px 28px 24px;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center">
+        <div>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:#131826;border:1px solid #232B3E;padding:6px 12px;border-radius:999px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8A94AB;margin-bottom:22px">
+            <span style="width:7px;height:7px;border-radius:99px;background:#35D6F5;animation:sbpulse 1.6s infinite"></span>Live bokföring
+          </div>
+          <h1 style="font-family:Oswald,sans-serif;font-weight:700;font-size:58px;line-height:1.02;margin:0 0 18px;letter-spacing:-.01em;text-wrap:balance">TA KONTROLL ÖVER<br>DITT SPELANDE.</h1>
+          <p style="color:#8A94AB;font-size:18px;line-height:1.55;margin:0 0 28px;max-width:520px;text-wrap:pretty">Bokför varje spel, se din riktiga ROI och sluta gissa. Jämför dig med andra i topplistan och möt dem i tävlingar där bara siffrorna talar.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button onClick="{{ goRegister }}" style="background:#66E38A;border:none;color:#08140C;padding:14px 26px;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer">Börja bokföra gratis</button>
+            <button onClick="{{ goDemoSheet }}" style="background:#131826;border:1px solid #2A3346;color:#E6EAF2;padding:14px 26px;border-radius:10px;font-weight:600;font-size:16px;cursor:pointer">Se ett publikt spreadsheet</button>
+          </div>
+          <div style="display:flex;gap:32px;margin-top:38px">
+            <div><div style="font-family:Oswald,sans-serif;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums">{{ landing.bets }}</div><div style="color:#8A94AB;font-size:13px">bokförda spel</div></div>
+            <div><div style="font-family:Oswald,sans-serif;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums">{{ landing.sheets }}</div><div style="color:#8A94AB;font-size:13px">publika spreadsheets</div></div>
+            <div><div style="font-family:Oswald,sans-serif;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums">{{ landing.turnover }}</div><div style="color:#8A94AB;font-size:13px">omsättning</div></div>
+          </div>
+        </div>
+        <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;padding:18px;box-shadow:0 24px 60px rgba(0,0,0,.45)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+            <div>
+              <div style="font-family:Oswald,sans-serif;font-size:19px;font-weight:600">{{ landing.topSheetName }}</div>
+              <div style="color:#8A94AB;font-size:13px">av {{ landing.topSheetOwner }}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:Oswald,sans-serif;font-size:26px;font-weight:600;color:#66E38A;font-variant-numeric:tabular-nums">{{ landing.topSheetNetto }}</div>
+              <div style="color:#8A94AB;font-size:12px">netto · ROI {{ landing.topSheetRoi }}</div>
+            </div>
+          </div>
+          <sc-for list="{{ landing.rows }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-top:1px solid #1C2333;font-size:13px">
+              <span style="display:flex;flex-shrink:0">
+                <span style="width:20px;height:20px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ r.homeLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                <span style="width:20px;height:20px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;margin-left:-7px;border:1px solid #131826;background-image:url({{ r.awayLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+              </span>
+              <span style="flex:1;color:#C3CBDB;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.match }}</span>
+              <span style="font-weight:700">{{ r.pick }}</span>
+              <span style="font-family:IBM Plex Mono,monospace;color:#8A94AB">{{ r.odds }}</span>
+              <span style="font-family:IBM Plex Mono,monospace;font-weight:600;min-width:74px;text-align:right;color:{{ r.color }}">{{ r.netto }}</span>
+            </div>
+          </sc-for>
+          <div style="margin-top:14px;border-top:1px solid #1C2333;padding-top:12px">
+            <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB;margin-bottom:8px">Topplista · ROI i år</div>
+            <sc-for list="{{ landing.lb }}" as="l" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:14px">
+                <span style="font-family:Oswald,sans-serif;width:18px;color:#8A94AB">{{ l.rank }}</span>
+                <span style="flex:1">{{ l.name }}</span>
+                <span style="font-family:IBM Plex Mono,monospace;color:#66E38A">{{ l.roi }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:8px 28px 0">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid #1C2333;border-bottom:1px solid #1C2333;padding:16px 0">
+          <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#5D6883;margin-right:6px">Bokför spel från</span>
+          <sc-for list="{{ landing.books }}" as="b" hint-placeholder-count="8">
+            <span style="font-family:Oswald,sans-serif;font-size:15px;letter-spacing:.04em;color:#8A94AB">{{ b }}</span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:64px 28px 0">
+        <h2 style="font-family:Oswald,sans-serif;font-size:34px;font-weight:600;margin:0 0 6px">Så funkar det</h2>
+        <p style="color:#8A94AB;margin:0 0 28px;max-width:560px">Tre steg från utspridda skärmdumpar och minneslappar till en bok som visar exakt var pengarna kommer ifrån.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+          <sc-for list="{{ landing.steps }}" as="s" hint-placeholder-count="3">
+            <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;overflow:hidden">
+              <div style="height:150px;background:repeating-linear-gradient(135deg,#101623,#101623 10px,#141B2B 10px,#141B2B 20px);display:flex;align-items:center;justify-content:center;color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:11.5px;letter-spacing:.1em;text-align:center;padding:0 16px">{{ s.img }}</div>
+              <div style="padding:18px">
+                <div style="font-family:Oswald,sans-serif;font-size:13px;letter-spacing:.14em;color:#66E38A;margin-bottom:6px">{{ s.no }}</div>
+                <div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:600;margin-bottom:6px">{{ s.title }}</div>
+                <div style="color:#8A94AB;line-height:1.55;font-size:14.5px;text-wrap:pretty">{{ s.body }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:64px 28px 0">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center">
+          <div>
+            <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#66E38A;margin-bottom:10px">Statistiken</div>
+            <h2 style="font-family:Oswald,sans-serif;font-size:34px;font-weight:600;margin:0 0 12px;line-height:1.1">Siffror som faktiskt säger något</h2>
+            <p style="color:#8A94AB;line-height:1.6;margin:0 0 20px;text-wrap:pretty">Netto, ROI, hitrate, snittodds och snittinsats räknas om direkt när du filtrerar. Vill du bara se Premier League i år, eller bara spel över odds 2.00, är det två klick — och grafen följer med.</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ landing.features }}" as="f" hint-placeholder-count="4">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span style="width:6px;height:6px;border-radius:99px;background:#66E38A;margin-top:8px;flex-shrink:0"></span>
+                  <span style="color:#C3CBDB;line-height:1.5">{{ f }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;height:340px;background-image:repeating-linear-gradient(135deg,#101623,#101623 10px,#141B2B 10px,#141B2B 20px);display:flex;align-items:center;justify-content:center;color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:12px;letter-spacing:.1em;text-align:center;padding:0 20px">SKÄRMBILD: spreadsheet-vyn med graf och filter</div>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:64px 28px 0">
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start">
+          <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #232B3E">
+              <div>
+                <div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:600">Topplistan just nu</div>
+                <div style="color:#8A94AB;font-size:13px">Publika spreadsheets rankade på ROI</div>
+              </div>
+              <button onClick="{{ goRegister }}" style="background:#1B2436;border:1px solid #2A3346;color:#E6EAF2;padding:9px 14px;border-radius:9px;font-weight:600;cursor:pointer">Se hela listan</button>
+            </div>
+            <sc-for list="{{ landing.boardTop }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #171E2C">
+                <span style="width:26px;font-family:Oswald,sans-serif;font-size:18px;font-weight:600;color:{{ r.rankColor }}">{{ r.rank }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600">{{ r.name }}</div>
+                  <div style="color:#8A94AB;font-size:12.5px">{{ r.owner }} · {{ r.n }} spel · hitrate {{ r.hit }}</div>
+                </div>
+                <span style="font-family:Oswald,sans-serif;font-size:19px;font-weight:600;color:{{ r.roiColor }};min-width:72px;text-align:right">{{ r.roi }}</span>
+                <span style="font-family:IBM Plex Mono,monospace;font-weight:600;color:{{ r.nettoColor }};min-width:96px;text-align:right">{{ r.netto }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;padding:18px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
+                <div style="font-family:Oswald,sans-serif;font-size:19px;font-weight:600">{{ landing.comp.name }}</div>
+                <span style="font-size:10px;letter-spacing:.1em;padding:4px 8px;border-radius:6px;background:rgba(53,214,245,.14);color:#35D6F5;white-space:nowrap">PÅGÅR</span>
+              </div>
+              <div style="color:#8A94AB;font-size:14px;line-height:1.5;margin-bottom:12px">{{ landing.comp.desc }}</div>
+              <div style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:#5D6883;margin-bottom:12px">{{ landing.comp.period }} · {{ landing.comp.count }} deltagare</div>
+              <sc-for list="{{ landing.comp.rows }}" as="r" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #1C2333;font-size:13.5px">
+                  <span style="font-family:Oswald,sans-serif;width:16px;color:{{ r.rankColor }}">{{ r.rank }}</span>
+                  <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.owner }}</span>
+                  <span style="font-family:IBM Plex Mono,monospace;font-weight:600;color:{{ r.roiColor }}">{{ r.roi }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:250px;border:1px dashed #2A3346;border-radius:12px;background:repeating-linear-gradient(135deg,#101623,#101623 10px,#131A2A 10px,#131A2A 20px);display:flex;align-items:center;justify-content:center;color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:12px;letter-spacing:.14em">ANNONSPLATS 300×250</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:64px 28px 0">
+        <h2 style="font-family:Oswald,sans-serif;font-size:34px;font-weight:600;margin:0 0 24px">Från spelare som bokför</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+          <sc-for list="{{ landing.quotes }}" as="q" hint-placeholder-count="3">
+            <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <div style="font-size:15.5px;line-height:1.6;color:#C3CBDB;text-wrap:pretty">{{ q.text }}</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:auto">
+                <span style="width:34px;height:34px;border-radius:99px;background:#1B2436;border:1px solid #2A3346;display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:600">{{ q.initial }}</span>
+                <div>
+                  <div style="font-weight:600;font-size:14px">{{ q.name }}</div>
+                  <div style="color:#5D6883;font-size:12.5px">{{ q.meta }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:64px 28px 0">
+        <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:40px;align-items:start">
+          <div>
+            <h2 style="font-family:Oswald,sans-serif;font-size:34px;font-weight:600;margin:0 0 8px">Vanliga frågor</h2>
+            <p style="color:#8A94AB;line-height:1.6;margin:0">Hittar du inte svaret? Skriv till oss så återkommer vi samma dag.</p>
+          </div>
+          <div>
+            <sc-for list="{{ landing.faq }}" as="q" hint-placeholder-count="4">
+              <div style="border-top:1px solid #1C2333;padding:16px 0">
+                <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:500;margin-bottom:6px">{{ q.q }}</div>
+                <div style="color:#8A94AB;line-height:1.6;text-wrap:pretty">{{ q.a }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1180px;margin:0 auto;padding:64px 28px 72px">
+        <div style="background:#131826;border:1px solid #232B3E;border-radius:16px;padding:44px;display:flex;justify-content:space-between;align-items:center;gap:28px;flex-wrap:wrap">
+          <div>
+            <h2 style="font-family:Oswald,sans-serif;font-size:32px;font-weight:600;margin:0 0 8px">Börja bokföra ikväll</h2>
+            <p style="color:#8A94AB;margin:0;max-width:520px;line-height:1.55">Gratis konto, obegränsat antal spreadsheets och full statistik från första spelet. Håll boken privat eller lägg upp den publikt och ta plats i topplistan.</p>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button onClick="{{ goRegister }}" style="background:#66E38A;border:none;color:#08140C;padding:14px 26px;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer">Skapa konto</button>
+            <button onClick="{{ goDemoSheet }}" style="background:#1B2436;border:1px solid #2A3346;color:#E6EAF2;padding:14px 26px;border-radius:10px;font-weight:600;font-size:16px;cursor:pointer">Testa demokontot</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:48px 20px">
+      <div style="width:100%;max-width:400px">
+        <div style="text-align:center;margin-bottom:26px">
+          <div style="font-family:Oswald,sans-serif;font-weight:700;font-size:24px;letter-spacing:.14em">SPELBOK</div>
+        </div>
+        <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;padding:26px">
+          <div style="display:flex;gap:4px;background:#0F1420;border:1px solid #1C2333;border-radius:10px;padding:4px;margin-bottom:22px">
+            <button onClick="{{ setLogin }}" style="flex:1;padding:9px;border:none;border-radius:7px;font-weight:600;cursor:pointer;background:{{ authTab.loginBg }};color:{{ authTab.loginFg }}">Logga in</button>
+            <button onClick="{{ setRegister }}" style="flex:1;padding:9px;border:none;border-radius:7px;font-weight:600;cursor:pointer;background:{{ authTab.regBg }};color:{{ authTab.regFg }}">Registrera</button>
+          </div>
+          <sc-if value="{{ isRegister }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-bottom:14px">
+              <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8A94AB;margin-bottom:6px">Användarnamn</div>
+              <input value="{{ form.name }}" onChange="{{ onFormName }}" placeholder="t.ex. valuejagaren" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:11px 12px;border-radius:9px;font-size:15px;outline:none">
+            </div>
+          </sc-if>
+          <div style="margin-bottom:14px">
+            <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8A94AB;margin-bottom:6px">E-post</div>
+            <input value="{{ form.email }}" onChange="{{ onFormEmail }}" placeholder="namn@exempel.se" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:11px 12px;border-radius:9px;font-size:15px;outline:none">
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8A94AB;margin-bottom:6px">Lösenord</div>
+            <input type="password" value="{{ form.pw }}" onChange="{{ onFormPw }}" placeholder="••••••••" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:11px 12px;border-radius:9px;font-size:15px;outline:none">
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;font-size:14px">
+            <label style="display:flex;align-items:center;gap:8px;color:#C3CBDB;cursor:pointer">
+              <input type="checkbox" checked="{{ form.remember }}" onChange="{{ onFormRemember }}" style="accent-color:#66E38A;width:16px;height:16px">Håll mig inloggad
+            </label>
+            <a href="#" onClick="{{ onForgot }}">Glömt lösenord?</a>
+          </div>
+          <sc-if value="{{ hasAuthError }}" hint-placeholder-val="{{ false }}">
+            <div style="background:rgba(255,92,108,.1);border:1px solid rgba(255,92,108,.35);color:#FF8A96;padding:10px 12px;border-radius:9px;font-size:14px;margin-bottom:14px">{{ authError }}</div>
+          </sc-if>
+          <button onClick="{{ onSubmitAuth }}" style="width:100%;background:#66E38A;border:none;color:#08140C;padding:13px;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer">{{ authCta }}</button>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid #1C2333;color:#8A94AB;font-size:13px;line-height:1.5">
+            Demokonto: <span style="font-family:IBM Plex Mono,monospace;color:#C3CBDB">johan@demo.se</span> / <span style="font-family:IBM Plex Mono,monospace;color:#C3CBDB">demo</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:18px"><a href="#" onClick="{{ goHome }}">Tillbaka till startsidan</a></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;display:flex;flex-direction:column">
+      <div style="position:sticky;top:0;z-index:40;background:rgba(11,14,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid #1C2333">
+        <div style="max-width:1360px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:22px">
+          <div onClick="{{ goHome }}" title="Till startsidan" style="font-family:Oswald,sans-serif;font-weight:700;font-size:19px;letter-spacing:.14em;cursor:pointer">SPELBOK</div>
+          <div style="display:flex;gap:2px;flex:1;overflow-x:auto">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+              <button onClick="{{ n.go }}" style="background:{{ n.bg }};border:none;color:{{ n.fg }};padding:8px 14px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;transition:background .15s">{{ n.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="text-align:right">
+                  <div style="font-weight:600;font-size:14px">{{ me.name }}</div>
+                  <div style="font-size:12px;color:#8A94AB;font-family:IBM Plex Mono,monospace">{{ me.nettoStr }}</div>
+                </div>
+                <div style="width:34px;height:34px;border-radius:99px;background:#1B2436;border:1px solid #2A3346;display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:600">{{ me.initial }}</div>
+                <button onClick="{{ onLogout }}" style="background:transparent;border:1px solid #2A3346;color:#8A94AB;padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer">Logga ut</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ loggedOut }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:10px">
+                <button onClick="{{ goLogin }}" style="background:transparent;border:1px solid #2A3346;color:#E6EAF2;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13.5px;cursor:pointer">Logga in</button>
+                <button onClick="{{ goRegister }}" style="background:#66E38A;border:none;color:#08140C;padding:9px 15px;border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer">Skapa konto</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <sc-if value="{{ showAds }}" hint-placeholder-val="{{ true }}">
+        <div style="max-width:1360px;margin:0 auto;padding:16px 20px 0;width:100%">
+          <div style="height:{{ ad.topH }};border:1px dashed #2A3346;border-radius:10px;background:repeating-linear-gradient(135deg,#101623,#101623 10px,#131A2A 10px,#131A2A 20px);display:flex;align-items:center;justify-content:center;color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:12px;letter-spacing:.14em">{{ ad.topLabel }}</div>
+        </div>
+      </sc-if>
+
+      <div style="max-width:1360px;margin:0 auto;padding:22px 20px 56px;width:100%;flex:1">
+
+        <sc-if value="{{ isDash }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:sbfade .25s ease">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:20px">
+              <div>
+                <h1 style="font-family:Oswald,sans-serif;font-size:32px;font-weight:600;margin:0">Hej {{ me.name }}</h1>
+                <div style="color:#8A94AB">Din utveckling över alla spreadsheets</div>
+              </div>
+              <button onClick="{{ onOpenAdd }}" style="background:#66E38A;border:none;color:#08140C;padding:12px 20px;border-radius:10px;font-weight:700;cursor:pointer">+ Lägg nytt spel</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px">
+              <sc-for list="{{ dashKpis }}" as="k" hint-placeholder-count="5">
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:16px">
+                  <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB;margin-bottom:6px">{{ k.label }}</div>
+                  <div style="font-family:Oswald,sans-serif;font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;color:{{ k.color }}">{{ k.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px">
+              <div>
+                <div style="font-family:Oswald,sans-serif;font-size:19px;font-weight:600;margin-bottom:10px">Mina spreadsheets</div>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ mySheets }}" as="s" hint-placeholder-count="2">
+                    <div onClick="{{ s.open }}" style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;transition:border-color .15s" style-hover="border-color:#3A4560">
+                      <div style="min-width:0">
+                        <div style="display:flex;align-items:center;gap:8px">
+                          <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600">{{ s.name }}</div>
+                          <span style="font-size:10px;letter-spacing:.1em;padding:3px 7px;border-radius:5px;background:{{ s.badgeBg }};color:{{ s.badgeFg }}">{{ s.badge }}</span>
+                        </div>
+                        <div style="color:#8A94AB;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.desc }}</div>
+                      </div>
+                      <div style="text-align:right;white-space:nowrap">
+                        <div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:600;color:{{ s.nettoColor }};font-variant-numeric:tabular-nums">{{ s.netto }}</div>
+                        <div style="color:#8A94AB;font-size:12px;font-family:IBM Plex Mono,monospace">{{ s.meta }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:Oswald,sans-serif;font-size:19px;font-weight:600;margin-bottom:10px">Senaste resultat</div>
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;overflow:hidden">
+                  <sc-for list="{{ recent }}" as="r" hint-placeholder-count="6">
+                    <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #1C2333;font-size:13px">
+                      <span style="width:8px;height:8px;border-radius:99px;background:{{ r.color }}"></span>
+                      <span style="display:flex;flex-shrink:0">
+                        <span style="width:20px;height:20px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ r.homeLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                        <span style="width:20px;height:20px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;margin-left:-7px;border:1px solid #131826;background-image:url({{ r.awayLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                      </span>
+                      <div style="flex:1;min-width:0">
+                        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.match }}</div>
+                        <div style="color:#8A94AB;font-size:12px">{{ r.pick }} · {{ r.odds }}</div>
+                      </div>
+                      <span style="font-family:IBM Plex Mono,monospace;font-weight:600;color:{{ r.color }}">{{ r.netto }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isSheet }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:sbfade .25s ease">
+            <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+              <div style="flex:1 1 100%;min-width:0">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                      <h1 style="font-family:Oswald,sans-serif;font-size:32px;font-weight:600;margin:0">{{ sheet.name }}</h1>
+                      <span style="font-size:10px;letter-spacing:.1em;padding:4px 8px;border-radius:6px;background:{{ sheet.badgeBg }};color:{{ sheet.badgeFg }}">{{ sheet.badge }}</span>
+                    </div>
+                    <div style="color:#8A94AB;margin-top:4px">av <a href="#" onClick="{{ sheet.openOwner }}">{{ sheet.owner }}</a> · {{ sheet.desc }}</div>
+                  </div>
+                  <sc-if value="{{ sheet.canEdit }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ onOpenAdd }}" style="background:#66E38A;border:none;color:#08140C;padding:12px 20px;border-radius:10px;font-weight:700;cursor:pointer">+ Lägg nytt spel</button>
+                  </sc-if>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:16px">
+                  <sc-for list="{{ stats }}" as="k" hint-placeholder-count="7">
+                    <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:14px;min-width:0">
+                      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">{{ k.label }}</div>
+                      <div style="font-family:Oswald,sans-serif;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:{{ k.size }};color:{{ k.color }}">{{ k.value }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:16px;margin-bottom:16px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+                    <div style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600">Ackumulerat netto</div>
+                    <div style="display:flex;gap:4px;background:#0F1420;border:1px solid #1C2333;border-radius:9px;padding:3px">
+                      <sc-for list="{{ periods }}" as="p" hint-placeholder-count="4">
+                        <button onClick="{{ p.go }}" style="border:none;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;background:{{ p.bg }};color:{{ p.fg }}">{{ p.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <div style="width:62px;display:flex;flex-direction:column;justify-content:space-between;height:230px;font-family:IBM Plex Mono,monospace;font-size:11px;color:#5D6883;text-align:right">
+                      <sc-for list="{{ chart.yLabels }}" as="y" hint-placeholder-count="5">
+                        <div>{{ y }}</div>
+                      </sc-for>
+                    </div>
+                    <div style="flex:1;min-width:0;position:relative" onMouseMove="{{ chart.onMove }}" onMouseLeave="{{ chart.onLeave }}">
+                      <sc-if value="{{ chart.hover }}" hint-placeholder-val="{{ false }}">
+                        <div style="position:absolute;top:-6px;z-index:3;pointer-events:none;transform:translateX(-50%);background:#171D2E;border:1px solid #2A3346;border-radius:9px;padding:7px 11px;box-shadow:0 10px 30px rgba(0,0,0,.5);white-space:nowrap;left:{{ chart.hoverLeft }}">
+                          <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;color:{{ chart.hoverColor }}">{{ chart.hoverValue }}</div>
+                          <div style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#8A94AB">{{ chart.hoverDate }}</div>
+                        </div>
+                        <div style="position:absolute;z-index:3;pointer-events:none;width:9px;height:9px;border-radius:99px;border:2px solid #0B0E14;transform:translate(-50%,-50%);background:{{ chart.hoverColor }};left:{{ chart.hoverLeft }};top:{{ chart.hoverTop }}"></div>
+                      </sc-if>
+                      <svg viewBox="0 0 1000 230" preserveAspectRatio="none" style="width:100%;height:230px;display:block;overflow:visible">
+                        <line x1="0" y1="0.5" x2="1000" y2="0.5" stroke="#1C2333" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                        <line x1="0" y1="57.5" x2="1000" y2="57.5" stroke="#1C2333" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                        <line x1="0" y1="115" x2="1000" y2="115" stroke="#1C2333" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                        <line x1="0" y1="172.5" x2="1000" y2="172.5" stroke="#1C2333" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                        <line x1="0" y1="229.5" x2="1000" y2="229.5" stroke="#1C2333" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                        <line x1="0" y1="{{ chart.zeroY }}" x2="1000" y2="{{ chart.zeroY }}" stroke="#3A4560" stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line>
+                        <defs>
+                          <clipPath id="sbAbove"><rect x="-20" y="-40" width="1040" height="{{ chart.aboveH }}"></rect></clipPath>
+                          <clipPath id="sbBelow"><rect x="-20" y="{{ chart.zeroY }}" width="1040" height="{{ chart.belowH }}"></rect></clipPath>
+                        </defs>
+                        <path d="{{ chart.area }}" fill="rgba(102,227,138,.12)" clip-path="url(#sbAbove)"></path>
+                        <path d="{{ chart.area }}" fill="rgba(255,92,108,.12)" clip-path="url(#sbBelow)"></path>
+                        <path d="{{ chart.line }}" fill="none" stroke="#66E38A" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" clip-path="url(#sbAbove)"></path>
+                        <path d="{{ chart.line }}" fill="none" stroke="#FF5C6C" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" clip-path="url(#sbBelow)"></path>
+                        <sc-if value="{{ chart.hover }}" hint-placeholder-val="{{ false }}">
+                          <line x1="{{ chart.hoverX }}" y1="0" x2="{{ chart.hoverX }}" y2="230" stroke="#3A4560" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+
+                        </sc-if>
+                      </svg>
+                      <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:IBM Plex Mono,monospace;font-size:11px;color:#5D6883">
+                        <sc-for list="{{ chart.xLabels }}" as="x" hint-placeholder-count="4">
+                          <div>{{ x }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+                  <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+                    <div style="display:flex;flex-direction:column;gap:4px;position:relative">
+                      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB">{{ f.label }}</div>
+                      <button onClick="{{ f.dd.toggle }}" style="display:flex;align-items:center;gap:10px;background:#131826;border:1px solid {{ f.dd.border }};color:#E6EAF2;padding:9px 10px;border-radius:9px;font-size:14px;cursor:pointer;min-width:150px;text-align:left">
+                        <span style="flex:1">{{ f.dd.label }}</span><span style="color:#5D6883;font-size:11px">▾</span>
+                      </button>
+                      <sc-if value="{{ f.dd.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="position:absolute;left:0;top:100%;margin-top:6px;z-index:20;min-width:100%;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:6px;max-height:300px;overflow:auto">
+                          <sc-for list="{{ f.dd.items }}" as="o" hint-placeholder-count="4">
+                            <button onClick="{{ o.go }}" style="width:100%;text-align:left;white-space:nowrap;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ o.label }}</button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                  <div style="display:flex;align-items:flex-end;gap:10px;margin-left:auto">
+                    <span style="color:#8A94AB;font-size:13px;font-family:IBM Plex Mono,monospace;padding-bottom:10px">{{ rowInfo }}</span>
+                    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex;flex-direction:column;gap:4px">
+                        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB">Vy</div>
+                        <div style="display:flex;gap:3px;background:#0F1420;border:1px solid #1C2333;border-radius:9px;padding:3px">
+                          <sc-for list="{{ viewOptions }}" as="o" hint-placeholder-count="2">
+                            <button onClick="{{ o.go }}" style="border:none;border-radius:7px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+
+                <sc-if value="{{ tableView }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;overflow-x:hidden;overflow-y:auto;max-height:760px">
+                    <table style="width:100%;border-collapse:collapse;font-size:13.5px;table-layout:auto">
+                      <thead>
+                        <tr>
+                          <sc-for list="{{ columns }}" as="c" hint-placeholder-count="12">
+                            <th onClick="{{ c.sort }}" style="position:sticky;top:0;z-index:2;background:#0F1420;border-bottom:1px solid #232B3E;padding:11px 10px;text-align:{{ c.align }};font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#8A94AB;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none" style-hover="color:#E6EAF2">{{ c.label }}{{ c.arrow }}</th>
+                          </sc-for>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="12">
+                          <tr style="background:{{ r.bg }};border-bottom:1px solid #171E2C;transition:background .12s" style-hover="background:#1A2233">
+                            <td style="padding:{{ rowPad }};white-space:nowrap;font-family:IBM Plex Mono,monospace;color:#C3CBDB;font-size:12.5px">{{ r.date }} <span style="color:#5D6883">{{ r.time }}</span></td>
+                            <td style="padding:{{ rowPad }};white-space:nowrap;color:#C3CBDB">
+                              <span style="display:inline-flex;align-items:center;gap:8px">
+                                <span style="width:20px;height:20px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ r.leagueLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>{{ r.league }}
+                              </span>
+                            </td>
+                            <td style="padding:{{ rowPad }};white-space:nowrap">
+                              <span style="display:inline-flex;align-items:center;gap:7px">
+                                <span style="width:19px;height:19px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ r.homeLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>{{ r.homeName }}
+                                <span style="color:#5D6883;font-size:11.5px">vs</span>
+                                <span style="width:19px;height:19px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ r.awayLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>{{ r.awayName }}
+                              </span>
+                            </td>
+                            <td style="padding:{{ rowPad }};white-space:nowrap;font-weight:700">{{ r.pick }}</td>
+                            <sc-if value="{{ showExtra }}" hint-placeholder-val="{{ true }}">
+                              <td style="padding:{{ rowPad }};white-space:nowrap;color:#8A94AB;font-size:12.5px">{{ r.book }}</td>
+                            </sc-if>
+                            <td style="padding:{{ rowPad }};text-align:right;white-space:nowrap;font-family:IBM Plex Mono,monospace;font-variant-numeric:tabular-nums">{{ r.stake }}</td>
+                            <td style="padding:{{ rowPad }};text-align:right;font-family:IBM Plex Mono,monospace;font-variant-numeric:tabular-nums;font-weight:600">{{ r.odds }}</td>
+                            <td style="padding:{{ rowPad }};white-space:nowrap">
+                              <sc-if value="{{ r.canEdit }}" hint-placeholder-val="{{ true }}">
+                                <span style="display:inline-flex;gap:3px">
+                                  <sc-for list="{{ r.marks }}" as="m" hint-placeholder-count="4">
+                                    <button onClick="{{ m.go }}" title="{{ m.title }}" style="border:1px solid {{ m.border }};background:{{ m.bg }};color:{{ m.fg }};font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:600;padding:4px 6px;border-radius:5px;cursor:pointer;transition:all .12s">{{ m.label }}</button>
+                                  </sc-for>
+                                </span>
+                              </sc-if>
+                              <sc-if value="{{ r.readOnly }}" hint-placeholder-val="{{ false }}">
+                                <span style="font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:600;letter-spacing:.06em;padding:4px 8px;border-radius:5px;background:{{ r.resBg }};color:{{ r.resFg }}">{{ r.resLabel }}</span>
+                              </sc-if>
+                            </td>
+                            <td style="padding:{{ rowPad }};text-align:right;font-family:IBM Plex Mono,monospace;font-variant-numeric:tabular-nums;font-weight:600;color:{{ r.nettoColor }}">{{ r.netto }}</td>
+                            <td style="padding:{{ rowPad }};white-space:nowrap">
+                              <sc-if value="{{ r.isLive }}" hint-placeholder-val="{{ false }}">
+                                <span style="display:inline-flex;align-items:center;gap:6px;color:#35D6F5;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:99px;background:#35D6F5;animation:sbpulse 1.4s infinite"></span>Levande</span>
+                              </sc-if>
+                              <sc-if value="{{ r.isFt }}" hint-placeholder-val="{{ true }}">
+                                <span style="font-family:IBM Plex Mono,monospace;font-size:11px;color:#5D6883">{{ r.statusLabel }}</span>
+                              </sc-if>
+                              <span title="{{ r.autoTitle }}" style="display:inline-block;margin-left:8px;font-family:IBM Plex Mono,monospace;font-size:9.5px;letter-spacing:.06em;padding:3px 6px;border-radius:5px;background:{{ r.autoBg }};color:{{ r.autoFg }}">{{ r.autoLabel }}</span>
+                            </td>
+                            <sc-if value="{{ showExtra }}" hint-placeholder-val="{{ true }}">
+                              <td style="padding:{{ rowPad }};color:#8A94AB;font-size:12.5px;max-width:210px">{{ r.note }}</td>
+                            </sc-if>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ cardView }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:grid;grid-template-columns:{{ cardCols }};gap:16px">
+                    <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+                      <div style="background:#131826;border:1px solid #232B3E;border-radius:14px;padding:{{ cardPad }}">
+                        <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start">
+                          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:9px">
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                              <span style="flex-shrink:0;width:20px;height:20px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ r.leagueLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                              <span style="color:#8A94AB;font-size:12px;flex:0 1 auto;min-width:0">{{ r.league }} · {{ r.date }} {{ r.time }}</span>
+                              <span style="font-family:IBM Plex Mono,monospace;font-size:9px;letter-spacing:.06em;padding:3px 6px;border-radius:5px;flex-shrink:0;background:{{ r.autoBg }};color:{{ r.autoFg }}">{{ r.autoLabel }}</span>
+                              <sc-if value="{{ r.isLive }}" hint-placeholder-val="{{ false }}">
+                                <span style="display:inline-flex;align-items:center;gap:5px;color:#35D6F5;font-size:11px;font-weight:600"><span style="width:6px;height:6px;border-radius:99px;background:#35D6F5;animation:sbpulse 1.4s infinite"></span>Levande</span>
+                              </sc-if>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:6px;font-size:14.5px;min-width:0">
+                              <span style="width:22px;height:22px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;flex-shrink:0;background-image:url({{ r.homeLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.homeName }}</span>
+                              <span style="color:#5D6883;font-size:11.5px;flex-shrink:0">vs</span>
+                              <span style="width:22px;height:22px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;flex-shrink:0;background-image:url({{ r.awayLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.awayName }}</span>
+                            </div>
+                            <div style="font-weight:700;font-size:15px">{{ r.pick }} <span style="font-family:IBM Plex Mono,monospace;color:#8A94AB;font-weight:500">@ {{ r.odds }}</span></div>
+                          </div>
+                          <div style="text-align:right;white-space:nowrap">
+                            <div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:600;color:{{ r.nettoColor }};font-variant-numeric:tabular-nums">{{ r.netto }}</div>
+                            <div style="color:#8A94AB;font-size:12px;font-family:IBM Plex Mono,monospace;margin-top:2px">{{ r.stake }}</div>
+                          </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #1C2333">
+                          <sc-if value="{{ r.canEdit }}" hint-placeholder-val="{{ true }}">
+                            <span style="display:inline-flex;gap:4px">
+                              <sc-for list="{{ r.marks }}" as="m" hint-placeholder-count="4">
+                                <button onClick="{{ m.go }}" style="border:1px solid {{ m.border }};background:{{ m.bg }};color:{{ m.fg }};font-family:IBM Plex Mono,monospace;font-size:11px;font-weight:600;padding:8px 10px;border-radius:6px;cursor:pointer">{{ m.label }}</button>
+                              </sc-for>
+                            </span>
+                          </sc-if>
+                          <sc-if value="{{ r.readOnly }}" hint-placeholder-val="{{ false }}">
+                            <span style="font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:600;padding:5px 9px;border-radius:5px;background:{{ r.resBg }};color:{{ r.resFg }}">{{ r.resLabel }}</span>
+                          </sc-if>
+                          <span style="margin-left:auto;color:#5D6883;font-size:12px">{{ r.book }}</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px">
+                  <button onClick="{{ prevPage }}" style="background:#131826;border:1px solid #232B3E;color:#E6EAF2;padding:9px 16px;border-radius:9px;cursor:pointer;font-weight:600">Föregående</button>
+                  <div style="font-family:IBM Plex Mono,monospace;color:#8A94AB;font-size:13px">{{ pageInfo }}</div>
+                  <button onClick="{{ nextPage }}" style="background:#131826;border:1px solid #232B3E;color:#E6EAF2;padding:9px 16px;border-radius:9px;cursor:pointer;font-weight:600">Nästa</button>
+                </div>
+              </div>
+
+              <div style="width:100%;display:grid;grid-template-columns:300px 1fr 1fr;gap:14px;align-items:start;margin-top:18px">
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:16px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px">
+                    <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600">Topp 3 spelbolag</div>
+                    <button onClick="{{ goBooks }}" style="background:transparent;border:none;color:#35D6F5;font-size:12.5px;font-weight:600;cursor:pointer;padding:0">Hela listan</button>
+                  </div>
+                  <div style="color:#5D6883;font-size:11px;margin-bottom:6px">Reklamlänkar · 18+</div>
+                  <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+                    <sc-for list="{{ topBooks }}" as="b" hint-placeholder-count="3">
+                      <div style="background:#F7F8FB;border:1px solid rgba(230,234,242,.10);border-radius:12px;overflow:hidden">
+                        <div style="position:relative;height:56px;background-color:{{ b.brand }};background-image:url({{ b.logo }}),linear-gradient(165deg,rgba(255,255,255,.10),rgba(0,0,0,.32));background-repeat:no-repeat;background-position:center;background-size:58% auto,cover">
+                          <span style="position:absolute;top:7px;left:7px;width:20px;height:20px;border-radius:6px;background:rgba(247,248,251,.94);color:#1A1F2B;font-family:Oswald,sans-serif;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center">{{ b.rank }}</span>
+                          <span style="position:absolute;top:7px;right:7px;display:inline-flex;align-items:center;gap:4px;background:rgba(15,20,32,.72);border-radius:99px;padding:3px 7px;font-family:IBM Plex Mono,monospace;font-size:11px;color:#FFFFFF">
+                            <span style="display:block;width:10px;height:10px;background-image:url({{ b.starIcon }});background-repeat:no-repeat;background-position:center;background-size:contain"></span>{{ b.ratingShort }}
+                          </span>
+                        </div>
+                        <div style="padding:9px 10px 10px;text-align:center">
+                          <div style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600;color:#12171F">{{ b.bonusValue }}</div>
+                          <div style="color:#6B7688;font-size:11px;margin-bottom:8px">{{ b.bonusTerms }}</div>
+                          <a href="{{ b.trackingUrl }}" target="_blank" rel="noopener sponsored nofollow" style="display:block;background:#3FA662;color:#FFFFFF;border-radius:8px;padding:8px;font-family:Oswald,sans-serif;font-size:13px;font-weight:600;letter-spacing:.05em;text-decoration:none">{{ b.ctaMain }}</a>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:16px">
+                  <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;margin-bottom:10px">Bäst per liga</div>
+                  <sc-for list="{{ leagueBreakdown }}" as="b" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #1C2333;font-size:13px">
+                      <span style="flex:1;color:#C3CBDB">{{ b.league }}</span>
+                      <span style="color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:12px">{{ b.n }}</span>
+                      <span style="font-family:IBM Plex Mono,monospace;font-weight:600;min-width:66px;text-align:right;color:{{ b.color }}">{{ b.netto }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:16px">
+                  <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;margin-bottom:6px">Andra spreadsheets</div>
+                  <sc-for list="{{ otherSheets }}" as="s" hint-placeholder-count="3">
+                    <div onClick="{{ s.open }}" style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid #1C2333;cursor:pointer;font-size:13px">
+                      <span style="flex:1">{{ s.name }}<span style="color:#5D6883"> · {{ s.owner }}</span></span>
+                      <span style="font-family:IBM Plex Mono,monospace;font-weight:600;color:{{ s.color }}">{{ s.roi }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isComps }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:sbfade .25s ease">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:20px">
+              <div>
+                <h1 style="font-family:Oswald,sans-serif;font-size:32px;font-weight:600;margin:0">Tävlingar</h1>
+                <div style="color:#8A94AB">Möt andra spelare där bara siffrorna räknas</div>
+              </div>
+              <button onClick="{{ onOpenComp }}" style="background:#66E38A;border:none;color:#08140C;padding:12px 20px;border-radius:10px;font-weight:700;cursor:pointer">+ Skapa tävling</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+              <sc-for list="{{ comps }}" as="c" hint-placeholder-count="3">
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                    <div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:600">{{ c.name }}</div>
+                    <span style="font-size:10px;letter-spacing:.1em;padding:4px 8px;border-radius:6px;background:{{ c.statusBg }};color:{{ c.statusFg }};white-space:nowrap">{{ c.status }}</span>
+                  </div>
+                  <div style="color:#8A94AB;font-size:14px;line-height:1.5">{{ c.desc }}</div>
+                  <div style="display:flex;gap:16px;font-size:13px;font-family:IBM Plex Mono,monospace;color:#C3CBDB">
+                    <span>{{ c.period }}</span><span>{{ c.count }} deltagare</span>
+                  </div>
+                  <div style="color:#5D6883;font-size:12.5px">{{ c.rules }}</div>
+                  <div style="display:flex;gap:8px;margin-top:auto">
+                    <button onClick="{{ c.open }}" style="flex:1;background:#1B2436;border:1px solid #2A3346;color:#E6EAF2;padding:10px;border-radius:9px;font-weight:600;cursor:pointer">Visa tävling</button>
+                    <button onClick="{{ c.join }}" style="background:{{ c.joinBg }};border:none;color:{{ c.joinFg }};padding:10px 14px;border-radius:9px;font-weight:700;cursor:pointer">{{ c.joinLabel }}</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isComp }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:sbfade .25s ease">
+            <a href="#" onClick="{{ goComps }}">← Alla tävlingar</a>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:10px 0 18px">
+              <div>
+                <h1 style="font-family:Oswald,sans-serif;font-size:32px;font-weight:600;margin:0">{{ comp.name }}</h1>
+                <div style="color:#8A94AB">{{ comp.desc }}</div>
+              </div>
+              <button onClick="{{ comp.join }}" style="background:{{ comp.joinBg }};border:none;color:{{ comp.joinFg }};padding:12px 20px;border-radius:10px;font-weight:700;cursor:pointer">{{ comp.joinLabel }}</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
+              <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;overflow:hidden">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #232B3E">
+                  <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600">Live-topplista</div>
+                  <div style="display:flex;gap:4px;background:#0F1420;border:1px solid #1C2333;border-radius:9px;padding:3px">
+                    <button onClick="{{ comp.sortRoi }}" style="border:none;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;background:{{ comp.roiBg }};color:{{ comp.roiFg }}">ROI</button>
+                    <button onClick="{{ comp.sortNetto }}" style="border:none;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;background:{{ comp.nettoBg }};color:{{ comp.nettoFg }}">Netto</button>
+                  </div>
+                </div>
+                <sc-for list="{{ comp.rows }}" as="r" hint-placeholder-count="5">
+                  <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid #171E2C;background:{{ r.bg }}">
+                    <span style="font-family:Oswald,sans-serif;font-size:20px;font-weight:600;width:34px;color:{{ r.rankColor }}">{{ r.rank }}</span>
+                    <span style="font-size:13px;color:{{ r.moveColor }};font-family:IBM Plex Mono,monospace;width:34px">{{ r.move }}</span>
+                    <div style="flex:1;min-width:0">
+                      <div onClick="{{ r.open }}" style="cursor:pointer;font-weight:600">{{ r.sheet }}</div>
+                      <div style="color:#8A94AB;font-size:12.5px">{{ r.owner }} · {{ r.n }} spel</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:{{ r.color }}">{{ r.primary }}</div>
+                      <div style="color:#8A94AB;font-size:12px;font-family:IBM Plex Mono,monospace">{{ r.secondary }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:16px">
+                  <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;margin-bottom:8px">Regler</div>
+                  <sc-for list="{{ comp.ruleList }}" as="x" hint-placeholder-count="4">
+                    <div style="display:flex;gap:8px;padding:7px 0;border-top:1px solid #1C2333;font-size:13.5px">
+                      <span style="color:#8A94AB;flex:1">{{ x.k }}</span><span style="font-family:IBM Plex Mono,monospace">{{ x.v }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ showAds }}" hint-placeholder-val="{{ true }}">
+                  <div style="height:250px;border:1px dashed #2A3346;border-radius:10px;background:repeating-linear-gradient(135deg,#101623,#101623 10px,#131A2A 10px,#131A2A 20px);display:flex;align-items:center;justify-content:center;color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:12px;letter-spacing:.14em">ANNONSPLATS 300×250</div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:sbfade .25s ease">
+            <h1 style="font-family:Oswald,sans-serif;font-size:32px;font-weight:600;margin:0">Topplistor</h1>
+            <div style="color:#8A94AB;margin-bottom:18px">Alla publika spreadsheets</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+              <sc-for list="{{ boardFilters }}" as="f" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:4px;position:relative">
+                  <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB">{{ f.label }}</div>
+                  <button onClick="{{ f.dd.toggle }}" style="display:flex;align-items:center;gap:10px;background:#131826;border:1px solid {{ f.dd.border }};color:#E6EAF2;padding:9px 10px;border-radius:9px;font-size:14px;cursor:pointer;min-width:160px;text-align:left">
+                    <span style="flex:1">{{ f.dd.label }}</span><span style="color:#5D6883;font-size:11px">▾</span>
+                  </button>
+                  <sc-if value="{{ f.dd.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:0;top:100%;margin-top:6px;z-index:20;min-width:100%;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:6px;max-height:300px;overflow:auto">
+                      <sc-for list="{{ f.dd.items }}" as="o" hint-placeholder-count="4">
+                        <button onClick="{{ o.go }}" style="width:100%;text-align:left;white-space:nowrap;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;overflow:hidden">
+              <div style="display:flex;gap:12px;padding:11px 16px;background:#0F1420;border-bottom:1px solid #232B3E;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#8A94AB;font-weight:600">
+                <span style="width:40px">#</span><span style="flex:1">Spreadsheet</span><span style="width:70px;text-align:right">Spel</span><span style="width:90px;text-align:right">Hitrate</span><span style="width:100px;text-align:right">ROI</span><span style="width:110px;text-align:right">Netto</span>
+              </div>
+              <sc-for list="{{ board }}" as="r" hint-placeholder-count="10">
+                <div>
+                  <div onClick="{{ r.open }}" style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid #171E2C;background:{{ r.bg }};cursor:pointer;transition:background .12s" style-hover="background:#1A2233">
+                    <span style="width:40px;font-family:Oswald,sans-serif;font-size:18px;font-weight:600;color:{{ r.rankColor }}">{{ r.rank }}</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600">{{ r.name }} <span style="color:#5D6883;font-weight:400">· {{ r.owner }}</span></div>
+                      <div style="color:#8A94AB;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.desc }}</div>
+                    </div>
+                    <span style="width:70px;text-align:right;font-family:IBM Plex Mono,monospace;color:#C3CBDB">{{ r.n }}</span>
+                    <span style="width:90px;text-align:right;font-family:IBM Plex Mono,monospace;color:#C3CBDB">{{ r.hit }}</span>
+                    <span style="width:100px;text-align:right;font-family:Oswald,sans-serif;font-size:18px;font-weight:600;color:{{ r.roiColor }}">{{ r.roi }}</span>
+                    <span style="width:110px;text-align:right;font-family:IBM Plex Mono,monospace;font-weight:600;color:{{ r.nettoColor }}">{{ r.netto }}</span>
+                  </div>
+                  <sc-if value="{{ r.showAd }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin:10px 16px;height:90px;border:1px dashed #2A3346;border-radius:10px;background:repeating-linear-gradient(135deg,#101623,#101623 10px,#131A2A 10px,#131A2A 20px);display:flex;align-items:center;justify-content:center;color:#5D6883;font-family:IBM Plex Mono,monospace;font-size:12px;letter-spacing:.14em">ANNONSPLATS 970×90</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isBooks }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:sbfade .25s ease">
+            <div style="text-align:center;margin-bottom:18px">
+              <h1 style="font-family:Oswald,sans-serif;font-size:34px;font-weight:600;margin:0 0 6px">Topplista: Sveriges bästa spelbolag 2026</h1>
+              <div style="display:inline-flex;align-items:center;gap:8px;color:#8A94AB;font-size:14.5px">
+                <span style="display:inline-flex;flex-direction:column;gap:2px">
+                  <span style="width:12px;height:2px;background:#5D6883;border-radius:2px"></span>
+                  <span style="width:12px;height:2px;background:#5D6883;border-radius:2px"></span>
+                  <span style="width:12px;height:2px;background:#5D6883;border-radius:2px"></span>
+                </span>
+                <span><span style="color:#E6EAF2;font-weight:700">{{ books.total }}</span> jämförda spelbolag</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1">
+                <sc-for list="{{ books.pills }}" as="p" hint-placeholder-count="6">
+                  <button onClick="{{ p.go }}" style="display:inline-flex;align-items:center;gap:8px;border:1px solid {{ p.border }};background:{{ p.bg }};color:{{ p.fg }};padding:10px 16px;border-radius:99px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s" style-hover="border-color:#3A4560">{{ p.label }}</button>
+                </sc-for>
+              </div>
+              <div style="position:relative">
+                <button onClick="{{ books.sortDd.toggle }}" style="display:inline-flex;align-items:center;gap:10px;background:#131826;border:1px solid {{ books.sortDd.border }};color:#E6EAF2;padding:10px 16px;border-radius:99px;font-size:14px;font-weight:600;cursor:pointer">
+                  <span>{{ books.sortDd.label }}</span><span style="color:#5D6883;font-size:11px">▾</span>
+                </button>
+                <sc-if value="{{ books.sortDd.open }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;right:0;top:100%;margin-top:8px;z-index:20;min-width:190px;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:6px">
+                    <sc-for list="{{ books.sortDd.items }}" as="o" hint-placeholder-count="3">
+                      <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer" style-hover="background:#1F293C">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+            <div style="color:#5D6883;font-size:12.5px;margin-bottom:20px">Innehåller reklamlänkar · 18+ · Spela ansvarsfullt · <a href="https://stodlinjen.se" target="_blank" rel="noopener">Stödlinjen</a> · <a href="https://spelpaus.se" target="_blank" rel="noopener">Spelpaus</a></div>
+
+            <div style="display:grid;grid-template-columns:{{ books.cols }};gap:20px;align-items:stretch">
+              <sc-for list="{{ books.cards }}" as="b" hint-placeholder-count="8">
+                <div style="background:#F7F8FB;border:1px solid {{ b.border }};border-radius:16px;display:flex;flex-direction:column;box-shadow:{{ b.shadow }};transition:transform .18s ease,box-shadow .18s ease" style-hover="transform:translateY(-4px);box-shadow:0 22px 50px rgba(0,0,0,.45)">
+                  <div style="position:relative;height:150px;border-radius:15px 15px 0 0;background-color:{{ b.brand }};background-image:url({{ b.logo }}),radial-gradient(120% 90% at 22% 10%,rgba(255,255,255,.22),rgba(255,255,255,0) 62%),linear-gradient(165deg,rgba(255,255,255,.10),rgba(0,0,0,.34));background-repeat:no-repeat;background-position:center;background-size:62% auto,cover,cover">
+                    <span style="position:absolute;top:12px;left:12px;width:28px;height:28px;border-radius:8px;background:rgba(247,248,251,.94);color:#1A1F2B;font-family:Oswald,sans-serif;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center">{{ b.rank }}</span>
+                    <span title="{{ b.ratingHelp }}" style="position:absolute;top:12px;right:12px;display:inline-flex;align-items:center;gap:6px;background:rgba(15,20,32,.72);border:1px solid rgba(230,234,242,.16);border-radius:99px;padding:5px 10px">
+                      <span style="display:block;width:13px;height:13px;background-image:url({{ b.starIcon }});background-repeat:no-repeat;background-position:center;background-size:contain"></span>
+                      <span style="font-family:IBM Plex Mono,monospace;font-size:12.5px;font-weight:600;color:#FFFFFF">{{ b.ratingShort }}</span>
+                      <span style="width:14px;height:14px;border-radius:99px;border:1px solid rgba(230,234,242,.4);color:#C3CBDB;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:help">i</span>
+                    </span>
+                  </div>
+
+                  <div style="height:30px;margin-top:-15px;position:relative;z-index:2;display:flex;justify-content:center;align-items:center">
+                    <sc-if value="{{ b.hasBadge }}" hint-placeholder-val="{{ false }}">
+                      <span style="background:#F7F8FB;border:1px solid rgba(0,0,0,.08);color:#1A1F2B;font-size:12.5px;font-weight:700;padding:7px 15px;border-radius:99px;box-shadow:0 4px 12px rgba(0,0,0,.22)">{{ b.badge }}</span>
+                    </sc-if>
+                  </div>
+
+                  <div style="padding:6px 16px 0;display:flex;flex-direction:column;gap:12px;flex:1">
+                    <div style="display:grid;grid-template-columns:{{ b.bonusCols }};gap:10px;text-align:center;min-height:82px;align-content:start">
+                      <div>
+                        <div style="font-size:10.5px;letter-spacing:.14em;color:#6B7688;font-weight:700">BONUS</div>
+                        <div style="font-family:Oswald,sans-serif;font-size:26px;font-weight:600;color:#12171F;line-height:1.15">{{ b.bonusValue }}</div>
+                        <div style="color:#6B7688;font-size:11.5px">{{ b.bonusTerms }}</div>
+                      </div>
+                      <sc-if value="{{ b.hasBonus2 }}" hint-placeholder-val="{{ false }}">
+                        <div style="border-left:1px solid rgba(0,0,0,.08)">
+                          <div style="font-size:10.5px;letter-spacing:.14em;color:#6B7688;font-weight:700">{{ b.bonus2Label }}</div>
+                          <div style="font-family:Oswald,sans-serif;font-size:26px;font-weight:600;color:#12171F;line-height:1.15">{{ b.bonus2Value }}</div>
+                          <div style="color:#6B7688;font-size:11.5px">{{ b.bonus2Terms }}</div>
+                        </div>
+                      </sc-if>
+                    </div>
+
+                    <div style="display:flex;align-items:center;justify-content:center;gap:8px;background:#FFFFFF;border:1px solid rgba(0,0,0,.08);border-radius:9px;padding:10px;min-height:42px;text-align:center">
+                      <span style="display:block;width:15px;height:15px;flex-shrink:0;background-image:url({{ b.checkIcon }});background-repeat:no-repeat;background-position:center;background-size:contain"></span>
+                      <span style="font-size:13px;color:#333A45">{{ b.uspLabel }} <span style="font-weight:700;color:#12171F">{{ b.uspValue }}</span></span>
+                    </div>
+
+                    <a href="{{ b.trackingUrl }}" target="_blank" rel="noopener sponsored nofollow" style="display:block;margin-top:auto;background:#3FA662;color:#FFFFFF;border-radius:11px;padding:12px 14px;text-align:center;text-decoration:none;transition:background .15s" style-hover="background:#348C53">
+                      <span style="display:block;font-family:Oswald,sans-serif;font-size:17px;font-weight:600;letter-spacing:.06em">{{ b.ctaMain }}</span>
+                      <span style="display:block;font-size:12.5px;opacity:.9;margin-top:2px">Vidare till {{ b.name }}</span>
+                    </a>
+
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);border:1px solid rgba(0,0,0,.08);border-radius:9px;overflow:hidden;background:#FFFFFF">
+                      <sc-for list="{{ b.marks }}" as="m" hint-placeholder-count="4">
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-left:1px solid rgba(0,0,0,.06);opacity:{{ m.opacity }}">
+                          <span style="display:block;width:17px;height:17px;background-image:url({{ m.logo }});background-repeat:no-repeat;background-position:center;background-size:contain"></span>
+                          <span style="font-size:10.5px;font-weight:600;color:{{ m.color }}">{{ m.label }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+
+                    <div style="color:#7A838F;font-size:11px;line-height:1.5;min-height:50px">Reklamlänk | 18+ | Spela ansvarsfullt | <a href="https://stodlinjen.se" target="_blank" rel="noopener" style="color:#2C6FD6">Stödlinjen.se</a> | <a href="https://spelpaus.se" target="_blank" rel="noopener" style="color:#2C6FD6">Spelpaus.se</a> | {{ b.terms }}</div>
+                  </div>
+
+                  <div style="margin-top:14px;background:#ECEFF4;border-top:1px solid rgba(0,0,0,.07);border-radius:0 0 15px 15px;padding:12px;text-align:center">
+                    <div style="color:#5B6472;font-size:12.5px">{{ b.name }}</div>
+                    <button onClick="{{ b.toggle }}" style="background:transparent;border:none;color:#12171F;font-weight:700;font-size:13.5px;cursor:pointer;padding:2px 0">{{ b.moreLabel }}</button>
+                    <sc-if value="{{ b.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:10px;text-align:left;animation:sbfade .2s ease">
+                        <p style="margin:0 0 10px;color:#333A45;font-size:13px;line-height:1.6">{{ b.review }}</p>
+                        <sc-for list="{{ b.plus }}" as="p" hint-placeholder-count="3">
+                          <div style="display:flex;gap:8px;font-size:12.5px;color:#333A45;padding:2px 0"><span style="color:#1E8E4E;font-weight:700">+</span>{{ p }}</div>
+                        </sc-for>
+                        <div style="display:flex;gap:8px;font-size:12.5px;color:#333A45;padding:2px 0"><span style="color:#C8324A;font-weight:700">−</span>{{ b.minus }}</div>
+                        <div style="color:#7A838F;font-size:11.5px;margin-top:8px">{{ b.license }}</div>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:sbfade .25s ease;max-width:820px">
+            <h1 style="font-family:Oswald,sans-serif;font-size:32px;font-weight:600;margin:0">{{ profile.title }}</h1>
+            <div style="color:#8A94AB;margin-bottom:18px">{{ profile.sub }}</div>
+            <sc-if value="{{ profile.isMe }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:18px;margin-bottom:16px">
+                <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600;margin-bottom:14px">Inställningar</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                  <div>
+                    <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:6px">Användarnamn</div>
+                    <input value="{{ profile.name }}" onChange="{{ profile.onName }}" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:11px 12px;border-radius:9px;font-size:15px;outline:none">
+                  </div>
+                  <div style="position:relative">
+                    <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:6px">Enhet</div>
+                    <button onClick="{{ profile.dd.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:#0F1420;border:1px solid {{ profile.dd.border }};color:#E6EAF2;padding:11px 12px;border-radius:9px;font-size:15px;cursor:pointer;text-align:left">
+                      <span style="flex:1">{{ profile.dd.label }}</span><span style="color:#5D6883;font-size:11px">▾</span>
+                    </button>
+                    <sc-if value="{{ profile.dd.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:20;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:6px">
+                        <sc-for list="{{ profile.dd.items }}" as="o" hint-placeholder-count="2">
+                          <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:14px;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ o.label }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+                <div style="margin-top:14px">
+                  <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:6px">Beskrivning</div>
+                  <textarea value="{{ profile.bio }}" onChange="{{ profile.onBio }}" rows="2" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:11px 12px;border-radius:9px;font-size:15px;outline:none;resize:vertical"></textarea>
+                </div>
+              </div>
+            </sc-if>
+            <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:18px;margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600">Spreadsheets</div>
+                <sc-if value="{{ profile.isMe }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ profile.onNewSheet }}" style="background:#1B2436;border:1px solid #2A3346;color:#E6EAF2;padding:9px 14px;border-radius:9px;font-weight:600;cursor:pointer">+ Nytt spreadsheet</button>
+                </sc-if>
+              </div>
+              <sc-for list="{{ profile.sheets }}" as="s" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid #1C2333">
+                  <div style="flex:1;min-width:0">
+                    <div onClick="{{ s.open }}" style="font-weight:600;cursor:pointer">{{ s.name }}</div>
+                    <div style="color:#8A94AB;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.desc }}</div>
+                  </div>
+                  <div style="font-family:IBM Plex Mono,monospace;font-size:13px;color:#8A94AB">{{ s.meta }}</div>
+                  <div style="font-family:Oswald,sans-serif;font-size:19px;font-weight:600;color:{{ s.nettoColor }};min-width:90px;text-align:right">{{ s.netto }}</div>
+                  <sc-if value="{{ s.canToggle }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ s.toggle }}" style="background:{{ s.badgeBg }};border:1px solid #2A3346;color:{{ s.badgeFg }};padding:7px 12px;border-radius:8px;font-size:11px;letter-spacing:.08em;font-weight:600;cursor:pointer;min-width:78px">{{ s.badge }}</button>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ profile.isMe }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:18px;margin-bottom:16px;opacity:.55">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                  <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600">Automatisk rättning</div>
+                  <span style="font-size:10px;letter-spacing:.1em;padding:4px 8px;border-radius:6px;background:#1B2436;color:#8A94AB">KOMMER SNART</span>
+                </div>
+                <div style="color:#8A94AB;font-size:14px;line-height:1.55;margin-bottom:12px">Spel som är kopplade till en match (fixture_id) rättas automatiskt när matchen är slut. Manuella spel rättar du själv.</div>
+                <button disabled="{{ true }}" style="background:#1B2436;border:1px solid #232B3E;color:#5D6883;padding:10px 16px;border-radius:9px;font-weight:600;cursor:not-allowed">Aktivera automatisk rättning</button>
+              </div>
+            </sc-if>
+            <div style="background:#131826;border:1px solid #232B3E;border-radius:12px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600;margin-bottom:10px">Troféer</div>
+              <sc-if value="{{ profile.hasTrophies }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <sc-for list="{{ profile.trophies }}" as="t" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;background:#0F1420;border:1px solid #232B3E;border-radius:10px;padding:11px 14px">
+                      <span style="width:26px;height:26px;border-radius:99px;background:{{ t.color }};color:#0B0E14;display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:700;font-size:13px">{{ t.place }}</span>
+                      <div>
+                        <div style="font-weight:600;font-size:14px">{{ t.name }}</div>
+                        <div style="color:#8A94AB;font-size:12px">{{ t.year }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ profile.noTrophies }}" hint-placeholder-val="{{ false }}">
+                <div style="color:#8A94AB;font-size:14px">Inga vunna tävlingar än. Gå med i en tävling för att jaga första trofén.</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showAdd }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:90;background:rgba(5,7,12,.72);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto">
+      <div style="width:100%;max-width:640px;background:#131826;border:1px solid #2A3346;border-radius:14px;padding:22px;animation:sbfade .2s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:600">Lägg nytt spel</div>
+          <button onClick="{{ onCloseAdd }}" style="background:transparent;border:1px solid #2A3346;color:#8A94AB;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <sc-if value="{{ picker.hasMatch }}" hint-placeholder-val="{{ false }}">
+            <div style="grid-column:span 2;background:#0F1420;border:1px solid rgba(76,141,255,.35);border-radius:12px;padding:14px;animation:sbfade .2s ease">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">
+                <span style="width:20px;height:20px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ picker.chosen.leagueLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                <span style="color:#8A94AB;font-size:13px;flex:1">{{ picker.chosen.league }} · {{ picker.chosen.when }}</span>
+                <button onClick="{{ picker.reset }}" style="background:transparent;border:none;color:#4C8DFF;font-size:13px;font-weight:600;cursor:pointer;padding:0">Ändra match</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:34px;height:34px;border-radius:99px;background:rgba(230,234,242,.07);padding:3px;background-image:url({{ picker.chosen.homeLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                <span style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600;flex:1;min-width:0">{{ picker.chosen.home }}</span>
+                <span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:#5D6883">VS</span>
+                <span style="font-family:Oswald,sans-serif;font-size:18px;font-weight:600;flex:1;min-width:0;text-align:right">{{ picker.chosen.away }}</span>
+                <span style="width:34px;height:34px;border-radius:99px;background:rgba(230,234,242,.07);padding:3px;background-image:url({{ picker.chosen.awayLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+              </div>
+              <div style="margin-top:10px;font-family:IBM Plex Mono,monospace;font-size:11px;color:#5D6883">{{ picker.chosen.tag }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ picker.searching }}" hint-placeholder-val="{{ true }}">
+            <div style="grid-column:span 2">
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Match</div>
+              <input value="{{ picker.query }}" onChange="{{ picker.onQuery }}" onKeyDown="{{ picker.onKey }}" placeholder="Sök lag eller match" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:12px;border-radius:10px;font-size:15px;outline:none">
+              <sc-if value="{{ picker.hasTeams }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">
+                  <sc-for list="{{ picker.teams }}" as="t" hint-placeholder-count="4">
+                    <button onClick="{{ t.go }}" style="background:{{ t.bg }};border:1px solid {{ t.border }};color:#E6EAF2;padding:9px 11px;border-radius:10px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px">
+                      <span style="width:22px;height:22px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ t.logo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                      <span style="flex:1;font-size:14px">{{ t.name }}</span>
+                      <span style="color:#5D6883;font-size:12px">{{ t.league }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ picker.noHits }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:8px;color:#5D6883;font-size:13px">Inget lag matchar. Prova ett annat namn eller ange matchen manuellt.</div>
+              </sc-if>
+              <sc-if value="{{ picker.hasFixtures }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:12px;animation:sbfade .22s ease">
+                  <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5D6883;margin-bottom:8px">Kommande matcher · {{ picker.teamName }}</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    <sc-for list="{{ picker.fixtures }}" as="f" hint-placeholder-count="4">
+                      <button onClick="{{ f.go }}" style="background:#0F1420;border:1px solid #232B3E;border-radius:11px;padding:11px;cursor:pointer;text-align:left;animation:sbfade .22s ease" style-hover="border-color:#3A4560">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+                          <span style="width:16px;height:16px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ f.leagueLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                          <span style="color:#8A94AB;font-size:11.5px;flex:1">{{ f.league }}</span>
+                          <span style="font-family:IBM Plex Mono,monospace;font-size:10px;letter-spacing:.06em;padding:3px 6px;border-radius:5px;background:{{ f.dayBg }};color:{{ f.dayFg }}">{{ f.day }}</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:7px">
+                          <span style="width:22px;height:22px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ f.homeLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                          <span style="flex:1;min-width:0;font-size:13.5px;color:#E6EAF2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.home }}</span>
+                          <span style="font-family:IBM Plex Mono,monospace;font-size:11.5px;color:#5D6883">{{ f.time }}</span>
+                          <span style="flex:1;min-width:0;font-size:13.5px;color:#E6EAF2;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.away }}</span>
+                          <span style="width:22px;height:22px;border-radius:99px;background:rgba(230,234,242,.07);padding:2px;background-image:url({{ f.awayLogo }});background-origin:content-box;background-repeat:no-repeat;background-position:center;background-size:contain;display:inline-block"></span>
+                        </div>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <button onClick="{{ picker.goManual }}" style="background:transparent;border:none;color:#4C8DFF;font-size:13px;font-weight:600;cursor:pointer;padding:12px 0 0">Ange match manuellt ›</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ picker.manual }}" hint-placeholder-val="{{ false }}">
+            <div style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB">Manuell match · inget fixture_id</div>
+              <button onClick="{{ picker.reset }}" style="background:transparent;border:none;color:#4C8DFF;font-size:13px;font-weight:600;cursor:pointer;padding:0">Sök match i stället</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ picker.manual }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Datum &amp; tid</div>
+            <button onClick="{{ ddWhen.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:#0F1420;border:1px solid {{ ddWhen.border }};color:{{ ddWhen.fg }};padding:10px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;cursor:pointer;text-align:left">
+              <span style="flex:1">{{ ddWhen.label }}</span>
+              <span style="color:#5D6883;font-size:11px">▾</span>
+            </button>
+            <sc-if value="{{ ddWhen.open }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:0;top:100%;margin-top:6px;z-index:25;width:320px;background:#171D2E;border:1px solid #2A3346;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <button onClick="{{ ddWhen.prevMonth }}" style="background:#0F1420;border:1px solid #232B3E;color:#C3CBDB;width:30px;height:30px;border-radius:8px;cursor:pointer">‹</button>
+                  <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.02em">{{ ddWhen.monthLabel }}</div>
+                  <button onClick="{{ ddWhen.nextMonth }}" style="background:#0F1420;border:1px solid #232B3E;color:#C3CBDB;width:30px;height:30px;border-radius:8px;cursor:pointer">›</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+                  <sc-for list="{{ ddWhen.weekdays }}" as="w" hint-placeholder-count="7">
+                    <div style="text-align:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#5D6883;padding:4px 0">{{ w }}</div>
+                  </sc-for>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
+                  <sc-for list="{{ ddWhen.days }}" as="d" hint-placeholder-count="35">
+                    <button onClick="{{ d.go }}" style="height:34px;border:1px solid {{ d.border }};background:{{ d.bg }};color:{{ d.fg }};border-radius:8px;font-family:IBM Plex Mono,monospace;font-size:12.5px;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ d.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #232B3E">
+                  <div style="flex:1">
+                    <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Timme</div>
+                    <div style="height:120px;overflow:auto;background:#0F1420;border:1px solid #232B3E;border-radius:9px;padding:4px">
+                      <sc-for list="{{ ddWhen.hours }}" as="h" hint-placeholder-count="8">
+                        <button onClick="{{ h.go }}" style="width:100%;border:none;background:{{ h.bg }};color:{{ h.fg }};padding:6px;border-radius:6px;font-family:IBM Plex Mono,monospace;font-size:13px;cursor:pointer" style-hover="background:#1F293C">{{ h.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="flex:1">
+                    <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Minut</div>
+                    <div style="height:120px;overflow:auto;background:#0F1420;border:1px solid #232B3E;border-radius:9px;padding:4px">
+                      <sc-for list="{{ ddWhen.minutes }}" as="m" hint-placeholder-count="8">
+                        <button onClick="{{ m.go }}" style="width:100%;border:none;background:{{ m.bg }};color:{{ m.fg }};padding:6px;border-radius:6px;font-family:IBM Plex Mono,monospace;font-size:13px;cursor:pointer" style-hover="background:#1F293C">{{ m.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                  <button onClick="{{ ddWhen.now }}" style="flex:1;background:#1B2436;border:1px solid #2A3346;color:#E6EAF2;padding:9px;border-radius:9px;font-weight:600;cursor:pointer">Nu</button>
+                  <button onClick="{{ ddWhen.done }}" style="flex:1;background:#66E38A;border:none;color:#08140C;padding:9px;border-radius:9px;font-weight:700;cursor:pointer">Klar</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          </sc-if>
+          <sc-if value="{{ picker.manual }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Liga</div>
+            <button onClick="{{ ddLeague.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:#0F1420;border:1px solid {{ ddLeague.border }};color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;cursor:pointer;text-align:left">
+              <span style="flex:1">{{ draft.league }}</span>
+              <span style="color:#5D6883;font-size:11px">▾</span>
+            </button>
+            <sc-if value="{{ ddLeague.open }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:20;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:6px;max-height:280px;overflow:auto">
+                <sc-for list="{{ ddLeague.items }}" as="o" hint-placeholder-count="5">
+                  <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:14px;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+          </sc-if>
+          <sc-if value="{{ picker.manual }}" hint-placeholder-val="{{ false }}">
+            <div style="grid-column:span 2">
+              <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Match</div>
+              <input value="{{ draft.match }}" onChange="{{ onDraftMatch }}" placeholder="Liverpool vs Wolves" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;outline:none">
+            </div>
+          </sc-if>
+          <div style="position:relative">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Spel</div>
+            <button onClick="{{ ddPick.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:#0F1420;border:1px solid {{ ddPick.border }};color:{{ ddPick.fg }};padding:10px 12px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;text-align:left">
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ddPick.label }}</span>
+              <span style="color:#5D6883;font-size:11px;font-weight:400">▾</span>
+            </button>
+            <sc-if value="{{ ddPick.open }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:20;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:320px">
+                <div style="padding:8px;border-bottom:1px solid #232B3E">
+                  <input value="{{ ddq }}" onChange="{{ onDdq }}" placeholder="Sök spel …" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:8px 10px;border-radius:8px;font-size:13px;outline:none">
+                </div>
+                <div style="overflow:auto;padding:6px">
+                  <sc-for list="{{ ddPick.groups }}" as="g" hint-placeholder-count="4">
+                    <div>
+                      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#5D6883;padding:8px 10px 4px">{{ g.label }}</div>
+                      <sc-for list="{{ g.items }}" as="o" hint-placeholder-count="4">
+                        <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:8px 10px;border-radius:7px;font-size:13.5px;font-weight:600;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ o.label }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ ddPick.empty }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:12px 10px;color:#5D6883;font-size:13px">Inget spel matchar sökningen.</div>
+                  </sc-if>
+                </div>
+                <button onClick="{{ ddPick.custom }}" style="border:none;border-top:1px solid #232B3E;background:transparent;color:#4C8DFF;padding:11px;font-size:13.5px;font-weight:600;cursor:pointer;text-align:left;padding-left:16px">+ Annat – skriv själv</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ pickCustom }}" hint-placeholder-val="{{ false }}">
+              <input value="{{ draft.pick }}" onChange="{{ onDraftPick }}" placeholder="t.ex. Ö1.5 mål 2:a halvlek" style="width:100%;margin-top:8px;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;font-weight:700;outline:none">
+            </sc-if>
+          </div>
+          <div style="position:relative">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Spelbolag</div>
+            <button onClick="{{ ddBook.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:#0F1420;border:1px solid {{ ddBook.border }};color:{{ ddBook.fg }};padding:10px 12px;border-radius:9px;font-size:14px;cursor:pointer;text-align:left">
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ddBook.label }}</span>
+              <span style="color:#5D6883;font-size:11px">▾</span>
+            </button>
+            <sc-if value="{{ ddBook.open }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:20;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;max-height:320px">
+                <div style="padding:8px;border-bottom:1px solid #232B3E">
+                  <input value="{{ ddq }}" onChange="{{ onDdq }}" placeholder="Sök spelbolag …" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:8px 10px;border-radius:8px;font-size:13px;outline:none">
+                </div>
+                <div style="overflow:auto;padding:6px">
+                  <sc-for list="{{ ddBook.items }}" as="o" hint-placeholder-count="6">
+                    <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:8px 10px;border-radius:7px;font-size:13.5px;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ o.label }}</button>
+                  </sc-for>
+                  <sc-if value="{{ ddBook.empty }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:12px 10px;color:#5D6883;font-size:13px">Inget bolag matchar sökningen.</div>
+                  </sc-if>
+                </div>
+                <button onClick="{{ ddBook.custom }}" style="border:none;border-top:1px solid #232B3E;background:transparent;color:#4C8DFF;padding:11px;font-size:13.5px;font-weight:600;cursor:pointer;text-align:left;padding-left:16px">+ Annat – skriv själv</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ bookCustom }}" hint-placeholder-val="{{ false }}">
+              <input value="{{ draft.book }}" onChange="{{ onDraftBook }}" placeholder="t.ex. Betfair" style="width:100%;margin-top:8px;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;outline:none">
+            </sc-if>
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Insats</div>
+            <input value="{{ draft.stake }}" onChange="{{ onDraftStake }}" placeholder="500" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Odds</div>
+            <input value="{{ draft.odds }}" onChange="{{ onDraftOdds }}" placeholder="1.850" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+          </div>
+          <div style="grid-column:span 2">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Notering</div>
+            <input value="{{ draft.note }}" onChange="{{ onDraftNote }}" placeholder="Kort analys" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;outline:none">
+          </div>
+        </div>
+        <sc-if value="{{ hasDraftError }}" hint-placeholder-val="{{ false }}">
+          <div style="background:rgba(255,92,108,.1);border:1px solid rgba(255,92,108,.35);color:#FF8A96;padding:10px 12px;border-radius:9px;font-size:14px;margin-top:12px">{{ draftError }}</div>
+        </sc-if>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button onClick="{{ onSaveBet }}" style="flex:1;background:#66E38A;border:none;color:#08140C;padding:13px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer">Spara spel</button>
+          <button onClick="{{ onCloseAdd }}" style="background:#1B2436;border:1px solid #2A3346;color:#E6EAF2;padding:13px 20px;border-radius:10px;font-weight:600;cursor:pointer">Avbryt</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showComp }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:90;background:rgba(5,7,12,.72);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto">
+      <div style="width:100%;max-width:560px;background:#131826;border:1px solid #2A3346;border-radius:14px;padding:22px;animation:sbfade .2s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:600">Skapa tävling</div>
+          <button onClick="{{ onCloseComp }}" style="background:transparent;border:1px solid #2A3346;color:#8A94AB;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="grid-column:span 2">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Namn</div>
+            <input value="{{ cdraft.name }}" onChange="{{ onCName }}" placeholder="Höstligan 2026" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;outline:none">
+          </div>
+          <div style="grid-column:span 2">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Beskrivning</div>
+            <input value="{{ cdraft.desc }}" onChange="{{ onCDesc }}" placeholder="Öppen för alla, ROI avgör" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Startdatum</div>
+            <input value="{{ cdraft.start }}" onChange="{{ onCStart }}" placeholder="2026-09-01" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Slutdatum</div>
+            <input value="{{ cdraft.end }}" onChange="{{ onCEnd }}" placeholder="2026-12-31" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Minsta antal spel</div>
+            <input value="{{ cdraft.minBets }}" onChange="{{ onCMinBets }}" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Minsta odds</div>
+            <input value="{{ cdraft.minOdds }}" onChange="{{ onCMinOdds }}" style="width:100%;background:#0F1420;border:1px solid #232B3E;color:#E6EAF2;padding:10px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+          </div>
+          <div style="grid-column:span 2;position:relative">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8A94AB;margin-bottom:5px">Insats</div>
+            <button onClick="{{ ddStakeRule.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:#0F1420;border:1px solid {{ ddStakeRule.border }};color:#E6EAF2;padding:10px 12px;border-radius:9px;font-size:14px;cursor:pointer;text-align:left">
+              <span style="flex:1">{{ ddStakeRule.label }}</span><span style="color:#5D6883;font-size:11px">▾</span>
+            </button>
+            <sc-if value="{{ ddStakeRule.open }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:20;background:#171D2E;border:1px solid #2A3346;border-radius:11px;box-shadow:0 18px 50px rgba(0,0,0,.6);padding:6px">
+                <sc-for list="{{ ddStakeRule.items }}" as="o" hint-placeholder-count="3">
+                  <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:14px;cursor:pointer;transition:background .12s" style-hover="background:#1F293C">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button onClick="{{ onSaveComp }}" style="flex:1;background:#66E38A;border:none;color:#08140C;padding:13px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer">Skapa tävling</button>
+          <button onClick="{{ onCloseComp }}" style="background:#1B2436;border:1px solid #2A3346;color:#E6EAF2;padding:13px 20px;border-radius:10px;font-weight:600;cursor:pointer">Avbryt</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:95;background:#171D2E;border:1px solid #2A3346;color:#E6EAF2;padding:12px 20px;border-radius:10px;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:sbfade .2s ease">{{ toast }}</div>
+  </sc-if>
+
+  <div style="border-top:1px solid #1C2333;background:#0A0D13;padding:22px 20px">
+    <div style="max-width:1360px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;color:#5D6883">
+      <span style="border:1px solid #2A3346;border-radius:6px;padding:3px 8px;font-family:Oswald,sans-serif;font-weight:600;color:#8A94AB">18+</span>
+      <span style="color:#8A94AB;font-weight:600">Spela ansvarsfullt</span>
+      <a href="https://stodlinjen.se" target="_blank" rel="noopener">Stödlinjen</a>
+      <a href="https://spelpaus.se" target="_blank" rel="noopener">Spelpaus</a>
+      <a href="#" onClick="{{ goHome }}">Startsida</a>
+      <span style="margin-left:auto">Spelbok är ett verktyg för bokföring och statistik. Inga spel förmedlas.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showAds&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;defaultUnit&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kr&quot;,&quot;units&quot;],&quot;default&quot;:&quot;kr&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+const SPORTS = {
+  Fotboll: { code: 'FB', bg: 'rgba(76,141,255,.16)', fg: '#7FB0FF' },
+  Ishockey: { code: 'IH', bg: 'rgba(53,214,245,.16)', fg: '#5FE0F7' },
+  Tennis: { code: 'TE', bg: 'rgba(255,184,77,.16)', fg: '#FFC96B' }
+};
+const LEAGUES = {
+  'Premier League': 'Fotboll', 'Allsvenskan': 'Fotboll', 'Champions League': 'Fotboll', 'SHL': 'Ishockey'
+};
+function FX() { return window.SBFixtures; }
+const TEAMS = {
+  'Premier League': ['Liverpool', 'Arsenal', 'Man City', 'Chelsea', 'Tottenham', 'Newcastle', 'Wolves', 'Brighton', 'Aston Villa', 'Everton', 'Bournemouth', 'Fulham'],
+  'Allsvenskan': ['Malmö FF', 'AIK', 'Djurgården', 'Hammarby', 'IFK Göteborg', 'Elfsborg', 'Häcken', 'IFK Norrköping', 'Sirius', 'Mjällby'],
+  'Champions League': ['Real Madrid', 'Bayern', 'Inter', 'PSG', 'Barcelona', 'Atlético', 'Porto', 'Ajax', 'Benfica', 'Napoli'],
+  'SHL': ['Frölunda', 'Färjestad', 'Skellefteå', 'Luleå', 'Växjö', 'HV71', 'Rögle', 'Leksand', 'Brynäs', 'Malmö Redhawks'],
+  'ATP': ['Sinner', 'Alcaraz', 'Djokovic', 'Zverev', 'Rune', 'Ruud', 'Medvedev', 'Fritz']
+};
+const PICKS = {
+  Fotboll: ['Ö2.5', 'U2.5', 'Ö1.5 mål 2:a halvlek', 'Hemma DNB', 'Borta DNB', '1X', 'X2', 'Båda lagen mål', 'Hemma -1', 'Borta +1.5', 'Ö9.5 hörnor'],
+  Ishockey: ['Ö5.5', 'U5.5', 'Hemma DNB', 'Borta +1.5', 'Ö1.5 mål 1:a period', 'Hemma -1.5', 'Båda lagen 2+ mål'],
+  Tennis: ['Ö22.5 games', 'U22.5 games', 'Spelare 1 -3.5 games', 'Spelare 2 vinner set', '2-0']
+};
+const BOOKS = ['Unibet', 'Bet365', 'Betsson', 'Pinnacle', 'ComeOn', 'LeoVegas'];
+const ALL_BOOKS = ['Unibet', 'Bet365', 'Betsson', 'Pinnacle', 'ComeOn', 'LeoVegas', 'Svenska Spel', 'ATG', 'Betfair', 'Bwin', 'NordicBet', 'Expekt', 'Coolbet', 'Betano', 'Cashpoint', '888sport', 'William Hill', 'Mr Green'];
+const PICK_GROUPS = {
+  Fotboll: [
+    { label: 'Matchresultat', options: ['1 (hemma)', 'X (oavgjort)', '2 (borta)', '1X', 'X2', '12', 'Hemma DNB', 'Borta DNB'] },
+    { label: 'Handikapp', options: ['Hemma -1', 'Hemma -1.5', 'Hemma -2', 'Borta +1', 'Borta +1.5', 'Borta +2', 'Asiatiskt 0', 'Asiatiskt -0.25', 'Asiatiskt -0.75'] },
+    { label: 'Mål – totalen', options: ['Ö1.5', 'U1.5', 'Ö2.5', 'U2.5', 'Ö3.5', 'U3.5', 'Ö4.5', 'U4.5', 'Båda lagen mål', 'Båda lagen mål – nej'] },
+    { label: 'Halvlek', options: ['Ö0.5 mål 1:a halvlek', 'Ö1.5 mål 1:a halvlek', 'U1.5 mål 1:a halvlek', 'Ö1.5 mål 2:a halvlek', 'U1.5 mål 2:a halvlek', 'Hemma vinner 1:a halvlek', 'Borta vinner 2:a halvlek'] },
+    { label: 'Laget – mål', options: ['Hemma Ö1.5', 'Hemma U1.5', 'Borta Ö1.5', 'Borta U1.5', 'Hemma håller nollan', 'Borta håller nollan'] },
+    { label: 'Hörnor', options: ['Ö8.5 hörnor', 'Ö9.5 hörnor', 'Ö10.5 hörnor', 'U9.5 hörnor', 'U10.5 hörnor', 'Hemma flest hörnor', 'Borta flest hörnor'] },
+    { label: 'Kort', options: ['Ö3.5 kort', 'Ö4.5 kort', 'U4.5 kort', 'Rött kort i matchen'] },
+    { label: 'Målskytt', options: ['Målskytt när som helst', 'Första målskytt', 'Målskytt 2+ mål'] }
+  ],
+  Ishockey: [
+    { label: 'Matchresultat', options: ['1 (hemma)', 'X (oavgjort)', '2 (borta)', 'Hemma DNB', 'Borta DNB', 'Hemma inkl. övertid', 'Borta inkl. övertid'] },
+    { label: 'Handikapp', options: ['Hemma -1.5', 'Hemma -2.5', 'Borta +1.5', 'Borta +2.5', 'Asiatiskt -0.5'] },
+    { label: 'Mål – totalen', options: ['Ö4.5', 'U4.5', 'Ö5.5', 'U5.5', 'Ö6.5', 'U6.5', 'Båda lagen 2+ mål'] },
+    { label: 'Perioder', options: ['Ö1.5 mål 1:a period', 'U1.5 mål 1:a period', 'Ö2.5 mål 2:a period', 'Hemma vinner 1:a period', 'Borta vinner 3:e period'] },
+    { label: 'Spelare', options: ['Poäng när som helst', 'Målskytt när som helst', 'Ö2.5 skott på mål'] }
+  ],
+  Tennis: [
+    { label: 'Matchvinnare', options: ['Spelare 1 vinner', 'Spelare 2 vinner', 'Spelare 1 vinner set', 'Spelare 2 vinner set'] },
+    { label: 'Set', options: ['2-0', '2-1', '0-2', '1-2', 'Ö2.5 set', 'U2.5 set'] },
+    { label: 'Games', options: ['Ö20.5 games', 'U20.5 games', 'Ö22.5 games', 'U22.5 games', 'Spelare 1 -3.5 games', 'Spelare 2 +3.5 games'] },
+    { label: 'Övrigt', options: ['Tiebreak i matchen', 'Break i 1:a setet'] }
+  ]
+};
+const NOTES = ['Tidig linje, väntade sig rörelse', 'Skadad nyckelspelare hos hemmalaget', 'CLV positivt, stängde 1.72', 'Backade efter uppställning', 'Tempo-spel, båda pressar högt', 'Sen värdegrind', 'Modellen sa 1.55', 'Målvakt vilade', '', '', ''];
+const WIN = 'WIN', LOSS = 'LOSS', PUSH = 'PUSH', VOID = 'VOID';
+const GREEN = '#66E38A', RED = '#FF5C6C', AMBER = '#FFB84D', CYAN = '#35D6F5', MUTED = '#8A94AB';
+const KEY = 'spelbok.v6';
+
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const data = this.load() || (FX() ? this.seed() : { users: null, sheets: [], bets: [], comps: [], joins: [], session: null });
+    this.state = Object.assign({
+      route: 'landing', authMode: 'login', authError: '',
+      form: { name: '', email: '', pw: '', remember: true },
+      activeSheet: null, activeUser: null, activeComp: null,
+      f: { sport: 'Alla sporter', league: 'Alla ligor', result: 'Alla', period: 'Allt' },
+      chartPeriod: 'Allt', sort: { key: 'date', dir: 'desc' }, page: 0,
+      compSort: 'roi', boardSort: 'ROI', boardMonth: 'Alla', boardSport: 'Alla sporter',
+      showAdd: false, showComp: false, draft: this.blankDraft(), draftError: '',
+      cdraft: { name: '', desc: '', start: '2026-09-01', end: '2026-12-31', minBets: '20', minOdds: '1.50', stakeRule: 'Fri insats, ROI avgör' },
+      dd: null, ddq: '', hoverIdx: null,
+      bookSortBy: 'Vårt betyg', bookPill: 'Populära', openBook: null,
+      fxQuery: '', fxTeam: null, fxIdx: 0, manualMode: false,
+      toast: '', vw: 1400
+    }, data);
+    if (data.session) this.state.route = 'dash';
+  }
+
+  componentDidMount() {
+    if (!this.state.users) this.waitForData();
+    this.onResize = () => this.setState({ vw: window.innerWidth });
+    window.addEventListener('resize', this.onResize);
+    this.onResize();
+    this.onKey = e => { if (e.key === 'Escape' && this.state.dd) this.setState({ dd: null }); };
+    window.addEventListener('keydown', this.onKey);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this.onResize); window.removeEventListener('keydown', this.onKey); clearTimeout(this._boot); }
+
+  waitForData(tries) {
+    const n = tries || 0;
+    if (FX()) return this.setState(this.seed(), () => this.save({}));
+    if (n < 100) this._boot = setTimeout(() => this.waitForData(n + 1), 60);
+  }
+
+  blankDraft() { return { date: '', time: '', league: 'Premier League', match: '', pick: '', pickSel: '', book: '', bookSel: '', stake: '', odds: '', note: '', fixture: null }; }
+
+  load() { try { const raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+  save(patch) {
+    const s = Object.assign({}, this.state, patch);
+    try { localStorage.setItem(KEY, JSON.stringify({ users: s.users, sheets: s.sheets, bets: s.bets, comps: s.comps, joins: s.joins, session: s.session })); } catch (e) { }
+  }
+  set(patch) { this.setState(patch, () => this.save({})); }
+
+  seed() {
+    const r = mulberry(20260813);
+    const pick = a => a[Math.floor(r() * a.length)];
+    const users = [
+      { id: 'u1', name: 'johanlind', email: 'johan@demo.se', pw: 'demo', bio: 'Fotboll och hörnor. Modellbaserat, mest tidiga linjer.', trophies: [{ place: 1, name: 'Vinterserien', year: '2026' }, { place: 3, name: 'Sommarslaget', year: '2025' }] },
+      { id: 'u2', name: 'emmasjoberg', email: 'emma@demo.se', pw: 'demo', bio: 'SHL-specialist. Totaler och periodspel.', trophies: [{ place: 2, name: 'Vinterserien', year: '2026' }] },
+      { id: 'u3', name: 'viktorahlgren', email: 'viktor@demo.se', pw: 'demo', bio: 'Allsvenskan från läktarplats. Låga odds, hög volym.', trophies: [] },
+      { id: 'u4', name: 'saranyberg', email: 'sara@demo.se', pw: 'demo', bio: 'CL och storligorna. Jagar CLV, inte tur.', trophies: [{ place: 1, name: 'CL-utmaningen', year: '2025' }] },
+      { id: 'u5', name: 'marcusholm', email: 'marcus@demo.se', pw: 'demo', bio: 'Provar allt. Bokför för att sluta lura mig själv.', trophies: [] }
+    ];
+    const sheetDefs = [
+      { id: 's1', ownerId: 'u1', name: 'Huvudboken 2026', desc: 'Allt jag spelar, ingen filtrering.', pub: true, leagues: ['Premier League', 'Champions League', 'Allsvenskan'], edge: 0.055, n: 74 },
+      { id: 's2', ownerId: 'u1', name: 'Hörnor & totaler', desc: 'Separat strategi: bara totaler och hörnspel.', pub: false, leagues: ['Premier League', 'Allsvenskan'], edge: 0.02, n: 38 },
+      { id: 's3', ownerId: 'u2', name: 'SHL-boken', desc: 'Ishockey, mest totaler och periodspel.', pub: true, leagues: ['SHL'], edge: 0.075, n: 66 },
+      { id: 's4', ownerId: 'u3', name: 'Allsvenskt', desc: 'Hög volym, låga odds, långsiktigt.', pub: true, leagues: ['Allsvenskan'], edge: -0.03, n: 58 },
+      { id: 's5', ownerId: 'u4', name: 'CL & storligorna', desc: 'Tidiga linjer, stänger nästan alltid lägre.', pub: true, leagues: ['Champions League', 'Premier League'], edge: 0.09, n: 47 },
+      { id: 's6', ownerId: 'u5', name: 'Blandat 2026', desc: 'Fotboll och hockey om vartannat.', pub: true, leagues: ['Premier League', 'SHL'], edge: -0.055, n: 52 }
+    ];
+    const now = new Date('2026-08-13T18:00:00');
+    const bets = [];
+    let bi = 0;
+    sheetDefs.forEach(sd => {
+      for (let i = 0; i < sd.n; i++) {
+        const league = pick(sd.leagues);
+        const sport = LEAGUES[league];
+        const teams = FX().teams[league].slice();
+        const a = teams.splice(Math.floor(r() * teams.length), 1)[0];
+        const b = teams.splice(Math.floor(r() * teams.length), 1)[0];
+        const daysAgo = Math.floor(r() * 205) - 2;
+        const d = new Date(now.getTime() - daysAgo * 86400000);
+        d.setHours(13 + Math.floor(r() * 8), pick([0, 15, 30, 45]), 0, 0);
+        const odds = Math.round((1.4 + r() * 1.35) * 1000) / 1000;
+        const stake = pick([100, 200, 250, 300, 500, 500, 750, 1000]);
+        const live = d.getTime() > now.getTime();
+        let result = null;
+        if (!live) {
+          const p = (1 / odds) * (1 + sd.edge);
+          const x = r();
+          result = x < 0.035 ? (x < 0.018 ? VOID : PUSH) : (r() < p ? WIN : LOSS);
+        }
+        const manual = r() < 0.12;
+        bets.push({
+          id: 'b' + (++bi), sheetId: sd.id, ts: d.getTime(), sport: sport, league: league,
+          match: a.name + ' vs ' + b.name, pick: pick(PICKS[sport]), book: pick(BOOKS),
+          stake: stake, odds: odds, result: result, note: pick(NOTES),
+          fixtureId: manual ? null : 1100000 + bi,
+          home: { id: a.team_id, name: a.name, logo: a.logo },
+          away: { id: b.team_id, name: b.name, logo: b.logo },
+          leagueLogo: manual ? null : FX().leagues[league].logo,
+          status: result ? 'FT' : (d.getTime() - now.getTime() < 3600000 ? 'LIVE' : 'NS')
+        });
+      }
+    });
+    const comps = [
+      { id: 'c1', name: 'Sommarslaget 2026', desc: 'Sommarens ROI-race. Fri insats, minst 20 spel för att kvalificera.', start: '2026-06-01', end: '2026-08-31', minBets: 20, minOdds: 1.5, stakeRule: 'Fri insats, ROI avgör', ownerId: 'u2' },
+      { id: 'c2', name: 'Höstligan 2026', desc: 'Startbank 10 000 kr. Störst netto vid slutdatum vinner.', start: '2026-09-01', end: '2026-12-15', minBets: 30, minOdds: 1.4, stakeRule: 'Fast startbank 10 000 kr', ownerId: 'u4' },
+      { id: 'c3', name: 'Vinterserien 2026', desc: 'Avslutad. ROI över minst 40 spel.', start: '2026-01-01', end: '2026-04-30', minBets: 40, minOdds: 1.5, stakeRule: 'Fri insats, ROI avgör', ownerId: 'u1' }
+    ];
+    const joins = [
+      { compId: 'c1', sheetId: 's1', move: 2 }, { compId: 'c1', sheetId: 's3', move: -1 },
+      { compId: 'c1', sheetId: 's4', move: 0 }, { compId: 'c1', sheetId: 's5', move: 1 },
+      { compId: 'c1', sheetId: 's6', move: -2 },
+      { compId: 'c3', sheetId: 's1', move: 0 }, { compId: 'c3', sheetId: 's3', move: 0 }
+    ];
+    return { users: users, sheets: sheetDefs.map(s => ({ id: s.id, ownerId: s.ownerId, name: s.name, desc: s.desc, pub: s.pub, unit: 'kr' })), bets: bets, comps: comps, joins: joins, session: null };
+  }
+
+  netto(b) { return b.result === WIN ? b.stake * (b.odds - 1) : b.result === LOSS ? -b.stake : 0; }
+  starRow(rating) {
+    const pts = '10,1.5 12.6,7.3 18.9,8 14.2,12.2 15.5,18.4 10,15.2 4.5,18.4 5.8,12.2 1.1,8 7.4,7.3';
+    let base = '', fill = '';
+    for (let i = 0; i < 5; i++) {
+      base += '<polygon points="' + pts + '" transform="translate(' + i * 21 + ',0)" fill="#2A3346"/>';
+      fill += '<polygon points="' + pts + '" transform="translate(' + i * 21 + ',0)" fill="#FFD166"/>';
+    }
+    const w = Math.max(0, Math.min(1, rating / 5)) * 104;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 20">' + base +
+      '<mask id="m"><rect x="0" y="0" width="' + w.toFixed(1) + '" height="20" fill="white"/></mask>' +
+      '<g mask="url(#m)">' + fill + '</g></svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg).replace(/\(/g, '%28').replace(/\)/g, '%29');
+  }
+
+  logoOf(b, side) {
+    const t = b[side];
+    if (t && t.logo) return t.logo;
+    return FX() ? FX().placeholder(b.sport) : '';
+  }
+  teamNames(b) {
+    const parts = String(b.match || '').split(' vs ');
+    return {
+      home: (b.home && b.home.name) || parts[0] || '',
+      away: (b.away && b.away.name) || parts[1] || ''
+    };
+  }
+  fmt(n, unit) {
+    const u = unit === 'units' ? ' u' : ' kr';
+    const abs = Math.abs(n);
+    const s = abs >= 100 ? Math.round(abs).toLocaleString('sv-SE') : (Math.round(abs * 10) / 10).toLocaleString('sv-SE');
+    return (n > 0.5 ? '+' : n < -0.5 ? '−' : '') + s + u;
+  }
+  col(n) { return n > 0.5 ? GREEN : n < -0.5 ? RED : MUTED; }
+  stats(bets) {
+    const settled = bets.filter(b => b.result);
+    const turnover = settled.reduce((a, b) => a + b.stake, 0);
+    const net = settled.reduce((a, b) => a + this.netto(b), 0);
+    const decided = settled.filter(b => b.result === WIN || b.result === LOSS);
+    const wins = settled.filter(b => b.result === WIN).length;
+    return {
+      n: bets.length, settled: settled.length, turnover: turnover, net: net,
+      roi: turnover ? net / turnover * 100 : 0,
+      hit: decided.length ? wins / decided.length * 100 : 0,
+      avgOdds: settled.length ? settled.reduce((a, b) => a + b.odds, 0) / settled.length : 0,
+      avgStake: settled.length ? turnover / settled.length : 0,
+      live: bets.filter(b => !b.result).length
+    };
+  }
+  me() { return this.state.session ? this.state.users.find(u => u.id === this.state.session) : null; }
+  user(id) { return this.state.users.find(u => u.id === id) || { name: '—' }; }
+  sheetBets(id) { return this.state.bets.filter(b => b.sheetId === id); }
+  dstr(ts) { const d = new Date(ts); const p = n => (n < 10 ? '0' : '') + n; return { date: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()), time: p(d.getHours()) + ':' + p(d.getMinutes()) }; }
+  periodCut(name) {
+    const now = new Date('2026-08-13T23:59:00').getTime();
+    if (name === '30 dagar') return now - 30 * 86400000;
+    if (name === '3 månader') return now - 92 * 86400000;
+    if (name === 'I år') return new Date('2026-01-01').getTime();
+    return 0;
+  }
+  toast(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2600); }
+
+  go(route, patch) { this.setState(Object.assign({ route: route, page: 0 }, patch || {})); }
+  openSheet(id) { this.setState({ route: 'sheet', activeSheet: id, page: 0, f: { sport: 'Alla sporter', league: 'Alla ligor', result: 'Alla', period: 'Allt' } }); }
+  mark(betId, result) {
+    const bets = this.state.bets.map(b => b.id === betId ? Object.assign({}, b, { result: b.result === result ? null : result }) : b);
+    this.set({ bets: bets });
+  }
+
+  chartFor(bets, period) {
+    const cut = this.periodCut(period);
+    const arr = bets.filter(b => b.result && b.ts >= cut).sort((a, b) => a.ts - b.ts);
+    const pts = []; let acc = 0;
+    arr.forEach(b => { acc += this.netto(b); pts.push({ ts: b.ts, v: acc }); });
+    const W = 1000, H = 230;
+    if (pts.length < 2) return { line: '', area: '', yLabels: ['0'], xLabels: [], zeroY: H - 1, aboveH: H + 39, belowH: 41 };
+    const vals = pts.map(p => p.v).concat([0]);
+    let min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    const pad = (max - min) * 0.12 || 100; min -= pad; max += pad;
+    const x = i => i / (pts.length - 1) * W;
+    const y = v => H - (v - min) / (max - min) * H;
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+    const zeroY = y(0);
+    const area = line + ' L' + W + ' ' + zeroY.toFixed(1) + ' L0 ' + zeroY.toFixed(1) + ' Z';
+    const yLabels = [];
+    for (let i = 0; i < 5; i++) { const v = max - (max - min) * i / 4; yLabels.push(Math.round(v / 100) * 100 >= 1000 || Math.round(v) <= -1000 ? Math.round(v / 1000 * 10) / 10 + 'k' : String(Math.round(v / 50) * 50)); }
+    const xLabels = [0, 1, 2, 3].map(i => this.dstr(pts[Math.round(i * (pts.length - 1) / 3)].ts).date.slice(2));
+    this._pts = pts.map((p, i) => ({ ts: p.ts, v: p.v, x: x(i), y: y(p.v) }));
+    return { line: line, area: area, yLabels: yLabels, xLabels: xLabels, zeroY: zeroY.toFixed(1), aboveH: (zeroY + 40).toFixed(1), belowH: (H - zeroY + 40).toFixed(1) };
+  }
+
+  compRows(comp, sortKey) {
+    const joins = this.state.joins.filter(j => j.compId === comp.id);
+    const rows = joins.map(j => {
+      const sh = this.state.sheets.find(s => s.id === j.sheetId);
+      if (!sh) return null;
+      const bets = this.sheetBets(sh.id).filter(b => b.ts >= new Date(comp.start).getTime() && b.ts <= new Date(comp.end + 'T23:59').getTime() && b.odds >= comp.minOdds);
+      const st = this.stats(bets);
+      return { sheet: sh, st: st, move: j.move };
+    }).filter(Boolean);
+    rows.sort((a, b) => sortKey === 'roi' ? b.st.roi - a.st.roi : b.st.net - a.st.net);
+    return rows;
+  }
+
+  ddOf(key, current, options, onPick, labelOf) {
+    const open = this.state.dd === key;
+    return {
+      open: open, border: open ? '#3A4560' : '#232B3E', label: labelOf ? labelOf(current) : current,
+      toggle: () => this.setState({ dd: open ? null : key }),
+      items: options.map(o => ({
+        label: labelOf ? labelOf(o) : o,
+        go: () => { this.setState({ dd: null }); onPick(o); },
+        bg: o === current ? '#1F293C' : 'transparent', fg: o === current ? '#E6EAF2' : '#C3CBDB'
+      }))
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const unitPref = this.props.defaultUnit || 'kr';
+    const showAds = this.props.showAds !== false;
+    const dense = false;
+    if (!s.users) return { booting: true, isLanding: false, isAuth: false, isApp: false };
+    const me = this.me();
+    const isMobile = s.vw < 1080;
+    const showExtra = s.vw >= 1320;
+    const view = isMobile ? 'cards' : (s.view || 'table');
+    const v = {
+      isLanding: s.route === 'landing', isAuth: s.route === 'auth',
+      isApp: ['dash', 'sheet', 'comps', 'comp', 'board', 'profile', 'books'].indexOf(s.route) >= 0,
+      isBooks: s.route === 'books',
+      goBooks: () => this.go('books'),
+      isDash: s.route === 'dash', isSheet: s.route === 'sheet', isComps: s.route === 'comps',
+      isComp: s.route === 'comp', isBoard: s.route === 'board', isProfile: s.route === 'profile',
+      isMobile: isMobile, isDesktop: !isMobile, showAds: showAds, showExtra: showExtra,
+      loggedIn: !!s.session, loggedOut: !s.session,
+      rowPad: dense ? '9px 10px' : '18px 12px',
+      tableView: view === 'table', cardView: view === 'cards',
+      cardPad: dense ? '14px' : '20px',
+      cardCols: isMobile ? '1fr' : (s.vw >= 1500 ? 'repeat(3,minmax(0,1fr))' : 'repeat(2,minmax(0,1fr))'),
+      viewOptions: [{ k: 'table', label: 'Tabell' }, { k: 'cards', label: 'Kort' }].map(o => ({
+        label: o.label, go: () => this.setState({ view: o.k }),
+        bg: view === o.k ? '#1B2436' : 'transparent', fg: view === o.k ? '#E6EAF2' : MUTED
+      })),
+      ad: { topH: isMobile ? '100px' : '90px', topLabel: isMobile ? 'ANNONSPLATS 320×100' : 'ANNONSPLATS 970×90' },
+      showAdd: s.showAdd, showComp: s.showComp, hasToast: !!s.toast, toast: s.toast,
+      hasAuthError: !!s.authError, authError: s.authError,
+      draft: s.draft, cdraft: s.cdraft, hasDraftError: !!s.draftError, draftError: s.draftError,
+      leagueOptions: Object.keys(LEAGUES),
+      goHome: e => { if (e) e.preventDefault(); this.go('landing'); },
+      goLogin: () => this.setState({ route: 'auth', authMode: 'login', authError: '' }),
+      goRegister: () => this.setState({ route: 'auth', authMode: 'register', authError: '' }),
+      setLogin: () => this.setState({ authMode: 'login', authError: '' }),
+      setRegister: () => this.setState({ authMode: 'register', authError: '' }),
+      goDash: () => this.go(s.session ? 'dash' : 'landing'),
+      goComps: e => { if (e) e.preventDefault(); this.go('comps'); },
+      goDemoSheet: () => { this.setState({ session: 'u1', route: 'sheet', activeSheet: 's1' }, () => this.save({})); },
+      isRegister: s.authMode === 'register',
+      authCta: s.authMode === 'register' ? 'Skapa konto' : 'Logga in',
+      authTab: {
+        loginBg: s.authMode === 'login' ? '#1B2436' : 'transparent', loginFg: s.authMode === 'login' ? '#E6EAF2' : MUTED,
+        regBg: s.authMode === 'register' ? '#1B2436' : 'transparent', regFg: s.authMode === 'register' ? '#E6EAF2' : MUTED
+      },
+      form: s.form,
+      onFormName: e => this.setState({ form: Object.assign({}, s.form, { name: e.target.value }) }),
+      onFormEmail: e => this.setState({ form: Object.assign({}, s.form, { email: e.target.value }) }),
+      onFormPw: e => this.setState({ form: Object.assign({}, s.form, { pw: e.target.value }) }),
+      onFormRemember: e => this.setState({ form: Object.assign({}, s.form, { remember: e.target.checked }) }),
+      onForgot: e => { e.preventDefault(); this.toast('Återställningslänk skickad till din e-post.'); },
+      onSubmitAuth: () => {
+        const f = s.form;
+        if (!f.email.trim() || !f.pw.trim()) return this.setState({ authError: 'Fyll i e-post och lösenord.' });
+        if (s.authMode === 'register') {
+          if (!f.name.trim()) return this.setState({ authError: 'Välj ett användarnamn.' });
+          if (s.users.some(u => u.email.toLowerCase() === f.email.toLowerCase())) return this.setState({ authError: 'E-posten är redan registrerad.' });
+          const id = 'u' + (s.users.length + 1 + Math.floor(Math.random() * 900));
+          const users = s.users.concat([{ id: id, name: f.name.trim(), email: f.email.trim(), pw: f.pw, bio: '', trophies: [] }]);
+          const sheets = s.sheets.concat([{ id: 'sh' + id, ownerId: id, name: 'Min första bok', desc: 'Bokför allt du spelar här.', pub: true, unit: unitPref }]);
+          this.setState({ users: users, sheets: sheets, session: id, route: 'dash', authError: '', form: { name: '', email: '', pw: '', remember: true } }, () => { this.save({}); this.toast('Konto skapat. Välkommen!'); });
+        } else {
+          const u = s.users.find(x => x.email.toLowerCase() === f.email.trim().toLowerCase() && x.pw === f.pw);
+          if (!u) return this.setState({ authError: 'Fel e-post eller lösenord.' });
+          this.setState({ session: u.id, route: 'dash', authError: '', form: { name: '', email: '', pw: '', remember: true } }, () => this.save({}));
+        }
+      },
+      onLogout: () => this.setState({ session: null, route: 'landing' }, () => this.save({})),
+      onOpenAdd: () => this.setState({ showAdd: true, draftError: '', draft: this.blankDraft(), dd: null, ddq: '', cal: null }),
+      onCloseAdd: () => this.setState({ showAdd: false, dd: null }),
+      onOpenComp: () => this.setState({ showComp: true }),
+      onCloseComp: () => this.setState({ showComp: false }),
+      prevPage: () => this.setState({ page: Math.max(0, s.page - 1) }),
+      nextPage: () => this.setState({ page: s.page + 1 })
+    };
+    ['league', 'match', 'pick', 'book', 'stake', 'odds', 'note'].forEach(k => {
+      v['onDraft' + k.charAt(0).toUpperCase() + k.slice(1)] = e => this.setState({ draft: Object.assign({}, this.state.draft, { [k]: e.target.value }) });
+    });
+    [['name', 'onCName'], ['desc', 'onCDesc'], ['start', 'onCStart'], ['end', 'onCEnd'], ['minBets', 'onCMinBets'], ['minOdds', 'onCMinOdds'], ['stakeRule', 'onCStakeRule']].forEach(p => {
+      v[p[1]] = e => this.setState({ cdraft: Object.assign({}, this.state.cdraft, { [p[0]]: e.target.value }) });
+    });
+    const p2 = n => (n < 10 ? '0' : '') + n;
+    const MONTHS = ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
+    const todayStr = this.dstr(Date.now()).date;
+    const dDate = s.draft.date || '';
+    const dTime = s.draft.time || '';
+    const calBase = s.cal || (dDate ? dDate.slice(0, 7) : todayStr.slice(0, 7));
+    const cy = parseInt(calBase.slice(0, 4), 10), cm = parseInt(calBase.slice(5, 7), 10) - 1;
+    const first = new Date(cy, cm, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(cy, cm + 1, 0).getDate();
+    const prevDays = new Date(cy, cm, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      const n = i - offset + 1;
+      let y = cy, m = cm, day = n, dim = false;
+      if (n < 1) { m = cm - 1; day = prevDays + n; dim = true; }
+      else if (n > daysInMonth) { m = cm + 1; day = n - daysInMonth; dim = true; }
+      const dt = new Date(y, m, day);
+      const iso = dt.getFullYear() + '-' + p2(dt.getMonth() + 1) + '-' + p2(dt.getDate());
+      const sel = iso === dDate, today = iso === todayStr;
+      cells.push({
+        label: String(day), iso: iso, dim: dim, sel: sel,
+        bg: sel ? 'rgba(102,227,138,.16)' : 'transparent',
+        fg: sel ? GREEN : dim ? '#3F4A60' : today ? CYAN : '#C3CBDB',
+        border: sel ? 'rgba(102,227,138,.4)' : today ? '#2A3346' : 'transparent',
+        go: () => this.setState({ cal: iso.slice(0, 7), draft: Object.assign({}, this.state.draft, { date: iso, time: this.state.draft.time || '19:00' }) })
+      });
+    }
+    const shiftMonth = delta => {
+      const d = new Date(cy, cm + delta, 1);
+      this.setState({ cal: d.getFullYear() + '-' + p2(d.getMonth() + 1) });
+    };
+    const setTime = (h, mi) => this.setState({ draft: Object.assign({}, this.state.draft, { time: h + ':' + mi, date: this.state.draft.date || todayStr }) });
+    const curH = dTime ? dTime.slice(0, 2) : '', curM = dTime ? dTime.slice(3, 5) : '';
+    const hours = []; for (let i = 0; i < 24; i++) hours.push(p2(i));
+    const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+    v.ddWhen = {
+      open: s.dd === 'when', border: s.dd === 'when' ? '#3A4560' : '#232B3E',
+      fg: dDate ? '#E6EAF2' : '#5D6883',
+      label: dDate ? dDate + ' ' + (dTime || '19:00') : 'Välj datum & tid',
+      toggle: () => this.setState({ dd: s.dd === 'when' ? null : 'when' }),
+      monthLabel: MONTHS[cm] + ' ' + cy,
+      prevMonth: () => shiftMonth(-1), nextMonth: () => shiftMonth(1),
+      weekdays: ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön'],
+      days: cells,
+      hours: hours.map(h => ({ label: h, bg: h === curH ? '#1F293C' : 'transparent', fg: h === curH ? GREEN : '#C3CBDB', go: () => setTime(h, curM || '00') })),
+      minutes: minutes.map(m => ({ label: m, bg: m === curM ? '#1F293C' : 'transparent', fg: m === curM ? GREEN : '#C3CBDB', go: () => setTime(curH || '19', m) })),
+      now: () => { const n = new Date(); this.setState({ dd: null, cal: null, draft: Object.assign({}, this.state.draft, { date: this.dstr(n.getTime()).date, time: p2(n.getHours()) + ':' + p2(Math.floor(n.getMinutes() / 5) * 5) }) }); },
+      done: () => this.setState({ dd: null, draft: Object.assign({}, this.state.draft, { date: this.state.draft.date || todayStr, time: this.state.draft.time || '19:00' }) })
+    };
+    const F = FX();
+    const teamHits = F ? F.searchTeams(s.fxQuery, 6) : [];
+    const teamFixtures = F && s.fxTeam ? F.fixturesForTeam(s.fxTeam.team_id, 4) : [];
+    const nowTs = new Date('2026-08-15T12:00:00').getTime();
+    const dayTag = ts => {
+      const diff = Math.round((new Date(this.dstr(ts).date) - new Date(this.dstr(nowTs).date)) / 86400000);
+      return diff === 0 ? 'IDAG' : diff === 1 ? 'IMORGON' : this.dstr(ts).date.slice(5);
+    };
+    const chooseFixture = f => {
+      const dd = this.dstr(f.ts);
+      this.setState({
+        fxTeam: null, fxQuery: '', fxIdx: 0, manualMode: false,
+        draft: Object.assign({}, this.state.draft, {
+          fixture: {
+            fixture_id: f.fixture_id, kickoff: f.kickoff, ts: f.ts, status: f.status,
+            league: f.league.name, leagueLogo: f.league.logo,
+            home: { id: f.teams.home.team_id, name: f.teams.home.name, logo: f.teams.home.logo },
+            away: { id: f.teams.away.team_id, name: f.teams.away.name, logo: f.teams.away.logo }
+          },
+          league: f.league.name, date: dd.date, time: dd.time,
+          match: f.teams.home.name + ' vs ' + f.teams.away.name, pick: '', pickSel: ''
+        })
+      }, () => setTimeout(() => this.setState({ dd: 'pick' }), 80));
+    };
+    v.picker = {
+      hasMatch: !!s.draft.fixture, searching: !s.draft.fixture && !s.manualMode, manual: !s.draft.fixture && s.manualMode,
+      query: s.fxQuery,
+      onQuery: e => this.setState({ fxQuery: e.target.value, fxTeam: null, fxIdx: 0 }),
+      onKey: e => {
+        if (!teamHits.length) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ fxIdx: Math.min(teamHits.length - 1, s.fxIdx + 1) }); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ fxIdx: Math.max(0, s.fxIdx - 1) }); }
+        else if (e.key === 'Enter') { e.preventDefault(); this.setState({ fxTeam: teamHits[s.fxIdx] || teamHits[0] }); }
+      },
+      hasTeams: !s.fxTeam && teamHits.length > 0,
+      noHits: !s.fxTeam && s.fxQuery.trim().length > 1 && teamHits.length === 0,
+      teams: teamHits.map((t, i) => ({
+        name: t.name, league: t.league, logo: t.logo,
+        bg: i === s.fxIdx ? '#1B2436' : '#0F1420', border: i === s.fxIdx ? '#3A4560' : '#232B3E',
+        go: () => this.setState({ fxTeam: t, fxIdx: i })
+      })),
+      hasFixtures: !!s.fxTeam && teamFixtures.length > 0,
+      teamName: s.fxTeam ? s.fxTeam.name : '',
+      fixtures: teamFixtures.map(f => {
+        const tag = dayTag(f.ts), today = tag === 'IDAG';
+        return {
+          home: f.teams.home.name, away: f.teams.away.name,
+          homeLogo: f.teams.home.logo, awayLogo: f.teams.away.logo,
+          league: f.league.name, leagueLogo: f.league.logo, time: this.dstr(f.ts).time, day: tag,
+          dayBg: today ? 'rgba(53,214,245,.16)' : '#1B2436', dayFg: today ? CYAN : '#5D6883',
+          go: () => chooseFixture(f)
+        };
+      }),
+      chosen: s.draft.fixture ? {
+        home: s.draft.fixture.home.name, away: s.draft.fixture.away.name,
+        homeLogo: s.draft.fixture.home.logo, awayLogo: s.draft.fixture.away.logo,
+        league: s.draft.fixture.league, leagueLogo: s.draft.fixture.leagueLogo,
+        when: this.dstr(s.draft.fixture.ts).date + ' ' + this.dstr(s.draft.fixture.ts).time,
+        tag: 'fixture_id ' + s.draft.fixture.fixture_id + ' · rättas automatiskt när funktionen släpps'
+      } : {},
+      reset: () => this.setState({ manualMode: false, fxQuery: '', fxTeam: null, fxIdx: 0, draft: Object.assign({}, this.state.draft, { fixture: null, match: '' }) }),
+      goManual: () => this.setState({ manualMode: true, fxQuery: '', fxTeam: null })
+    };
+    v.pickCustom = s.draft.pickSel === '__custom__';
+    v.bookCustom = s.draft.bookSel === '__custom__';
+    v.ddq = s.ddq || '';
+    v.onDdq = e => this.setState({ ddq: e.target.value });
+    const q = (s.ddq || '').trim().toLowerCase();
+    const openDd = name => this.setState({ dd: this.state.dd === name ? null : name, ddq: '' });
+    const setLeague = league => {
+      const same = LEAGUES[league] === LEAGUES[this.state.draft.league];
+      this.setState({ dd: null, draft: Object.assign({}, this.state.draft, same ? { league: league } : { league: league, pickSel: '', pick: '' }) });
+    };
+    v.ddLeague = {
+      open: s.dd === 'league', border: s.dd === 'league' ? '#3A4560' : '#232B3E',
+      toggle: () => openDd('league'),
+      items: Object.keys(LEAGUES).map(l => ({
+        label: l, go: () => setLeague(l),
+        bg: l === s.draft.league ? '#1F293C' : 'transparent', fg: l === s.draft.league ? '#E6EAF2' : '#C3CBDB'
+      }))
+    };
+    const pickGroups = (PICK_GROUPS[LEAGUES[s.draft.league]] || PICK_GROUPS.Fotboll)
+      .map(g => ({ label: g.label, items: g.options.filter(o => !q || o.toLowerCase().indexOf(q) >= 0) }))
+      .filter(g => g.items.length)
+      .map(g => ({
+        label: g.label, items: g.items.map(o => ({
+          label: o, go: () => this.setState({ dd: null, ddq: '', draft: Object.assign({}, this.state.draft, { pickSel: o, pick: o }) }),
+          bg: o === s.draft.pick ? '#1F293C' : 'transparent', fg: o === s.draft.pick ? GREEN : '#C3CBDB'
+        }))
+      }));
+    v.ddPick = {
+      open: s.dd === 'pick', border: s.dd === 'pick' ? '#3A4560' : '#232B3E',
+      fg: s.draft.pick || v.pickCustom ? '#E6EAF2' : '#5D6883',
+      label: v.pickCustom ? (s.draft.pick || 'Eget spel') : (s.draft.pick || 'Välj spel …'),
+      toggle: () => openDd('pick'), groups: pickGroups, empty: pickGroups.length === 0,
+      custom: () => this.setState({ dd: null, ddq: '', draft: Object.assign({}, this.state.draft, { pickSel: '__custom__', pick: '' }) })
+    };
+    const books = ALL_BOOKS.filter(b => !q || b.toLowerCase().indexOf(q) >= 0);
+    v.ddBook = {
+      open: s.dd === 'book', border: s.dd === 'book' ? '#3A4560' : '#232B3E',
+      fg: s.draft.book || v.bookCustom ? '#E6EAF2' : '#5D6883',
+      label: v.bookCustom ? (s.draft.book || 'Eget bolag') : (s.draft.book || 'Välj spelbolag …'),
+      toggle: () => openDd('book'), empty: books.length === 0,
+      items: books.map(b => ({
+        label: b, go: () => this.setState({ dd: null, ddq: '', draft: Object.assign({}, this.state.draft, { bookSel: b, book: b }) }),
+        bg: b === s.draft.book ? '#1F293C' : 'transparent', fg: b === s.draft.book ? '#E6EAF2' : '#C3CBDB'
+      })),
+      custom: () => this.setState({ dd: null, ddq: '', draft: Object.assign({}, this.state.draft, { bookSel: '__custom__', book: '' }) })
+    };
+    v.onSaveBet = () => {
+      const d = this.state.draft;
+      const stake = parseFloat(String(d.stake).replace(',', '.'));
+      const odds = parseFloat(String(d.odds).replace(',', '.'));
+      if (!d.match.trim()) return this.setState({ draftError: 'Sök fram en match eller ange den manuellt.' });
+      if (!d.pick.trim()) return this.setState({ draftError: d.pickSel === '__custom__' ? 'Skriv in ditt spel.' : 'Välj ett spel i listan.' });
+      if (!(stake > 0)) return this.setState({ draftError: 'Insatsen måste vara ett positivt tal.' });
+      if (!(odds > 1)) return this.setState({ draftError: 'Odds måste vara högre än 1.00.' });
+      const ts = d.date ? new Date(d.date + 'T' + (d.time || '19:00')).getTime() : Date.now();
+      if (isNaN(ts)) return this.setState({ draftError: 'Välj datum och tid för matchen.' });
+      const sheetId = this.state.activeSheet && this.state.sheets.some(x => x.id === this.state.activeSheet && x.ownerId === this.state.session)
+        ? this.state.activeSheet
+        : (this.state.sheets.find(x => x.ownerId === this.state.session) || {}).id;
+      if (!sheetId) return this.setState({ draftError: 'Du har inget spreadsheet att spara i.' });
+      const bet = { id: 'b' + Date.now(), sheetId: sheetId, ts: ts, sport: LEAGUES[d.league], league: d.league, match: d.match.trim(), pick: d.pick.trim(), book: d.book.trim(), stake: stake, odds: odds, result: null, note: d.note.trim() };
+      this.setState({ bets: [bet].concat(this.state.bets), showAdd: false, draft: this.blankDraft(), draftError: '', route: 'sheet', activeSheet: sheetId }, () => { this.save({}); this.toast('Spelet är bokfört.'); });
+    };
+    v.ddStakeRule = this.ddOf('stakeRule', s.cdraft.stakeRule,
+      ['Fri insats, ROI avgör', 'Fast startbank 10 000 kr', 'Fasta 100 kr per spel'],
+      val => this.setState({ cdraft: Object.assign({}, this.state.cdraft, { stakeRule: val }) }));
+    v.onSaveComp = () => {
+      const c = this.state.cdraft;
+      if (!c.name.trim()) return this.toast('Tävlingen behöver ett namn.');
+      const comp = { id: 'c' + Date.now(), name: c.name.trim(), desc: c.desc.trim() || 'Ingen beskrivning.', start: c.start, end: c.end, minBets: parseInt(c.minBets, 10) || 0, minOdds: parseFloat(String(c.minOdds).replace(',', '.')) || 1, stakeRule: c.stakeRule, ownerId: this.state.session };
+      this.setState({ comps: this.state.comps.concat([comp]), showComp: false, route: 'comp', activeComp: comp.id }, () => { this.save({}); this.toast('Tävlingen är skapad.'); });
+    };
+
+    const publicSheets = s.sheets.filter(x => x.pub);
+    const lsheet = publicSheets.map(sh => ({ sh: sh, st: this.stats(this.sheetBets(sh.id)) })).sort((a, b) => b.st.roi - a.st.roi);
+    if (v.isLanding) {
+      const top = lsheet[0];
+      const rows = top ? this.sheetBets(top.sh.id).filter(b => b.result).sort((a, b) => b.ts - a.ts).slice(0, 5).map(b => ({
+        homeLogo: this.logoOf(b, 'home'), awayLogo: this.logoOf(b, 'away'), match: b.match, pick: b.pick, odds: b.odds.toFixed(2),
+        netto: this.fmt(this.netto(b), 'kr'), color: this.col(this.netto(b))
+      })) : [];
+      const allSt = this.stats(s.bets);
+      v.landing = {
+        bets: s.bets.length.toLocaleString('sv-SE'), sheets: String(publicSheets.length),
+        turnover: Math.round(allSt.turnover / 1000) + 'k kr',
+        topSheetName: top ? top.sh.name : '', topSheetOwner: top ? this.user(top.sh.ownerId).name : '',
+        topSheetNetto: top ? this.fmt(top.st.net, 'kr') : '', topSheetRoi: top ? top.st.roi.toFixed(1) + '%' : '',
+        rows: rows,
+        lb: lsheet.slice(0, 3).map((x, i) => ({ rank: String(i + 1), name: this.user(x.sh.ownerId).name, roi: x.st.roi.toFixed(1) + '%' })),
+        books: ['Unibet', 'Bet365', 'Betsson', 'Pinnacle', 'ComeOn', 'LeoVegas', 'Svenska Spel', 'Betfair', 'NordicBet', '+ egna'],
+        steps: [
+          { no: '01', title: 'Lägg in spelet', body: 'Datum, liga, match, spelval, insats och odds. Spelvalen ligger färdiga per sport, och spelbolaget väljer du i listan eller skriver själv.', img: 'SKÄRMBILD: formuläret Lägg nytt spel' },
+          { no: '02', title: 'Rätta med ett klick', body: 'När matchen är klar trycker du W, L, P eller V direkt på raden. Netto, ROI och grafen räknas om samma sekund.', img: 'SKÄRMBILD: raden med rättningsknappar' },
+          { no: '03', title: 'Läs av kurvan', body: 'Filtrera på sport, liga, period eller rättning och se exakt vilka spel som bär boken — och vilka som kostar dig pengar.', img: 'SKÄRMBILD: ackumulerat netto över tid' }
+        ],
+        features: [
+          'Ackumulerat netto över tid, grönt över noll och rött under.',
+          'Filtrera fram en enskild liga och se ROI bara för den.',
+          'Flera spreadsheets per konto, en per strategi.',
+          'Publik bok som alla kan följa, eller låst bara för dig.'
+        ],
+        boardTop: lsheet.slice(0, 5).map((x, i) => ({
+          rank: String(i + 1), rankColor: i < 3 ? ['#FFD166', '#C9D1DE', '#D08A55'][i] : MUTED,
+          name: x.sh.name, owner: this.user(x.sh.ownerId).name, n: String(x.st.n), hit: x.st.hit.toFixed(1) + '%',
+          roi: x.st.roi.toFixed(1) + '%', roiColor: this.col(x.st.roi),
+          netto: this.fmt(x.st.net, 'kr'), nettoColor: this.col(x.st.net)
+        })),
+        comp: (() => {
+          const c = s.comps[0];
+          const rows = this.compRows(c, 'roi');
+          return {
+            name: c.name, desc: c.desc, period: c.start + ' → ' + c.end, count: String(rows.length),
+            rows: rows.slice(0, 4).map((r, i) => ({
+              rank: String(i + 1), rankColor: i < 3 ? ['#FFD166', '#C9D1DE', '#D08A55'][i] : MUTED,
+              owner: this.user(r.sheet.ownerId).name, roi: r.st.roi.toFixed(1) + '%', roiColor: this.col(r.st.roi)
+            }))
+          };
+        })(),
+        quotes: [
+          { text: 'Jag trodde jag låg plus på Champions League. Efter två månaders bokföring visade det sig att hela vinsten kom från SHL och att CL kostade mig 4 000 kr.', name: 'Emma S.', initial: 'E', meta: 'SHL-boken · 66 spel' },
+          { text: 'Att rätta direkt på raden gör att jag faktiskt håller boken uppdaterad. Tidigare hade jag tre halvfyllda kalkylark som jag aldrig orkade slå ihop.', name: 'Viktor A.', initial: 'V', meta: 'Allsvenskt · 58 spel' },
+          { text: 'Tävlingarna är det som gör det roligt. Att se sin ROI mot fem andra varje morgon skärper urvalet mer än något annat jag testat.', name: 'Sara N.', initial: 'S', meta: 'CL & storligorna · 47 spel' }
+        ],
+        faq: [
+          { q: 'Kostar det något?', a: 'Nej. Konto, spreadsheets och statistik är gratis. Tjänsten finansieras av annonsplatserna.' },
+          { q: 'Förmedlar ni spel?', a: 'Nej. Spelbok är ett bokföringsverktyg. Du spelar hos ditt spelbolag och bokför resultatet här.' },
+          { q: 'Kan andra se mina spel?', a: 'Bara om du väljer det. Varje spreadsheet är antingen publikt, där alla kan läsa men ingen redigera, eller låst så att bara du ser det.' },
+          { q: 'Kan jag räkna i units istället för kronor?', a: 'Ja. Enheten ställs in per spreadsheet i profilen, så du kan köra kronor i en bok och units i en annan.' },
+          { q: 'Hur räknas netto ut?', a: 'WIN ger insats × (odds − 1), LOSS ger minus insatsen, PUSH och VOID ger noll. Ofärdiga spel räknas inte in i ROI.' }
+        ]
+      };
+    }
+
+    const BM = window.SBBookmakers || [];
+    const medalC = ['#FFD166', '#C9D1DE', '#D08A55'];
+    const bookRow = b => ({
+      rank: String(b.rank), logo: b.logo, brand: b.brand,
+      bonusValue: b.bonusValueText, bonusTerms: b.wagering === '–' ? 'Inget omsättningskrav' : b.wagering + ' omsättningskrav',
+      ratingShort: b.rating.toFixed(1).replace('.', ','), starIcon: (window.SBMarks || {}).starbadge,
+      ctaMain: b.bonusValue > 0 ? 'HÄMTA BONUS' : 'TILL SPELBOLAGET',
+      trackingUrl: b.trackingUrl
+    });
+    v.topBooks = BM.slice(0, 3).map(bookRow);
+    if (v.isBooks) {
+      const M = window.SBMarks || {};
+      const sort = s.bookSortBy || 'Vårt betyg';
+      const pill = s.bookPill || 'Populära';
+      const filtered = BM.filter(b => (b.tags || []).indexOf(pill) >= 0)
+        .slice().sort((a, b) =>
+          sort === 'Högst bonus' ? b.bonusValue - a.bonusValue
+            : sort === 'A–Ö' ? a.name.localeCompare(b.name, 'sv')
+              : b.rating - a.rating);
+      const cols = s.vw >= 1080 ? 'repeat(4,minmax(0,1fr))' : s.vw >= 780 ? 'repeat(2,minmax(0,1fr))' : '1fr';
+      v.books = {
+        total: String(BM.length), cols: cols,
+        pills: ['Populära', 'Nya spelbolag', 'Bonus', 'Free bets', 'Snabba uttag', 'Med Swish', 'Livebetting', 'Odds boost'].map(p => {
+          const on = pill === p;
+          return {
+            label: p, go: () => this.setState({ bookPill: p }),
+            bg: on ? 'rgba(102,227,138,.14)' : '#131826', fg: on ? GREEN : '#C3CBDB',
+            border: on ? 'rgba(102,227,138,.45)' : '#232B3E'
+          };
+        }),
+        sortDd: this.ddOf('booksort', sort, ['Vårt betyg', 'Högst bonus', 'A–Ö'],
+          val => this.setState({ bookSortBy: val }), val => 'Filter: ' + val),
+        cards: filtered.map(b => ({
+          rank: String(b.rank), name: b.name, logo: b.logo, brand: b.brand,
+          border: b.rank === 1 ? 'rgba(255,209,102,.5)' : 'rgba(230,234,242,.10)',
+          shadow: b.rank === 1 ? '0 0 40px rgba(255,209,102,.10)' : '0 10px 30px rgba(0,0,0,.28)',
+          ratingShort: b.rating.toFixed(1).replace('.', ','), starIcon: M.starbadge,
+          ratingHelp: 'Betyget vägs av odds, utbud, betalningar och support.',
+          hasBadge: !!b.badge, badge: b.badge,
+          bonusValue: b.bonusValueText, bonusTerms: b.wagering === '–' ? 'Inget omsättningskrav' : b.wagering + ' omsättningskrav',
+          hasBonus2: !!b.bonus2Label, bonus2Label: b.bonus2Label, bonus2Value: b.bonus2Value, bonus2Terms: b.bonus2Terms,
+          bonusCols: b.bonus2Label ? '1fr 1fr' : '1fr',
+          checkIcon: M.check, uspLabel: 'Uttagstest:', uspValue: b.payoutTest,
+          ctaMain: b.bonusValue > 0 ? 'HÄMTA BONUS' : 'TILL SPELBOLAGET',
+          trackingUrl: b.trackingUrl, terms: b.terms, license: b.license,
+          marks: [
+            { label: 'Swish', on: b.hasSwish }, { label: 'Trustly', on: b.hasTrustly },
+            { label: 'BankID', on: b.hasBankId }, { label: 'Licens', on: b.hasLicense }
+          ].map(m => ({
+            label: m.label, logo: (window.SBPayments || {})[m.label],
+            opacity: m.on ? '1' : '.3', color: m.on ? '#333A45' : '#9AA3AF'
+          })),
+          review: b.review, plus: b.plus, minus: b.minus[0],
+          open: (s.openBook || null) === b.name,
+          moreLabel: (s.openBook || null) === b.name ? 'Stäng recension' : 'Läs recension',
+          toggle: () => this.setState({ openBook: (this.state.openBook === b.name ? null : b.name) })
+        }))
+      };
+    }
+
+    if (v.isApp && !me) {
+      v.me = { name: 'Gäst', initial: 'G', nettoStr: '' };
+      v.nav = [{ label: 'Spelbolag', route: 'books' }].map(n => ({
+        label: n.label, go: () => this.go(n.route),
+        bg: s.route === n.route ? '#1B2436' : 'transparent', fg: s.route === n.route ? '#E6EAF2' : MUTED
+      }));
+    }
+
+    if (v.isApp && me) {
+      const myBets = s.bets.filter(b => s.sheets.some(x => x.id === b.sheetId && x.ownerId === me.id));
+      const myst = this.stats(myBets);
+      v.me = { name: me.name, initial: me.name.charAt(0).toUpperCase(), nettoStr: this.fmt(myst.net, unitPref) };
+      v.nav = [
+        { label: 'Dashboard', route: 'dash' }, { label: 'Tävlingar', route: 'comps' },
+        { label: 'Topplistor', route: 'board' }, { label: 'Spelbolag', route: 'books' }, { label: 'Profil', route: 'profile' }
+      ].map(n => ({
+        label: n.label, go: () => this.setState({ route: n.route, activeUser: n.route === 'profile' ? me.id : null, page: 0 }),
+        bg: s.route === n.route ? '#1B2436' : 'transparent', fg: s.route === n.route ? '#E6EAF2' : MUTED
+      }));
+
+      if (v.isDash) {
+        v.dashKpis = [
+          { label: 'Netto', value: this.fmt(myst.net, unitPref), color: this.col(myst.net) },
+          { label: 'ROI', value: myst.roi.toFixed(1) + '%', color: this.col(myst.roi) },
+          { label: 'Spel', value: String(myst.n), color: '#E6EAF2' },
+          { label: 'Hitrate', value: myst.hit.toFixed(1) + '%', color: '#E6EAF2' },
+          { label: 'Aktiva spel', value: String(myst.live), color: myst.live ? CYAN : MUTED }
+        ];
+        v.mySheets = s.sheets.filter(x => x.ownerId === me.id).map(sh => {
+          const st = this.stats(this.sheetBets(sh.id));
+          return {
+            name: sh.name, desc: sh.desc, netto: this.fmt(st.net, sh.unit || unitPref), nettoColor: this.col(st.net),
+            meta: st.n + ' spel · ROI ' + st.roi.toFixed(1) + '%',
+            badge: sh.pub ? 'PUBLIK' : 'LÅST', badgeBg: sh.pub ? 'rgba(102,227,138,.14)' : '#1B2436', badgeFg: sh.pub ? GREEN : MUTED,
+            open: () => this.openSheet(sh.id)
+          };
+        });
+        v.recent = myBets.filter(b => b.result).sort((a, b) => b.ts - a.ts).slice(0, 8).map(b => ({
+          match: b.match, pick: b.pick, odds: b.odds.toFixed(2), netto: this.fmt(this.netto(b), unitPref), color: this.col(this.netto(b)),
+          homeLogo: this.logoOf(b, 'home'), awayLogo: this.logoOf(b, 'away')
+        }));
+      }
+
+      if (v.isSheet) {
+        const sh = s.sheets.find(x => x.id === s.activeSheet) || s.sheets[0];
+        const unit = sh.unit || unitPref;
+        const canEdit = sh.ownerId === me.id;
+        const all = this.sheetBets(sh.id);
+        const f = s.f;
+        const cut = this.periodCut(f.period);
+        const filtered = all.filter(b =>
+          (f.sport === 'Alla sporter' || b.sport === f.sport) &&
+          (f.league === 'Alla ligor' || b.league === f.league) &&
+          (f.result === 'Alla' || (f.result === 'Levande' ? !b.result : b.result === f.result)) &&
+          b.ts >= cut
+        );
+        const st = this.stats(filtered);
+        v.sheet = {
+          name: sh.name, desc: sh.desc, owner: this.user(sh.ownerId).name, canEdit: canEdit,
+          badge: sh.pub ? 'PUBLIK' : 'LÅST', badgeBg: sh.pub ? 'rgba(102,227,138,.14)' : '#1B2436', badgeFg: sh.pub ? GREEN : MUTED,
+          openOwner: e => { e.preventDefault(); this.setState({ route: 'profile', activeUser: sh.ownerId }); }
+        };
+        v.stats = [
+          { label: 'Spel', value: String(st.n), color: '#E6EAF2', size: '24px' },
+          { label: 'Omsättning', value: this.fmt(st.turnover, unit).replace('+', ''), color: '#E6EAF2', size: '24px' },
+          { label: 'Netto', value: this.fmt(st.net, unit), color: this.col(st.net), size: '34px' },
+          { label: 'ROI', value: st.roi.toFixed(1) + '%', color: this.col(st.roi), size: '28px' },
+          { label: 'Hitrate', value: st.hit.toFixed(1) + '%', color: '#E6EAF2', size: '24px' },
+          { label: 'Snittodds', value: st.avgOdds.toFixed(2), color: '#E6EAF2', size: '24px' },
+          { label: 'Snittinsats', value: this.fmt(st.avgStake, unit).replace('+', ''), color: '#E6EAF2', size: '24px' }
+        ];
+        v.chart = this.chartFor(filtered, s.chartPeriod);
+        const pts = this._pts || [];
+        v.chart.onMove = e => {
+          const box = e.currentTarget.getBoundingClientRect();
+          if (!box.width || !pts.length) return;
+          const rel = (e.clientX - box.left) / box.width * 1000;
+          let best = 0;
+          for (let i = 1; i < pts.length; i++) if (Math.abs(pts[i].x - rel) < Math.abs(pts[best].x - rel)) best = i;
+          if (this.state.hoverIdx !== best) this.setState({ hoverIdx: best });
+        };
+        v.chart.onLeave = () => this.setState({ hoverIdx: null });
+        const hi = s.hoverIdx != null && pts[s.hoverIdx] ? pts[s.hoverIdx] : null;
+        v.chart.hover = !!hi;
+        if (hi) {
+          v.chart.hoverX = hi.x.toFixed(1);
+          v.chart.hoverLeft = (hi.x / 10).toFixed(2) + '%';
+          v.chart.hoverTop = hi.y.toFixed(1) + 'px';
+          v.chart.hoverValue = this.fmt(hi.v, unit);
+          v.chart.hoverColor = this.col(hi.v);
+          v.chart.hoverDate = this.dstr(hi.ts).date;
+        }
+        v.periods = ['30 dagar', '3 månader', 'I år', 'Allt'].map(p => ({
+          label: p, go: () => this.setState({ chartPeriod: p }),
+          bg: s.chartPeriod === p ? '#1B2436' : 'transparent', fg: s.chartPeriod === p ? '#E6EAF2' : MUTED
+        }));
+        const leaguesIn = ['Alla ligor'].concat(Object.keys(LEAGUES).filter(l => all.some(b => b.league === l)));
+        const setF = k => val => this.setState({ f: Object.assign({}, this.state.f, { [k]: val }), page: 0 });
+        v.filters = [
+          { label: 'Sport', dd: this.ddOf('f-sport', f.sport, ['Alla sporter'].concat(Object.keys(SPORTS)), setF('sport')) },
+          { label: 'Liga', dd: this.ddOf('f-league', f.league, leaguesIn, setF('league')) },
+          { label: 'Rättning', dd: this.ddOf('f-result', f.result, ['Alla', WIN, LOSS, PUSH, VOID, 'Levande'], setF('result')) },
+          { label: 'Period', dd: this.ddOf('f-period', f.period, ['30 dagar', '3 månader', 'I år', 'Allt'], setF('period')) }
+        ];
+        const cols = [
+          { key: 'date', label: 'Datum & tid', align: 'left' },
+          { key: 'league', label: 'Liga', align: 'left' }, { key: 'match', label: 'Match', align: 'left' },
+          { key: 'pick', label: 'Spel', align: 'left' },
+          { key: 'book', label: 'Bolag', align: 'left', extra: true },
+          { key: 'stake', label: 'Insats', align: 'right' }, { key: 'odds', label: 'Odds', align: 'right' },
+          { key: 'result', label: 'Rättning', align: 'left' }, { key: 'netto', label: 'Netto', align: 'right' },
+          { key: 'status', label: 'Status', align: 'left' },
+          { key: 'note', label: 'Notering', align: 'left', extra: true }
+        ].filter(c => showExtra || !c.extra);
+        v.columns = cols.map(c => ({
+          label: c.label, align: c.align,
+          arrow: s.sort.key === c.key ? (s.sort.dir === 'desc' ? ' ↓' : ' ↑') : '',
+          sort: () => this.setState({ sort: { key: c.key, dir: s.sort.key === c.key && s.sort.dir === 'desc' ? 'asc' : 'desc' }, page: 0 })
+        }));
+        const keyOf = b => {
+          const k = s.sort.key;
+          if (k === 'date') return b.ts;
+          if (k === 'netto') return this.netto(b);
+          if (k === 'stake') return b.stake;
+          if (k === 'odds') return b.odds;
+          if (k === 'status') return b.result ? 1 : 0;
+          if (k === 'result') return b.result || 'ZZ';
+          return String(b[k] || '').toLowerCase();
+        };
+        const sorted = filtered.slice().sort((a, b) => {
+          const ka = keyOf(a), kb = keyOf(b);
+          const c = ka < kb ? -1 : ka > kb ? 1 : 0;
+          return s.sort.dir === 'desc' ? -c : c;
+        });
+        const per = 20;
+        const pages = Math.max(1, Math.ceil(sorted.length / per));
+        const page = Math.min(s.page, pages - 1);
+        v.pageInfo = 'Sida ' + (page + 1) + ' av ' + pages;
+        v.rowInfo = sorted.length + ' av ' + all.length + ' spel';
+        const RES = { WIN: { bg: 'rgba(102,227,138,.16)', fg: GREEN, border: 'rgba(102,227,138,.4)' }, LOSS: { bg: 'rgba(255,92,108,.16)', fg: RED, border: 'rgba(255,92,108,.4)' }, PUSH: { bg: 'rgba(255,184,77,.16)', fg: AMBER, border: 'rgba(255,184,77,.4)' }, VOID: { bg: 'rgba(138,148,171,.16)', fg: MUTED, border: 'rgba(138,148,171,.4)' } };
+        v.rows = sorted.slice(page * per, page * per + per).map((b, i) => {
+          const d = this.dstr(b.ts), net = this.netto(b);
+          const r = RES[b.result] || {};
+          return {
+            date: d.date, time: d.time, sport: b.sport, sportCode: SPORTS[b.sport].code, sportBg: SPORTS[b.sport].bg, sportFg: SPORTS[b.sport].fg,
+            league: b.league, match: b.match, pick: b.pick, book: b.book || '—',
+            leagueLogo: b.leagueLogo || (FX() ? FX().placeholder(b.sport) : ''),
+            homeLogo: this.logoOf(b, 'home'), awayLogo: this.logoOf(b, 'away'),
+            homeName: this.teamNames(b).home, awayName: this.teamNames(b).away,
+            statusLabel: b.status === 'LIVE' ? 'LIVE' : b.result ? 'FT' : 'NS',
+            autoLabel: b.fixtureId ? '⚡ AUTO-RÄTTAS' : 'MANUELL RÄTTNING',
+            autoTitle: b.fixtureId ? 'Kopplad till fixture ' + b.fixtureId + ' — rättas automatiskt när funktionen släpps' : 'Manuellt inlagt spel utan matchkoppling',
+            autoBg: b.fixtureId ? 'rgba(76,141,255,.14)' : '#1B2436',
+            autoFg: b.fixtureId ? '#4C8DFF' : MUTED,
+            stake: this.fmt(b.stake, unit).replace('+', ''), odds: b.odds.toFixed(3),
+            netto: b.result ? this.fmt(net, unit) : '—', nettoColor: b.result ? this.col(net) : MUTED,
+            isLive: !b.result, isFt: !!b.result, note: b.note || '',
+            canEdit: canEdit, readOnly: !canEdit,
+            resLabel: b.result || 'ÖPPEN', resBg: r.bg || '#1B2436', resFg: r.fg || MUTED,
+            bg: i % 2 ? '#151B29' : 'transparent',
+            marks: [WIN, LOSS, PUSH, VOID].map(m => ({
+              label: m === WIN ? 'W' : m === LOSS ? 'L' : m === PUSH ? 'P' : 'V', title: m,
+              go: () => this.mark(b.id, m),
+              bg: b.result === m ? RES[m].bg : 'transparent',
+              fg: b.result === m ? RES[m].fg : '#5D6883',
+              border: b.result === m ? RES[m].border : '#2A3346'
+            }))
+          };
+        });
+        const byLeague = {};
+        filtered.filter(b => b.result).forEach(b => { byLeague[b.league] = byLeague[b.league] || { n: 0, net: 0 }; byLeague[b.league].n++; byLeague[b.league].net += this.netto(b); });
+        v.leagueBreakdown = Object.keys(byLeague).sort((a, b) => byLeague[b].net - byLeague[a].net).map(l => ({
+          league: l, n: byLeague[l].n + ' spel', netto: this.fmt(byLeague[l].net, unit), color: this.col(byLeague[l].net)
+        }));
+        v.otherSheets = lsheet.filter(x => x.sh.id !== sh.id).slice(0, 4).map(x => ({
+          name: x.sh.name, owner: this.user(x.sh.ownerId).name, roi: x.st.roi.toFixed(1) + '%', color: this.col(x.st.roi), open: () => this.openSheet(x.sh.id)
+        }));
+      }
+
+      if (v.isComps) {
+        const today = new Date('2026-08-13').getTime();
+        v.comps = s.comps.map(c => {
+          const startTs = new Date(c.start).getTime(), endTs = new Date(c.end).getTime();
+          const status = today < startTs ? 'ÖPPEN' : today > endTs ? 'AVSLUTAD' : 'PÅGÅR';
+          const joined = s.joins.some(j => j.compId === c.id && s.sheets.some(x => x.id === j.sheetId && x.ownerId === me.id));
+          return {
+            name: c.name, desc: c.desc, period: c.start + ' → ' + c.end,
+            count: String(s.joins.filter(j => j.compId === c.id).length),
+            rules: 'Minst ' + c.minBets + ' spel · odds från ' + c.minOdds.toFixed(2) + ' · ' + c.stakeRule,
+            status: status,
+            statusBg: status === 'PÅGÅR' ? 'rgba(53,214,245,.14)' : status === 'ÖPPEN' ? 'rgba(102,227,138,.14)' : '#1B2436',
+            statusFg: status === 'PÅGÅR' ? CYAN : status === 'ÖPPEN' ? GREEN : MUTED,
+            open: () => this.setState({ route: 'comp', activeComp: c.id }),
+            joinLabel: joined ? 'Med' : 'Gå med', joinBg: joined ? '#1B2436' : GREEN, joinFg: joined ? MUTED : '#08140C',
+            join: () => this.joinComp(c.id)
+          };
+        });
+      }
+
+      if (v.isComp) {
+        const c = s.comps.find(x => x.id === s.activeComp) || s.comps[0];
+        const rows = this.compRows(c, s.compSort);
+        const joined = s.joins.some(j => j.compId === c.id && s.sheets.some(x => x.id === j.sheetId && x.ownerId === me.id));
+        const medal = ['#FFD166', '#C9D1DE', '#D08A55'];
+        v.comp = {
+          name: c.name, desc: c.desc,
+          joinLabel: joined ? 'Du är med' : 'Gå med med mitt spreadsheet', joinBg: joined ? '#1B2436' : GREEN, joinFg: joined ? MUTED : '#08140C',
+          join: () => this.joinComp(c.id),
+          sortRoi: () => this.setState({ compSort: 'roi' }), sortNetto: () => this.setState({ compSort: 'net' }),
+          roiBg: s.compSort === 'roi' ? '#1B2436' : 'transparent', roiFg: s.compSort === 'roi' ? '#E6EAF2' : MUTED,
+          nettoBg: s.compSort === 'net' ? '#1B2436' : 'transparent', nettoFg: s.compSort === 'net' ? '#E6EAF2' : MUTED,
+          ruleList: [
+            { k: 'Period', v: c.start + ' → ' + c.end }, { k: 'Minsta antal spel', v: String(c.minBets) },
+            { k: 'Minsta odds', v: c.minOdds.toFixed(2) }, { k: 'Insats', v: c.stakeRule },
+            { k: 'Skapad av', v: this.user(c.ownerId).name }
+          ],
+          rows: rows.map((r, i) => ({
+            rank: String(i + 1), rankColor: i < 3 ? medal[i] : MUTED,
+            move: r.move > 0 ? '▲' + r.move : r.move < 0 ? '▼' + Math.abs(r.move) : '–',
+            moveColor: r.move > 0 ? GREEN : r.move < 0 ? RED : '#5D6883',
+            sheet: r.sheet.name, owner: this.user(r.sheet.ownerId).name, n: String(r.st.n),
+            primary: s.compSort === 'roi' ? r.st.roi.toFixed(1) + '%' : this.fmt(r.st.net, unitPref),
+            secondary: s.compSort === 'roi' ? this.fmt(r.st.net, unitPref) : 'ROI ' + r.st.roi.toFixed(1) + '%',
+            color: this.col(s.compSort === 'roi' ? r.st.roi : r.st.net),
+            bg: r.sheet.ownerId === me.id ? 'rgba(76,141,255,.07)' : 'transparent',
+            open: () => this.openSheet(r.sheet.id)
+          }))
+        };
+      }
+
+      if (v.isBoard) {
+        const months = ['Alla', '2026-08', '2026-07', '2026-06', '2026-05', '2026-04', '2026-03', '2026-02', '2026-01'];
+        v.boardFilters = [
+          { label: 'Rankas på', dd: this.ddOf('b-sort', s.boardSort, ['ROI', 'Netto', 'Hitrate'], val => this.setState({ boardSort: val })) },
+          { label: 'Månad', dd: this.ddOf('b-month', s.boardMonth, months, val => this.setState({ boardMonth: val })) },
+          { label: 'Sport', dd: this.ddOf('b-sport', s.boardSport, ['Alla sporter'].concat(Object.keys(SPORTS)), val => this.setState({ boardSport: val })) }
+        ];
+        const medal = ['#FFD166', '#C9D1DE', '#D08A55'];
+        const scored = publicSheets.map(sh => {
+          let bets = this.sheetBets(sh.id);
+          if (s.boardMonth !== 'Alla') bets = bets.filter(b => this.dstr(b.ts).date.slice(0, 7) === s.boardMonth);
+          if (s.boardSport !== 'Alla sporter') bets = bets.filter(b => b.sport === s.boardSport);
+          return { sh: sh, st: this.stats(bets) };
+        }).filter(x => x.st.settled > 0);
+        scored.sort((a, b) => s.boardSort === 'Netto' ? b.st.net - a.st.net : s.boardSort === 'Hitrate' ? b.st.hit - a.st.hit : b.st.roi - a.st.roi);
+        v.board = scored.map((x, i) => ({
+          rank: String(i + 1), rankColor: i < 3 ? medal[i] : MUTED,
+          name: x.sh.name, owner: this.user(x.sh.ownerId).name, desc: x.sh.desc,
+          n: String(x.st.n), hit: x.st.hit.toFixed(1) + '%',
+          roi: x.st.roi.toFixed(1) + '%', roiColor: this.col(x.st.roi),
+          netto: this.fmt(x.st.net, unitPref), nettoColor: this.col(x.st.net),
+          bg: x.sh.ownerId === me.id ? 'rgba(76,141,255,.07)' : 'transparent',
+          showAd: showAds && (i + 1) % 10 === 0,
+          open: () => this.openSheet(x.sh.id)
+        }));
+      }
+
+      if (v.isProfile) {
+        const u = this.user(s.activeUser || me.id);
+        const isMe = u.id === me.id;
+        const sheets = s.sheets.filter(x => x.ownerId === u.id && (isMe || x.pub));
+        v.profile = {
+          title: u.name, sub: u.bio || 'Ingen beskrivning.', isMe: isMe,
+          name: u.name, bio: u.bio || '', unit: sheets[0] ? (sheets[0].unit || unitPref) : unitPref,
+          onName: e => this.updateUser(u.id, { name: e.target.value }),
+          onBio: e => this.updateUser(u.id, { bio: e.target.value }),
+          dd: this.ddOf('unit', sheets[0] ? (sheets[0].unit || unitPref) : unitPref, ['kr', 'units'],
+            val => this.set({ sheets: this.state.sheets.map(x => x.ownerId === u.id ? Object.assign({}, x, { unit: val }) : x) }),
+            val => val === 'units' ? 'Units (u)' : 'Kronor (kr)'),
+          onNewSheet: () => {
+            const id = 'sh' + Date.now();
+            this.setState({ sheets: s.sheets.concat([{ id: id, ownerId: u.id, name: 'Nytt spreadsheet', desc: 'Beskriv din strategi.', pub: false, unit: unitPref }]) }, () => { this.save({}); this.openSheet(id); });
+          },
+          sheets: sheets.map(sh => {
+            const st = this.stats(this.sheetBets(sh.id));
+            return {
+              name: sh.name, desc: sh.desc, meta: st.n + ' spel · ROI ' + st.roi.toFixed(1) + '%',
+              netto: this.fmt(st.net, sh.unit || unitPref), nettoColor: this.col(st.net),
+              badge: sh.pub ? 'PUBLIK' : 'LÅST', badgeBg: sh.pub ? 'rgba(102,227,138,.14)' : '#1B2436', badgeFg: sh.pub ? GREEN : MUTED,
+              canToggle: isMe, open: () => this.openSheet(sh.id),
+              toggle: () => this.set({ sheets: this.state.sheets.map(x => x.id === sh.id ? Object.assign({}, x, { pub: !x.pub }) : x) })
+            };
+          }),
+          hasTrophies: (u.trophies || []).length > 0, noTrophies: (u.trophies || []).length === 0,
+          trophies: (u.trophies || []).map(t => ({ place: String(t.place), name: t.name, year: t.year, color: t.place === 1 ? '#FFD166' : t.place === 2 ? '#C9D1DE' : '#D08A55' }))
+        };
+      }
+    }
+    return v;
+  }
+
+  updateUser(id, patch) { this.set({ users: this.state.users.map(u => u.id === id ? Object.assign({}, u, patch) : u) }); }
+  joinComp(compId) {
+    const mine = this.state.sheets.filter(x => x.ownerId === this.state.session);
+    if (!mine.length) return this.toast('Skapa ett spreadsheet först.');
+    if (this.state.joins.some(j => j.compId === compId && mine.some(m => m.id === j.sheetId))) return this.toast('Du är redan med i tävlingen.');
+    const sheetId = (this.state.sheets.find(x => x.id === this.state.activeSheet && x.ownerId === this.state.session) || mine[0]).id;
+    this.setState({ joins: this.state.joins.concat([{ compId: compId, sheetId: sheetId, move: 0 }]) }, () => { this.save({}); this.toast('Du är med i tävlingen.'); });
+  }
+}
+</script>
+</body>
+</html>
