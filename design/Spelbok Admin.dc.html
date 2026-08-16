@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="marks.js"></script>
+<script src="bookmakers.js"></script>
+<style>
+html,body{margin:0;padding:0;background:var(--bg);}
+*{box-sizing:border-box;}
+a{color:var(--cyan);text-decoration:none;}
+a:hover{color:#7FE7FA;text-decoration:underline;}
+input,select,textarea,button{font-family:inherit;}
+input::placeholder,textarea::placeholder{color:var(--dim);}
+:root,[data-theme="dark"]{
+  --bg:#0F1420;--sidebar:#0B0E17;--panel:#131826;--line:#232B3E;--line2:#1B2233;--line3:#2A3346;
+  --rowline:#171E2C;--raised:#1B2436;--hover:#161D2C;--hover2:#1F293C;--pop:#171D2E;--focus:#3A4560;
+  --text:#E6EAF2;--text2:#C3CBDB;--muted:#8A94AB;--dim:#5D6883;
+  --green:#66E38A;--ongreen:#08140C;--red:#FF6B6B;--amber:#FFD166;--cyan:#35D6F5;--blue:#4C8DFF;
+  --greenSoft:rgba(102,227,138,.15);--greenLine:rgba(102,227,138,.45);
+  --redSoft:rgba(255,107,107,.09);--redLine:rgba(255,107,107,.35);
+  --amberSoft:rgba(255,209,102,.15);--amberLine:rgba(255,209,102,.35);
+  --cyanSoft:rgba(53,214,245,.14);--cyanLine:rgba(53,214,245,.3);
+  --blueSoft:rgba(76,141,255,.09);--blueLine:rgba(76,141,255,.3);
+  --shadow:rgba(0,0,0,.55);--barBg:rgba(15,20,32,.94);--overlay:rgba(5,7,12,.7);
+}
+[data-theme="light"]{
+  --bg:#EDF0F6;--sidebar:#FFFFFF;--panel:#FFFFFF;--line:#DFE4EC;--line2:#E9EDF3;--line3:#CFD6E2;
+  --rowline:#EDF0F6;--raised:#F2F5FA;--hover:#F4F7FC;--hover2:#E8EEF8;--pop:#FFFFFF;--focus:#9AA8C0;
+  --text:#12171F;--text2:#3D4756;--muted:#69748A;--dim:#8B95A6;
+  --green:#1E8E4E;--ongreen:#FFFFFF;--red:#C8324A;--amber:#9A6B00;--cyan:#0E7FA8;--blue:#2C6FD6;
+  --greenSoft:rgba(30,142,78,.11);--greenLine:rgba(30,142,78,.38);
+  --redSoft:rgba(200,50,74,.08);--redLine:rgba(200,50,74,.32);
+  --amberSoft:rgba(154,107,0,.12);--amberLine:rgba(154,107,0,.34);
+  --cyanSoft:rgba(14,127,168,.11);--cyanLine:rgba(14,127,168,.3);
+  --blueSoft:rgba(44,111,214,.08);--blueLine:rgba(44,111,214,.3);
+  --shadow:rgba(23,34,58,.16);--barBg:rgba(255,255,255,.93);--overlay:rgba(23,34,58,.45);
+}
+@keyframes admfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes admslide{from{transform:translateX(100%)}to{transform:none}}
+@keyframes admpulse{0%{opacity:1}50%{opacity:.35}100%{opacity:1}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--bg);color:var(--text);font-family:Barlow,Helvetica,sans-serif;font-size:14.5px;display:flex">
+
+  <div style="width:240px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh">
+    <div style="padding:22px 20px 18px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:9px">
+      <span style="font-family:Oswald,sans-serif;font-weight:700;font-size:19px;letter-spacing:.16em">SPELBOK</span>
+      <span style="background:var(--amberSoft);color:var(--amber);font-size:9.5px;font-weight:700;letter-spacing:.12em;padding:3px 7px;border-radius:5px">ADMIN</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:10px 10px 20px">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="9">
+        <button onClick="{{ n.go }}" style="width:100%;display:flex;align-items:center;gap:11px;background:{{ n.bg }};border:none;border-left:3px solid {{ n.edge }};color:{{ n.fg }};padding:11px 13px;border-radius:0 9px 9px 0;font-size:14.5px;font-weight:600;cursor:pointer;text-align:left;margin-bottom:2px;transition:background .13s" style-hover="background:var(--hover)">
+          <span style="width:16px;height:16px;flex-shrink:0;border-radius:{{ n.iconRadius }};border:2px solid {{ n.fg }};background:{{ n.iconFill }}"></span>
+          <span style="flex:1">{{ n.label }}</span>
+          <sc-if value="{{ n.hasCount }}" hint-placeholder-val="{{ false }}">
+            <span style="font-family:IBM Plex Mono,monospace;font-size:11px;background:var(--amberSoft);color:var(--amber);padding:2px 6px;border-radius:5px">{{ n.count }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+    </div>
+    <div style="border-top:1px solid var(--line2);padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="width:34px;height:34px;border-radius:99px;background:var(--raised);border:1px solid var(--line3);display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:600">J</span>
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:13.5px">johanlind</div>
+          <div style="color:var(--dim);font-size:11.5px">Superadmin</div>
+        </div>
+      </div>
+      <a href="Spelbok.dc.html" style="display:block;background:var(--panel);border:1px solid var(--line);color:var(--text2);padding:9px;border-radius:9px;font-size:13px;font-weight:600;text-align:center">Till appen ↗</a>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <div style="position:sticky;top:0;z-index:40;background:var(--barBg);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 28px;display:flex;align-items:center;gap:20px">
+      <div style="min-width:0">
+        <div style="font-family:Oswald,sans-serif;font-size:22px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">{{ title }}</div>
+      </div>
+      <div style="flex:1;max-width:440px;position:relative">
+        <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Sök användare, spelbolag, sidor …" style="width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px 14px 10px 36px;border-radius:10px;font-size:14px;outline:none">
+        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:13px;height:13px;border:2px solid var(--dim);border-radius:99px"></span>
+      </div>
+      <sc-if value="{{ dirty }}" hint-placeholder-val="{{ false }}">
+        <span style="display:inline-flex;align-items:center;gap:7px;background:var(--amberSoft);border:1px solid var(--amberLine);color:var(--amber);padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;white-space:nowrap">
+          <span style="width:6px;height:6px;border-radius:99px;background:var(--amber);animation:admpulse 1.6s infinite"></span>Osparade ändringar
+        </span>
+      </sc-if>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:14px">
+        <div style="display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px">
+          <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+            <button onClick="{{ t.go }}" title="{{ t.title }}" style="border:none;border-radius:7px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <button onClick="{{ onBell }}" style="position:relative;background:var(--panel);border:1px solid var(--line);width:38px;height:38px;border-radius:10px;cursor:pointer">
+          <span style="display:block;width:14px;height:14px;margin:0 auto;border:2px solid var(--text2);border-radius:5px 5px 2px 2px"></span>
+          <span style="position:absolute;top:-5px;right:-5px;background:var(--red);color:var(--sidebar);font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)">{{ alerts }}</span>
+        </button>
+        <span style="width:38px;height:38px;border-radius:99px;background:var(--raised);border:1px solid var(--line3);display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:600">J</span>
+      </div>
+    </div>
+
+    <div style="flex:1;padding:24px 28px 56px;max-width:1560px;width:100%">
+
+      <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:admfade .22s ease">
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px">
+            <sc-for list="{{ home.kpis }}" as="k" hint-placeholder-count="4">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px">
+                <div style="font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">{{ k.label }}</div>
+                <div style="font-family:IBM Plex Mono,monospace;font-size:27px;font-weight:600;color:{{ k.color }}">{{ k.value }}</div>
+                <div style="font-size:12.5px;color:{{ k.deltaColor }};margin-top:4px">{{ k.delta }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+                <div style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Registreringar 30 dagar</div>
+                <div style="font-family:IBM Plex Mono,monospace;font-size:13px;color:var(--green)">+842 totalt</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <div style="width:44px;display:flex;flex-direction:column;justify-content:space-between;height:210px;font-family:IBM Plex Mono,monospace;font-size:10.5px;color:var(--dim);text-align:right">
+                  <sc-for list="{{ home.chart.yLabels }}" as="y" hint-placeholder-count="5">
+                    <div>{{ y }}</div>
+                  </sc-for>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <svg viewBox="0 0 800 210" preserveAspectRatio="none" style="width:100%;height:210px;display:block">
+                    <line x1="0" y1="0.5" x2="800" y2="0.5" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+                    <line x1="0" y1="52.5" x2="800" y2="52.5" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+                    <line x1="0" y1="105" x2="800" y2="105" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+                    <line x1="0" y1="157.5" x2="800" y2="157.5" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+                    <line x1="0" y1="209.5" x2="800" y2="209.5" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+                    <path d="{{ home.chart.area }}" style="fill:var(--greenSoft)"></path>
+                    <path d="{{ home.chart.line }}" fill="none" stroke-width="2" style="stroke:var(--green)" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+                  </svg>
+                  <div style="display:flex;justify-content:space-between;margin-top:7px;font-family:IBM Plex Mono,monospace;font-size:10.5px;color:var(--dim)">
+                    <sc-for list="{{ home.chart.xLabels }}" as="x" hint-placeholder-count="4">
+                      <div>{{ x }}</div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+              <div style="padding:16px 18px;border-bottom:1px solid var(--line2);font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Senaste händelser</div>
+              <sc-for list="{{ home.events }}" as="e" hint-placeholder-count="8">
+                <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 18px;border-bottom:1px solid var(--rowline);transition:background .12s" style-hover="background:var(--hover)">
+                  <span style="width:7px;height:7px;border-radius:99px;margin-top:6px;flex-shrink:0;background:{{ e.color }}"></span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13.5px">{{ e.text }}</div>
+                    <div style="color:var(--dim);font-size:12px">{{ e.detail }}</div>
+                  </div>
+                  <span style="font-family:IBM Plex Mono,monospace;font-size:11.5px;color:var(--dim);white-space:nowrap">{{ e.time }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div style="color:var(--muted);font-size:14px"><span style="font-family:IBM Plex Mono,monospace;color:var(--text);font-weight:600">4 218</span> registrerade konton</div>
+            <div style="display:flex;gap:7px;margin-left:14px;flex-wrap:wrap">
+              <sc-for list="{{ users.chips }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.go }}" style="border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};padding:8px 14px;border-radius:99px;font-size:13.5px;font-weight:600;cursor:pointer">{{ c.label }}</button>
+              </sc-for>
+            </div>
+            <button onClick="{{ users.exportCsv }}" style="margin-left:auto;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px 16px;border-radius:10px;font-weight:600;cursor:pointer">Exportera CSV</button>
+          </div>
+
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow-x:auto">
+            <div style="min-width:960px;display:flex;gap:12px;padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--line);border-radius:14px 14px 0 0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600">
+              <span style="flex:1.6 1 220px;min-width:220px">Användare</span><span style="width:100px;flex-shrink:0">Roll</span><span style="width:110px;flex-shrink:0;white-space:nowrap">Registrerad</span><span style="width:110px;flex-shrink:0;white-space:nowrap">Senast aktiv</span><span style="width:70px;flex-shrink:0;text-align:right">Spel</span><span style="width:110px;flex-shrink:0;text-align:right">Netto</span><span style="width:110px;flex-shrink:0">Status</span><span style="width:34px;flex-shrink:0"></span>
+            </div>
+            <sc-for list="{{ users.rows }}" as="u" hint-placeholder-count="10">
+              <div style="position:relative;min-width:960px;display:flex;gap:12px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--rowline);transition:background .12s" style-hover="background:var(--hover)">
+                <div onClick="{{ u.open }}" style="flex:1.6 1 220px;min-width:220px;display:flex;align-items:center;gap:11px;cursor:pointer">
+                  <span style="width:34px;height:34px;border-radius:99px;background:var(--raised);border:1px solid var(--line3);display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-weight:600;flex-shrink:0">{{ u.initial }}</span>
+                  <div style="min-width:0">
+                    <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.name }}</div>
+                    <div style="color:var(--dim);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.email }}</div>
+                  </div>
+                </div>
+                <span style="width:100px;flex-shrink:0"><span style="font-size:10.5px;letter-spacing:.09em;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ u.roleBg }};color:{{ u.roleFg }}">{{ u.role }}</span></span>
+                <span style="width:110px;flex-shrink:0;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--text2)">{{ u.joined }}</span>
+                <span style="width:110px;flex-shrink:0;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--muted)">{{ u.seen }}</span>
+                <span style="width:70px;flex-shrink:0;text-align:right;font-family:IBM Plex Mono,monospace;color:var(--text2)">{{ u.bets }}</span>
+                <span style="width:110px;flex-shrink:0;text-align:right;font-family:IBM Plex Mono,monospace;font-weight:600;color:{{ u.nettoColor }}">{{ u.netto }}</span>
+                <span style="width:110px;flex-shrink:0;display:inline-flex;align-items:center;gap:7px;font-size:13px;color:{{ u.statusColor }}"><span style="width:7px;height:7px;border-radius:99px;background:{{ u.statusColor }}"></span>{{ u.status }}</span>
+                <button onClick="{{ u.menu }}" style="flex-shrink:0;width:34px;height:30px;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--muted);cursor:pointer;font-size:14px;line-height:1">⋯</button>
+                <sc-if value="{{ u.menuOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;right:18px;top:44px;z-index:30;min-width:200px;background:var(--pop);border:1px solid var(--line3);border-radius:11px;box-shadow:0 18px 50px var(--shadow);padding:6px;animation:admfade .14s ease">
+                    <sc-for list="{{ u.menuItems }}" as="m" hint-placeholder-count="4">
+                      <button onClick="{{ m.go }}" style="width:100%;text-align:left;background:transparent;border:none;color:{{ m.fg }};padding:9px 11px;border-radius:7px;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:var(--hover2)">{{ m.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px">
+              <span style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--dim)">Visar 1–10 av 4 218</span>
+              <div style="display:flex;gap:8px">
+                <button onClick="{{ users.noop }}" style="background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer">Föregående</button>
+                <button onClick="{{ users.noop }}" style="background:var(--panel);border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer">Nästa</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isBooks }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease;display:grid;grid-template-columns:{{ books.cols }};gap:18px;align-items:start">
+          <div style="min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line2)">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Rankordning</div>
+              <span style="color:var(--dim);font-size:12.5px">Dra för att sortera om</span>
+            </div>
+            <sc-for list="{{ books.list }}" as="b" hint-placeholder-count="8">
+              <div onClick="{{ b.select }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rowline);cursor:pointer;background:{{ b.bg }};border-left:3px solid {{ b.edge }};transition:background .12s" style-hover="background:var(--hover)">
+                <span style="display:flex;flex-direction:column;gap:2.5px;flex-shrink:0;cursor:grab">
+                  <span style="width:12px;height:2px;background:var(--focus);border-radius:2px"></span>
+                  <span style="width:12px;height:2px;background:var(--focus);border-radius:2px"></span>
+                  <span style="width:12px;height:2px;background:var(--focus);border-radius:2px"></span>
+                </span>
+                <span style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:600;width:20px;color:{{ b.rankColor }}">{{ b.rank }}</span>
+                <span style="display:block;width:72px;height:30px;border-radius:7px;flex-shrink:0;background-color:{{ b.brand }};background-image:url({{ b.logo }});background-repeat:no-repeat;background-position:center;background-size:78% auto"></span>
+                <div style="flex:1 1 130px;min-width:130px">
+                  <div style="font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</div>
+                  <div style="display:flex;align-items:center;gap:7px;margin-top:2px;flex-wrap:wrap">
+                    <span style="display:block;width:66px;height:12px;flex-shrink:0;background-image:url({{ b.stars }});background-repeat:no-repeat;background-position:left center;background-size:contain"></span>
+                    <span style="font-family:IBM Plex Mono,monospace;font-size:11.5px;color:var(--amber);flex-shrink:0">{{ b.ratingShort }}</span>
+                    <sc-if value="{{ b.fast }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:9.5px;letter-spacing:.08em;font-weight:700;padding:2px 6px;border-radius:5px;flex-shrink:0;background:var(--cyanSoft);color:var(--cyan)">SNABBA UTTAG</span>
+                    </sc-if>
+                  </div>
+                </div>
+                <span style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--text2);white-space:nowrap;flex-shrink:0">{{ b.clicks }}</span>
+                <button onClick="{{ b.toggleActive }}" style="width:42px;height:24px;border-radius:99px;border:1px solid {{ b.tg.border }};background:{{ b.tg.track }};position:relative;cursor:pointer;padding:0;flex-shrink:0">
+                  <span style="position:absolute;top:2px;width:16px;height:16px;border-radius:99px;transition:left .16s ease;background:{{ b.tg.knob }};left:{{ b.tg.knobLeft }}"></span>
+                </button>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="min-width:0;display:flex;flex-direction:column;gap:14px">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Grunduppgifter</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Namn</div>
+                  <input value="{{ books.form.name }}" onChange="{{ books.onName }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;outline:none">
+                </div>
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Slug</div>
+                  <input value="{{ books.form.slug }}" onChange="{{ books.onSlug }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:13.5px;outline:none">
+                </div>
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Betyg (0–5)</div>
+                  <input value="{{ books.form.rating }}" onChange="{{ books.onRating }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+                </div>
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Rank</div>
+                  <input value="{{ books.form.rank }}" onChange="{{ books.onRank }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+                </div>
+              </div>
+              <div style="margin-top:12px">
+                <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Logotyp</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="display:block;width:120px;height:48px;border-radius:9px;flex-shrink:0;background-color:{{ books.form.brand }};background-image:url({{ books.form.logo }});background-repeat:no-repeat;background-position:center;background-size:80% auto"></span>
+                  <div style="flex:1;border:1px dashed var(--line3);border-radius:10px;padding:13px;text-align:center;color:var(--dim);font-size:13px">Dra hit en SVG eller PNG · <span style="color:var(--cyan)">bläddra</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Erbjudande</div>
+              <div style="display:grid;grid-template-columns:1fr 160px;gap:12px">
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Bonustext</div>
+                  <input value="{{ books.form.bonus }}" onChange="{{ books.onBonus }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;outline:none">
+                </div>
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Värde (kr)</div>
+                  <input value="{{ books.form.bonusValue }}" onChange="{{ books.onBonusValue }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+                </div>
+                <div style="grid-column:span 2">
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Villkorstext</div>
+                  <input value="{{ books.form.terms }}" onChange="{{ books.onTerms }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:11px 12px;border-radius:9px;font-size:13.5px;outline:none">
+                </div>
+                <div style="grid-column:span 2">
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">USP-rad</div>
+                  <input value="{{ books.form.usp }}" onChange="{{ books.onUsp }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;outline:none">
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Recension</div>
+              <textarea value="{{ books.form.review }}" onChange="{{ books.onReview }}" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:12px;border-radius:9px;font-size:14px;line-height:1.55;outline:none;resize:vertical"></textarea>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:8px">Plus</div>
+                  <sc-for list="{{ books.form.plus }}" as="p" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+                      <span style="color:var(--green);font-weight:700">+</span>
+                      <input value="{{ p.text }}" onChange="{{ p.onChange }}" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:9px 10px;border-radius:8px;font-size:13px;outline:none">
+                      <button onClick="{{ p.remove }}" style="background:transparent;border:1px solid var(--line);color:var(--dim);width:28px;height:28px;border-radius:7px;cursor:pointer">×</button>
+                    </div>
+                  </sc-for>
+                  <button onClick="{{ books.addPlus }}" style="background:transparent;border:1px dashed var(--line3);color:var(--green);padding:8px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;width:100%">+ Lägg till rad</button>
+                </div>
+                <div>
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--red);margin-bottom:8px">Minus</div>
+                  <sc-for list="{{ books.form.minus }}" as="m" hint-placeholder-count="1">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+                      <span style="color:var(--red);font-weight:700">−</span>
+                      <input value="{{ m.text }}" onChange="{{ m.onChange }}" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:9px 10px;border-radius:8px;font-size:13px;outline:none">
+                      <button onClick="{{ m.remove }}" style="background:transparent;border:1px solid var(--line);color:var(--dim);width:28px;height:28px;border-radius:7px;cursor:pointer">×</button>
+                    </div>
+                  </sc-for>
+                  <button onClick="{{ books.addMinus }}" style="background:transparent;border:1px dashed var(--line3);color:var(--red);padding:8px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;width:100%">+ Lägg till rad</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px">Betalmetoder</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ books.form.payments }}" as="p" hint-placeholder-count="5">
+                  <button onClick="{{ p.go }}" style="display:inline-flex;align-items:center;gap:8px;border:1px solid {{ p.border }};background:{{ p.bg }};color:{{ p.fg }};padding:9px 14px;border-radius:99px;font-size:13.5px;font-weight:600;cursor:pointer">
+                    <span style="display:block;width:15px;height:15px;background-image:url({{ p.logo }});background-repeat:no-repeat;background-position:center;background-size:contain;opacity:{{ p.opacity }}"></span>{{ p.label }}
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px">Affiliate</div>
+              <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Tracking-URL</div>
+              <div style="display:flex;gap:9px">
+                <input value="{{ books.form.tracking }}" onChange="{{ books.onTracking }}" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:12.5px;outline:none">
+                <button onClick="{{ books.testLink }}" style="background:var(--raised);border:1px solid var(--line3);color:var(--text);padding:11px 16px;border-radius:9px;font-weight:600;cursor:pointer;white-space:nowrap">Testa länk</button>
+              </div>
+              <div style="margin-top:14px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+                  <span style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">Klick 30 dagar</span>
+                  <span style="font-family:IBM Plex Mono,monospace;font-size:13px;color:var(--green)">{{ books.form.clicks }}</span>
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:3px;height:56px">
+                  <sc-for list="{{ books.form.spark }}" as="s" hint-placeholder-count="30">
+                    <span style="flex:1;background:#2E7A4C;border-radius:2px 2px 0 0;height:{{ s }}"></span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px">Förhandsvisning</div>
+              <div style="max-width:280px;background:#F7F8FB;border:1px solid rgba(230,234,242,.10);border-radius:14px;overflow:hidden">
+                <div style="position:relative;height:120px;background-color:{{ books.form.brand }};background-image:url({{ books.form.logo }}),linear-gradient(165deg,rgba(255,255,255,.10),rgba(0,0,0,.32));background-repeat:no-repeat;background-position:center;background-size:60% auto,cover">
+                  <span style="position:absolute;top:10px;left:10px;width:26px;height:26px;border-radius:8px;background:rgba(247,248,251,.94);color:#1A1F2B;font-family:Oswald,sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center">{{ books.form.rank }}</span>
+                  <span style="position:absolute;top:10px;right:10px;background:rgba(15,20,32,.72);border-radius:99px;padding:4px 9px;font-family:IBM Plex Mono,monospace;font-size:11.5px;color:#FFFFFF">★ {{ books.form.ratingShort }}</span>
+                </div>
+                <div style="padding:14px;text-align:center">
+                  <div style="font-size:10.5px;letter-spacing:.14em;color:#6B7688;font-weight:700">BONUS</div>
+                  <div style="font-family:Oswald,sans-serif;font-size:24px;font-weight:600;color:#12171F">{{ books.form.bonusHeadline }}</div>
+                  <div style="color:#6B7688;font-size:11.5px;margin-bottom:10px">{{ books.form.terms }}</div>
+                  <div style="background:#3FA662;color:#FFFFFF;border-radius:10px;padding:11px;font-family:Oswald,sans-serif;font-size:15px;font-weight:600;letter-spacing:.06em">HÄMTA BONUS</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;position:sticky;bottom:0;background:var(--bg);padding:12px 0">
+              <button onClick="{{ books.save }}" style="flex:1;background:var(--green);border:none;color:var(--ongreen);padding:13px;border-radius:11px;font-weight:700;font-size:15px;cursor:pointer">Spara ändringar</button>
+              <button onClick="{{ books.unpublish }}" style="background:var(--raised);border:1px solid var(--line3);color:var(--text2);padding:13px 20px;border-radius:11px;font-weight:600;cursor:pointer">Avpublicera</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isBanners }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease">
+          <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div style="display:flex;flex-direction:column;gap:5px;position:relative">
+              <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Placering</div>
+              <button onClick="{{ banners.dd.toggle }}" style="display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid {{ banners.dd.border }};color:var(--text);padding:10px 14px;border-radius:10px;font-size:14px;cursor:pointer;min-width:180px;text-align:left">
+                <span style="flex:1">{{ banners.dd.label }}</span><span style="color:var(--dim);font-size:11px">▾</span>
+              </button>
+              <sc-if value="{{ banners.dd.open }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:0;top:100%;margin-top:6px;z-index:20;min-width:100%;background:var(--pop);border:1px solid var(--line3);border-radius:11px;box-shadow:0 18px 50px var(--shadow);padding:6px">
+                  <sc-for list="{{ banners.dd.items }}" as="o" hint-placeholder-count="5">
+                    <button onClick="{{ o.go }}" style="width:100%;text-align:left;white-space:nowrap;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer" style-hover="background:var(--hover2)">{{ o.label }}</button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <button onClick="{{ banners.create }}" style="margin-left:auto;background:var(--green);border:none;color:var(--ongreen);padding:12px 20px;border-radius:11px;font-weight:700;cursor:pointer">+ Ny banner</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+            <sc-for list="{{ banners.list }}" as="b" hint-placeholder-count="6">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;opacity:{{ b.opacity }};transition:border-color .15s" style-hover="border-color:var(--focus)">
+                <div style="height:{{ b.previewH }};border-bottom:1px solid var(--line2);background:repeating-linear-gradient(135deg,#101623,#101623 9px,#141B2B 9px,#141B2B 18px);display:flex;align-items:center;justify-content:center;color:var(--dim);font-family:IBM Plex Mono,monospace;font-size:11.5px;letter-spacing:.13em">{{ b.size }}</div>
+                <div style="padding:14px">
+                  <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:8px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.title }}</div>
+                      <div style="font-family:IBM Plex Mono,monospace;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.url }}</div>
+                    </div>
+                    <span style="font-size:9.5px;letter-spacing:.1em;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;background:{{ b.stateBg }};color:{{ b.stateFg }}">{{ b.state }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+                    <span style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--raised);color:var(--text2)">{{ b.placement }}</span>
+                    <span style="font-family:IBM Plex Mono,monospace;font-size:11.5px;color:var(--muted)">{{ b.period }}</span>
+                  </div>
+                  <div style="display:flex;gap:14px;font-family:IBM Plex Mono,monospace;font-size:12.5px;padding-top:10px;border-top:1px solid var(--line2)">
+                    <span style="color:var(--text2)">{{ b.impressions }} <span style="color:var(--dim)">visn.</span></span>
+                    <span style="color:var(--text2)">{{ b.clicks }} <span style="color:var(--dim)">klick</span></span>
+                    <span style="color:var(--green)">{{ b.ctr }}</span>
+                    <span style="margin-left:auto;display:flex;gap:7px;align-items:center">
+                      <button onClick="{{ b.edit }}" style="background:transparent;border:1px solid var(--line);color:var(--text2);padding:4px 9px;border-radius:7px;font-size:11.5px;cursor:pointer;font-family:Barlow,sans-serif">Redigera</button>
+                      <button onClick="{{ b.remove }}" style="background:transparent;border:1px solid var(--line);color:var(--red);padding:4px 9px;border-radius:7px;font-size:11.5px;cursor:pointer;font-family:Barlow,sans-serif">Radera</button>
+                      <button onClick="{{ b.toggle }}" style="width:38px;height:22px;border-radius:99px;border:1px solid {{ b.tg.border }};background:{{ b.tg.track }};position:relative;cursor:pointer;padding:0">
+                        <span style="position:absolute;top:2px;width:14px;height:14px;border-radius:99px;transition:left .16s ease;background:{{ b.tg.knob }};left:{{ b.tg.knobLeft }}"></span>
+                      </button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPages }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease">
+          <sc-if value="{{ pages.isList }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <input value="{{ pages.q }}" onChange="{{ pages.onQ }}" placeholder="Sök sida …" style="flex:1;max-width:320px;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;font-size:14px;outline:none">
+                <button onClick="{{ pages.create }}" style="margin-left:auto;background:var(--green);border:none;color:var(--ongreen);padding:12px 20px;border-radius:11px;font-weight:700;cursor:pointer">+ Ny sida</button>
+              </div>
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+                <div style="display:flex;gap:12px;padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600">
+                  <span style="flex:1.3">Titel</span><span style="flex:1.4">Slug</span><span style="width:120px">Status</span><span style="width:130px">Författare</span><span style="width:120px">Uppdaterad</span><span style="width:34px"></span>
+                </div>
+                <sc-for list="{{ pages.rows }}" as="p" hint-placeholder-count="7">
+                  <div style="display:flex;gap:12px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--rowline);transition:background .12s" style-hover="background:var(--hover)">
+                    <span onClick="{{ p.edit }}" style="flex:1.3;min-width:0;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.title }}</span>
+                    <span style="flex:1.4;min-width:0;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.slug }}</span>
+                    <span style="width:120px"><span style="font-size:10.5px;letter-spacing:.09em;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ p.stateBg }};color:{{ p.stateFg }}">{{ p.state }}</span></span>
+                    <span style="width:130px;color:var(--text2);font-size:13.5px">{{ p.author }}</span>
+                    <span style="width:120px;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--muted)">{{ p.updated }}</span>
+                    <button onClick="{{ p.edit }}" style="width:34px;height:30px;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--muted);cursor:pointer;font-size:14px;line-height:1">⋯</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ pages.isEdit }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start">
+              <div>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                  <button onClick="{{ pages.back }}" style="background:transparent;border:none;color:var(--cyan);font-size:14px;font-weight:600;cursor:pointer;padding:0">‹ Alla sidor</button>
+                  <span style="margin-left:auto;font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--dim)">Sparad för {{ pages.savedAgo }} sedan</span>
+                </div>
+                <input value="{{ pages.doc.title }}" onChange="{{ pages.onTitle }}" style="width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:16px;border-radius:12px;font-family:Oswald,sans-serif;font-size:24px;font-weight:600;outline:none;margin-bottom:14px">
+                <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+                  <div style="display:flex;align-items:center;gap:4px;padding:9px 12px;border-bottom:1px solid var(--line2);flex-wrap:wrap">
+                    <sc-for list="{{ pages.tools }}" as="t" hint-placeholder-count="8">
+                      <button onClick="{{ t.go }}" style="background:transparent;border:1px solid var(--line);color:var(--text2);min-width:32px;height:30px;padding:0 9px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer" style-hover="background:var(--hover2)">{{ t.label }}</button>
+                    </sc-for>
+                    <div style="margin-left:auto;display:flex;gap:3px;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:3px">
+                      <sc-for list="{{ pages.tabs }}" as="t" hint-placeholder-count="2">
+                        <button onClick="{{ t.go }}" style="border:none;border-radius:7px;padding:6px 13px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <sc-if value="{{ pages.isWrite }}" hint-placeholder-val="{{ true }}">
+                    <textarea value="{{ pages.doc.body }}" onChange="{{ pages.onBody }}" rows="20" style="width:100%;background:transparent;border:none;color:var(--text2);padding:18px;font-family:IBM Plex Mono,monospace;font-size:13.5px;line-height:1.75;outline:none;resize:vertical"></textarea>
+                  </sc-if>
+                  <sc-if value="{{ pages.isPreview }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:22px 26px">
+                      <sc-for list="{{ pages.preview }}" as="p" hint-placeholder-count="6">
+                        <div style="margin:0 0 12px;color:{{ p.color }};font-family:{{ p.font }};font-size:{{ p.size }};font-weight:{{ p.weight }};line-height:{{ p.lh }};text-wrap:pretty">{{ p.text }}</div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:88px">
+                <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px">
+                  <div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Publicering</div>
+                  <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">
+                    <span style="font-size:13.5px;color:var(--muted);flex:1">Status</span>
+                    <span style="font-size:10.5px;letter-spacing:.09em;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ pages.doc.stateBg }};color:{{ pages.doc.stateFg }}">{{ pages.doc.state }}</span>
+                  </div>
+                  <button onClick="{{ pages.publish }}" style="width:100%;background:var(--green);border:none;color:var(--ongreen);padding:12px;border-radius:10px;font-weight:700;font-size:14.5px;cursor:pointer;margin-bottom:8px">Publicera</button>
+                  <button onClick="{{ pages.saveDraft }}" style="width:100%;background:var(--raised);border:1px solid var(--line3);color:var(--text2);padding:12px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer">Spara utkast</button>
+                  <div style="font-family:IBM Plex Mono,monospace;font-size:11.5px;color:var(--dim);margin-top:10px;text-align:center">Senast sparad {{ pages.doc.savedAt }}</div>
+                </div>
+
+                <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px">
+                  <div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">SEO</div>
+                  <div style="margin-bottom:11px">
+                    <div style="display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">
+                      <span>SEO-titel</span><span style="font-family:IBM Plex Mono,monospace;color:{{ pages.doc.seoTitleColor }}">{{ pages.doc.seoTitleCount }}/60</span>
+                    </div>
+                    <input value="{{ pages.doc.seoTitle }}" onChange="{{ pages.onSeoTitle }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 11px;border-radius:9px;font-size:13.5px;outline:none">
+                  </div>
+                  <div style="margin-bottom:11px">
+                    <div style="display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">
+                      <span>Metabeskrivning</span><span style="font-family:IBM Plex Mono,monospace;color:{{ pages.doc.seoDescColor }}">{{ pages.doc.seoDescCount }}/160</span>
+                    </div>
+                    <textarea value="{{ pages.doc.seoDesc }}" onChange="{{ pages.onSeoDesc }}" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:10px 11px;border-radius:9px;font-size:13px;line-height:1.5;outline:none;resize:vertical"></textarea>
+                  </div>
+                  <div style="margin-bottom:12px">
+                    <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Slug</div>
+                    <input value="{{ pages.doc.slug }}" onChange="{{ pages.onSlug }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:10px 11px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:12.5px;outline:none">
+                  </div>
+                  <div style="background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:12px">
+                    <div style="font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-bottom:7px">Så här syns sidan i Google</div>
+                    <div style="color:#8AB4F8;font-size:15px;line-height:1.3;margin-bottom:2px">{{ pages.doc.seoTitle }}</div>
+                    <div style="color:var(--green);font-size:12px;font-family:IBM Plex Mono,monospace;margin-bottom:4px">spelbok.se{{ pages.doc.slug }}</div>
+                    <div style="color:var(--muted);font-size:12.5px;line-height:1.45">{{ pages.doc.seoDesc }}</div>
+                  </div>
+                </div>
+
+                <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px">
+                  <div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Sidoinställningar</div>
+                  <div style="position:relative;margin-bottom:12px">
+                    <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Författare</div>
+                    <button onClick="{{ pages.authorDd.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid {{ pages.authorDd.border }};color:var(--text);padding:10px 11px;border-radius:9px;font-size:13.5px;cursor:pointer;text-align:left">
+                      <span style="flex:1">{{ pages.authorDd.label }}</span><span style="color:var(--dim);font-size:11px">▾</span>
+                    </button>
+                    <sc-if value="{{ pages.authorDd.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:20;background:var(--pop);border:1px solid var(--line3);border-radius:11px;box-shadow:0 18px 50px var(--shadow);padding:6px">
+                        <sc-for list="{{ pages.authorDd.items }}" as="o" hint-placeholder-count="3">
+                          <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer" style-hover="background:var(--hover2)">{{ o.label }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="flex:1;font-size:13.5px;color:var(--text2)">Visa i footer</span>
+                    <button onClick="{{ pages.toggleFooter }}" style="width:42px;height:24px;border-radius:99px;border:1px solid {{ pages.footerTg.border }};background:{{ pages.footerTg.track }};position:relative;cursor:pointer;padding:0">
+                      <span style="position:absolute;top:2px;width:16px;height:16px;border-radius:99px;transition:left .16s ease;background:{{ pages.footerTg.knob }};left:{{ pages.footerTg.knobLeft }}"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isComps }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div style="display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:4px">
+              <sc-for list="{{ comps.tabs }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.go }}" style="border:none;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <button onClick="{{ comps.create }}" style="margin-left:auto;background:var(--green);border:none;color:var(--ongreen);padding:12px 20px;border-radius:11px;font-weight:700;cursor:pointer">+ Ny tävling</button>
+          </div>
+
+          <sc-if value="{{ comps.isLive }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:16px">
+              <sc-for list="{{ comps.cards }}" as="c" hint-placeholder-count="3">
+                <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+                  <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:6px">
+                    <div style="font-family:Oswald,sans-serif;font-size:19px;font-weight:600;flex:1">{{ c.name }}</div>
+                    <span style="font-size:9.5px;letter-spacing:.1em;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;background:var(--amberSoft);color:var(--amber)">{{ c.countdown }}</span>
+                  </div>
+                  <div style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--dim);margin-bottom:12px">{{ c.period }}</div>
+                  <div style="display:flex;gap:18px;margin-bottom:14px">
+                    <div><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">Deltagare</div><div style="font-family:IBM Plex Mono,monospace;font-size:19px;font-weight:600">{{ c.players }}</div></div>
+                    <div><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">Omsättning</div><div style="font-family:IBM Plex Mono,monospace;font-size:19px;font-weight:600">{{ c.turnover }}</div></div>
+                  </div>
+                  <div style="background:var(--bg);border:1px solid var(--line2);border-radius:11px;overflow:hidden;margin-bottom:14px">
+                    <sc-for list="{{ c.top }}" as="t" hint-placeholder-count="3">
+                      <div style="display:flex;align-items:center;gap:11px;padding:10px 13px;border-bottom:1px solid var(--rowline)">
+                        <span style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600;width:18px;color:{{ t.rankColor }}">{{ t.rank }}</span>
+                        <span style="width:28px;height:28px;border-radius:99px;background:var(--raised);border:1px solid var(--line3);display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-size:13px;font-weight:600">{{ t.initial }}</span>
+                        <span style="flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
+                        <span style="font-family:IBM Plex Mono,monospace;font-weight:600;font-size:13.5px;color:{{ t.color }}">{{ t.netto }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:9px">
+                    <button onClick="{{ c.edit }}" style="flex:1;background:var(--raised);border:1px solid var(--line3);color:var(--text);padding:10px;border-radius:9px;font-weight:600;cursor:pointer">Redigera</button>
+                    <button onClick="{{ c.board }}" style="flex:1;background:var(--raised);border:1px solid var(--line3);color:var(--text);padding:10px;border-radius:9px;font-weight:600;cursor:pointer">Full topplista</button>
+                    <button onClick="{{ c.stop }}" style="background:transparent;border:1px solid var(--redLine);color:var(--red);padding:10px 14px;border-radius:9px;font-weight:600;cursor:pointer;white-space:nowrap">Avsluta</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ comps.isDone }}" hint-placeholder-val="{{ false }}">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+              <div style="display:flex;gap:12px;padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600">
+                <span style="flex:1.4">Tävling</span><span style="width:190px">Period</span><span style="flex:1">Vinnare</span><span style="width:130px"></span>
+              </div>
+              <sc-for list="{{ comps.done }}" as="d" hint-placeholder-count="4">
+                <div style="display:flex;gap:12px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--rowline)" style-hover="background:var(--hover)">
+                  <span style="flex:1.4;font-weight:600">{{ d.name }}</span>
+                  <span style="width:190px;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--muted)">{{ d.period }}</span>
+                  <span style="flex:1;display:inline-flex;align-items:center;gap:8px">
+                    <span style="width:22px;height:22px;border-radius:99px;background:var(--amberSoft);color:var(--amber);display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-size:11px;font-weight:700">1</span>
+                    <span style="font-size:13.5px">{{ d.winner }}</span>
+                    <span style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--green)">{{ d.netto }}</span>
+                  </span>
+                  <a href="#" onClick="{{ d.view }}" style="width:130px;text-align:right;font-size:13.5px">Visa resultat</a>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isStats }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+            <div style="display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:4px">
+              <sc-for list="{{ stats.periods }}" as="p" hint-placeholder-count="4">
+                <button onClick="{{ p.go }}" style="border:none;border-radius:8px;padding:9px 15px;font-size:13.5px;font-weight:600;cursor:pointer;background:{{ p.bg }};color:{{ p.fg }}">{{ p.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-left:6px">
+              <span style="font-size:13.5px;color:var(--text2)">vs föregående period</span>
+              <button onClick="{{ stats.toggleCompare }}" style="width:42px;height:24px;border-radius:99px;border:1px solid {{ stats.cmpTg.border }};background:{{ stats.cmpTg.track }};position:relative;cursor:pointer;padding:0">
+                <span style="position:absolute;top:2px;width:16px;height:16px;border-radius:99px;transition:left .16s ease;background:{{ stats.cmpTg.knob }};left:{{ stats.cmpTg.knobLeft }}"></span>
+              </button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:16px">
+            <sc-for list="{{ stats.kpis }}" as="k" hint-placeholder-count="4">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px">
+                <div style="font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">{{ k.label }}</div>
+                <div style="font-family:IBM Plex Mono,monospace;font-size:27px;font-weight:600">{{ k.value }}</div>
+                <div style="display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-size:13px;font-weight:600;color:{{ k.color }}">
+                  <span>{{ k.arrow }}</span><span>{{ k.delta }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <div style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Aktiva användare per dag</div>
+              <div style="display:flex;gap:16px;font-size:12.5px">
+                <span style="display:inline-flex;align-items:center;gap:7px;color:var(--text2)"><span style="width:16px;height:2px;background:var(--green)"></span>Denna period</span>
+                <span style="display:inline-flex;align-items:center;gap:7px;color:var(--muted)"><span style="width:16px;height:0;border-top:2px dashed var(--cyan)"></span>Föregående</span>
+              </div>
+            </div>
+            <svg viewBox="0 0 1000 230" preserveAspectRatio="none" style="width:100%;height:230px;display:block">
+              <line x1="0" y1="0.5" x2="1000" y2="0.5" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+              <line x1="0" y1="76.5" x2="1000" y2="76.5" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+              <line x1="0" y1="153" x2="1000" y2="153" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+              <line x1="0" y1="229.5" x2="1000" y2="229.5" stroke-width="1" vector-effect="non-scaling-stroke" style="stroke:var(--line2)"></line>
+              <path d="{{ stats.chart.area }}" style="fill:var(--greenSoft)"></path>
+              <sc-if value="{{ stats.compare }}" hint-placeholder-val="{{ true }}">
+                <path d="{{ stats.chart.prev }}" fill="none" stroke-opacity=".55" stroke-width="2" style="stroke:var(--cyan)" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"></path>
+              </sc-if>
+              <path d="{{ stats.chart.line }}" fill="none" stroke-width="2" style="stroke:var(--green)" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Affiliateklick per bolag</div>
+              <sc-for list="{{ stats.affiliate }}" as="a" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+                  <span style="width:110px;font-size:13.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.name }}</span>
+                  <span style="flex:1;height:10px;background:var(--bg);border-radius:5px;overflow:hidden"><span style="display:block;height:100%;background:var(--green);border-radius:5px;width:{{ a.w }}"></span></span>
+                  <span style="width:60px;text-align:right;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--text)">{{ a.clicks }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Mest loggade ligor</div>
+              <sc-for list="{{ stats.leagues }}" as="l" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line2)">
+                  <span style="flex:1;font-size:13.5px;color:var(--text2)">{{ l.name }}</span>
+                  <span style="width:70px;text-align:right;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--text)">{{ l.bets }}</span>
+                  <span style="width:90px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden"><span style="display:block;height:100%;background:var(--cyan);border-radius:3px;width:{{ l.w }}"></span></span>
+                  <span style="width:48px;text-align:right;font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--muted)">{{ l.pct }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Registreringskällor</div>
+              <div style="display:flex;align-items:center;gap:22px">
+                <div style="width:150px;height:150px;border-radius:99px;flex-shrink:0;background:{{ stats.donut }};display:flex;align-items:center;justify-content:center">
+                  <div style="width:92px;height:92px;border-radius:99px;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <span style="font-family:IBM Plex Mono,monospace;font-size:19px;font-weight:600">312</span>
+                    <span style="font-size:10.5px;color:var(--dim);letter-spacing:.1em">NYA</span>
+                  </div>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <sc-for list="{{ stats.sources }}" as="s" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line2)">
+                      <span style="width:10px;height:10px;border-radius:3px;background:{{ s.color }}"></span>
+                      <span style="flex:1;font-size:13.5px;color:var(--text2)">{{ s.label }}</span>
+                      <span style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--text)">{{ s.value }}</span>
+                      <span style="font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--dim);width:44px;text-align:right">{{ s.pct }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px">
+              <div style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px">Konvertering</div>
+              <sc-for list="{{ stats.funnel }}" as="f" hint-placeholder-count="3">
+                <div>
+                  <div style="display:flex;align-items:center;gap:12px;background:{{ f.bg }};border:1px solid {{ f.border }};border-radius:11px;padding:13px 15px;width:{{ f.w }}">
+                    <span style="flex:1;font-size:13.5px;color:var(--text)">{{ f.label }}</span>
+                    <span style="font-family:IBM Plex Mono,monospace;font-size:16px;font-weight:600;color:{{ f.color }}">{{ f.value }}</span>
+                  </div>
+                  <sc-if value="{{ f.hasStep }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;align-items:center;gap:9px;padding:7px 0 7px 16px;color:var(--dim);font-size:12.5px">
+                      <span style="width:1px;height:16px;background:var(--line3)"></span>
+                      <span style="font-family:IBM Plex Mono,monospace;color:{{ f.stepColor }}">{{ f.step }}</span>
+                      <span>går vidare</span>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettle }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:16px">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;display:flex;align-items:center;gap:11px">
+              <span style="width:9px;height:9px;border-radius:99px;background:var(--green);flex-shrink:0"></span>
+              <div style="min-width:0">
+                <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">API-status</div>
+                <div style="font-size:13.5px;color:var(--text)">Ansluten · <span style="font-family:IBM Plex Mono,monospace;color:var(--muted)">senaste synk 22:41</span></div>
+              </div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;display:flex;align-items:center;gap:11px">
+              <span style="width:9px;height:9px;border-radius:99px;background:var(--green);flex-shrink:0"></span>
+              <div>
+                <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">Cron</div>
+                <div style="font-size:13.5px">Körs var 15:e minut</div>
+              </div>
+            </div>
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+                <span style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)">API-kvot idag</span>
+                <span style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--text2)">1 204 / 7 500</span>
+              </div>
+              <span style="display:block;height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;width:16%;background:var(--cyan);border-radius:4px"></span></span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px">
+            <sc-for list="{{ settle.kpis }}" as="k" hint-placeholder-count="3">
+              <div style="background:var(--panel);border:1px solid {{ k.border }};border-radius:13px;padding:16px">
+                <div style="font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-bottom:8px">{{ k.label }}</div>
+                <div style="font-family:IBM Plex Mono,monospace;font-size:27px;font-weight:600;color:{{ k.color }}">{{ k.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px">
+            <div style="padding:15px 18px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:10px">
+              <span style="font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Manuell hantering</span>
+              <span style="font-family:IBM Plex Mono,monospace;font-size:11.5px;background:var(--amberSoft);color:var(--amber);padding:3px 8px;border-radius:6px">{{ settle.manualCount }} spel</span>
+            </div>
+            <div style="display:flex;gap:12px;padding:11px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600">
+              <span style="width:130px">Användare</span><span style="flex:1.2">Match</span><span style="flex:1">Spel</span><span style="width:70px;text-align:right">Odds</span><span style="width:90px;text-align:right">Insats</span><span style="width:150px">Orsak</span><span style="width:130px"></span>
+            </div>
+            <sc-for list="{{ settle.manual }}" as="m" hint-placeholder-count="3">
+              <div style="display:flex;gap:12px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--rowline)" style-hover="background:var(--hover)">
+                <span style="width:130px;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.user }}</span>
+                <span style="flex:1.2;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.match }}</span>
+                <span style="flex:1;min-width:0;font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.pick }}</span>
+                <span style="width:70px;text-align:right;font-family:IBM Plex Mono,monospace;font-size:13px">{{ m.odds }}</span>
+                <span style="width:90px;text-align:right;font-family:IBM Plex Mono,monospace;font-size:13px">{{ m.stake }}</span>
+                <span style="width:150px"><span style="font-size:10.5px;letter-spacing:.07em;font-weight:700;padding:4px 8px;border-radius:6px;background:var(--amberSoft);color:var(--amber)">{{ m.reason }}</span></span>
+                <span style="width:130px;display:flex;gap:5px;justify-content:flex-end">
+                  <sc-for list="{{ m.actions }}" as="a" hint-placeholder-count="3">
+                    <button onClick="{{ a.go }}" style="border:1px solid {{ a.border }};background:transparent;color:{{ a.fg }};font-family:IBM Plex Mono,monospace;font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:7px;cursor:pointer;transition:background .12s" style-hover="background:var(--hover2)">{{ a.label }}</button>
+                  </sc-for>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start">
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+              <div style="padding:15px 18px;border-bottom:1px solid var(--line2);font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Senaste auto-rättningar</div>
+              <sc-for list="{{ settle.log }}" as="l" hint-placeholder-count="8">
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--rowline);font-family:IBM Plex Mono,monospace;font-size:12.5px">
+                  <span style="color:var(--dim);width:56px;flex-shrink:0">{{ l.time }}</span>
+                  <span style="flex:1;min-width:0;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:Barlow,sans-serif;font-size:13.5px">{{ l.match }}</span>
+                  <span style="width:56px;text-align:center;color:var(--text);font-weight:600">{{ l.score }}</span>
+                  <span style="width:96px;text-align:right;color:var(--muted)">{{ l.count }}</span>
+                  <span style="width:18px;text-align:center;color:{{ l.iconColor }};font-size:13px">{{ l.icon }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+              <div style="padding:15px 18px;border-bottom:1px solid var(--line2);font-family:Oswald,sans-serif;font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Fixtures-cache</div>
+              <sc-for list="{{ settle.fixtures }}" as="f" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--rowline)">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13.5px;font-weight:600">{{ f.league }}</div>
+                    <div style="font-family:IBM Plex Mono,monospace;font-size:11.5px;color:var(--dim)">{{ f.upcoming }} kommande · synkad {{ f.synced }}</div>
+                  </div>
+                  <button onClick="{{ f.sync }}" style="background:var(--raised);border:1px solid var(--line3);color:var(--text);padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">Synka nu</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:admfade .22s ease;display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start">
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;position:sticky;top:88px">
+            <sc-for list="{{ settings.tabs }}" as="t" hint-placeholder-count="4">
+              <button onClick="{{ t.go }}" style="width:100%;text-align:left;background:{{ t.bg }};border:none;color:{{ t.fg }};padding:11px 13px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:2px" style-hover="background:var(--hover2)">{{ t.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <sc-if value="{{ settings.isGeneral }}" hint-placeholder-val="{{ true }}">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px">
+                <div style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px">Allmänt</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+                  <div>
+                    <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Sajtnamn</div>
+                    <input value="{{ settings.siteName }}" onChange="{{ settings.onSiteName }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;outline:none">
+                  </div>
+                  <div>
+                    <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Standardvaluta</div>
+                    <input value="{{ settings.currency }}" onChange="{{ settings.onCurrency }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+                  </div>
+                </div>
+                <sc-for list="{{ settings.flags }}" as="f" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--line2)">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-size:14.5px;font-weight:600">{{ f.label }}</div>
+                      <div style="color:{{ f.hintColor }};font-size:12.5px">{{ f.hint }}</div>
+                    </div>
+                    <button onClick="{{ f.go }}" style="width:46px;height:26px;border-radius:99px;border:1px solid {{ f.tg.border }};background:{{ f.tg.track }};position:relative;cursor:pointer;padding:0;flex-shrink:0">
+                      <span style="position:absolute;top:2px;width:18px;height:18px;border-radius:99px;transition:left .16s ease;background:{{ f.tg.knob }};left:{{ f.tg.knobLeft }}"></span>
+                    </button>
+                  </div>
+                </sc-for>
+                <div style="border-top:1px solid var(--line2);padding-top:14px;margin-top:6px">
+                  <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Footer-länkar</div>
+                  <sc-for list="{{ settings.links }}" as="l" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+                      <input value="{{ l.label }}" onChange="{{ l.onLabel }}" style="width:170px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px 11px;border-radius:9px;font-size:13.5px;outline:none">
+                      <input value="{{ l.url }}" onChange="{{ l.onUrl }}" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:10px 11px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:12.5px;outline:none">
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ settings.isKeys }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px">
+                <div style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">API-nycklar</div>
+                <div style="color:var(--muted);font-size:13px;margin-bottom:16px">Nycklarna lagras krypterat på servern och skickas aldrig till klienten.</div>
+                <sc-for list="{{ settings.keys }}" as="k" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--line2)">
+                    <span style="width:9px;height:9px;border-radius:99px;background:{{ k.dot }};flex-shrink:0"></span>
+                    <div style="width:170px;min-width:0">
+                      <div style="font-size:14px;font-weight:600">{{ k.name }}</div>
+                      <div style="color:var(--dim);font-size:12px;font-family:IBM Plex Mono,monospace">{{ k.lastCall }}</div>
+                    </div>
+                    <span style="flex:1;min-width:0;font-family:IBM Plex Mono,monospace;font-size:13px;color:var(--text2);background:var(--bg);border:1px solid var(--line);padding:10px 12px;border-radius:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.masked }}</span>
+                    <button onClick="{{ k.reveal }}" style="background:var(--raised);border:1px solid var(--line3);color:var(--text);padding:10px 15px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">{{ k.revealLabel }}</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ settings.isNotif }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px">
+                <div style="font-family:Oswald,sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px">Notiser</div>
+                <sc-for list="{{ settings.notifs }}" as="n" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--line2)">
+                    <span style="flex:1;font-size:14.5px;color:var(--text2)">{{ n.label }}</span>
+                    <div style="display:flex;gap:3px;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:3px">
+                      <sc-for list="{{ n.channels }}" as="c" hint-placeholder-count="2">
+                        <button onClick="{{ c.go }}" style="border:none;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ settings.isLogs }}" hint-placeholder-val="{{ false }}">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+                <div style="padding:16px 20px;border-bottom:1px solid var(--line2);font-family:Oswald,sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Loggar</div>
+                <sc-for list="{{ settings.logs }}" as="l" hint-placeholder-count="8">
+                  <div style="display:flex;gap:14px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--rowline)">
+                    <span style="width:130px;font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--dim);flex-shrink:0">{{ l.time }}</span>
+                    <span style="width:120px;font-size:13.5px;color:var(--text2);flex-shrink:0">{{ l.admin }}</span>
+                    <span style="flex:1;min-width:0;font-size:13.5px">{{ l.event }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <div style="display:flex;justify-content:flex-end;position:sticky;bottom:16px">
+              <button onClick="{{ settings.save }}" style="background:var(--green);border:none;color:var(--ongreen);padding:13px 26px;border-radius:11px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 10px 28px var(--shadow)">Spara inställningar</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ users.slideOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:80;background:var(--overlay);display:flex;justify-content:flex-end">
+      <div onClick="{{ users.closeSlide }}" style="flex:1"></div>
+      <div style="width:480px;max-width:92vw;background:var(--bg);border-left:1px solid var(--line);overflow-y:auto;animation:admslide .24s cubic-bezier(.22,.9,.3,1)">
+        <div style="padding:20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:13px">
+          <span style="width:46px;height:46px;border-radius:99px;background:var(--raised);border:1px solid var(--line3);display:flex;align-items:center;justify-content:center;font-family:Oswald,sans-serif;font-size:19px;font-weight:600">{{ users.slide.initial }}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Oswald,sans-serif;font-size:20px;font-weight:600">{{ users.slide.name }}</div>
+            <div style="color:var(--dim);font-size:13px">{{ users.slide.email }}</div>
+          </div>
+          <button onClick="{{ users.closeSlide }}" style="background:var(--panel);border:1px solid var(--line);color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:16px">×</button>
+        </div>
+
+        <div style="padding:18px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+            <sc-for list="{{ users.slide.facts }}" as="f" hint-placeholder-count="4">
+              <div style="background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px">
+                <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:5px">{{ f.label }}</div>
+                <div style="font-family:IBM Plex Mono,monospace;font-size:15px;font-weight:600;color:{{ f.color }}">{{ f.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="flex:1">
+                <div style="font-size:14.5px;font-weight:600">Roll</div>
+                <div style="color:var(--muted);font-size:12.5px">Admins kommer åt hela panelen</div>
+              </div>
+              <div style="display:flex;gap:3px;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:3px">
+                <sc-for list="{{ users.slide.roles }}" as="r" hint-placeholder-count="2">
+                  <button onClick="{{ r.go }}" style="border:none;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ r.bg }};color:{{ r.fg }}">{{ r.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{ users.slide.confirmRole }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:13px;background:var(--amberSoft);border:1px solid var(--amberLine);border-radius:11px;padding:13px">
+                <div style="font-size:13.5px;color:var(--amber);font-weight:600;margin-bottom:4px">Är du säker?</div>
+                <div style="color:var(--text2);font-size:13px;line-height:1.5;margin-bottom:11px">Admins har full åtkomst till panelen, inklusive användardata och affiliateinställningar.</div>
+                <div style="display:flex;gap:9px">
+                  <button onClick="{{ users.slide.confirmYes }}" style="background:var(--amber);border:none;color:var(--sidebar);padding:9px 16px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer">Ja, gör till admin</button>
+                  <button onClick="{{ users.slide.confirmNo }}" style="background:transparent;border:1px solid var(--line3);color:var(--text2);padding:9px 16px;border-radius:9px;font-weight:600;font-size:13.5px;cursor:pointer">Avbryt</button>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:14px">
+            <div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Spelböcker</div>
+            <sc-for list="{{ users.slide.sheets }}" as="s" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line2)">
+                <span style="flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+                <span style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:{{ s.color }}">{{ s.netto }}</span>
+                <span style="font-size:9.5px;letter-spacing:.09em;font-weight:700;padding:3px 8px;border-radius:5px;background:{{ s.badgeBg }};color:{{ s.badgeFg }}">{{ s.badge }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:14px">
+            <div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Senaste 5 spel</div>
+            <sc-for list="{{ users.slide.bets }}" as="b" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line2)">
+                <span style="width:7px;height:7px;border-radius:99px;background:{{ b.dot }};flex-shrink:0"></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.match }}</div>
+                  <div style="color:var(--dim);font-size:11.5px;font-family:IBM Plex Mono,monospace">{{ b.pick }} @ {{ b.odds }}</div>
+                </div>
+                <span style="font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:600;color:{{ b.color }}">{{ b.netto }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="border:1px solid var(--redLine);background:var(--redSoft);border-radius:12px;padding:15px">
+            <div style="font-family:Oswald,sans-serif;font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--red);margin-bottom:6px">Riskzon</div>
+            <div style="color:var(--text2);font-size:13px;line-height:1.5;margin-bottom:12px">Kontot loggas ut direkt och spelböckerna döljs från topplistan. Åtgärden går att ångra.</div>
+            <button onClick="{{ users.slide.suspend }}" style="background:transparent;border:1px solid var(--red);color:var(--red);padding:11px 18px;border-radius:10px;font-weight:600;cursor:pointer">Stäng av konto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ banners.modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:80;background:var(--overlay);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:44px 16px;overflow:auto">
+      <div style="width:100%;max-width:620px;background:var(--panel);border:1px solid var(--line3);border-radius:15px;padding:22px;animation:admfade .2s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-family:Oswald,sans-serif;font-size:21px;font-weight:600;letter-spacing:.04em;text-transform:uppercase">{{ banners.modalTitle }}</div>
+          <button onClick="{{ banners.closeModal }}" style="background:transparent;border:1px solid var(--line3);color:var(--muted);width:33px;height:33px;border-radius:9px;cursor:pointer;font-size:16px">×</button>
+        </div>
+        <div style="border:1px dashed var(--line3);border-radius:12px;padding:26px;text-align:center;margin-bottom:16px">
+          <div style="color:var(--text2);font-size:14px;margin-bottom:5px">Dra hit bildfilen eller <span style="color:var(--cyan)">bläddra</span></div>
+          <div style="color:var(--dim);font-size:12.5px;font-family:IBM Plex Mono,monospace">Rekommenderat: 970×90 px · JPG, PNG eller WebP · max 300 kB</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div style="grid-column:span 2">
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Titel</div>
+            <input value="{{ banners.draft.title }}" onChange="{{ banners.onTitle }}" placeholder="Unibet höstkampanj" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;outline:none">
+          </div>
+          <div style="grid-column:span 2">
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Mål-URL</div>
+            <input value="{{ banners.draft.url }}" onChange="{{ banners.onUrl }}" placeholder="https://track.spelbok.se/…" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text2);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:12.5px;outline:none">
+          </div>
+          <div style="position:relative">
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Placering</div>
+            <button onClick="{{ banners.placeDd.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid {{ banners.placeDd.border }};color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;cursor:pointer;text-align:left">
+              <span style="flex:1">{{ banners.placeDd.label }}</span><span style="color:var(--dim);font-size:11px">▾</span>
+            </button>
+            <sc-if value="{{ banners.placeDd.open }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:20;background:var(--pop);border:1px solid var(--line3);border-radius:11px;box-shadow:0 18px 50px var(--shadow);padding:6px">
+                <sc-for list="{{ banners.placeDd.items }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.go }}" style="width:100%;text-align:left;background:{{ o.bg }};border:none;color:{{ o.fg }};padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer" style-hover="background:var(--hover2)">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:12px">
+            <div style="flex:1">
+              <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Aktiv</div>
+              <button onClick="{{ banners.toggleDraft }}" style="width:46px;height:26px;border-radius:99px;border:1px solid {{ banners.draftTg.border }};background:{{ banners.draftTg.track }};position:relative;cursor:pointer;padding:0">
+                <span style="position:absolute;top:2px;width:18px;height:18px;border-radius:99px;transition:left .16s ease;background:{{ banners.draftTg.knob }};left:{{ banners.draftTg.knobLeft }}"></span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Startdatum</div>
+            <input value="{{ banners.draft.start }}" onChange="{{ banners.onStart }}" placeholder="2026-08-14" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:13.5px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Slutdatum</div>
+            <input value="{{ banners.draft.end }}" onChange="{{ banners.onEnd }}" placeholder="Tillsvidare" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:13.5px;outline:none">
+          </div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--line2);border-radius:12px;padding:15px;margin-bottom:16px">
+          <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Förhandsvisning i AdSlot</div>
+          <div style="height:90px;border:1px dashed var(--line3);border-radius:10px;background:repeating-linear-gradient(135deg,#101623,#101623 9px,#141B2B 9px,#141B2B 18px);display:flex;align-items:center;justify-content:center;color:var(--dim);font-family:IBM Plex Mono,monospace;font-size:12px;letter-spacing:.13em">970×90 · {{ banners.draft.title }}</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button onClick="{{ banners.saveModal }}" style="flex:1;background:var(--green);border:none;color:var(--ongreen);padding:13px;border-radius:11px;font-weight:700;font-size:15px;cursor:pointer">Spara banner</button>
+          <button onClick="{{ banners.closeModal }}" style="background:var(--raised);border:1px solid var(--line3);color:var(--text2);padding:13px 20px;border-radius:11px;font-weight:600;cursor:pointer">Avbryt</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ comps.modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:80;background:var(--overlay);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:44px 16px;overflow:auto">
+      <div style="width:100%;max-width:580px;background:var(--panel);border:1px solid var(--line3);border-radius:15px;padding:22px;animation:admfade .2s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-family:Oswald,sans-serif;font-size:21px;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Skapa tävling</div>
+          <button onClick="{{ comps.closeModal }}" style="background:transparent;border:1px solid var(--line3);color:var(--muted);width:33px;height:33px;border-radius:9px;cursor:pointer;font-size:16px">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="grid-column:span 2">
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Namn</div>
+            <input value="{{ comps.draft.name }}" onChange="{{ comps.onName }}" placeholder="Allsvenskan-racet · September" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;outline:none">
+          </div>
+          <div style="grid-column:span 2">
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Beskrivning</div>
+            <textarea value="{{ comps.draft.desc }}" onChange="{{ comps.onDesc }}" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;line-height:1.5;outline:none;resize:vertical"></textarea>
+          </div>
+          <div>
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Start</div>
+            <input value="{{ comps.draft.start }}" onChange="{{ comps.onStart }}" placeholder="2026-09-01 00:00" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:13.5px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Slut</div>
+            <input value="{{ comps.draft.end }}" onChange="{{ comps.onEnd }}" placeholder="2026-09-30 23:59" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:13.5px;outline:none">
+          </div>
+          <div style="grid-column:span 2;border-top:1px solid var(--line2);padding-top:12px;margin-top:2px">
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Regler</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Minsta antal spel</div>
+                <input value="{{ comps.draft.minBets }}" onChange="{{ comps.onMinBets }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+              </div>
+              <div>
+                <div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">Minsta totalinsats (kr)</div>
+                <input value="{{ comps.draft.minStake }}" onChange="{{ comps.onMinStake }}" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-family:IBM Plex Mono,monospace;font-size:14px;outline:none">
+              </div>
+            </div>
+          </div>
+          <div style="grid-column:span 2">
+            <div style="font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Pris</div>
+            <input value="{{ comps.draft.prize }}" onChange="{{ comps.onPrize }}" placeholder="Presentkort 2 000 kr + trofé på profilen" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:11px 12px;border-radius:9px;font-size:14px;outline:none">
+          </div>
+          <div style="grid-column:span 2;display:flex;align-items:center;gap:14px;background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:13px">
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600">Synlighet</div>
+              <div style="color:var(--muted);font-size:12.5px">Publika tävlingar syns i appens tävlingslista</div>
+            </div>
+            <div style="display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px">
+              <sc-for list="{{ comps.visibility }}" as="o" hint-placeholder-count="2">
+                <button onClick="{{ o.go }}" style="border:none;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button onClick="{{ comps.saveModal }}" style="flex:1;background:var(--green);border:none;color:var(--ongreen);padding:13px;border-radius:11px;font-weight:700;font-size:15px;cursor:pointer">Skapa tävling</button>
+          <button onClick="{{ comps.closeModal }}" style="background:var(--raised);border:1px solid var(--line3);color:var(--text2);padding:13px 20px;border-radius:11px;font-weight:600;cursor:pointer">Avbryt</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:95;background:var(--pop);border:1px solid var(--line3);color:var(--text);padding:13px 22px;border-radius:11px;font-weight:600;box-shadow:0 14px 40px var(--shadow);animation:admfade .18s ease">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Skal&quot;},&quot;showAlerts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Skal&quot;}}">
+const GREEN = 'var(--green)', RED = 'var(--red)', AMBER = 'var(--amber)', CYAN = 'var(--cyan)', MUTED = 'var(--muted)', DIM = 'var(--dim)';
+const NAV = [
+  { key: 'home', label: 'Översikt', title: 'Översikt', r: '5px' },
+  { key: 'users', label: 'Användare', title: 'Användare', r: '99px' },
+  { key: 'books', label: 'Spelbolag', title: 'Spelbolag', r: '5px' },
+  { key: 'banners', label: 'Banners', title: 'Banners', r: '3px' },
+  { key: 'pages', label: 'Sidor', title: 'Sidor', r: '3px' },
+  { key: 'comps', label: 'Tävlingar', title: 'Tävlingar', r: '99px' },
+  { key: 'stats', label: 'Statistik', title: 'Statistik', r: '3px' },
+  { key: 'settle', label: 'Sättling', title: 'Sättling och matchdata', r: '5px', count: 3 },
+  { key: 'settings', label: 'Inställningar', title: 'Inställningar', r: '99px' }
+];
+const USERS = [
+  ['johanlind', 'johan@demo.se', 'Admin', '2025-11-04', 'för 4 min', 112, 18400, 1],
+  ['emmasjoberg', 'emma.sjoberg@gmail.com', 'Användare', '2026-01-18', 'för 22 min', 66, 9250, 1],
+  ['viktorahlgren', 'viktor.ahlgren@outlook.com', 'Användare', '2026-02-02', 'för 1 tim', 58, -3120, 1],
+  ['saranyberg', 'sara.nyberg@telia.com', 'Användare', '2026-02-27', 'för 3 tim', 47, 12680, 1],
+  ['marcusholm', 'marcus.holm@hotmail.se', 'Användare', '2026-03-14', 'igår', 52, -5840, 1],
+  ['linneabergstrom', 'linnea.b@gmail.com', 'Admin', '2025-12-09', 'för 2 tim', 31, 4120, 1],
+  ['oskarwikstrom', 'oskar.wikstrom@icloud.com', 'Användare', '2026-04-05', '3 dagar', 24, -960, 1],
+  ['idafalk', 'ida.falk@spray.se', 'Användare', '2026-05-21', '11 dagar', 19, 2340, 0],
+  ['gustavlundin', 'gustav.lundin@gmail.com', 'Användare', '2026-06-02', 'för 6 tim', 41, 7810, 1],
+  ['nataliehedman', 'natalie.hedman@yahoo.se', 'Användare', '2026-07-19', 'för 40 min', 15, -1450, 1]
+];
+const BANNERS = [
+  ['Unibet höstkampanj', '970×90', 'Startsida', 'track.spelbok.se/unibet-host', '14 aug – 31 aug', 'Aktiv', 1, 184200, 2418],
+  ['Bet365 livebetting', '300×250', 'Spelbok', 'track.spelbok.se/bet365-live', 'Tillsvidare', 'Aktiv', 1, 96400, 1122],
+  ['Betsson oddsboost', '970×90', 'Topplista', 'track.spelbok.se/betsson-boost', '1 sep – 30 sep', 'Schemalagd', 0, 0, 0],
+  ['Svenska Spel EM-kval', '300×250', 'Spelbolag', 'track.spelbok.se/svspel-emkval', '2 jun – 30 jun', 'Utgången', 0, 142800, 1604],
+  ['LeoVegas app', '970×90', 'Startsida', 'track.spelbok.se/leo-app', 'Tillsvidare', 'Aktiv', 1, 71300, 640],
+  ['ComeOn välkomst', '300×250', 'Spelbok', 'track.spelbok.se/comeon-valkomst', '10 aug – 24 aug', 'Aktiv', 1, 38900, 517]
+];
+const PAGES = [
+  ['Hur du hittar värde i odds', '/guider/hur-du-hittar-varde', 'Publicerad', 'johanlind', '2026-08-11'],
+  ['Bokför spelen: kom igång', '/guider/kom-igang', 'Publicerad', 'linneabergstrom', '2026-08-04'],
+  ['Vad är ROI och hitrate?', '/guider/roi-och-hitrate', 'Publicerad', 'johanlind', '2026-07-28'],
+  ['Om Spelbok', '/om-oss', 'Publicerad', 'linneabergstrom', '2026-06-30'],
+  ['Ansvarsfullt spelande', '/ansvarsfullt-spelande', 'Publicerad', 'johanlind', '2026-06-12'],
+  ['Så betygsätter vi spelbolag', '/om-oss/betygsattning', 'Utkast', 'linneabergstrom', '2026-08-14'],
+  ['Asiatiskt handikapp förklarat', '/guider/asiatiskt-handikapp', 'Utkast', 'johanlind', '2026-08-15']
+];
+const BODY = '## Vad betyder värde?\n\nEtt värdespel är ett spel där din bedömda sannolikhet är högre än den odds bolaget erbjuder implicerar. Räknar du 55 procents chans men får odds 2.00, som implicerar 50 procent, har du värde.\n\n### Räkna på implicerad sannolikhet\n\nDela ett med oddset. Odds 1.80 ger 0,556, alltså 55,6 procent. Ligger din egen bedömning över det talet är spelet värt att lägga.\n\n### Bokför allt, även förlusterna\n\nUtan bokföring vet du inte om värdet var verkligt eller om du bara hade tur under en period. Femtio spel säger lite, femhundra börjar säga något.\n\n> Den som inte för bok minns bara vinsterna.';
+const MANUAL = [
+  ['emmasjoberg', 'Frölunda vs Skellefteå', 'Ö5.5', '1.92', '500 kr', 'Match uppskjuten'],
+  ['viktorahlgren', 'Sirius vs Mjällby', 'Hemma DNB', '1.75', '300 kr', 'Fixture saknas'],
+  ['marcusholm', 'Ajax vs Benfica', 'Ö9.5 hörnor', '2.05', '250 kr', 'Oklart resultat']
+];
+const LOG = [
+  ['22:41', 'Liverpool vs Wolves', '2–1', '48 spel rättade', 1],
+  ['22:38', 'Malmö FF vs AIK', '1–1', '36 spel rättade', 1],
+  ['22:30', 'Färjestad vs Luleå', '3–2', '27 spel rättade', 1],
+  ['22:22', 'Real Madrid vs Inter', '2–0', '61 spel rättade', 1],
+  ['22:15', 'Häcken vs Elfsborg', '0–2', '19 spel rättade', 0],
+  ['22:04', 'Rögle vs HV71', '4–3', '31 spel rättade', 1],
+  ['21:55', 'Arsenal vs Brighton', '3–1', '52 spel rättade', 1],
+  ['21:47', 'Djurgården vs Hammarby', '2–2', '44 spel rättade', 1]
+];
+const LOGS = [
+  ['2026-08-16 09:14', 'johanlind', 'Ändrade roll för användare emmasjoberg till Admin'],
+  ['2026-08-16 08:52', 'linneabergstrom', 'Publicerade sidan /guider/hur-du-hittar-varde'],
+  ['2026-08-15 22:41', 'system', 'Auto-rättade 348 spel mot API-Football'],
+  ['2026-08-15 17:20', 'johanlind', 'Raderade banner "Bethard sommar"'],
+  ['2026-08-15 14:06', 'linneabergstrom', 'Uppdaterade rank för Betsson till 3'],
+  ['2026-08-14 11:38', 'johanlind', 'Stängde av konto idafalk'],
+  ['2026-08-14 10:02', 'linneabergstrom', 'Skapade tävlingen "Allsvenskan-racet · Augusti"'],
+  ['2026-08-13 19:47', 'johanlind', 'Roterade API-nyckel för The Odds API']
+];
+
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function nf(n) { return Math.round(n).toLocaleString('sv-SE'); }
+function money(n) { return (n > 0 ? '+' : n < 0 ? '−' : '') + nf(Math.abs(n)) + ' kr'; }
+
+class Component extends DCLogic {
+  state = {
+    route: 'home', query: '', dd: null, toast: '', theme: null,
+    userChip: 'Alla', menuRow: null, slideUser: null, confirmRole: false, roleDraft: null,
+    bookSel: 0, bookForm: null, dirty: false, bookActive: {},
+    bannerPlace: 'Alla', bannerModal: false, bannerDraft: { title: 'Unibet höstkampanj', url: 'https://track.spelbok.se/unibet-host', place: 'Startsida', start: '2026-08-14', end: '2026-08-31', active: true }, bannerOn: {},
+    pageMode: 'edit', pageTab: 'Redigera', pageDoc: null, pageQ: '', pageFooter: true, pageAuthor: 'johanlind',
+    compTab: 'Pågående', compModal: false, compDraft: { name: '', desc: '', start: '2026-09-01 00:00', end: '2026-09-30 23:59', minBets: '15', minStake: '2000', prize: 'Presentkort 2 000 kr + trofé på profilen', vis: 'Publik' },
+    statsPeriod: '30 dagar', statsCompare: true,
+    setTab: 'Allmänt', setFlags: { open: true, maintenance: false }, revealed: {},
+    notifCh: { 'Ny användare': 'Mejl', 'Sättling kräver manuell hantering': 'Mejl', 'API-kvot över 80 %': 'Mejl', 'Ny tävlingsanmälan': 'Ingen' },
+    siteName: 'Spelbok', currency: 'SEK'
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ vw: window.innerWidth });
+    window.addEventListener('resize', this.onResize);
+    this.onResize();
+    let saved = null;
+    try { saved = localStorage.getItem('spelbok.admin.theme'); } catch (e) { }
+    this.setState({ theme: saved === 'light' || saved === 'dark' ? saved : (this.props.theme || 'dark') }, () => this.syncBody());
+  }
+  componentDidUpdate(prev, prevState) { if (prevState.theme !== this.state.theme) this.syncBody(); }
+  syncBody() {
+    const light = this.theme() === 'light';
+    document.body.style.background = light ? '#EDF0F6' : '#0F1420';
+    try { localStorage.setItem('spelbok.admin.theme', this.theme()); } catch (e) { }
+  }
+  theme() { return this.state.theme || this.props.theme || 'dark'; }
+  componentWillUnmount() { clearTimeout(this._t); window.removeEventListener('resize', this.onResize); }
+  toast(m) { this.setState({ toast: m }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2400); }
+  tg(on) { return { track: on ? 'var(--greenSoft)' : 'var(--bg)', border: on ? 'var(--greenLine)' : 'var(--line3)', knob: on ? GREEN : 'var(--dim)', knobLeft: on ? 'calc(100% - 18px)' : '2px' }; }
+  dd(key, current, options, onPick, labelOf) {
+    const open = this.state.dd === key;
+    return {
+      open: open, border: open ? 'var(--focus)' : 'var(--line)', label: labelOf ? labelOf(current) : current,
+      toggle: () => this.setState({ dd: open ? null : key }),
+      items: options.map(o => ({
+        label: labelOf ? labelOf(o) : o, go: () => { this.setState({ dd: null }); onPick(o); },
+        bg: o === current ? 'var(--hover2)' : 'transparent', fg: o === current ? 'var(--text)' : 'var(--text2)'
+      }))
+    };
+  }
+  curve(vals, W, H, min, max) {
+    const x = i => i / (vals.length - 1) * W, y = v => H - (v - min) / (max - min) * H;
+    return vals.map((v, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1)).join(' ');
+  }
+  bms() { return (window.SBBookmakers || []).slice().sort((a, b) => a.rank - b.rank); }
+  starRow(rating) {
+    const pts = '10,1.6 12.4,7 18.3,7.6 13.9,11.6 15.1,17.4 10,14.4 4.9,17.4 6.1,11.6 1.7,7.6 7.6,7';
+    let base = '', fill = '';
+    for (let i = 0; i < 5; i++) {
+      base += '<polygon points="' + pts + '" transform="translate(' + i * 21 + ',0)" fill="var(--line3)"/>';
+      fill += '<polygon points="' + pts + '" transform="translate(' + i * 21 + ',0)" fill="var(--amber)"/>';
+    }
+    const w = Math.max(0, Math.min(1, rating / 5)) * 104;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 20">' + base +
+      '<mask id="m"><rect x="0" y="0" width="' + w.toFixed(1) + '" height="20" fill="white"/></mask>' +
+      '<g mask="url(#m)">' + fill + '</g></svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(svg).replace(/\(/g, '%28').replace(/\)/g, '%29');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const nav = NAV.find(n => n.key === s.route) || NAV[0];
+    const theme = this.theme();
+    const v = {
+      title: nav.title, query: s.query, alerts: '3', dirty: s.dirty, hasToast: !!s.toast, toast: s.toast,
+      theme: theme,
+      themes: [
+        { key: 'dark', label: 'Mörkt', title: 'Mörkt tema' },
+        { key: 'light', label: 'Ljust', title: 'Ljust tema' }
+      ].map(t => ({
+        label: t.label, title: t.title, go: () => this.setState({ theme: t.key }),
+        bg: theme === t.key ? 'var(--raised)' : 'transparent',
+        fg: theme === t.key ? 'var(--text)' : 'var(--muted)'
+      })),
+      onQuery: e => this.setState({ query: e.target.value }),
+      onBell: () => this.toast('3 notiser: 3 spel behöver manuell hantering.'),
+      isHome: s.route === 'home', isUsers: s.route === 'users', isBooks: s.route === 'books',
+      isBanners: s.route === 'banners', isPages: s.route === 'pages', isComps: s.route === 'comps',
+      isStats: s.route === 'stats', isSettle: s.route === 'settle', isSettings: s.route === 'settings',
+      nav: NAV.map(n => {
+        const on = s.route === n.key;
+        return {
+          label: n.label, go: () => this.setState({ route: n.key, dd: null, menuRow: null }),
+          bg: on ? 'var(--hover)' : 'transparent', edge: on ? GREEN : 'transparent',
+          fg: on ? 'var(--text)' : MUTED, iconRadius: n.r, iconFill: on ? 'var(--greenSoft)' : 'transparent',
+          hasCount: !!n.count, count: String(n.count || '')
+        };
+      })
+    };
+
+    /* Översikt */
+    const r = mulberry(4711);
+    const reg = []; let base = 18;
+    for (let i = 0; i < 30; i++) { base += (r() - 0.42) * 7; reg.push(Math.max(6, base)); }
+    const rmin = 0, rmax = Math.max.apply(null, reg) * 1.15;
+    const line = this.curve(reg, 800, 210, rmin, rmax);
+    v.home = {
+      kpis: [
+        { label: 'Användare totalt', value: '4 218', color: 'var(--text)', delta: '+842 senaste 30 dagarna', deltaColor: GREEN },
+        { label: 'Nya idag', value: '+37', color: GREEN, delta: 'snitt 28 per dag', deltaColor: MUTED },
+        { label: 'Spel idag', value: '1 204', color: 'var(--text)', delta: '+9 % mot igår', deltaColor: GREEN },
+        { label: 'Affiliateklick idag', value: '312', color: CYAN, delta: '−3 % mot igår', deltaColor: RED }
+      ],
+      chart: {
+        line: line, area: line + ' L800 210 L0 210 Z',
+        yLabels: [0, 1, 2, 3, 4].map(i => String(Math.round(rmax - rmax * i / 4))),
+        xLabels: ['18 jul', '26 jul', '4 aug', '16 aug']
+      },
+      events: [
+        { color: GREEN, text: 'Ny användare: nataliehedman', detail: 'Registrerad via organiskt sök', time: 'för 4 min' },
+        { color: CYAN, text: 'Affiliateklick: Unibet', detail: 'Från spelbolagssidan, position 1', time: 'för 6 min' },
+        { color: 'var(--blue)', text: 'Nytt spel loggat', detail: 'Liverpool vs Wolves · Ö2.5 @ 1.83', time: 'för 11 min' },
+        { color: AMBER, text: 'Banner publicerad: ComeOn välkomst', detail: 'Placering Spelbok · 300×250', time: 'för 38 min' },
+        { color: GREEN, text: 'Ny användare: gustavlundin', detail: 'Registrerad via kampanjlänk', time: 'för 1 tim' },
+        { color: RED, text: 'Sättling kräver manuell hantering', detail: 'Sirius vs Mjällby · fixture saknas', time: 'för 2 tim' },
+        { color: CYAN, text: 'Affiliateklick: Bet365', detail: 'Från spreadsheet-widget', time: 'för 2 tim' },
+        { color: 'var(--blue)', text: 'Tävling skapad: Allsvenskan-racet', detail: 'av linneabergstrom · publik', time: 'igår 14:02' }
+      ]
+    };
+
+    /* Användare */
+    const chip = s.userChip;
+    const rows = USERS.filter(u =>
+      (chip === 'Alla' || (chip === 'Admins' && u[2] === 'Admin') || (chip === 'Aktiva 7 dagar' && u[7] === 1 && u[4].indexOf('dagar') < 0) || (chip === 'Avstängda' && u[7] === 0)) &&
+      (!s.query.trim() || (u[0] + u[1]).toLowerCase().indexOf(s.query.trim().toLowerCase()) >= 0)
+    );
+    const slide = s.slideUser != null ? USERS[s.slideUser] : null;
+    v.users = {
+      noop: () => { },
+      exportCsv: () => this.toast('CSV med 4 218 rader exporterad.'),
+      chips: ['Alla', 'Admins', 'Aktiva 7 dagar', 'Avstängda'].map(c => {
+        const on = chip === c;
+        return {
+          label: c, go: () => this.setState({ userChip: c }),
+          bg: on ? 'var(--greenSoft)' : 'var(--panel)', fg: on ? GREEN : 'var(--text2)', border: on ? 'var(--greenLine)' : 'var(--line)'
+        };
+      }),
+      rows: rows.map(u => {
+        const i = USERS.indexOf(u);
+        return {
+          initial: u[0].charAt(0).toUpperCase(), name: u[0], email: u[1],
+          role: u[2], roleBg: u[2] === 'Admin' ? 'var(--amberSoft)' : 'var(--raised)', roleFg: u[2] === 'Admin' ? AMBER : MUTED,
+          joined: u[3], seen: u[4], bets: nf(u[5]), netto: money(u[6]), nettoColor: u[6] > 0 ? GREEN : RED,
+          status: u[7] ? 'Aktiv' : 'Avstängd', statusColor: u[7] ? GREEN : RED,
+          open: () => this.setState({ slideUser: i, confirmRole: false, roleDraft: null, menuRow: null }),
+          menu: () => this.setState({ menuRow: s.menuRow === i ? null : i }),
+          menuOpen: s.menuRow === i,
+          menuItems: [
+            { label: 'Visa profil', fg: 'var(--text)', go: () => this.setState({ slideUser: i, menuRow: null, confirmRole: false }) },
+            { label: u[2] === 'Admin' ? 'Ta bort adminrätt' : 'Gör till admin', fg: 'var(--text)', go: () => this.setState({ slideUser: i, menuRow: null, confirmRole: true, roleDraft: u[2] === 'Admin' ? 'Användare' : 'Admin' }) },
+            { label: 'Återställ lösenord', fg: 'var(--text)', go: () => { this.setState({ menuRow: null }); this.toast('Återställningslänk skickad till ' + u[1]); } },
+            { label: 'Stäng av konto', fg: RED, go: () => { this.setState({ menuRow: null }); this.toast('Kontot ' + u[0] + ' är avstängt.'); } }
+          ]
+        };
+      }),
+      slideOpen: !!slide,
+      closeSlide: () => this.setState({ slideUser: null, confirmRole: false }),
+      slide: slide ? {
+        initial: slide[0].charAt(0).toUpperCase(), name: slide[0], email: slide[1],
+        facts: [
+          { label: 'Registrerad', value: slide[3], color: 'var(--text)' },
+          { label: 'Senast aktiv', value: slide[4], color: 'var(--text2)' },
+          { label: 'Loggade spel', value: nf(slide[5]), color: 'var(--text)' },
+          { label: 'Netto', value: money(slide[6]), color: slide[6] > 0 ? GREEN : RED }
+        ],
+        roles: ['Användare', 'Admin'].map(rl => {
+          const cur = s.roleDraft || slide[2];
+          return {
+            label: rl, bg: cur === rl ? 'var(--raised)' : 'transparent', fg: cur === rl ? 'var(--text)' : MUTED,
+            go: () => this.setState({ roleDraft: rl, confirmRole: rl !== slide[2] })
+          };
+        }),
+        confirmRole: s.confirmRole,
+        confirmYes: () => { this.setState({ confirmRole: false }); this.toast('Rollen är uppdaterad.'); },
+        confirmNo: () => this.setState({ confirmRole: false, roleDraft: null }),
+        sheets: [
+          { name: 'Huvudboken 2026', netto: money(Math.round(slide[6] * 0.72)), color: slide[6] > 0 ? GREEN : RED, badge: 'PUBLIK', badgeBg: 'var(--greenSoft)', badgeFg: GREEN },
+          { name: 'Totaler & hörnor', netto: money(Math.round(slide[6] * 0.28)), color: slide[6] > 0 ? GREEN : RED, badge: 'PRIVAT', badgeBg: 'var(--raised)', badgeFg: MUTED }
+        ],
+        bets: [
+          { match: 'Liverpool vs Wolves', pick: 'Ö2.5', odds: '1.83', netto: '+415 kr', color: GREEN, dot: GREEN },
+          { match: 'Malmö FF vs AIK', pick: 'Hemma DNB', odds: '1.66', netto: '−500 kr', color: RED, dot: RED },
+          { match: 'Frölunda vs Luleå', pick: 'Ö5.5', odds: '1.95', netto: '+285 kr', color: GREEN, dot: GREEN },
+          { match: 'Real Madrid vs Inter', pick: 'Båda lagen mål', odds: '1.72', netto: '−300 kr', color: RED, dot: RED },
+          { match: 'Häcken vs Elfsborg', pick: 'U2.5', odds: '2.10', netto: '0 kr', color: MUTED, dot: AMBER }
+        ],
+        suspend: () => { this.setState({ slideUser: null }); this.toast('Kontot ' + slide[0] + ' är avstängt.'); }
+      } : {}
+    };
+
+    /* Spelbolag */
+    const bms = this.bms();
+    const sel = bms[Math.min(s.bookSel, bms.length - 1)] || bms[0];
+    const form = s.bookForm && s.bookForm.id === (sel || {}).name ? s.bookForm : null;
+    const fv = k => form ? form[k] : null;
+    const setForm = patch => {
+      const cur = form || { id: sel.name };
+      this.setState({ bookForm: Object.assign({}, cur, patch), dirty: true });
+    };
+    const plusList = (fv('plus') || (sel ? sel.plus : []) || []).slice();
+    const minusList = (fv('minus') || (sel ? sel.minus : []) || []).slice();
+    const pays = fv('payments') || (sel ? sel.payments : []) || [];
+    const rr = mulberry(sel ? sel.rank * 97 : 1);
+    v.books = {
+      cols: (s.vw || 1440) >= 1200 ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)',
+      list: bms.map((b, i) => {
+        const active = s.bookActive[b.name] !== false;
+        return {
+          rank: String(b.rank), rankColor: b.rank <= 3 ? [AMBER, '#C9D1DE', '#D08A55'][b.rank - 1] : MUTED,
+          name: b.name, logo: b.logo, brand: b.brand, stars: this.starRow(b.rating), ratingShort: b.rating.toFixed(1).replace('.', ','),
+          fast: !!b.fastPayout, clicks: nf(1400 - i * 132) + ' klick',
+          bg: sel && b.name === sel.name ? 'var(--hover)' : 'transparent',
+          edge: sel && b.name === sel.name ? GREEN : 'transparent',
+          select: () => this.setState({ bookSel: i, bookForm: null }),
+          tg: this.tg(active),
+          toggleActive: () => this.setState({ bookActive: Object.assign({}, s.bookActive, { [b.name]: !active }), dirty: true })
+        };
+      }),
+      form: sel ? {
+        name: fv('name') != null ? fv('name') : sel.name,
+        slug: fv('slug') != null ? fv('slug') : '/spelbolag/' + sel.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        rating: fv('rating') != null ? fv('rating') : sel.rating.toFixed(1).replace('.', ','),
+        ratingShort: (fv('rating') != null ? fv('rating') : sel.rating.toFixed(1).replace('.', ',')),
+        rank: fv('rank') != null ? fv('rank') : String(sel.rank),
+        logo: sel.logo, brand: sel.brand,
+        bonus: fv('bonus') != null ? fv('bonus') : sel.bonus,
+        bonusHeadline: sel.bonusValueText || sel.bonus,
+        bonusValue: fv('bonusValue') != null ? fv('bonusValue') : String(sel.bonusValue),
+        terms: fv('terms') != null ? fv('terms') : sel.terms,
+        usp: fv('usp') != null ? fv('usp') : sel.usp,
+        review: fv('review') != null ? fv('review') : sel.review,
+        tracking: fv('tracking') != null ? fv('tracking') : sel.trackingUrl,
+        clicks: nf(1400 - sel.rank * 120) + ' klick',
+        spark: Array.from({ length: 30 }, () => Math.round(20 + rr() * 80) + '%'),
+        plus: plusList.map((p, i) => ({
+          text: p, onChange: e => { const n = plusList.slice(); n[i] = e.target.value; setForm({ plus: n }); },
+          remove: () => setForm({ plus: plusList.filter((_, j) => j !== i) })
+        })),
+        minus: minusList.map((m, i) => ({
+          text: m, onChange: e => { const n = minusList.slice(); n[i] = e.target.value; setForm({ minus: n }); },
+          remove: () => setForm({ minus: minusList.filter((_, j) => j !== i) })
+        })),
+        payments: ['Swish', 'Trustly', 'Bankkort', 'Apple Pay', 'Klarna'].map(p => {
+          const on = pays.indexOf(p) >= 0;
+          return {
+            label: p, logo: (window.SBPayments || {})[p], opacity: on ? '1' : '.4',
+            bg: on ? 'var(--greenSoft)' : 'var(--bg)', fg: on ? GREEN : 'var(--text2)', border: on ? 'var(--greenLine)' : 'var(--line)',
+            go: () => setForm({ payments: on ? pays.filter(x => x !== p) : pays.concat([p]) })
+          };
+        })
+      } : {},
+      onName: e => setForm({ name: e.target.value }), onSlug: e => setForm({ slug: e.target.value }),
+      onRating: e => setForm({ rating: e.target.value }), onRank: e => setForm({ rank: e.target.value }),
+      onBonus: e => setForm({ bonus: e.target.value }), onBonusValue: e => setForm({ bonusValue: e.target.value }),
+      onTerms: e => setForm({ terms: e.target.value }), onUsp: e => setForm({ usp: e.target.value }),
+      onReview: e => setForm({ review: e.target.value }), onTracking: e => setForm({ tracking: e.target.value }),
+      addPlus: () => setForm({ plus: plusList.concat(['']) }),
+      addMinus: () => setForm({ minus: minusList.concat(['']) }),
+      testLink: () => this.toast('Länken svarade 302 → landningssida OK.'),
+      save: () => { this.setState({ dirty: false }); this.toast('Ändringarna är sparade.'); },
+      unpublish: () => this.toast(sel.name + ' är avpublicerad från topplistan.')
+    };
+
+    /* Banners */
+    const place = s.bannerPlace;
+    v.banners = {
+      dd: this.dd('bplace', place, ['Alla', 'Startsida', 'Spelbok', 'Topplista', 'Spelbolag'], val => this.setState({ bannerPlace: val })),
+      create: () => this.setState({ bannerModal: true }),
+      modalOpen: s.bannerModal, modalTitle: 'Ny banner',
+      closeModal: () => this.setState({ bannerModal: false, dd: null }),
+      saveModal: () => { this.setState({ bannerModal: false }); this.toast('Bannern är sparad.'); },
+      draft: s.bannerDraft, draftTg: this.tg(s.bannerDraft.active),
+      toggleDraft: () => this.setState({ bannerDraft: Object.assign({}, s.bannerDraft, { active: !s.bannerDraft.active }) }),
+      onTitle: e => this.setState({ bannerDraft: Object.assign({}, s.bannerDraft, { title: e.target.value }) }),
+      onUrl: e => this.setState({ bannerDraft: Object.assign({}, s.bannerDraft, { url: e.target.value }) }),
+      onStart: e => this.setState({ bannerDraft: Object.assign({}, s.bannerDraft, { start: e.target.value }) }),
+      onEnd: e => this.setState({ bannerDraft: Object.assign({}, s.bannerDraft, { end: e.target.value }) }),
+      placeDd: this.dd('bmodalplace', s.bannerDraft.place, ['Startsida', 'Spelbok', 'Topplista', 'Spelbolag'],
+        val => this.setState({ bannerDraft: Object.assign({}, this.state.bannerDraft, { place: val }) })),
+      list: BANNERS.filter(b => place === 'Alla' || b[2] === place).map((b, i) => {
+        const on = s.bannerOn[b[0]] != null ? s.bannerOn[b[0]] : !!b[6];
+        const ctr = b[7] ? (b[8] / b[7] * 100).toFixed(2).replace('.', ',') + ' %' : '—';
+        return {
+          title: b[0], size: b[1], placement: b[2], url: b[3], period: b[4], state: b[5],
+          previewH: b[1] === '970×90' ? '90px' : '160px',
+          stateBg: b[5] === 'Aktiv' ? 'var(--greenSoft)' : b[5] === 'Schemalagd' ? 'var(--amberSoft)' : 'var(--raised)',
+          stateFg: b[5] === 'Aktiv' ? GREEN : b[5] === 'Schemalagd' ? AMBER : MUTED,
+          opacity: b[5] === 'Utgången' ? '.55' : '1',
+          impressions: nf(b[7]), clicks: nf(b[8]), ctr: ctr,
+          tg: this.tg(on),
+          toggle: () => this.setState({ bannerOn: Object.assign({}, s.bannerOn, { [b[0]]: !on }) }),
+          edit: () => this.setState({ bannerModal: true, bannerDraft: { title: b[0], url: 'https://' + b[3], place: b[2], start: '2026-08-14', end: '2026-08-31', active: on } }),
+          remove: () => this.toast('Bannern "' + b[0] + '" är raderad.')
+        };
+      })
+    };
+
+    /* Sidor */
+    const doc = s.pageDoc || {
+      title: 'Hur du hittar värde i odds', slug: '/guider/hur-du-hittar-varde', body: BODY,
+      state: 'Publicerad', seoTitle: 'Hitta värde i odds — guide för dig som bokför spel',
+      seoDesc: 'Lär dig räkna implicerad sannolikhet, jämföra mot din egen bedömning och bokföra spelen så att du ser om värdet var verkligt.'
+    };
+    const setDoc = patch => this.setState({ pageDoc: Object.assign({}, doc, patch), dirty: true });
+    const preview = doc.body.split('\n').filter(l => l.trim()).map(l => {
+      if (l.indexOf('### ') === 0) return { text: l.slice(4), font: 'Oswald, sans-serif', size: '19px', weight: '600', color: 'var(--text)', lh: '1.3' };
+      if (l.indexOf('## ') === 0) return { text: l.slice(3), font: 'Oswald, sans-serif', size: '25px', weight: '600', color: 'var(--text)', lh: '1.2' };
+      if (l.indexOf('> ') === 0) return { text: l.slice(2), font: 'Barlow, sans-serif', size: '16px', weight: '500', color: 'var(--muted)', lh: '1.6' };
+      return { text: l, font: 'Barlow, sans-serif', size: '15px', weight: '400', color: 'var(--text2)', lh: '1.7' };
+    });
+    v.pages = {
+      isList: s.pageMode === 'list', isEdit: s.pageMode === 'edit', q: s.pageQ,
+      onQ: e => this.setState({ pageQ: e.target.value }),
+      create: () => this.setState({ pageMode: 'edit', pageDoc: { title: 'Ny sida', slug: '/ny-sida', body: '## Rubrik\n\nSkriv innehållet här.', state: 'Utkast', seoTitle: '', seoDesc: '' } }),
+      back: () => this.setState({ pageMode: 'list' }),
+      rows: PAGES.filter(p => !s.pageQ.trim() || (p[0] + p[1]).toLowerCase().indexOf(s.pageQ.trim().toLowerCase()) >= 0).map(p => ({
+        title: p[0], slug: p[1], state: p[2], author: p[3], updated: p[4],
+        stateBg: p[2] === 'Publicerad' ? 'var(--greenSoft)' : 'var(--raised)',
+        stateFg: p[2] === 'Publicerad' ? GREEN : MUTED,
+        edit: () => this.setState({ pageMode: 'edit', pageDoc: { title: p[0], slug: p[1], body: BODY, state: p[2], seoTitle: p[0] + ' — Spelbok', seoDesc: 'Guide från Spelbok om ' + p[0].toLowerCase() + '.' } })
+      })),
+      savedAgo: '12 sek',
+      doc: Object.assign({}, doc, {
+        stateBg: doc.state === 'Publicerad' ? 'var(--greenSoft)' : 'var(--raised)',
+        stateFg: doc.state === 'Publicerad' ? GREEN : MUTED,
+        savedAt: '09:41',
+        seoTitleCount: String(doc.seoTitle.length), seoTitleColor: doc.seoTitle.length > 60 ? RED : doc.seoTitle.length > 50 ? AMBER : MUTED,
+        seoDescCount: String(doc.seoDesc.length), seoDescColor: doc.seoDesc.length > 160 ? RED : doc.seoDesc.length > 140 ? AMBER : MUTED
+      }),
+      onTitle: e => setDoc({ title: e.target.value }), onBody: e => setDoc({ body: e.target.value }),
+      onSeoTitle: e => setDoc({ seoTitle: e.target.value }), onSeoDesc: e => setDoc({ seoDesc: e.target.value }),
+      onSlug: e => setDoc({ slug: e.target.value }),
+      tools: ['H2', 'H3', 'B', 'I', 'Länk', 'Lista', 'Citat', 'Bild'].map(t => ({ label: t, go: () => this.toast(t + ' infogad i markdown.') })),
+      tabs: ['Redigera', 'Förhandsgranska'].map(t => ({
+        label: t, go: () => this.setState({ pageTab: t }),
+        bg: s.pageTab === t ? 'var(--raised)' : 'transparent', fg: s.pageTab === t ? 'var(--text)' : MUTED
+      })),
+      isWrite: s.pageTab === 'Redigera', isPreview: s.pageTab === 'Förhandsgranska', preview: preview,
+      publish: () => { this.setState({ dirty: false }); this.toast('Sidan är publicerad.'); },
+      saveDraft: () => { this.setState({ dirty: false }); this.toast('Utkastet är sparat.'); },
+      authorDd: this.dd('author', s.pageAuthor, ['johanlind', 'linneabergstrom', 'redaktionen'], val => this.setState({ pageAuthor: val })),
+      footerTg: this.tg(s.pageFooter),
+      toggleFooter: () => this.setState({ pageFooter: !s.pageFooter })
+    };
+
+    /* Tävlingar */
+    v.comps = {
+      tabs: ['Pågående', 'Kommande', 'Avslutade'].map(t => ({
+        label: t, go: () => this.setState({ compTab: t }),
+        bg: s.compTab === t ? 'var(--raised)' : 'transparent', fg: s.compTab === t ? 'var(--text)' : MUTED
+      })),
+      isLive: s.compTab !== 'Avslutade', isDone: s.compTab === 'Avslutade',
+      create: () => this.setState({ compModal: true }),
+      modalOpen: s.compModal, closeModal: () => this.setState({ compModal: false, dd: null }),
+      saveModal: () => { this.setState({ compModal: false }); this.toast('Tävlingen är skapad.'); },
+      draft: s.compDraft,
+      onName: e => this.setState({ compDraft: Object.assign({}, s.compDraft, { name: e.target.value }) }),
+      onDesc: e => this.setState({ compDraft: Object.assign({}, s.compDraft, { desc: e.target.value }) }),
+      onStart: e => this.setState({ compDraft: Object.assign({}, s.compDraft, { start: e.target.value }) }),
+      onEnd: e => this.setState({ compDraft: Object.assign({}, s.compDraft, { end: e.target.value }) }),
+      onMinBets: e => this.setState({ compDraft: Object.assign({}, s.compDraft, { minBets: e.target.value }) }),
+      onMinStake: e => this.setState({ compDraft: Object.assign({}, s.compDraft, { minStake: e.target.value }) }),
+      onPrize: e => this.setState({ compDraft: Object.assign({}, s.compDraft, { prize: e.target.value }) }),
+      visibility: ['Publik', 'Endast inbjudna'].map(o => ({
+        label: o, go: () => this.setState({ compDraft: Object.assign({}, s.compDraft, { vis: o }) }),
+        bg: s.compDraft.vis === o ? 'var(--raised)' : 'transparent', fg: s.compDraft.vis === o ? 'var(--text)' : MUTED
+      })),
+      cards: [
+        { name: 'Allsvenskan-racet · Augusti', countdown: 'Slutar om 14 dagar', period: '2026-08-01 → 2026-08-31', players: '186', turnover: '412 400 kr', top: [['emmasjoberg', 9250], ['saranyberg', 6120], ['gustavlundin', 4870]] },
+        { name: 'SHL-premiären', countdown: 'Slutar om 26 dagar', period: '2026-08-05 → 2026-09-11', players: '94', turnover: '188 300 kr', top: [['johanlind', 7420], ['viktorahlgren', 3180], ['marcusholm', -1240]] },
+        { name: 'CL-gruppspelet', countdown: 'Slutar om 41 dagar', period: '2026-08-12 → 2026-09-26', players: '312', turnover: '806 900 kr', top: [['saranyberg', 12680], ['linneabergstrom', 8340], ['emmasjoberg', 5210]] }
+      ].map(c => ({
+        name: c.name, countdown: c.countdown, period: c.period, players: c.players, turnover: c.turnover,
+        top: c.top.map((t, i) => ({
+          rank: String(i + 1), rankColor: [AMBER, '#C9D1DE', '#D08A55'][i], initial: t[0].charAt(0).toUpperCase(),
+          name: t[0], netto: money(t[1]), color: t[1] > 0 ? GREEN : RED
+        })),
+        edit: () => this.setState({ compModal: true }),
+        board: () => this.toast('Öppnar full topplista för ' + c.name),
+        stop: () => this.toast(c.name + ' avslutades i förtid.')
+      })),
+      done: [
+        { name: 'Sommarslaget 2026', period: '2026-06-01 → 2026-07-31', winner: 'saranyberg', netto: '+24 180 kr' },
+        { name: 'Vårracet 2026', period: '2026-03-01 → 2026-05-31', winner: 'johanlind', netto: '+31 640 kr' },
+        { name: 'Vinterserien 2026', period: '2026-01-01 → 2026-02-28', winner: 'emmasjoberg', netto: '+18 920 kr' },
+        { name: 'Julkampen 2025', period: '2025-12-01 → 2025-12-31', winner: 'linneabergstrom', netto: '+9 450 kr' }
+      ].map(d => Object.assign({}, d, { view: e => { e.preventDefault(); this.toast('Öppnar resultat för ' + d.name); } }))
+    };
+
+    /* Statistik */
+    const r2 = mulberry(90210);
+    const cur = [], prv = [];
+    let c1 = 2400, c2 = 2280;
+    for (let i = 0; i < 30; i++) { c1 += (r2() - 0.4) * 90; c2 += (r2() - 0.46) * 80; cur.push(c1); prv.push(c2); }
+    const all = cur.concat(prv);
+    const mn = Math.min.apply(null, all) * 0.94, mx = Math.max.apply(null, all) * 1.05;
+    const curLine = this.curve(cur, 1000, 230, mn, mx);
+    v.stats = {
+      periods: ['7 dagar', '30 dagar', '3 månader', '1 år'].map(p => ({
+        label: p, go: () => this.setState({ statsPeriod: p }),
+        bg: s.statsPeriod === p ? 'var(--raised)' : 'transparent', fg: s.statsPeriod === p ? 'var(--text)' : MUTED
+      })),
+      compare: s.statsCompare, cmpTg: this.tg(s.statsCompare),
+      toggleCompare: () => this.setState({ statsCompare: !s.statsCompare }),
+      kpis: [
+        { label: 'Aktiva användare', value: '2 847', delta: '12 %', arrow: '▲', color: GREEN },
+        { label: 'Nya registreringar', value: '312', delta: '8 %', arrow: '▲', color: GREEN },
+        { label: 'Loggade spel', value: '18 440', delta: '15 %', arrow: '▲', color: GREEN },
+        { label: 'Affiliateklick', value: '4 102', delta: '3 %', arrow: '▼', color: RED }
+      ],
+      chart: { line: curLine, area: curLine + ' L1000 230 L0 230 Z', prev: this.curve(prv, 1000, 230, mn, mx) },
+      affiliate: (() => {
+        const data = [['Unibet', 1204], ['Bet365', 986], ['Betsson', 742], ['Svenska Spel', 518], ['LeoVegas', 394], ['ComeOn', 258]];
+        const top = data[0][1];
+        return data.map(d => ({ name: d[0], clicks: nf(d[1]), w: (d[1] / top * 100).toFixed(0) + '%' }));
+      })(),
+      leagues: (() => {
+        const data = [['Premier League', 5240], ['Allsvenskan', 4180], ['SHL', 3620], ['Champions League', 2740], ['La Liga', 1580], ['Serie A', 1080]];
+        const tot = data.reduce((a, b) => a + b[1], 0);
+        return data.map(d => ({ name: d[0], bets: nf(d[1]), pct: (d[1] / tot * 100).toFixed(1).replace('.', ',') + ' %', w: (d[1] / data[0][1] * 100).toFixed(0) + '%' }));
+      })(),
+      donut: 'conic-gradient(var(--green) 0deg 158deg,var(--cyan) 158deg 248deg,var(--blue) 248deg 310deg,var(--amber) 310deg 360deg)',
+      sources: [
+        { label: 'Organiskt', value: '137', pct: '44 %', color: GREEN },
+        { label: 'Direkt', value: '78', pct: '25 %', color: CYAN },
+        { label: 'Socialt', value: '54', pct: '17 %', color: 'var(--blue)' },
+        { label: 'Kampanj', value: '43', pct: '14 %', color: AMBER }
+      ],
+      funnel: [
+        { label: 'Besökare', value: '42 180', w: '100%', bg: 'var(--greenSoft)', border: 'var(--greenLine)', color: 'var(--text)', hasStep: true, step: '5,2 %', stepColor: GREEN },
+        { label: 'Registrerade', value: '2 194', w: '74%', bg: 'var(--cyanSoft)', border: 'var(--cyanLine)', color: 'var(--text)', hasStep: true, step: '68,4 %', stepColor: GREEN },
+        { label: 'Loggat första spelet', value: '1 501', w: '52%', bg: 'var(--blueSoft)', border: 'var(--blueLine)', color: 'var(--text)', hasStep: false, step: '', stepColor: MUTED }
+      ]
+    };
+
+    /* Sättling */
+    v.settle = {
+      kpis: [
+        { label: 'Auto-rättade idag', value: '348', color: GREEN, border: 'var(--line)' },
+        { label: 'Väntar på resultat', value: '56', color: 'var(--text)', border: 'var(--line)' },
+        { label: 'Behöver manuell hantering', value: '3', color: AMBER, border: 'var(--amberLine)' }
+      ],
+      manualCount: String(MANUAL.length),
+      manual: MANUAL.map(m => ({
+        user: m[0], match: m[1], pick: m[2], odds: m[3], stake: m[4], reason: m[5],
+        actions: [
+          { label: 'W', fg: GREEN, border: 'var(--greenLine)', go: () => this.toast(m[1] + ' rättat som vunnet.') },
+          { label: 'L', fg: RED, border: 'var(--redLine)', go: () => this.toast(m[1] + ' rättat som förlorat.') },
+          { label: 'Void', fg: MUTED, border: 'var(--line3)', go: () => this.toast(m[1] + ' makulerat.') }
+        ]
+      })),
+      log: LOG.map(l => ({
+        time: l[0], match: l[1], score: l[2], count: l[3],
+        icon: l[4] ? '✓' : '⚠', iconColor: l[4] ? GREEN : RED
+      })),
+      fixtures: [
+        { league: 'Premier League', upcoming: '38', synced: '22:41' },
+        { league: 'Allsvenskan', upcoming: '24', synced: '22:38' },
+        { league: 'Champions League', upcoming: '16', synced: '22:30' },
+        { league: 'SHL', upcoming: '42', synced: '21:55' }
+      ].map(f => Object.assign({}, f, { sync: () => this.toast(f.league + ' synkas mot API-Football …') }))
+    };
+
+    /* Inställningar */
+    v.settings = {
+      tabs: ['Allmänt', 'API-nycklar', 'Notiser', 'Loggar'].map(t => ({
+        label: t, go: () => this.setState({ setTab: t }),
+        bg: s.setTab === t ? 'var(--hover2)' : 'transparent', fg: s.setTab === t ? 'var(--text)' : MUTED
+      })),
+      isGeneral: s.setTab === 'Allmänt', isKeys: s.setTab === 'API-nycklar',
+      isNotif: s.setTab === 'Notiser', isLogs: s.setTab === 'Loggar',
+      siteName: s.siteName, currency: s.currency,
+      onSiteName: e => this.setState({ siteName: e.target.value, dirty: true }),
+      onCurrency: e => this.setState({ currency: e.target.value, dirty: true }),
+      flags: [
+        { key: 'open', label: 'Nya registreringar öppna', hint: 'Besökare kan skapa konto', hintColor: MUTED },
+        { key: 'maintenance', label: 'Underhållsläge', hint: s.setFlags.maintenance ? 'Appen visar underhållssida för alla utom admins' : 'Slår av appen för alla utom admins', hintColor: s.setFlags.maintenance ? AMBER : MUTED }
+      ].map(f => ({
+        label: f.label, hint: f.hint, hintColor: f.hintColor, tg: this.tg(s.setFlags[f.key]),
+        go: () => this.setState({ setFlags: Object.assign({}, s.setFlags, { [f.key]: !s.setFlags[f.key] }), dirty: true })
+      })),
+      links: [
+        { label: 'Stödlinjen', url: 'https://stodlinjen.se' },
+        { label: 'Spelpaus', url: 'https://spelpaus.se' }
+      ].map(l => ({ label: l.label, url: l.url, onLabel: () => this.setState({ dirty: true }), onUrl: () => this.setState({ dirty: true }) })),
+      keys: [
+        { name: 'API-Football', key: 'af_live_9f2c41a8b7', lastCall: 'senast 22:41 · 200 OK', dot: GREEN },
+        { name: 'The Odds API', key: 'oa_live_3d81e07fc4', lastCall: 'senast 22:39 · 200 OK', dot: GREEN }
+      ].map(k => ({
+        name: k.name, lastCall: k.lastCall, dot: k.dot,
+        masked: s.revealed[k.name] ? k.key : '••••••••••••••••',
+        revealLabel: s.revealed[k.name] ? 'Dölj' : 'Visa',
+        reveal: () => this.setState({ revealed: Object.assign({}, s.revealed, { [k.name]: !s.revealed[k.name] }) })
+      })),
+      notifs: Object.keys(s.notifCh).map(n => ({
+        label: n,
+        channels: ['Mejl', 'Ingen'].map(c => ({
+          label: c, bg: s.notifCh[n] === c ? 'var(--raised)' : 'transparent', fg: s.notifCh[n] === c ? 'var(--text)' : MUTED,
+          go: () => this.setState({ notifCh: Object.assign({}, s.notifCh, { [n]: c }), dirty: true })
+        }))
+      })),
+      logs: LOGS.map(l => ({ time: l[0], admin: l[1], event: l[2] })),
+      save: () => { this.setState({ dirty: false }); this.toast('Inställningarna är sparade.'); }
+    };
+
+    return v;
+  }
+}
+</script>
+</body>
+</html>

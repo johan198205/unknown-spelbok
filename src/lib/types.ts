@@ -1,139 +1,890 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      admin_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          id: string
+          meta: Json | null
+          target: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          target?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "admin_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_clicks: {
+        Row: {
+          bookmaker_id: string
+          clicked_at: string
+          id: string
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bookmaker_id: string
+          clicked_at?: string
+          id?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bookmaker_id?: string
+          clicked_at?: string
+          id?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_clicks_bookmaker_id_fkey"
+            columns: ["bookmaker_id"]
+            isOneToOne: false
+            referencedRelation: "bookmakers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_clicks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "affiliate_clicks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      banner_events: {
+        Row: {
+          banner_id: string
+          event: string
+          id: string
+          occurred_at: string
+        }
+        Insert: {
+          banner_id: string
+          event: string
+          id?: string
+          occurred_at?: string
+        }
+        Update: {
+          banner_id?: string
+          event?: string
+          id?: string
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banner_events_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "banner_stats"
+            referencedColumns: ["banner_id"]
+          },
+          {
+            foreignKeyName: "banner_events_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "banners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banners: {
+        Row: {
+          active: boolean
+          created_at: string
+          ends_at: string | null
+          id: string
+          image_url: string
+          link_url: string | null
+          placement: string
+          sort: number
+          starts_at: string | null
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_url: string
+          link_url?: string | null
+          placement?: string
+          sort?: number
+          starts_at?: string | null
+          title: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_url?: string
+          link_url?: string | null
+          placement?: string
+          sort?: number
+          starts_at?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      bets: {
+        Row: {
+          bookmaker_id: string | null
+          fixture_id: number | null
+          id: string
+          league: string | null
+          match: string
+          odds: number
+          payout: number | null
+          pick: string
+          placed_at: string
+          result: string
+          settled_at: string | null
+          settled_by: string | null
+          sheet_id: string
+          sport: string | null
+          stake: number
+          user_id: string
+        }
+        Insert: {
+          bookmaker_id?: string | null
+          fixture_id?: number | null
+          id?: string
+          league?: string | null
+          match: string
+          odds: number
+          payout?: number | null
+          pick: string
+          placed_at?: string
+          result?: string
+          settled_at?: string | null
+          settled_by?: string | null
+          sheet_id: string
+          sport?: string | null
+          stake: number
+          user_id: string
+        }
+        Update: {
+          bookmaker_id?: string | null
+          fixture_id?: number | null
+          id?: string
+          league?: string | null
+          match?: string
+          odds?: number
+          payout?: number | null
+          pick?: string
+          placed_at?: string
+          result?: string
+          settled_at?: string | null
+          settled_by?: string | null
+          sheet_id?: string
+          sport?: string | null
+          stake?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bets_bookmaker_id_fkey"
+            columns: ["bookmaker_id"]
+            isOneToOne: false
+            referencedRelation: "bookmakers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bets_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["fixture_id"]
+          },
+          {
+            foreignKeyName: "bets_sheet_id_fkey"
+            columns: ["sheet_id"]
+            isOneToOne: false
+            referencedRelation: "sheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookmakers: {
+        Row: {
+          active: boolean
+          bonus: string | null
+          bonus_value: number | null
+          fast_payout: boolean
+          id: string
+          logo_url: string | null
+          minus: string[] | null
+          name: string
+          payments: string[] | null
+          plus: string[] | null
+          rank: number
+          rating: number | null
+          review: string | null
+          slug: string
+          terms: string | null
+          tracking_url: string | null
+          updated_at: string
+          usp: string | null
+        }
+        Insert: {
+          active?: boolean
+          bonus?: string | null
+          bonus_value?: number | null
+          fast_payout?: boolean
+          id?: string
+          logo_url?: string | null
+          minus?: string[] | null
+          name: string
+          payments?: string[] | null
+          plus?: string[] | null
+          rank?: number
+          rating?: number | null
+          review?: string | null
+          slug: string
+          terms?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          usp?: string | null
+        }
+        Update: {
+          active?: boolean
+          bonus?: string | null
+          bonus_value?: number | null
+          fast_payout?: boolean
+          id?: string
+          logo_url?: string | null
+          minus?: string[] | null
+          name?: string
+          payments?: string[] | null
+          plus?: string[] | null
+          rank?: number
+          rating?: number | null
+          review?: string | null
+          slug?: string
+          terms?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          usp?: string | null
+        }
+        Relationships: []
+      }
+      competition_entries: {
+        Row: {
+          competition_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_entries_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "competition_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          ends_at: string
+          id: string
+          min_bets: number
+          min_total_stake: number
+          name: string
+          prize: string | null
+          starts_at: string
+          visibility: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          ends_at: string
+          id?: string
+          min_bets?: number
+          min_total_stake?: number
+          name: string
+          prize?: string | null
+          starts_at: string
+          visibility?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          ends_at?: string
+          id?: string
+          min_bets?: number
+          min_total_stake?: number
+          name?: string
+          prize?: string | null
+          starts_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
+      fixtures: {
+        Row: {
+          away_logo: string | null
+          away_name: string | null
+          away_score: number | null
+          away_team_id: number | null
+          fixture_id: number
+          home_logo: string | null
+          home_name: string | null
+          home_score: number | null
+          home_team_id: number | null
+          kickoff: string
+          league_id: number | null
+          league_logo: string | null
+          league_name: string | null
+          sport: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          away_logo?: string | null
+          away_name?: string | null
+          away_score?: number | null
+          away_team_id?: number | null
+          fixture_id: number
+          home_logo?: string | null
+          home_name?: string | null
+          home_score?: number | null
+          home_team_id?: number | null
+          kickoff: string
+          league_id?: number | null
+          league_logo?: string | null
+          league_name?: string | null
+          sport?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          away_logo?: string | null
+          away_name?: string | null
+          away_score?: number | null
+          away_team_id?: number | null
+          fixture_id?: number
+          home_logo?: string | null
+          home_name?: string | null
+          home_score?: number | null
+          home_team_id?: number | null
+          kickoff?: string
+          league_id?: number | null
+          league_logo?: string | null
+          league_name?: string | null
+          sport?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pages: {
+        Row: {
+          author_id: string | null
+          content: string
+          created_at: string
+          id: string
+          published: boolean
+          seo_description: string | null
+          seo_title: string | null
+          show_in_footer: boolean
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          seo_description?: string | null
+          seo_title?: string | null
+          show_in_footer?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          seo_description?: string | null
+          seo_title?: string | null
+          show_in_footer?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "pages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          banned: boolean
+          created_at: string
+          id: string
+          last_seen_at: string | null
+          role: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          banned?: boolean
+          created_at?: string
+          id: string
+          last_seen_at?: string | null
+          role?: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          banned?: boolean
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          role?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      settle_queue: {
+        Row: {
+          bet_id: string
+          created_at: string
+          id: string
+          reason: string
+          resolved: boolean
+        }
+        Insert: {
+          bet_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          resolved?: boolean
+        }
+        Update: {
+          bet_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          resolved?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settle_queue_bet_id_fkey"
+            columns: ["bet_id"]
+            isOneToOne: false
+            referencedRelation: "bets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sheets: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          is_public: boolean
+          name: string
+          start_bankroll: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          start_bankroll?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          start_bankroll?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sheets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "sheets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      banner_stats: {
+        Row: {
+          banner_id: string | null
+          clicks: number | null
+          ctr: number | null
+          views: number | null
+        }
+        Relationships: []
+      }
+      leaderboard: {
+        Row: {
+          avatar_url: string | null
+          bets_count: number | null
+          competition_id: string | null
+          netto: number | null
+          roi: number | null
+          total_stake: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_entries_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Functions: {
+      is_admin: { Args: never; Returns: boolean }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {},
+  },
+} as const
+
+/* Convenience aliases used across the app */
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+export type Views<T extends keyof Database["public"]["Views"]> =
+  Database["public"]["Views"][T]["Row"];
+
 export type UserRole = "user" | "admin";
-
-export type BetResult = "open" | "win" | "loss" | "void" | "halfwin" | "halfloss";
-
+export type BetResult =
+  | "open"
+  | "win"
+  | "loss"
+  | "void"
+  | "halfwin"
+  | "halfloss";
 export type BannerPlacement = "home" | "sheet" | "topplista" | "spelbolag";
 
-export interface Profile {
-  id: string;
-  username: string;
-  avatar_url: string | null;
-  role: UserRole;
-  created_at: string;
-}
+export type Profile = Tables<"profiles">;
+export type Sheet = Tables<"sheets">;
+export type Fixture = Tables<"fixtures">;
+export type Bookmaker = Tables<"bookmakers">;
+export type Banner = Tables<"banners">;
+export type Page = Tables<"pages">;
+export type Competition = Tables<"competitions">;
+export type CompetitionEntry = Tables<"competition_entries">;
+export type AdminLog = Tables<"admin_logs">;
+export type AffiliateClick = Tables<"affiliate_clicks">;
+export type BannerEvent = Tables<"banner_events">;
+export type AppSetting = Tables<"app_settings">;
+export type SettleQueueItem = Tables<"settle_queue">;
+export type LeaderboardRow = Views<"leaderboard">;
+export type BannerStats = Views<"banner_stats">;
 
-export interface Sheet {
-  id: string;
-  user_id: string;
-  name: string;
-  start_bankroll: number;
-  currency: string;
-  is_public: boolean;
-  created_at: string;
-}
-
-export interface Fixture {
-  fixture_id: number;
-  kickoff: string;
-  status: string;
-  sport: string;
-  league_id: number | null;
-  league_name: string | null;
-  league_logo: string | null;
-  home_team_id: number | null;
-  home_name: string | null;
-  home_logo: string | null;
-  away_team_id: number | null;
-  away_name: string | null;
-  away_logo: string | null;
-  home_score: number | null;
-  away_score: number | null;
-  updated_at: string;
-}
-
-export interface Bookmaker {
-  id: string;
-  rank: number;
-  name: string;
-  slug: string;
-  logo_url: string | null;
-  bonus: string | null;
-  bonus_value: number;
-  terms: string | null;
-  usp: string | null;
-  payments: string[];
-  rating: number | null;
-  fast_payout: boolean;
-  tracking_url: string | null;
-  review: string | null;
-  plus: string[];
-  minus: string[];
-  active: boolean;
-  updated_at: string;
-}
-
-export interface Bet {
-  id: string;
-  sheet_id: string;
-  user_id: string;
-  fixture_id: number | null;
-  sport: string | null;
-  league: string | null;
-  match: string;
-  pick: string;
-  bookmaker_id: string | null;
-  odds: number;
-  stake: number;
-  result: BetResult;
-  payout: number;
-  placed_at: string;
-  settled_at: string | null;
-  settled_by: "user" | "auto" | null;
+export type Bet = Tables<"bets"> & {
   bookmakers?: Pick<Bookmaker, "id" | "name" | "logo_url"> | null;
-}
-
-export interface Competition {
-  id: string;
-  name: string;
-  description: string | null;
-  starts_at: string;
-  ends_at: string;
-  active: boolean;
-  created_at: string;
-}
-
-export interface CompetitionEntry {
-  competition_id: string;
-  user_id: string;
-  joined_at: string;
-}
-
-export interface LeaderboardRow {
-  competition_id: string;
-  user_id: string;
-  username: string;
-  avatar_url: string | null;
-  bets_count: number;
-  total_stake: number;
-  netto: number;
-  roi: number;
-}
-
-export interface Banner {
-  id: string;
-  title: string;
-  image_url: string;
-  link_url: string | null;
-  placement: BannerPlacement;
-  sort: number;
-  active: boolean;
-  starts_at: string | null;
-  ends_at: string | null;
-  created_at: string;
-}
-
-export interface Page {
-  id: string;
-  slug: string;
-  title: string;
-  content: string;
-  seo_title: string | null;
-  seo_description: string | null;
-  published: boolean;
-  author_id: string | null;
-  updated_at: string;
-  created_at: string;
-}
+};
 
 export interface BetStats {
   bets: number;
