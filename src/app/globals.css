@@ -228,6 +228,15 @@
   }
 }
 
+@keyframes admslide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
 @keyframes sbspin {
   to {
     transform: rotate(360deg);

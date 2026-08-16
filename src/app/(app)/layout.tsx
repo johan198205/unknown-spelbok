@@ -1,6 +1,7 @@
 import { SiteFooter, SiteHeader } from "@/components/layout/SiteHeader";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileChrome } from "@/components/layout/MobileChrome";
+import { touchLastSeen } from "@/lib/admin/last-seen";
 import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Bookmaker, Sheet } from "@/lib/types";
@@ -11,6 +12,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const profile = await getProfile();
+  if (profile) await touchLastSeen();
   const supabase = await createClient();
 
   let netto = 0;
