@@ -1,152 +1,219 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Input, Textarea } from "@/components/ui/Input";
-import { Panel } from "@/components/ui/Panel";
-import { createClient } from "@/lib/supabase/client";
-import { slugify } from "@/lib/utils";
-import type { Page } from "@/lib/types";
+import {
+  createPage,
+  deletePage,
+  duplicatePage,
+  publishPage,
+  type PageListRow,
+} from "@/lib/admin/pages";
+import { cn } from "@/lib/utils";
 
-export function PagesAdmin({ items }: { items: Page[] }) {
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString("sv-SE");
+}
+
+export function PagesAdmin({ rows, q }: { rows: PageListRow[]; q: string }) {
   const router = useRouter();
-  const [editing, setEditing] = useState<Partial<Page> | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const [confirmRow, setConfirmRow] = useState<PageListRow | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  async function save(e: FormEvent) {
-    e.preventDefault();
-    if (!editing?.title) return;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const payload = {
-      title: editing.title,
-      slug: editing.slug || slugify(editing.title),
-      content: editing.content || "",
-      seo_title: editing.seo_title || null,
-      seo_description: editing.seo_description || null,
-      published: !!editing.published,
-      author_id: user?.id || null,
-      updated_at: new Date().toISOString(),
-    };
-    if (editing.id) {
-      await supabase.from("pages").update(payload).eq("id", editing.id);
-    } else {
-      await supabase.from("pages").insert(payload);
+  useEffect(() => {
+    function onDoc() {
+      setMenuId(null);
     }
-    setEditing(null);
-    router.refresh();
-  }
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
+  }, []);
 
-  async function remove(id: string) {
-    if (!confirm("Ta bort sida?")) return;
-    const supabase = createClient();
-    await supabase.from("pages").delete().eq("id", id);
-    router.refresh();
+  function open(id: string) {
+    router.push(`/admin/sidor/${id}`);
   }
 
   return (
-    <div className="space-y-4">
-      <Button
-        onClick={() =>
-          setEditing({
-            title: "",
-            slug: "",
-            content: "",
-            published: false,
-          })
-        }
-      >
-        + Ny sida
-      </Button>
+    <div className="animate-[admfade_.22s_ease]">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            const next = String(fd.get("q") || "").trim();
+            router.push(next ? `/admin/sidor?q=${encodeURIComponent(next)}` : "/admin/sidor");
+          }}
+          className="flex-1"
+        >
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Sök sida …"
+            className="w-full max-w-[320px] rounded-[10px] border border-line bg-panel px-3.5 py-2.5 text-[14px] outline-none placeholder:text-dim"
+          />
+        </form>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => startTransition(() => createPage())}
+          className="ml-auto rounded-[11px] bg-win px-5 py-3 font-bold text-win-ink disabled:opacity-60"
+        >
+          + Ny sida
+        </button>
+      </div>
 
-      {editing ? (
-        <Panel className="p-4">
-          <form onSubmit={save} className="space-y-3">
-            <div className="grid gap-3 md:grid-cols-2">
-              <Input
-                label="Titel"
-                value={editing.title || ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, title: e.target.value })
-                }
-                required
-              />
-              <Input
-                label="Slug"
-                value={editing.slug || ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, slug: e.target.value })
-                }
-                placeholder="om-oss"
-              />
-              <Input
-                label="SEO-titel"
-                value={editing.seo_title || ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, seo_title: e.target.value })
-                }
-              />
-              <Input
-                label="SEO-beskrivning"
-                value={editing.seo_description || ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, seo_description: e.target.value })
-                }
-              />
-            </div>
-            <Textarea
-              label="Innehåll (markdown)"
-              value={editing.content || ""}
-              onChange={(e) =>
-                setEditing({ ...editing, content: e.target.value })
-              }
-              rows={12}
-              className="font-mono-num text-sm"
-            />
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={!!editing.published}
-                onChange={(e) =>
-                  setEditing({ ...editing, published: e.target.checked })
-                }
-                className="accent-win h-4 w-4"
-              />
-              Publicerad
-            </label>
-            <div className="flex gap-2">
-              <Button type="submit">Spara</Button>
-              <Button variant="ghost" type="button" onClick={() => setEditing(null)}>
-                Avbryt
-              </Button>
-            </div>
-          </form>
-        </Panel>
-      ) : null}
+      <div className="overflow-x-auto rounded-[14px] border border-line bg-panel">
+        <div className="flex min-w-[860px] gap-3 border-b border-line bg-bg-soft px-[18px] py-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted">
+          <span className="flex-[1.3]">Titel</span>
+          <span className="flex-[1.4]">Slug</span>
+          <span className="w-[120px] shrink-0">Status</span>
+          <span className="w-[130px] shrink-0">Författare</span>
+          <span className="w-[120px] shrink-0">Uppdaterad</span>
+          <span className="w-[34px] shrink-0" />
+        </div>
 
-      <Panel className="overflow-hidden">
-        {items.map((p) => (
+        {rows.map((p) => (
           <div
             key={p.id}
-            className="flex items-center gap-3 border-b border-line-soft px-4 py-3"
+            className="relative flex min-w-[860px] items-center gap-3 border-b border-rowline px-[18px] py-3.5 transition-[background] duration-100 hover:bg-hover"
           >
-            <div className="flex-1">
-              <div className="font-semibold">{p.title}</div>
-              <div className="text-[12px] text-muted">
-                /{p.slug} · {p.published ? "publicerad" : "utkast"}
+            <button
+              type="button"
+              onClick={() => open(p.id)}
+              className="min-w-0 flex-[1.3] truncate border-0 bg-transparent p-0 text-left font-semibold text-text"
+            >
+              {p.title}
+            </button>
+            <span className="font-mono-num min-w-0 flex-[1.4] truncate text-[12.5px] text-muted">
+              /{p.slug}
+            </span>
+            <span className="w-[120px] shrink-0">
+              <span
+                className={cn(
+                  "rounded-[6px] px-[9px] py-1 text-[10.5px] font-bold tracking-[0.09em]",
+                  p.published
+                    ? "bg-win/15 text-win"
+                    : "bg-panel-2 text-muted"
+                )}
+              >
+                {p.published ? "PUBLICERAD" : "UTKAST"}
+              </span>
+            </span>
+            <span className="w-[130px] shrink-0 truncate text-[13.5px] text-text-soft">
+              {p.author}
+            </span>
+            <span className="font-mono-num w-[120px] shrink-0 text-[12.5px] text-muted">
+              {fmtDate(p.updated_at)}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuId(menuId === p.id ? null : p.id);
+              }}
+              className="h-[30px] w-[34px] shrink-0 rounded-lg border border-line bg-transparent text-[14px] leading-none text-muted"
+            >
+              ⋯
+            </button>
+
+            {menuId === p.id ? (
+              <div
+                className="absolute right-[18px] top-11 z-30 min-w-[190px] rounded-[11px] border border-line-strong bg-panel-elevated p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.55)]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
+                  onClick={() => open(p.id)}
+                >
+                  Redigera
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
+                  onClick={() => {
+                    setMenuId(null);
+                    startTransition(async () => {
+                      const copy = await duplicatePage(p.id);
+                      router.push(`/admin/sidor/${copy.id}`);
+                    });
+                  }}
+                >
+                  Duplicera
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
+                  onClick={() => {
+                    setMenuId(null);
+                    startTransition(async () => {
+                      await publishPage(p.id, !p.published);
+                      router.refresh();
+                    });
+                  }}
+                >
+                  {p.published ? "Avpublicera" : "Publicera"}
+                </button>
+                <button
+                  type="button"
+                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold text-loss hover:bg-hover2"
+                  onClick={() => {
+                    setMenuId(null);
+                    setConfirmRow(p);
+                  }}
+                >
+                  Radera
+                </button>
               </div>
-            </div>
-            <Button size="sm" variant="secondary" onClick={() => setEditing(p)}>
-              Redigera
-            </Button>
-            <Button size="sm" variant="danger" onClick={() => remove(p.id)}>
-              Ta bort
-            </Button>
+            ) : null}
           </div>
         ))}
-      </Panel>
+
+        {!rows.length ? (
+          <div className="px-[18px] py-10 text-center text-muted">
+            {q ? "Inga sidor matchar sökningen." : "Inga sidor ännu."}
+          </div>
+        ) : null}
+      </div>
+
+      {confirmRow ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(5,7,12,.7)] p-4">
+          <div className="w-full max-w-md rounded-[14px] border border-line bg-panel p-5 shadow-[0_40px_90px_rgba(0,0,0,.65)]">
+            <div className="font-display text-[18px] font-semibold uppercase tracking-[0.05em]">
+              Radera sida?
+            </div>
+            <p className="mt-2 text-[14px] text-muted">
+              {confirmRow.title} · /{confirmRow.slug}. Det går inte att ångra.
+            </p>
+            <div className="mt-5 flex gap-2.5">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  const id = confirmRow.id;
+                  startTransition(async () => {
+                    await deletePage(id);
+                    setConfirmRow(null);
+                    router.refresh();
+                  });
+                }}
+                className="rounded-[9px] bg-loss px-4 py-2.5 text-[13.5px] font-bold text-[#1A0508] disabled:opacity-60"
+              >
+                Ja, radera
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmRow(null)}
+                className="rounded-[9px] border border-line-strong bg-panel-2 px-4 py-2.5 font-semibold text-text-soft"
+              >
+                Avbryt
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

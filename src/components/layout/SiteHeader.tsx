@@ -104,7 +104,15 @@ export async function SiteHeader({
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const supabase = await createClient();
+  const { data: footerPages } = await supabase
+    .from("pages")
+    .select("slug, title")
+    .eq("published", true)
+    .eq("show_in_footer", true)
+    .order("title");
+
   return (
     <footer className="mt-auto border-t border-line-soft bg-bg-footer">
       <div className="mx-auto flex max-w-[1360px] flex-wrap items-center gap-4 px-5 py-[22px] text-[13px] text-faint">
@@ -122,6 +130,11 @@ export function SiteFooter() {
         <a href="https://spelpaus.se" target="_blank" rel="noopener noreferrer">
           Spelpaus
         </a>
+        {(footerPages ?? []).map((p) => (
+          <Link key={p.slug} href={`/${p.slug}`}>
+            {p.title}
+          </Link>
+        ))}
         <span className="ml-auto text-faint">
           Spelbok är ett verktyg för bokföring och statistik. Inga spel
           förmedlas.
