@@ -1,0 +1,31 @@
+{
+  "name": "Spelbok",
+  "short_name": "Spelbok",
+  "description": "Bokför varje spel, se din riktiga ROI och jämför dig i topplistan.",
+  "start_url": "/spelbok",
+  "display": "standalone",
+  "background_color": "#0F1420",
+  "theme_color": "#0F1420",
+  "orientation": "portrait",
+  "lang": "sv",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
