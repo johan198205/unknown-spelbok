@@ -11,13 +11,18 @@
   --bg-deep: #07090e;
   --bg-soft: #0f1420;
   --bg-footer: #0a0d13;
+  --sidebar: #0b0e17;
   --panel: #131826;
   --panel-2: #1b2436;
   --panel-elevated: #171d2e;
   --shimmer: #161c2b;
   --row-alt: #151b29;
-  --hover: #1a2233;
+  --rowline: #171e2c;
+  --hover: #161d2c;
+  --hover2: #1f293c;
   --dropdown-hover: #1f293c;
+  --bar-bg: rgba(15, 20, 32, 0.94);
+  --dim: #5d6883;
 
   /* Borders */
   --line: #232b3e;
@@ -130,12 +135,17 @@
   --color-bg-deep: var(--bg-deep);
   --color-bg-soft: var(--bg-soft);
   --color-bg-footer: var(--bg-footer);
+  --color-sidebar: var(--sidebar);
   --color-panel: var(--panel);
   --color-panel-2: var(--panel-2);
   --color-panel-elevated: var(--panel-elevated);
   --color-shimmer: var(--shimmer);
   --color-row-alt: var(--row-alt);
+  --color-rowline: var(--rowline);
   --color-hover: var(--hover);
+  --color-hover2: var(--hover2);
+  --color-bar-bg: var(--bar-bg);
+  --color-dim: var(--dim);
   --color-line: var(--line);
   --color-line-soft: var(--line-soft);
   --color-line-row: var(--line-row);
@@ -197,6 +207,17 @@
 }
 
 @keyframes sbfade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes admfade {
   from {
     opacity: 0;
     transform: translateY(6px);

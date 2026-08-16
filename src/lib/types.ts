@@ -851,11 +851,6 @@ export const Constants = {
 } as const
 
 /* Convenience aliases used across the app */
-export type Tables<T extends keyof Database["public"]["Tables"]> =
-  Database["public"]["Tables"][T]["Row"];
-export type Views<T extends keyof Database["public"]["Views"]> =
-  Database["public"]["Views"][T]["Row"];
-
 export type UserRole = "user" | "admin";
 export type BetResult =
   | "open"
@@ -879,10 +874,13 @@ export type AffiliateClick = Tables<"affiliate_clicks">;
 export type BannerEvent = Tables<"banner_events">;
 export type AppSetting = Tables<"app_settings">;
 export type SettleQueueItem = Tables<"settle_queue">;
-export type LeaderboardRow = Views<"leaderboard">;
-export type BannerStats = Views<"banner_stats">;
+export type LeaderboardRow = Tables<"leaderboard">;
+export type BannerStats = Tables<"banner_stats">;
 
-export type Bet = Tables<"bets"> & {
+export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
+  result: BetResult;
+  settled_by: "user" | "auto" | null;
+  payout: number;
   bookmakers?: Pick<Bookmaker, "id" | "name" | "logo_url"> | null;
 };
 
