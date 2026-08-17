@@ -251,7 +251,7 @@ export default async function AdminSettlePage() {
             ))
           ) : (
             <div className="px-[18px] py-8 text-center text-[13.5px] text-dim">
-              Inga auto-rättningar ännu. Kör Edge-funktionen settle-bets.
+              Inga auto-rättningar ännu. Kör Edge-funktionen settle-results.
             </div>
           )}
         </div>
@@ -287,6 +287,46 @@ export default async function AdminSettlePage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-[14px] border border-line bg-panel">
+        <div className="border-b border-line-soft px-[18px] py-[15px] font-display text-[16px] font-semibold uppercase tracking-[0.05em]">
+          Synklogg
+        </div>
+        {data.syncLog.length ? (
+          data.syncLog.map((row) => (
+            <div
+              key={row.id}
+              className="flex flex-wrap items-center gap-3 border-b border-rowline px-[18px] py-3 text-[13px]"
+            >
+              <span className="font-mono-num w-[140px] shrink-0 text-[12.5px] text-muted">
+                {row.startedLabel}
+              </span>
+              <span className="w-[140px] shrink-0 font-semibold">{row.job}</span>
+              <span
+                className={cn(
+                  "rounded-[6px] px-2 py-1 text-[10.5px] font-bold tracking-[0.07em]",
+                  row.ok ? "bg-win/15 text-win" : "bg-loss/15 text-loss"
+                )}
+              >
+                {row.ok ? "OK" : "FEL"}
+              </span>
+              <span className="font-mono-num text-[12px] text-dim">
+                {row.requests} req · {row.upserted} upsert · {row.settled}{" "}
+                settlade
+              </span>
+              {row.error ? (
+                <span className="min-w-0 flex-1 truncate text-[12.5px] text-loss">
+                  {row.error}
+                </span>
+              ) : null}
+            </div>
+          ))
+        ) : (
+          <div className="px-[18px] py-8 text-center text-[13.5px] text-dim">
+            Ingen synk körd ännu. Deploya sync-fixtures och tryck Synka nu.
+          </div>
+        )}
       </div>
     </div>
   );

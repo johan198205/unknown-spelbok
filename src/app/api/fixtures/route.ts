@@ -1,121 +1,92 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 
-const CACHE_MINUTES = 10;
+export const revalidate = 60;
 
-export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q")?.trim() || "";
-  const limit = Math.min(
-    Number(request.nextUrl.searchParams.get("limit") || 20),
-    50
-  );
+const CACHE = { "Cache-Control": "private, max-age=60" };
+const MAX_LIMIT = 100;
 
-  async function loadFixtures() {
-    const supabase = await createClient();
-    let query = supabase
-      .from("fixtures")
-      .select("*")
-      .order("kickoff", { ascending: true })
-      .limit(limit);
-
-    if (q) {
-      query = query.or(
-        `home_name.ilike.%${q}%,away_name.ilike.%${q}%,league_name.ilike.%${q}%`
-      );
-    } else {
-      const from = new Date();
-      from.setHours(0, 0, 0, 0);
-      const to = new Date(from);
-      to.setDate(to.getDate() + 7);
-      query = query
-        .gte("kickoff", from.toISOString())
-        .lte("kickoff", to.toISOString());
-    }
-
-    return query;
-  }
-
-  const { data: cached } = await loadFixtures();
-  const oldest =
-    cached?.reduce((min, f) => {
-      const t = +new Date(f.updated_at);
-      return t < min ? t : min;
-    }, Date.now()) ?? 0;
-
-  const stale =
-    !cached?.length || Date.now() - oldest > CACHE_MINUTES * 60 * 1000;
-
-  if (stale && process.env.APIFOOTBALL_KEY) {
-    try {
-      await refreshFixtures();
-      const { data: refreshed } = await loadFixtures();
-      return NextResponse.json({ fixtures: refreshed || [], source: "api" });
-    } catch (err) {
-      console.error("fixtures refresh failed", err);
-    }
-  }
-
-  return NextResponse.json({
-    fixtures: cached || [],
-    source: "cache",
-  });
+function sanitizeIlike(raw: string) {
+  return raw.replace(/[%_,()\\]/g, " ").trim().slice(0, 80);
 }
 
-async function refreshFixtures() {
-  const key = process.env.APIFOOTBALL_KEY!;
-  const today = new Date();
-  const date = today.toISOString().slice(0, 10);
+async function requireUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      error: NextResponse.json({ error: "Ej inloggad" }, { status: 401 }),
+    };
+  }
+  return { supabase };
+}
 
-  const res = await fetch(
-    `https://v3.football.api-sports.io/fixtures?date=${date}`,
-    {
-      headers: {
-        "x-apisports-key": key,
-      },
-      next: { revalidate: 0 },
+/**
+ * Läser fixtures-cachen i Supabase. Anropar aldrig API-Sports.
+ * Synk sker i Edge Function `sync-fixtures`.
+ *
+ * Query:
+ *   league   league_id (t.ex. 113)
+ *   from/to  ISO-datum för kickoff
+ *   q        sök lag/liga (bet-formuläret)
+ *   status   kort status (NS, FT, …)
+ *   limit    max rader (default 50, max 100)
+ */
+export async function GET(request: NextRequest) {
+  const auth = await requireUser();
+  if ("error" in auth) return auth.error;
+
+  const params = request.nextUrl.searchParams;
+  const league = params.get("league");
+  const from = params.get("from");
+  const to = params.get("to");
+  const status = params.get("status");
+  const q = sanitizeIlike(params.get("q") ?? "");
+  const limit = Math.min(Number(params.get("limit") || 50) || 50, MAX_LIMIT);
+
+  let query = auth.supabase
+    .from("fixtures")
+    .select(
+      "fixture_id, kickoff, status, sport, league_id, league_name, league_logo, home_team_id, home_name, home_logo, away_team_id, away_name, away_logo, home_score, away_score, season, updated_at"
+    )
+    .order("kickoff", { ascending: true })
+    .limit(limit);
+
+  if (league) {
+    const id = Number(league);
+    if (!Number.isFinite(id)) {
+      return NextResponse.json({ error: "Ogiltig league" }, { status: 400 });
     }
-  );
-
-  if (!res.ok) {
-    throw new Error(`API-Football ${res.status}`);
+    query = query.eq("league_id", id);
   }
 
-  const json = await res.json();
-  const rows = (json.response || []).map(
-    (item: {
-      fixture: { id: number; date: string; status: { short: string } };
-      league: { id: number; name: string; logo: string };
-      teams: {
-        home: { id: number; name: string; logo: string };
-        away: { id: number; name: string; logo: string };
-      };
-      goals: { home: number | null; away: number | null };
-    }) => ({
-      fixture_id: item.fixture.id,
-      kickoff: item.fixture.date,
-      status: item.fixture.status.short,
-      sport: "Fotboll",
-      league_id: item.league.id,
-      league_name: item.league.name,
-      league_logo: item.league.logo,
-      home_team_id: item.teams.home.id,
-      home_name: item.teams.home.name,
-      home_logo: item.teams.home.logo,
-      away_team_id: item.teams.away.id,
-      away_name: item.teams.away.name,
-      away_logo: item.teams.away.logo,
-      home_score: item.goals.home,
-      away_score: item.goals.away,
-      updated_at: new Date().toISOString(),
-    })
+  if (from) query = query.gte("kickoff", from);
+  if (to) query = query.lte("kickoff", to);
+  if (status) query = query.eq("status", status);
+
+  if (q) {
+    query = query.or(
+      `home_name.ilike.%${q}%,away_name.ilike.%${q}%,league_name.ilike.%${q}%`
+    );
+  } else if (!from && !to) {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    query = query
+      .gte("kickoff", start.toISOString())
+      .lte("kickoff", end.toISOString());
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(
+    { fixtures: data ?? [], source: "cache" },
+    { headers: CACHE }
   );
-
-  if (!rows.length) return;
-
-  const admin = createAdminClient();
-  const { error } = await admin.from("fixtures").upsert(rows, {
-    onConflict: "fixture_id",
-  });
-  if (error) throw error;
 }

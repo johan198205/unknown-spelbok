@@ -128,18 +128,25 @@ export async function getApiKeyStatus(): Promise<{
   await requireAdmin();
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("fixtures")
-    .select("updated_at")
-    .order("updated_at", { ascending: false })
+  const { data, error } = await supabase
+    .from("sync_log")
+    .select("started_at, ok")
+    .eq("ok", true)
+    .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
+  const last =
+    error || !data
+      ? null
+      : (data as { started_at: string; ok: boolean });
+
   return {
-    // Bara existensen läcker ut — aldrig värdet.
-    configured: !!process.env.APIFOOTBALL_KEY,
+    // Nyckeln ligger i Edge Function secrets — Next.js ser den aldrig.
+    // En lyckad synk är signalen att den är konfigurerad.
+    configured: !!last,
     serviceRoleConfigured: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    lastSync: (data as { updated_at: string } | null)?.updated_at ?? null,
+    lastSync: last?.started_at ?? null,
   };
 }
 

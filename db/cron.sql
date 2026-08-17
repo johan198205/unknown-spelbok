@@ -1,40 +1,73 @@
 -- =============================================================
--- SPELBOK — Cron för automatisk sättling
+-- SPELBOK — Cron för fixtures-synk och automatisk sättling
 --
--- Schemalägger Edge-funktionen settle-bets var 15:e minut.
--- Funktionen hämtar resultat från API-Football, uppdaterar
--- fixtures-cachen, rättar spel som går att maskinläsa och lägger
--- resten i settle_queue (syns i /admin/sattling).
+-- Schemalägger:
+--   sync-fixtures   05:00 Europe/Stockholm (1 gång/dygn)
+--   settle-results  var 15:e minut
+--
+-- Båda anropas via pg_net mot Edge Function-URL:erna med
+-- service role-nyckel i Authorization. Nyckeln till API-Sports
+-- ligger i Edge Function secrets, inte i cron-jobbet.
 --
 -- ORDNING:
---   1. Deploya funktionen och sätt nyckeln:
---        supabase functions deploy settle-bets
---        supabase secrets set APIFOOTBALL_KEY=din-nyckel
---   2. Aktivera extensions i Dashboard > Database > Extensions:
+--   1. Kör db/apisports-migration.sql
+--   2. Deploya funktionerna och sätt secrets:
+--        supabase functions deploy sync-fixtures
+--        supabase functions deploy settle-results
+--        supabase secrets set APISPORTS_KEY=din-nyckel
+--        supabase secrets set APISPORTS_FOOTBALL_URL=https://v3.football.api-sports.io
+--   3. Aktivera extensions i Dashboard > Database > Extensions:
 --        pg_cron, pg_net
---   3. Fyll i PROJEKT_REF och SERVICE_ROLE_KEY nedan.
---   4. Avkommentera och kör blocket i SQL Editor.
+--   4. Fyll i PROJEKT_REF och SERVICE_ROLE_KEY nedan.
+--   5. Avkommentera och kör blocken i SQL Editor.
 --
--- OBS: service role-nyckeln hamnar i cron.job-tabellen i klartext.
---      Lägg den i Vault om du vill undvika det (se längst ner).
+-- OBS: service role-nyckeln hamnar i cron.job i klartext.
+--      Använd Vault-varianten längst ner om du vill undvika det.
+--
+-- Tidzon: pg_cron kör i UTC om cron.timezone inte är satt.
+-- 05:00 Stockholm = 03:00 UTC sommartid, 04:00 UTC vintertid.
+-- Sätt hellre cron.timezone (kräver rätt behörighet):
+--   alter database postgres set cron.timezone = 'Europe/Stockholm';
 -- =============================================================
 
 -- -------------------------------------------------------------
--- 1. Extensions (kan även aktiveras via Dashboard)
+-- 1. Extensions
 -- -------------------------------------------------------------
 -- create extension if not exists pg_cron with schema pg_catalog;
 -- create extension if not exists pg_net;
 
 -- -------------------------------------------------------------
--- 2. Schemalägg var 15:e minut
---    Cron-uttryck: minut 0, 15, 30 och 45 varje timme.
+-- 2. sync-fixtures — varje natt 03:00 UTC ≈ 05:00 Stockholm
 -- -------------------------------------------------------------
+-- select cron.unschedule('sync-fixtures-daily');
 -- select cron.schedule(
---   'settle-bets-var-15-min',
+--   'sync-fixtures-daily',
+--   '0 3 * * *',
+--   $$
+--   select net.http_post(
+--     url     := 'https://PROJEKT_REF.supabase.co/functions/v1/sync-fixtures',
+--     headers := jsonb_build_object(
+--       'Content-Type',  'application/json',
+--       'Authorization', 'Bearer SERVICE_ROLE_KEY'
+--     ),
+--     body    := '{}'::jsonb,
+--     timeout_milliseconds := 120000
+--   );
+--   $$
+-- );
+
+-- -------------------------------------------------------------
+-- 3. settle-results — var 15:e minut
+--    Funktionen avslutar utan API-anrop när inget behöver settlas.
+-- -------------------------------------------------------------
+-- select cron.unschedule('settle-bets-var-15-min');
+-- select cron.unschedule('settle-results-var-15-min');
+-- select cron.schedule(
+--   'settle-results-var-15-min',
 --   '*/15 * * * *',
 --   $$
 --   select net.http_post(
---     url     := 'https://PROJEKT_REF.supabase.co/functions/v1/settle-bets',
+--     url     := 'https://PROJEKT_REF.supabase.co/functions/v1/settle-results',
 --     headers := jsonb_build_object(
 --       'Content-Type',  'application/json',
 --       'Authorization', 'Bearer SERVICE_ROLE_KEY'
@@ -46,59 +79,68 @@
 -- );
 
 -- -------------------------------------------------------------
--- 3. Kontrollera
+-- 4. Kontrollera
 -- -------------------------------------------------------------
--- Alla schemalagda jobb:
---   select jobid, jobname, schedule, active from cron.job;
+-- select jobid, jobname, schedule, active from cron.job;
 --
--- Senaste körningarna (status, svarstid, eventuellt fel):
---   select jobid, status, return_message, start_time, end_time
---   from cron.job_run_details
---   order by start_time desc
---   limit 20;
+-- select jobid, status, return_message, start_time, end_time
+-- from cron.job_run_details
+-- order by start_time desc
+-- limit 20;
 --
--- Svaren från Edge-funktionen (pg_net loggar HTTP-svaret):
---   select id, status_code, content, created
---   from net._http_response
---   order by created desc
+-- select id, status_code, content, created
+-- from net._http_response
+-- order by created desc
+-- limit 20;
+--
+-- Senaste synkar:
+--   select job, ok, requests, upserted, settled, error, started_at
+--   from public.sync_log
+--   order by started_at desc
 --   limit 20;
 
 -- -------------------------------------------------------------
--- 4. Pausa / ta bort
+-- 5. Pausa / ta bort
 -- -------------------------------------------------------------
--- update cron.job set active = false where jobname = 'settle-bets-var-15-min';
--- select cron.unschedule('settle-bets-var-15-min');
+-- update cron.job set active = false where jobname in (
+--   'sync-fixtures-daily',
+--   'settle-results-var-15-min',
+--   'settle-bets-var-15-min'
+-- );
+-- select cron.unschedule('sync-fixtures-daily');
+-- select cron.unschedule('settle-results-var-15-min');
 
 -- -------------------------------------------------------------
--- 5. Frivilligt: nyckeln i Vault istället för i klartext
+-- 6. Frivilligt: nyckeln i Vault
 -- -------------------------------------------------------------
--- select vault.create_secret('SERVICE_ROLE_KEY', 'settle_bets_key');
+-- select vault.create_secret('SERVICE_ROLE_KEY', 'edge_functions_key');
 --
 -- select cron.schedule(
---   'settle-bets-var-15-min',
---   '*/15 * * * *',
+--   'sync-fixtures-daily',
+--   '0 3 * * *',
 --   $$
 --   select net.http_post(
---     url     := 'https://PROJEKT_REF.supabase.co/functions/v1/settle-bets',
+--     url     := 'https://PROJEKT_REF.supabase.co/functions/v1/sync-fixtures',
 --     headers := jsonb_build_object(
 --       'Content-Type',  'application/json',
 --       'Authorization', 'Bearer ' || (
 --         select decrypted_secret from vault.decrypted_secrets
---         where name = 'settle_bets_key'
+--         where name = 'edge_functions_key'
 --       )
 --     ),
 --     body    := '{}'::jsonb,
---     timeout_milliseconds := 55000
+--     timeout_milliseconds := 120000
 --   );
 --   $$
 -- );
 
 -- =============================================================
--- Testa funktionen manuellt utan att skriva något:
+-- Testa manuellt:
 --   curl -i -X POST \
 --     -H "Authorization: Bearer SERVICE_ROLE_KEY" \
---     "https://PROJEKT_REF.supabase.co/functions/v1/settle-bets?dry=1"
+--     "https://PROJEKT_REF.supabase.co/functions/v1/sync-fixtures"
 --
--- Svaret ser ut så här:
---   {"checked":12,"updated":12,"settled":9,"queued":1,"dryRun":true,"ms":842}
+--   curl -i -X POST \
+--     -H "Authorization: Bearer SERVICE_ROLE_KEY" \
+--     "https://PROJEKT_REF.supabase.co/functions/v1/settle-results?dry=1"
 -- =============================================================

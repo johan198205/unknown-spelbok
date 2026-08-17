@@ -473,6 +473,8 @@ export type Database = {
           league_id: number | null
           league_logo: string | null
           league_name: string | null
+          raw: Json | null
+          season: number | null
           sport: string
           status: string
           updated_at: string
@@ -491,6 +493,8 @@ export type Database = {
           league_id?: number | null
           league_logo?: string | null
           league_name?: string | null
+          raw?: Json | null
+          season?: number | null
           sport?: string
           status?: string
           updated_at?: string
@@ -509,9 +513,134 @@ export type Database = {
           league_id?: number | null
           league_logo?: string | null
           league_name?: string | null
+          raw?: Json | null
+          season?: number | null
           sport?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          id: number
+          logo_url: string | null
+          name: string
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          id: number
+          logo_url?: string | null
+          name: string
+          sport?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          logo_url?: string | null
+          name?: string
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      team_leagues: {
+        Row: {
+          league_id: number
+          season: number
+          sport: string
+          team_id: number
+        }
+        Insert: {
+          league_id: number
+          season: number
+          sport?: string
+          team_id: number
+        }
+        Update: {
+          league_id?: number
+          season?: number
+          sport?: string
+          team_id?: number
+        }
+        Relationships: []
+      }
+      active_leagues: {
+        Row: {
+          active: boolean
+          country: string | null
+          league_id: number
+          logo_url: string | null
+          name: string
+          season: number
+          sport: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          active?: boolean
+          country?: string | null
+          league_id: number
+          logo_url?: string | null
+          name: string
+          season: number
+          sport?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          active?: boolean
+          country?: string | null
+          league_id?: number
+          logo_url?: string | null
+          name?: string
+          season?: number
+          sport?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      sync_log: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          job: string
+          meta: Json
+          ok: boolean
+          requests: number
+          settled: number
+          sport: string
+          started_at: string
+          upserted: number
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job: string
+          meta?: Json
+          ok?: boolean
+          requests?: number
+          settled?: number
+          sport?: string
+          started_at?: string
+          upserted?: number
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job?: string
+          meta?: Json
+          ok?: boolean
+          requests?: number
+          settled?: number
+          sport?: string
+          started_at?: string
+          upserted?: number
         }
         Relationships: []
       }
@@ -909,6 +1038,10 @@ export type BannerPlacement = "home" | "sheet" | "topplista" | "spelbolag";
 export type Profile = Tables<"profiles">;
 export type Sheet = Tables<"sheets">;
 export type Fixture = Tables<"fixtures">;
+export type Team = Tables<"teams">;
+export type TeamLeague = Tables<"team_leagues">;
+export type ActiveLeague = Tables<"active_leagues">;
+export type SyncLog = Tables<"sync_log">;
 export type Bookmaker = Tables<"bookmakers">;
 export type Banner = Tables<"banners">;
 export type Page = Tables<"pages">;

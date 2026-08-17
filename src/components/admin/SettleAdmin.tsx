@@ -122,7 +122,11 @@ export function SyncFixturesButton({
       onClick={async () => {
         setState("syncing");
         try {
-          const res = await fetch("/api/fixtures?limit=1", { cache: "no-store" });
+          const res = await fetch("/api/admin/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ job: "sync-fixtures" }),
+          });
           if (!res.ok) throw new Error(String(res.status));
           await markFixturesSynced(league);
           setState("idle");

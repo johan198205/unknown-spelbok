@@ -129,8 +129,9 @@ export default async function AdminSettingsPage({
               API-nycklar
             </div>
             <div className="mb-4 text-[13px] text-muted">
-              Nycklarna sätts som miljövariabler på servern och skickas aldrig
-              till klienten. Admin ser bara om de är konfigurerade.
+              API-Sports-nyckeln sätts som Supabase Edge Function-secret
+              (`APISPORTS_KEY`) och når aldrig Next.js eller klienten. En
+              lyckad rad i synkloggen betyder att den är på plats.
             </div>
 
             <div className="flex flex-wrap items-center gap-3.5 border-t border-line-soft py-3.5">
@@ -141,13 +142,15 @@ export default async function AdminSettingsPage({
                 )}
               />
               <div className="w-[180px] min-w-0">
-                <div className="text-[14px] font-semibold">API-Football</div>
+                <div className="text-[14px] font-semibold">API-Sports</div>
                 <div className="font-mono-num text-[12px] text-dim">
-                  APIFOOTBALL_KEY
+                  APISPORTS_KEY
                 </div>
               </div>
               <span className="font-mono-num min-w-0 flex-1 truncate rounded-[9px] border border-line bg-bg px-3 py-[10px] text-[13px] text-text-soft">
-                {keys.configured ? "konfigurerad · dolt värde" : "saknas"}
+                {keys.configured
+                  ? "synk lyckades · nyckel i Edge secrets"
+                  : "ingen lyckad synk ännu"}
               </span>
               <span
                 className={cn(
@@ -193,7 +196,7 @@ export default async function AdminSettingsPage({
 
             <div className="mt-2 flex flex-wrap items-center gap-3 rounded-[11px] border border-line-soft bg-bg-soft px-3.5 py-3">
               <span className="text-[13px] text-muted">
-                Senaste lyckade synk mot API-Football
+                Senaste lyckade synk mot API-Sports
               </span>
               <span className="font-mono-num ml-auto text-[13px] text-text-soft">
                 {syncLabel(keys.lastSync)}

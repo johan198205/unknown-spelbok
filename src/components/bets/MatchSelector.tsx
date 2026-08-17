@@ -68,7 +68,7 @@ export function MatchSelector({
           ))
         ) : (
           <div className="px-3 py-3 text-sm text-faint">
-            Inga matcher i cachen. Sätt APIFOOTBALL_KEY för att fylla.
+            Inga matcher i cachen. Kör sync-fixtures från admin.
           </div>
         )}
       </div>

@@ -11,12 +11,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * funktion gatear med requireAdmin() först.
  */
 
-export type SettleReason = "fixture_missing" | "postponed" | "unclear";
+export type SettleReason = "fixture_missing" | "postponed" | "unclear" | "awarded";
 
 const REASON_LABEL: Record<string, string> = {
   fixture_missing: "Fixture saknas",
   postponed: "Uppskjuten",
   unclear: "Oklart resultat",
+  awarded: "Walkover/tilldömd",
 };
 
 export type ManualRow = {
@@ -60,6 +61,18 @@ export type FixtureCacheRow = {
   oldestUpdatedAt: string | null;
 };
 
+export type SyncLogRow = {
+  id: string;
+  job: string;
+  ok: boolean;
+  requests: number;
+  upserted: number;
+  settled: number;
+  error: string | null;
+  startedAt: string;
+  startedLabel: string;
+};
+
 export type SettleData = {
   api: {
     ok: boolean;
@@ -72,9 +85,9 @@ export type SettleData = {
   waiting: WaitingRow[];
   auto: AutoRow[];
   fixtures: FixtureCacheRow[];
+  syncLog: SyncLogRow[];
 };
 
-const FRESH_MINUTES = 30;
 const PAGE_SIZE = 1000;
 
 function timeLabel(iso: string | null) {
@@ -107,12 +120,12 @@ export async function getSettleData(): Promise<SettleData> {
   const service = createAdminClient();
   const nowIso = new Date().toISOString();
 
-  const [lastSync, waitingCount, queueCount, queue, waiting, auto, fixtures] =
+  const [lastSync, waitingCount, queueCount, queue, waiting, auto, fixtures, syncLog] =
     await Promise.all([
       service
-        .from("fixtures")
-        .select("updated_at")
-        .order("updated_at", { ascending: false })
+        .from("sync_log")
+        .select("started_at, ok")
+        .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
       service
@@ -156,12 +169,20 @@ export async function getSettleData(): Promise<SettleData> {
         .gte("kickoff", nowIso)
         .order("kickoff", { ascending: true })
         .range(0, PAGE_SIZE - 1),
+      service
+        .from("sync_log")
+        .select(
+          "id, job, ok, requests, upserted, settled, error, started_at"
+        )
+        .order("started_at", { ascending: false })
+        .limit(12),
     ]);
 
-  const lastSyncIso = (lastSync.data as { updated_at: string } | null)?.updated_at ?? null;
-  const fresh =
-    !!lastSyncIso &&
-    Date.now() - new Date(lastSyncIso).getTime() < FRESH_MINUTES * 60 * 1000;
+  const lastSyncRow = lastSync.error
+    ? null
+    : (lastSync.data as { started_at: string; ok: boolean } | null);
+  const lastSyncIso = lastSyncRow?.started_at ?? null;
+  const fresh = lastSyncRow?.ok === true;
 
   type QueueRow = {
     id: string;
@@ -272,6 +293,31 @@ export async function getSettleData(): Promise<SettleData> {
     .sort((a, b) => b.upcoming - a.upcoming)
     .slice(0, 8);
 
+  const syncLogRows: SyncLogRow[] = syncLog.error
+    ? []
+    : (
+        (syncLog.data ?? []) as {
+          id: string;
+          job: string;
+          ok: boolean;
+          requests: number;
+          upserted: number;
+          settled: number;
+          error: string | null;
+          started_at: string;
+        }[]
+      ).map((row) => ({
+    id: row.id,
+    job: row.job,
+    ok: row.ok,
+    requests: row.requests,
+    upserted: row.upserted,
+    settled: row.settled,
+    error: row.error,
+    startedAt: row.started_at,
+    startedLabel: dateTimeLabel(row.started_at),
+  }));
+
   return {
     api: {
       ok: fresh,
@@ -286,6 +332,7 @@ export async function getSettleData(): Promise<SettleData> {
     waiting: waitingRows,
     auto: autoRows,
     fixtures: fixtureRows,
+    syncLog: syncLogRows,
   };
 }
 
@@ -336,7 +383,7 @@ export async function settleQueuedBet(
   return { result };
 }
 
-/** Loggar och tömmer cachen efter att klienten anropat /api/fixtures. */
+/** Loggar efter manuell trigger av Edge Function sync-fixtures. */
 export async function markFixturesSynced(league?: string) {
   await requireAdmin();
   await logAdmin("fixtures.synced", league ? `liga ${league}` : "alla ligor", {
