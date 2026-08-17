@@ -1,15 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { teamLogoUrl } from "@/lib/logos";
 
-function Logo({
+function TeamLogo({
   src,
   size,
 }: {
   src: string | null;
   size: number;
 }) {
-  if (!src) {
+  const [failed, setFailed] = useState(false);
+
+  if (!src || failed) {
     return (
       <span
         className="shrink-0 rounded-full bg-panel-2"
@@ -27,11 +30,15 @@ function Logo({
       height={size}
       className="shrink-0 object-contain"
       style={{ width: size, height: size }}
+      onError={() => setFailed(true)}
     />
   );
 }
 
-export function TeamPair({
+/** [logo A] Lag A – Lag B [logo B] */
+export function MatchSides({
+  homeName,
+  awayName,
   homeLogo,
   awayLogo,
   homeTeamId,
@@ -39,6 +46,8 @@ export function TeamPair({
   sport,
   size = 22,
 }: {
+  homeName: string;
+  awayName: string;
   homeLogo?: string | null;
   awayLogo?: string | null;
   homeTeamId?: number | null;
@@ -47,9 +56,12 @@ export function TeamPair({
   size?: number;
 }) {
   return (
-    <span className="flex shrink-0 items-center gap-1">
-      <Logo src={teamLogoUrl(homeLogo, homeTeamId, sport)} size={size} />
-      <Logo src={teamLogoUrl(awayLogo, awayTeamId, sport)} size={size} />
+    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+      <TeamLogo src={teamLogoUrl(homeLogo, homeTeamId, sport)} size={size} />
+      <span className="min-w-0 truncate font-semibold">{homeName}</span>
+      <span className="shrink-0 text-faint">–</span>
+      <span className="min-w-0 truncate font-semibold">{awayName}</span>
+      <TeamLogo src={teamLogoUrl(awayLogo, awayTeamId, sport)} size={size} />
     </span>
   );
 }

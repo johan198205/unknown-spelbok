@@ -2,12 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Fixture } from "@/lib/types";
-import { TeamPair } from "@/components/bets/TeamPair";
-import {
-  upcomingDayChips,
-  stockholmDayBounds,
-  stockholmYmd,
-} from "@/lib/stockholm";
+import { MatchSides } from "@/components/bets/TeamPair";
+import { upcomingDayChips, stockholmYmd } from "@/lib/stockholm";
 import { cn } from "@/lib/utils";
 
 export function FixturePicker({
@@ -28,11 +24,9 @@ export function FixturePicker({
     const t = setTimeout(async () => {
       setLoading(true);
       try {
-        const { from, to } = stockholmDayBounds(ymd);
         const params = new URLSearchParams({
-          from,
-          to,
-          limit: "80",
+          date: ymd,
+          limit: "120",
         });
         if (q.trim()) params.set("q", q.trim());
         const res = await fetch(`/api/fixtures?${params}`);
@@ -104,7 +98,7 @@ export function FixturePicker({
       />
       <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
         {loading ? (
-          <div className="px-3 py-3 text-sm text-faint">Hämtar…</div>
+          <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
         ) : items.length ? (
           byLeague.map(([league, rows]) => (
             <div key={league}>
@@ -118,16 +112,15 @@ export function FixturePicker({
                   onClick={() => onSelect(f)}
                   className="flex w-full items-center gap-2 border-b border-line-soft px-3 py-2.5 text-left text-sm last:border-0 hover:bg-panel-2"
                 >
-                  <TeamPair
+                  <MatchSides
+                    homeName={f.home_name || ""}
+                    awayName={f.away_name || ""}
                     homeLogo={f.home_logo}
                     awayLogo={f.away_logo}
                     homeTeamId={f.home_team_id}
                     awayTeamId={f.away_team_id}
                     sport={f.sport}
                   />
-                  <span className="min-w-0 flex-1 truncate font-semibold">
-                    {f.home_name} – {f.away_name}
-                  </span>
                   <span className="shrink-0 font-mono-num text-[11px] text-faint">
                     {new Date(f.kickoff).toLocaleTimeString("sv-SE", {
                       hour: "2-digit",

@@ -15,7 +15,7 @@ import {
   leaguesForSport,
 } from "@/lib/picks";
 import { FixturePicker } from "@/components/bets/FixturePicker";
-import { TeamPair } from "@/components/bets/TeamPair";
+import { MatchSides } from "@/components/bets/TeamPair";
 import {
   formatMoney,
   formatOdds,
@@ -258,9 +258,11 @@ export function BetForm({
                       Ändra match
                     </button>
                   </div>
-                  <div className="font-display flex items-center gap-2.5 text-lg font-semibold">
+                  <div className="font-display text-lg">
                     {chosenFixture ? (
-                      <TeamPair
+                      <MatchSides
+                        homeName={chosenFixture.home_name || ""}
+                        awayName={chosenFixture.away_name || ""}
                         homeLogo={chosenFixture.home_logo}
                         awayLogo={chosenFixture.away_logo}
                         homeTeamId={chosenFixture.home_team_id}
@@ -268,8 +270,9 @@ export function BetForm({
                         sport={chosenFixture.sport}
                         size={26}
                       />
-                    ) : null}
-                    {match}
+                    ) : (
+                      <span className="font-semibold">{match}</span>
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -452,19 +455,20 @@ export function BetRow({
         {bet.league || "—"}
       </td>
       <td className="px-2.5 py-3">
-        <span className="flex items-center gap-2">
-          {bet.fixtures?.home_team_id || bet.fixtures?.home_logo ? (
-            <TeamPair
-              homeLogo={bet.fixtures?.home_logo}
-              awayLogo={bet.fixtures?.away_logo}
-              homeTeamId={bet.fixtures?.home_team_id}
-              awayTeamId={bet.fixtures?.away_team_id}
-              sport={bet.fixtures?.sport ?? bet.sport}
-              size={20}
-            />
-          ) : null}
-          <span className="min-w-0 truncate">{bet.match}</span>
-        </span>
+        {bet.fixtures?.home_team_id || bet.fixtures?.home_logo ? (
+          <MatchSides
+            homeName={bet.fixtures?.home_name || bet.match}
+            awayName={bet.fixtures?.away_name || ""}
+            homeLogo={bet.fixtures?.home_logo}
+            awayLogo={bet.fixtures?.away_logo}
+            homeTeamId={bet.fixtures?.home_team_id}
+            awayTeamId={bet.fixtures?.away_team_id}
+            sport={bet.fixtures?.sport ?? bet.sport}
+            size={20}
+          />
+        ) : (
+          bet.match
+        )}
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 font-bold">{bet.pick}</td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[12.5px] text-muted">
