@@ -4,6 +4,7 @@ import {
   CacheFirst,
   ExpirationPlugin,
   NetworkFirst,
+  NetworkOnly,
   Serwist,
   StaleWhileRevalidate,
 } from "serwist";
@@ -23,16 +24,7 @@ const runtimeCaching: RuntimeCaching[] = [
     matcher: ({ sameOrigin, url }) =>
       sameOrigin && url.pathname.startsWith("/api/fixtures"),
     method: "GET",
-    handler: new StaleWhileRevalidate({
-      cacheName: "api-fixtures",
-      plugins: [
-        new ExpirationPlugin({
-          maxEntries: 32,
-          maxAgeSeconds: TEN_MINUTES,
-          maxAgeFrom: "last-used",
-        }),
-      ],
-    }),
+    handler: new NetworkOnly(),
   },
   {
     matcher: ({ sameOrigin, url }) =>

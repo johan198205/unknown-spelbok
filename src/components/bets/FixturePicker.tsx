@@ -2,9 +2,30 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Fixture } from "@/lib/types";
-import { MatchSides } from "@/components/bets/TeamPair";
+import { FixtureMatch } from "@/components/bets/FixtureMatch";
+import { useLiveFixtures } from "@/hooks/useLiveFixtures";
+import { isInPlayStatus, mergeLivePatch } from "@/lib/live-fixture";
 import { upcomingDayChips, stockholmYmd } from "@/lib/stockholm";
 import { cn } from "@/lib/utils";
+
+type Coverage = { from: string; to: string };
+
+function formatRange(from: string, to: string) {
+  const fmt = (ymd: string) => {
+    const [year, month, day] = ymd.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("sv-SE", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    });
+  };
+  return `${fmt(from)} – ${fmt(to)}`;
+}
+
+function inCoverage(ymd: string, coverage: Coverage | null) {
+  if (!coverage) return true;
+  return ymd >= coverage.from && ymd <= coverage.to;
+}
 
 export function FixturePicker({
   onSelect,
@@ -13,11 +34,24 @@ export function FixturePicker({
   onSelect: (fixture: Fixture) => void;
   active?: boolean;
 }) {
-  const chips = useMemo(() => upcomingDayChips(), []);
-  const [ymd, setYmd] = useState(chips[0]?.ymd ?? stockholmYmd());
+  const [coverage, setCoverage] = useState<Coverage | null>(null);
+  const chips = useMemo(() => {
+    const all = upcomingDayChips();
+    if (!coverage) return all;
+    const visible = all.filter((chip) => inCoverage(chip.ymd, coverage));
+    return visible.length ? visible : all;
+  }, [coverage]);
+  const [ymd, setYmd] = useState(stockholmYmd());
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(false);
+  const [planLimited, setPlanLimited] = useState(false);
+
+  useEffect(() => {
+    if (coverage && !inCoverage(ymd, coverage)) {
+      setYmd(stockholmYmd());
+    }
+  }, [coverage, ymd]);
 
   useEffect(() => {
     if (!active) return;
@@ -29,11 +63,16 @@ export function FixturePicker({
           limit: "120",
         });
         if (q.trim()) params.set("q", q.trim());
-        const res = await fetch(`/api/fixtures?${params}`);
+        const res = await fetch(`/api/fixtures?${params}`, { cache: "no-store" });
         const json = await res.json();
+        if (json.coverage?.from && json.coverage?.to) {
+          setCoverage(json.coverage);
+        }
+        setPlanLimited(json.reason === "plan");
         setItems(json.fixtures || []);
       } catch {
         setItems([]);
+        setPlanLimited(false);
       } finally {
         setLoading(false);
       }
@@ -52,6 +91,17 @@ export function FixturePicker({
     return [...map.entries()];
   }, [items]);
 
+  const emptyMessage = planLimited && coverage
+    ? `API-planen visar bara matcher ${formatRange(coverage.from, coverage.to)}. Välj ett av de datumen, eller ange matchen manuellt.`
+    : q.trim()
+      ? "Inget matchar den här dagen. Prova ett annat namn."
+      : "Inga matcher den här dagen. Välj ett annat datum.";
+
+  const live = useLiveFixtures(
+    items.map((f) => f.fixture_id),
+    { hasLive: items.some((f) => isInPlayStatus(f.status)) }
+  );
+
   return (
     <div>
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
@@ -60,16 +110,20 @@ export function FixturePicker({
       <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 sb-scroll">
         {chips.map((chip) => {
           const selected = chip.ymd === ymd;
+          const available = inCoverage(chip.ymd, coverage);
           return (
             <button
               key={chip.ymd}
               type="button"
+              disabled={!available}
               onClick={() => setYmd(chip.ymd)}
               className={cn(
                 "shrink-0 rounded-[10px] border px-2.5 py-2 text-center",
-                selected
-                  ? "border-win bg-win/10 text-win"
-                  : "border-line bg-bg-soft text-muted hover:text-text"
+                !available
+                  ? "cursor-not-allowed border-line bg-bg-soft text-faint opacity-40"
+                  : selected
+                    ? "border-win bg-win/10 text-win"
+                    : "border-line bg-bg-soft text-muted hover:text-text"
               )}
             >
               <div className="text-[10px] font-semibold uppercase tracking-[0.08em]">
@@ -86,6 +140,12 @@ export function FixturePicker({
           );
         })}
       </div>
+      {coverage ? (
+        <p className="mb-3 text-[12px] leading-snug text-faint">
+          Matchlistan täcker {formatRange(coverage.from, coverage.to)} med
+          nuvarande API-plan.
+        </p>
+      ) : null}
 
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
         Match
@@ -105,39 +165,23 @@ export function FixturePicker({
               <div className="sticky top-0 bg-bg-soft px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint">
                 {league}
               </div>
-              {rows.map((f) => (
-                <button
-                  key={f.fixture_id}
-                  type="button"
-                  onClick={() => onSelect(f)}
-                  className="flex w-full items-center gap-2 border-b border-line-soft px-3 py-2.5 text-left text-sm last:border-0 hover:bg-panel-2"
-                >
-                  <MatchSides
-                    homeName={f.home_name || ""}
-                    awayName={f.away_name || ""}
-                    homeLogo={f.home_logo}
-                    awayLogo={f.away_logo}
-                    homeTeamId={f.home_team_id}
-                    awayTeamId={f.away_team_id}
-                    sport={f.sport}
-                  />
-                  <span className="shrink-0 font-mono-num text-[11px] text-faint">
-                    {new Date(f.kickoff).toLocaleTimeString("sv-SE", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      timeZone: "Europe/Stockholm",
-                    })}
-                  </span>
-                </button>
-              ))}
+              {rows.map((f) => {
+                const merged = mergeLivePatch(f, live[f.fixture_id]);
+                return (
+                  <button
+                    key={f.fixture_id}
+                    type="button"
+                    onClick={() => onSelect(merged)}
+                    className="flex w-full items-center border-b border-line-soft px-3 py-2 text-left text-sm last:border-0 hover:bg-panel-2"
+                  >
+                    <FixtureMatch fixture={merged} />
+                  </button>
+                );
+              })}
             </div>
           ))
         ) : (
-          <div className="px-3 py-3 text-sm text-faint">
-            {q.trim()
-              ? "Inget matchar den här dagen. Prova ett annat namn."
-              : "Inga matcher den här dagen. Välj ett annat datum."}
-          </div>
+          <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
         )}
       </div>
     </div>

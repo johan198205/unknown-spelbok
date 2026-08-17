@@ -1,0 +1,42 @@
+"use client";
+
+import { TeamLogo } from "@/components/bets/TeamPair";
+import { formatKickoffTime, type MatchFixture } from "@/lib/live-fixture";
+import { teamLogoUrl } from "@/lib/logos";
+import { cn } from "@/lib/utils";
+
+export function MatchRow({
+  fixture,
+  className,
+  showTime = true,
+}: {
+  fixture: MatchFixture;
+  className?: string;
+  showTime?: boolean;
+}) {
+  const home = fixture.home_name || "";
+  const away = fixture.away_name || "";
+
+  return (
+    <div className={cn("flex min-w-0 w-full items-center gap-2", className)}>
+      <span className="flex shrink-0 items-center gap-0.5">
+        <TeamLogo
+          src={teamLogoUrl(fixture.home_logo, fixture.home_team_id, fixture.sport)}
+          size={20}
+        />
+        <TeamLogo
+          src={teamLogoUrl(fixture.away_logo, fixture.away_team_id, fixture.sport)}
+          size={20}
+        />
+      </span>
+      <span className="min-w-0 flex-1 truncate whitespace-nowrap">
+        {home} – {away}
+      </span>
+      {showTime ? (
+        <span className="shrink-0 font-mono-num text-[11px] text-faint">
+          {formatKickoffTime(fixture.kickoff)}
+        </span>
+      ) : null}
+    </div>
+  );
+}

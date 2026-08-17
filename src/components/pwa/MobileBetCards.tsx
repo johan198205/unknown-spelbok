@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
-import { MatchSides } from "@/components/bets/TeamPair";
+import { FixtureMatch } from "@/components/bets/FixtureMatch";
+import { useLiveFixtures } from "@/hooks/useLiveFixtures";
+import {
+  applyLiveToBet,
+  fixtureFromBet,
+  isInPlayStatus,
+} from "@/lib/live-fixture";
 import type { Bet, BetResult } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
@@ -155,6 +161,11 @@ export function MobileBetCards({
     return displayBets.filter((b) => b.result === filter);
   }, [displayBets, filter]);
 
+  const live = useLiveFixtures(
+    filtered.map((b) => b.fixture_id).filter((id): id is number => id != null),
+    { hasLive: filtered.some((b) => isInPlayStatus(b.fixtures?.status)) }
+  );
+
   const stats = computeStats(bets);
 
   async function setResult(bet: DisplayBet, result: BetResult) {
@@ -256,7 +267,7 @@ export function MobileBetCards({
         {filtered.map((bet) => (
           <SwipeBetCard
             key={bet.id}
-            bet={bet}
+            bet={applyLiveToBet(bet, live)}
             canEdit={canEdit && !bet._pending}
             online={online}
             onSwipeWin={() => setResult(bet, "win")}
@@ -336,6 +347,7 @@ function SwipeBetCard({
   const holdTimer = useRef<number | null>(null);
   const badge = statusBadge(bet);
   const netto = betNetto(bet);
+  const fixture = fixtureFromBet(bet);
   const date = new Date(bet.placed_at).toLocaleDateString("sv-SE", {
     day: "2-digit",
     month: "short",
@@ -417,17 +429,8 @@ function SwipeBetCard({
           </div>
         </div>
 
-        {bet.fixtures?.home_team_id || bet.fixtures?.home_logo ? (
-          <MatchSides
-            homeName={bet.fixtures?.home_name || bet.match}
-            awayName={bet.fixtures?.away_name || ""}
-            homeLogo={bet.fixtures?.home_logo}
-            awayLogo={bet.fixtures?.away_logo}
-            homeTeamId={bet.fixtures?.home_team_id}
-            awayTeamId={bet.fixtures?.away_team_id}
-            sport={bet.fixtures?.sport ?? bet.sport}
-            size={22}
-          />
+        {fixture ? (
+          <FixtureMatch fixture={fixture} />
         ) : (
           <div className="font-semibold text-text">{bet.match}</div>
         )}

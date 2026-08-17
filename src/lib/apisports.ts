@@ -45,7 +45,7 @@ export type ApiFixtureItem = {
     id: number;
     date: string;
     timezone?: string;
-    status: { short: string; long?: string; elapsed?: number | null };
+    status: { short: string; long?: string; elapsed?: number | null; extra?: number | null };
     venue?: { name?: string | null; city?: string | null } | null;
     referee?: string | null;
   };
@@ -103,6 +103,11 @@ export type ApiSportsClient = {
     path: string,
     params?: Record<string, string | number | boolean | undefined>
   ) => Promise<T[]>;
+  /** Första sidans `response` som den är (objekt eller lista). */
+  getResponse: <T>(
+    path: string,
+    params?: Record<string, string | number | boolean | undefined>
+  ) => Promise<T>;
   requestCount: () => number;
 };
 
@@ -256,7 +261,10 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     let total = 1;
 
     while (page <= total) {
-      const json = await fetchPage(path, { ...params, page });
+      const json = await fetchPage(
+        path,
+        page === 1 && total === 1 ? params : { ...params, page }
+      );
       items.push(...((json.response ?? []) as T[]));
       total = Math.max(1, json.paging?.total ?? 1);
       page += 1;
@@ -265,8 +273,17 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     return items;
   }
 
+  async function getResponse<T>(
+    path: string,
+    params: Record<string, string | number | boolean | undefined> = {}
+  ): Promise<T> {
+    const json = await fetchPage(path, params);
+    return json.response as T;
+  }
+
   return {
     get,
+    getResponse,
     requestCount: () => requests,
   };
 }

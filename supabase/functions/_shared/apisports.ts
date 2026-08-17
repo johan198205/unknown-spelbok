@@ -45,7 +45,7 @@ export type ApiFixtureItem = {
     id: number;
     date: string;
     timezone?: string;
-    status: { short: string; long?: string; elapsed?: number | null };
+    status: { short: string; long?: string; elapsed?: number | null; extra?: number | null };
     venue?: { name?: string | null; city?: string | null } | null;
     referee?: string | null;
   };
@@ -256,7 +256,10 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     let total = 1;
 
     while (page <= total) {
-      const json = await fetchPage(path, { ...params, page });
+      const json = await fetchPage(
+        path,
+        page === 1 && total === 1 ? params : { ...params, page }
+      );
       items.push(...((json.response ?? []) as T[]));
       total = Math.max(1, json.paging?.total ?? 1);
       page += 1;
@@ -350,6 +353,14 @@ export const TERMINAL_STATUSES = [
   ...STATUS.final,
   ...STATUS.awarded,
   ...STATUS.voided,
+] as const;
+
+/** poll-live hoppar över dessa (inkl. PST) och gör inget API-anrop om listan är tom. */
+export const POLL_LIVE_SKIP_STATUSES = [
+  ...STATUS.final,
+  ...STATUS.awarded,
+  ...STATUS.voided,
+  "PST",
 ] as const;
 
 /**

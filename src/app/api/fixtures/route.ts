@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureFixturesForDate } from "@/lib/ensure-fixtures";
+import {
+  ensureFixturesForDate,
+  getFixtureCoverage,
+  resolveFixtureCoverage,
+} from "@/lib/ensure-fixtures";
 import { teamLogoUrl } from "@/lib/logos";
 import { stockholmDayBounds } from "@/lib/stockholm";
 import { createClient } from "@/lib/supabase/server";
@@ -12,6 +16,8 @@ const MAX_LIMIT = 250;
 const DEFAULT_LIMIT = 120;
 const WINDOW_DAYS = 14;
 const UPCOMING = ["NS", "TBD", "1H", "HT", "2H", "ET", "BT", "P", "LIVE", "PST"];
+const FIXTURE_COLUMNS =
+  "fixture_id, kickoff, status, sport, league_id, league_name, league_logo, home_team_id, home_name, home_logo, away_team_id, away_name, away_logo, home_score, away_score, season, updated_at";
 
 function sanitizeIlike(raw: string) {
   return raw.replace(/[%_,()\\]/g, " ").trim().slice(0, 80);
@@ -55,11 +61,18 @@ export async function GET(request: NextRequest) {
   let from = params.get("from");
   let to = params.get("to");
   const status = params.get("status");
+  const idsRaw = params.get("ids") ?? "";
   const q = sanitizeIlike(params.get("q") ?? "");
   const limit = Math.min(
     Number(params.get("limit") || DEFAULT_LIMIT) || DEFAULT_LIMIT,
     MAX_LIMIT
   );
+
+  const ids = idsRaw
+    .split(/[,-]/)
+    .map((part) => Number(part.trim()))
+    .filter((id) => Number.isFinite(id) && id > 0)
+    .slice(0, MAX_LIMIT);
 
   if (date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -73,11 +86,14 @@ export async function GET(request: NextRequest) {
   async function load() {
     let query = supabase
       .from("fixtures")
-      .select(
-        "fixture_id, kickoff, status, sport, league_id, league_name, league_logo, home_team_id, home_name, home_logo, away_team_id, away_name, away_logo, home_score, away_score, season, updated_at"
-      )
+      .select(FIXTURE_COLUMNS)
       .order("kickoff", { ascending: true })
       .limit(limit);
+
+    if (ids.length) {
+      query = query.in("fixture_id", ids);
+      return query;
+    }
 
     if (league) {
       const id = Number(league);
@@ -112,7 +128,14 @@ export async function GET(request: NextRequest) {
 
   try {
     let source = "cache";
-    if (date) {
+    let coverage = ids.length ? null : await resolveFixtureCoverage();
+    const planLimited = !!(
+      date &&
+      coverage &&
+      (date < coverage.from || date > coverage.to)
+    );
+
+    if (date && !planLimited && !ids.length) {
       const { count } = await supabase
         .from("fixtures")
         .select("fixture_id", { count: "exact", head: true })
@@ -129,8 +152,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const latestCoverage = ids.length ? null : getFixtureCoverage() ?? coverage;
     const fixtures = (data ?? []).map(withLogos);
-    return NextResponse.json({ fixtures, source }, { headers: CACHE });
+    return NextResponse.json(
+      {
+        fixtures,
+        source,
+        coverage: latestCoverage,
+        reason: planLimited ? "plan" : undefined,
+      },
+      { headers: CACHE }
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Kunde inte hämta matcher";
     return NextResponse.json({ error: message }, { status: 400 });

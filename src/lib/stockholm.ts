@@ -11,7 +11,7 @@ export function stockholmYmd(date = new Date()) {
   }).format(date);
 }
 
-function addCalendarDays(ymd: string, days: number) {
+export function addStockholmDays(ymd: string, days: number) {
   const [y, m, d] = ymd.split("-").map(Number);
   const utc = Date.UTC(y, m - 1, d + days);
   return new Date(utc).toISOString().slice(0, 10);
@@ -49,7 +49,7 @@ function stockholmMidnight(ymd: string) {
 /** [from, to) för ett kalenderdygn i svensk tid, som ISO-strängar. */
 export function stockholmDayBounds(ymd: string) {
   const from = stockholmMidnight(ymd);
-  const to = stockholmMidnight(addCalendarDays(ymd, 1));
+  const to = stockholmMidnight(addStockholmDays(ymd, 1));
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
@@ -64,7 +64,7 @@ export type DayChip = {
 export function upcomingDayChips(count = FIXTURE_PICKER_DAYS): DayChip[] {
   const today = stockholmYmd();
   return Array.from({ length: count }, (_, i) => {
-    const ymd = addCalendarDays(today, i);
+    const ymd = addStockholmDays(today, i);
     const noon = new Date(`${ymd}T12:00:00Z`);
     return {
       ymd,

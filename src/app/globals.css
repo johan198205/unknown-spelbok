@@ -68,6 +68,9 @@
   --amber-soft: rgba(255, 184, 77, 0.16);
   --amber-border: rgba(255, 184, 77, 0.4);
 
+  --live: #ff6a00;
+  --live-soft: rgba(255, 106, 0, 0.16);
+
   --offline-bg: #2a2113;
   --offline-border: #4a3a16;
 
@@ -163,6 +166,7 @@
   --color-blue: var(--blue);
   --color-yellow: var(--yellow);
   --color-amber: var(--amber);
+  --color-live: var(--live);
   --color-ad-a: var(--ad-a);
   --color-ad-b: var(--ad-b);
   --color-card-light: #f7f8fb;

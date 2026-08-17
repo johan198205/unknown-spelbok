@@ -4,6 +4,7 @@
 -- Schemalägger:
 --   sync-fixtures   05:00 Europe/Stockholm (1 gång/dygn)
 --   settle-results  var 15:e minut
+--   poll-live       var 3:e minut (noll API-anrop när inget är live)
 --
 -- Båda anropas via pg_net mot Edge Function-URL:erna med
 -- service role-nyckel i Authorization. Nyckeln till API-Sports
@@ -14,6 +15,7 @@
 --   2. Deploya funktionerna och sätt secrets:
 --        supabase functions deploy sync-fixtures
 --        supabase functions deploy settle-results
+--        supabase functions deploy poll-live
 --        supabase secrets set APISPORTS_KEY=din-nyckel
 --        supabase secrets set APISPORTS_FOOTBALL_URL=https://v3.football.api-sports.io
 --   3. Aktivera extensions i Dashboard > Database > Extensions:
@@ -79,7 +81,28 @@
 -- );
 
 -- -------------------------------------------------------------
--- 4. Kontrollera
+-- 4. poll-live — var 3:e minut
+--    Avslutar utan API-anrop när inga pågående matcher finns.
+-- -------------------------------------------------------------
+-- select cron.unschedule('poll-live-var-3-min');
+-- select cron.schedule(
+--   'poll-live-var-3-min',
+--   '*/3 * * * *',
+--   $$
+--   select net.http_post(
+--     url     := 'https://PROJEKT_REF.supabase.co/functions/v1/poll-live',
+--     headers := jsonb_build_object(
+--       'Content-Type',  'application/json',
+--       'Authorization', 'Bearer SERVICE_ROLE_KEY'
+--     ),
+--     body    := '{}'::jsonb,
+--     timeout_milliseconds := 55000
+--   );
+--   $$
+-- );
+
+-- -------------------------------------------------------------
+-- 5. Kontrollera
 -- -------------------------------------------------------------
 -- select jobid, jobname, schedule, active from cron.job;
 --
@@ -100,18 +123,20 @@
 --   limit 20;
 
 -- -------------------------------------------------------------
--- 5. Pausa / ta bort
+-- 6. Pausa / ta bort
 -- -------------------------------------------------------------
 -- update cron.job set active = false where jobname in (
 --   'sync-fixtures-daily',
 --   'settle-results-var-15-min',
---   'settle-bets-var-15-min'
+--   'settle-bets-var-15-min',
+--   'poll-live-var-3-min'
 -- );
 -- select cron.unschedule('sync-fixtures-daily');
 -- select cron.unschedule('settle-results-var-15-min');
+-- select cron.unschedule('poll-live-var-3-min');
 
 -- -------------------------------------------------------------
--- 6. Frivilligt: nyckeln i Vault
+-- 7. Frivilligt: nyckeln i Vault
 -- -------------------------------------------------------------
 -- select vault.create_secret('SERVICE_ROLE_KEY', 'edge_functions_key');
 --
@@ -143,4 +168,8 @@
 --   curl -i -X POST \
 --     -H "Authorization: Bearer SERVICE_ROLE_KEY" \
 --     "https://PROJEKT_REF.supabase.co/functions/v1/settle-results?dry=1"
+--
+--   curl -i -X POST \
+--     -H "Authorization: Bearer SERVICE_ROLE_KEY" \
+--     "https://PROJEKT_REF.supabase.co/functions/v1/poll-live?dry=1"
 -- =============================================================

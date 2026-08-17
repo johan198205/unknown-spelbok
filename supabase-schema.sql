@@ -76,6 +76,7 @@ create table public.fixtures (
   away_logo     text,
   home_score    int,
   away_score    int,
+  elapsed       int,                          -- spelminut, null före avspark
   updated_at    timestamptz not null default now()
 );
 

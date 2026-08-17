@@ -95,10 +95,11 @@ on conflict (sport, league_id, season) do nothing;
 
 -- -------------------------------------------------------------
 -- 4. SYNC_LOG — requests, fel och utfall per jobb
+--    job: 'sync-fixtures' | 'settle-results' | 'poll-live'
 -- -------------------------------------------------------------
 create table if not exists public.sync_log (
   id           uuid primary key default gen_random_uuid(),
-  job          text not null,           -- 'sync-fixtures' | 'settle-results'
+  job          text not null,           -- 'sync-fixtures' | 'settle-results' | 'poll-live'
   sport        text not null default 'football',
   started_at   timestamptz not null default now(),
   finished_at  timestamptz,

@@ -15,7 +15,14 @@ import {
   leaguesForSport,
 } from "@/lib/picks";
 import { FixturePicker } from "@/components/bets/FixturePicker";
-import { MatchSides } from "@/components/bets/TeamPair";
+import { FixtureMatch } from "@/components/bets/FixtureMatch";
+import { MatchStack } from "@/components/bets/TeamPair";
+import { useLiveFixtures } from "@/hooks/useLiveFixtures";
+import {
+  applyLiveToBet,
+  fixtureFromBet,
+  isInPlayStatus,
+} from "@/lib/live-fixture";
 import {
   formatMoney,
   formatOdds,
@@ -260,7 +267,7 @@ export function BetForm({
                   </div>
                   <div className="font-display text-lg">
                     {chosenFixture ? (
-                      <MatchSides
+                      <MatchStack
                         homeName={chosenFixture.home_name || ""}
                         awayName={chosenFixture.away_name || ""}
                         homeLogo={chosenFixture.home_logo}
@@ -268,7 +275,7 @@ export function BetForm({
                         homeTeamId={chosenFixture.home_team_id}
                         awayTeamId={chosenFixture.away_team_id}
                         sport={chosenFixture.sport}
-                        size={26}
+                        size={22}
                       />
                     ) : (
                       <span className="font-semibold">{match}</span>
@@ -425,6 +432,7 @@ export function BetRow({
   const router = useRouter();
   const tone = resultTone(bet.result);
   const netto = betNetto(bet);
+  const fixture = fixtureFromBet(bet);
 
   async function setResult(result: BetResult) {
     const supabase = createClient();
@@ -455,20 +463,7 @@ export function BetRow({
         {bet.league || "—"}
       </td>
       <td className="px-2.5 py-3">
-        {bet.fixtures?.home_team_id || bet.fixtures?.home_logo ? (
-          <MatchSides
-            homeName={bet.fixtures?.home_name || bet.match}
-            awayName={bet.fixtures?.away_name || ""}
-            homeLogo={bet.fixtures?.home_logo}
-            awayLogo={bet.fixtures?.away_logo}
-            homeTeamId={bet.fixtures?.home_team_id}
-            awayTeamId={bet.fixtures?.away_team_id}
-            sport={bet.fixtures?.sport ?? bet.sport}
-            size={20}
-          />
-        ) : (
-          bet.match
-        )}
+        {fixture ? <FixtureMatch fixture={fixture} /> : bet.match}
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 font-bold">{bet.pick}</td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[12.5px] text-muted">
@@ -554,6 +549,11 @@ export function BetsTable({
     return bets.filter((b) => b.result === filter);
   }, [bets, filter]);
 
+  const live = useLiveFixtures(
+    rows.map((b) => b.fixture_id).filter((id): id is number => id != null),
+    { hasLive: rows.some((b) => isInPlayStatus(b.fixtures?.status)) }
+  );
+
   return (
     <div>
       <div className="mb-3 flex flex-wrap gap-2">
@@ -600,7 +600,11 @@ export function BetsTable({
           </thead>
           <tbody>
             {rows.map((bet) => (
-              <BetRow key={bet.id} bet={bet} canEdit={canEdit} />
+              <BetRow
+                key={bet.id}
+                bet={applyLiveToBet(bet, live)}
+                canEdit={canEdit}
+              />
             ))}
             {!rows.length ? (
               <tr>

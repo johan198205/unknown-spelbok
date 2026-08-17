@@ -1,34 +1,40 @@
 /**
- * Settling-körning. Importeras av settle-results och (bakåtkompatibelt)
- * settle-bets. Anropa inte Deno.serve här.
+ * SPELBOK — Edge Function: poll-live
+ *
+ * Körs var 3:e minut (se db/cron.sql). Håller fixtures.status/elapsed/mål
+ * uppdaterade under pågående matcher. Tom lista → noll API-anrop.
+ *
+ * Max 20 fixture-id:n per /fixtures?ids=…-anrop. När en match blir
+ * FT/AET/PEN körs samma sättling som settle-results.
+ *
+ * Deploy:
+ *   supabase functions deploy poll-live
  */
 
 import {
   clientForSport,
   chunk,
+  currentScore,
   DEFAULT_TIMEZONE,
   FIXTURE_IDS_PER_CALL,
+  POLL_LIVE_SKIP_STATUSES,
   regulationScore,
   sportSlug,
   statusBucket,
-  TERMINAL_STATUSES,
   type ApiFixtureItem,
   type SportSlug,
-} from "./apisports.ts";
-import { mapFixtureRow } from "./map.ts";
-import { settleOpenBets } from "./settle-open.ts";
+} from "../_shared/apisports.ts";
+import { settleOpenBets } from "../_shared/settle-open.ts";
 import {
   createServiceClient,
   finishSyncLog,
   startSyncLog,
-} from "./supabase.ts";
+} from "../_shared/supabase.ts";
 
-const FIXTURE_BATCH = 200;
+const LIVE_BATCH = 60;
 
-type PendingFixture = {
+type LiveFixture = {
   fixture_id: number;
-  kickoff: string;
-  status: string;
   sport: string;
 };
 
@@ -40,8 +46,8 @@ function json(body: unknown, status = 200) {
   return Response.json(body, { status });
 }
 
-function groupBySport(fixtures: PendingFixture[]) {
-  const groups = new Map<SportSlug, PendingFixture[]>();
+function groupBySport(fixtures: LiveFixture[]) {
+  const groups = new Map<SportSlug, LiveFixture[]>();
   for (const fixture of fixtures) {
     const slug = sportSlug(fixture.sport);
     const list = groups.get(slug) ?? [];
@@ -51,34 +57,33 @@ function groupBySport(fixtures: PendingFixture[]) {
   return groups;
 }
 
-export async function handleSettleResults(req: Request) {
+export async function handlePollLive(req: Request) {
   const startedAt = Date.now();
   const dryRun = new URL(req.url).searchParams.get("dry") === "1";
 
   const supabase = createServiceClient();
   const nowIso = new Date().toISOString();
-  const terminalList = `("${TERMINAL_STATUSES.join('","')}")`;
+  const skipList = `("${POLL_LIVE_SKIP_STATUSES.join('","')}")`;
 
   const { data: pending, error: pendingError } = await supabase
     .from("fixtures")
-    .select("fixture_id, kickoff, status, sport")
+    .select("fixture_id, sport")
     .lt("kickoff", nowIso)
-    .not("status", "in", terminalList)
+    .not("status", "in", skipList)
     .order("kickoff", { ascending: false })
-    .limit(FIXTURE_BATCH);
+    .limit(LIVE_BATCH);
 
   if (pendingError) {
     return json({ error: pendingError.message }, 500);
   }
 
-  const fixtures = (pending ?? []) as PendingFixture[];
+  const fixtures = (pending ?? []) as LiveFixture[];
   const summary = {
     checked: fixtures.length,
     updated: 0,
     settled: 0,
     voided: 0,
     queued: 0,
-    awarded: 0,
     requests: 0,
     dryRun,
   };
@@ -91,7 +96,7 @@ export async function handleSettleResults(req: Request) {
   const logSport = sports.length === 1 ? sports[0] : "mixed";
   let logId: string | null = null;
   if (!dryRun) {
-    logId = await startSyncLog(supabase, "settle-results", logSport);
+    logId = await startSyncLog(supabase, "poll-live", logSport);
   }
 
   try {
@@ -112,36 +117,35 @@ export async function handleSettleResults(req: Request) {
       summary.requests += api.requestCount();
     }
 
-    const finalById = new Map<number, { home: number; away: number }>();
-    const awardedIds: number[] = [];
-    const voidIds: number[] = [];
-    const postponedIds: number[] = [];
-    const missingIds: number[] = [];
-    const updates: ReturnType<typeof mapFixtureRow>[] = [];
     const now = new Date().toISOString();
+    const updates: {
+      fixture_id: number;
+      status: string;
+      elapsed: number | null;
+      home_score: number | null;
+      away_score: number | null;
+      updated_at: string;
+    }[] = [];
+    const finalById = new Map<number, { home: number; away: number }>();
 
     for (const fixture of fixtures) {
       const hit = results.get(fixture.fixture_id);
-      if (!hit) {
-        missingIds.push(fixture.fixture_id);
-        continue;
-      }
+      if (!hit) continue;
 
-      const row = mapFixtureRow(hit.item, hit.sport, now);
-      updates.push(row);
+      const status = hit.item.fixture.status.short;
+      const score = currentScore(hit.item);
+      updates.push({
+        fixture_id: fixture.fixture_id,
+        status,
+        elapsed: hit.item.fixture.status.elapsed ?? null,
+        home_score: score.home,
+        away_score: score.away,
+        updated_at: now,
+      });
 
-      const bucket = statusBucket(row.status);
-      const score = regulationScore(hit.item);
-
-      if (bucket === "final" && score) {
-        finalById.set(fixture.fixture_id, score);
-      } else if (bucket === "awarded") {
-        awardedIds.push(fixture.fixture_id);
-        if (score) finalById.set(fixture.fixture_id, score);
-      } else if (bucket === "voided") {
-        voidIds.push(fixture.fixture_id);
-      } else if (bucket === "postponed") {
-        postponedIds.push(fixture.fixture_id);
+      if (statusBucket(status) === "final") {
+        const regulation = regulationScore(hit.item);
+        if (regulation) finalById.set(fixture.fixture_id, regulation);
       }
     }
 
@@ -155,17 +159,15 @@ export async function handleSettleResults(req: Request) {
       summary.updated = updates.length;
     }
 
-    const settled = await settleOpenBets(supabase, {
-      finalById,
-      awardedIds,
-      voidIds,
-      missingIds,
-      dryRun,
-    });
-    summary.settled = settled.settled;
-    summary.voided = settled.voided;
-    summary.queued = settled.queued;
-    summary.awarded = awardedIds.length;
+    if (finalById.size) {
+      const settled = await settleOpenBets(supabase, {
+        finalById,
+        dryRun,
+      });
+      summary.settled = settled.settled;
+      summary.voided = settled.voided;
+      summary.queued = settled.queued;
+    }
 
     if (logId) {
       await finishSyncLog(supabase, logId, {
@@ -173,20 +175,14 @@ export async function handleSettleResults(req: Request) {
         requests: summary.requests,
         upserted: summary.updated,
         settled: summary.settled + summary.voided,
-        meta: {
-          awarded: awardedIds,
-          voided: voidIds,
-          postponed: postponedIds,
-          missing: missingIds,
-          queued: summary.queued,
-        },
+        meta: { finished: [...finalById.keys()], queued: summary.queued },
       });
     }
 
     return json({ ...summary, ms: Date.now() - startedAt });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("settle-results", message);
+    console.error("poll-live", message);
     if (logId) {
       await finishSyncLog(supabase, logId, {
         ok: false,
@@ -199,3 +195,5 @@ export async function handleSettleResults(req: Request) {
     return json({ ok: false, error: message, ...summary }, 500);
   }
 }
+
+Deno.serve(handlePollLive);
