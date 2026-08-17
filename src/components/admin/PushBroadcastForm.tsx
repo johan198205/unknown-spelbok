@@ -93,6 +93,13 @@ export function PushBroadcastForm({
           Skickas till alla som aktiverat notiser. {count.toLocaleString("sv-SE")}{" "}
           {count === 1 ? "prenumerant" : "prenumeranter"} just nu.
         </p>
+        {count === 0 ? (
+          <div className="mb-5 rounded-[9px] border border-yellow/40 bg-yellow-soft px-3.5 py-3 text-[13.5px] text-yellow">
+            Ingen har aktiverat notiser ännu. Gå till Inställningar i appen,
+            klicka på “Aktivera notiser” och godkänn i webbläsaren — sedan går
+            utskicket fram.
+          </div>
+        ) : null}
 
         <div className="space-y-4">
           <div>
@@ -150,7 +157,7 @@ export function PushBroadcastForm({
         ) : null}
 
         <div className="mt-5 flex justify-end">
-          <Button type="submit" disabled={sending || count === 0}>
+          <Button type="submit" disabled={sending}>
             {sending ? "Skickar…" : "Skicka"}
           </Button>
         </div>
