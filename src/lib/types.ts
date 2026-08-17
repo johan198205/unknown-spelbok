@@ -1061,6 +1061,16 @@ export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
   settled_by: "user" | "auto" | null;
   payout: number;
   bookmakers?: Pick<Bookmaker, "id" | "name" | "logo_url"> | null;
+  fixtures?: Pick<
+    Fixture,
+    | "home_logo"
+    | "away_logo"
+    | "home_team_id"
+    | "away_team_id"
+    | "home_name"
+    | "away_name"
+    | "sport"
+  > | null;
 };
 
 export interface BetStats {

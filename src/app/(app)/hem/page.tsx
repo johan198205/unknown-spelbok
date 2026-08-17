@@ -28,7 +28,9 @@ export default async function HemPage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("bets")
-      .select("*, bookmakers(id, name, logo_url)")
+      .select(
+        "*, bookmakers(id, name, logo_url), fixtures:fixture_id(home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport)"
+      )
       .eq("user_id", user.id)
       .order("placed_at", { ascending: false }),
   ]);

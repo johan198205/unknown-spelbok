@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { TeamPair } from "@/components/bets/TeamPair";
 import type { Bet, BetResult } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
@@ -416,11 +417,33 @@ function SwipeBetCard({
           </div>
         </div>
 
-        <div className="font-semibold text-text">{bet.match}</div>
+        <div className="flex items-center gap-2 font-semibold text-text">
+          {bet.fixtures?.home_team_id || bet.fixtures?.home_logo ? (
+            <TeamPair
+              homeLogo={bet.fixtures?.home_logo}
+              awayLogo={bet.fixtures?.away_logo}
+              homeTeamId={bet.fixtures?.home_team_id}
+              awayTeamId={bet.fixtures?.away_team_id}
+              sport={bet.fixtures?.sport ?? bet.sport}
+              size={22}
+            />
+          ) : null}
+          <span className="min-w-0 truncate">{bet.match}</span>
+        </div>
         <div className="mt-1 text-[15px] font-bold">{bet.pick}</div>
-        <div className="mt-2 font-mono-num text-[12.5px] text-muted">
-          {bet.bookmakers?.name || "—"} · {Number(bet.stake).toLocaleString("sv-SE")} ·{" "}
-          {formatOdds(Number(bet.odds))}
+        <div className="mt-2 flex items-center gap-1.5 font-mono-num text-[12.5px] text-muted">
+          {bet.bookmakers?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={bet.bookmakers.logo_url}
+              alt=""
+              className="h-3.5 w-3.5 object-contain"
+            />
+          ) : null}
+          <span>
+            {bet.bookmakers?.name || "—"} · {Number(bet.stake).toLocaleString("sv-SE")} ·{" "}
+            {formatOdds(Number(bet.odds))}
+          </span>
         </div>
 
         {bet.result !== "open" ? (

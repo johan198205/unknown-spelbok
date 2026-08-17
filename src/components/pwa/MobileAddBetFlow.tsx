@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Bookmaker, Fixture, Sheet } from "@/lib/types";
+import type { Bookmaker, Sheet } from "@/lib/types";
 import { PICKS, STAKE_PRESETS } from "@/lib/picks";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { enqueuePendingBet } from "@/lib/offline-queue";
-import { formatMoney, formatOdds } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { FixturePicker } from "@/components/bets/FixturePicker";
+import { cn, formatMoney, formatOdds } from "@/lib/utils";
 
 export function MobileAddBetFlow({
   sheets,
@@ -27,8 +27,6 @@ export function MobileAddBetFlow({
   const [manual, setManual] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState("");
-  const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [sheetId, setSheetId] = useState(sheets[0]?.id || "");
   const [match, setMatch] = useState("");
   const [pick, setPick] = useState("");
@@ -46,32 +44,6 @@ export function MobileAddBetFlow({
       document.body.style.overflow = prev;
     };
   }, []);
-
-  useEffect(() => {
-    if (manual || step !== 1) return;
-    const t = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/fixtures?q=${encodeURIComponent(q)}&limit=40`
-        );
-        const json = await res.json();
-        setFixtures(json.fixtures || []);
-      } catch {
-        setFixtures([]);
-      }
-    }, 200);
-    return () => clearTimeout(t);
-  }, [q, manual, step]);
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, Fixture[]>();
-    for (const f of fixtures) {
-      const key = f.league_name || "Övrigt";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(f);
-    }
-    return [...map.entries()];
-  }, [fixtures]);
 
   const potential =
     Number(stake || 0) * Number(odds || 0) - Number(stake || 0);
@@ -162,70 +134,16 @@ export function MobileAddBetFlow({
           <div className="space-y-3">
             {!manual ? (
               <>
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Sök match eller liga…"
-                  className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3 text-[15px] outline-none focus:border-blue"
+                <FixturePicker
+                  active={step === 1}
+                  onSelect={(f) => {
+                    setFixtureId(f.fixture_id);
+                    setMatch(`${f.home_name} – ${f.away_name}`);
+                    setLeague(f.league_name || "");
+                    setSport(f.sport || "Fotboll");
+                    setStep(2);
+                  }}
                 />
-                {grouped.map(([leagueName, items]) => (
-                  <div key={leagueName}>
-                    <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">
-                      {leagueName}
-                    </div>
-                    <div className="space-y-1.5">
-                      {items.map((f) => (
-                        <button
-                          key={f.fixture_id}
-                          type="button"
-                          onClick={() => {
-                            setFixtureId(f.fixture_id);
-                            setMatch(`${f.home_name} – ${f.away_name}`);
-                            setLeague(f.league_name || "");
-                            setSport(f.sport || "Fotboll");
-                            setStep(2);
-                          }}
-                          className="flex w-full items-center gap-3 rounded-[12px] border border-line bg-panel px-3 py-3 text-left"
-                        >
-                          <div className="flex items-center gap-2">
-                            {f.home_logo ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={f.home_logo}
-                                alt=""
-                                className="h-7 w-7 object-contain"
-                              />
-                            ) : (
-                              <span className="h-7 w-7 rounded-full bg-panel-2" />
-                            )}
-                            {f.away_logo ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={f.away_logo}
-                                alt=""
-                                className="h-7 w-7 object-contain"
-                              />
-                            ) : (
-                              <span className="h-7 w-7 rounded-full bg-panel-2" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold">
-                              {f.home_name} – {f.away_name}
-                            </div>
-                            <div className="font-mono-num text-[11px] text-faint">
-                              {new Date(f.kickoff).toLocaleString("sv-SE", {
-                                weekday: "short",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
                 <button
                   type="button"
                   onClick={() => setManual(true)}

@@ -40,7 +40,9 @@ export default async function SpelbokPage({
   const { data: betsData } = activeSheet
     ? await supabase
         .from("bets")
-        .select("*, bookmakers(id, name, logo_url)")
+        .select(
+          "*, bookmakers(id, name, logo_url), fixtures:fixture_id(home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport)"
+        )
         .eq("sheet_id", activeSheet.id)
         .order("placed_at", { ascending: false })
     : { data: [] };

@@ -14,6 +14,8 @@ import {
   SPORTS,
   leaguesForSport,
 } from "@/lib/picks";
+import { FixturePicker } from "@/components/bets/FixturePicker";
+import { TeamPair } from "@/components/bets/TeamPair";
 import {
   formatMoney,
   formatOdds,
@@ -45,9 +47,6 @@ export function BetForm({
   const [error, setError] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState(defaultSheetId || sheets[0]?.id || "");
   const [matchMode, setMatchMode] = useState<MatchMode>("search");
-  const [matchQuery, setMatchQuery] = useState("");
-  const [fixtures, setFixtures] = useState<Fixture[]>([]);
-  const [fixturesLoading, setFixturesLoading] = useState(false);
   const [match, setMatch] = useState("");
   const [pick, setPick] = useState("");
   const [league, setLeague] = useState("");
@@ -56,6 +55,7 @@ export function BetForm({
   const [stake, setStake] = useState("100");
   const [bookmakerId, setBookmakerId] = useState("");
   const [fixtureId, setFixtureId] = useState<number | null>(null);
+  const [chosenFixture, setChosenFixture] = useState<Fixture | null>(null);
   const [chosenKickoff, setChosenKickoff] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,25 +72,6 @@ export function BetForm({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  useEffect(() => {
-    if (!open || matchMode !== "search") return;
-    const t = setTimeout(async () => {
-      setFixturesLoading(true);
-      try {
-        const res = await fetch(
-          `/api/fixtures?q=${encodeURIComponent(matchQuery)}&limit=16`
-        );
-        const json = await res.json();
-        setFixtures(json.fixtures || []);
-      } catch {
-        setFixtures([]);
-      } finally {
-        setFixturesLoading(false);
-      }
-    }, 220);
-    return () => clearTimeout(t);
-  }, [matchQuery, matchMode, open]);
 
   const pickGroups = useMemo(() => {
     const groups = PICK_GROUPS[sport] || PICK_GROUPS.Fotboll;
@@ -113,7 +94,6 @@ export function BetForm({
 
   function resetForm() {
     setMatchMode("search");
-    setMatchQuery("");
     setMatch("");
     setPick("");
     setLeague("");
@@ -122,6 +102,7 @@ export function BetForm({
     setStake("100");
     setBookmakerId("");
     setFixtureId(null);
+    setChosenFixture(null);
     setChosenKickoff(null);
     setError(null);
     setSheetId(defaultSheetId || sheets[0]?.id || "");
@@ -134,6 +115,7 @@ export function BetForm({
 
   function selectFixture(f: Fixture) {
     setFixtureId(f.fixture_id);
+    setChosenFixture(f);
     setMatch(`${f.home_name} – ${f.away_name}`);
     setLeague(f.league_name || "");
     setSport(f.sport || "Fotboll");
@@ -144,13 +126,14 @@ export function BetForm({
   function goManual() {
     setMatchMode("manual");
     setFixtureId(null);
+    setChosenFixture(null);
     setChosenKickoff(null);
-    setMatchQuery("");
   }
 
   function goSearch() {
     setMatchMode("search");
     setFixtureId(null);
+    setChosenFixture(null);
     setChosenKickoff(null);
     setMatch("");
   }
@@ -275,7 +258,17 @@ export function BetForm({
                       Ändra match
                     </button>
                   </div>
-                  <div className="font-display text-lg font-semibold">
+                  <div className="font-display flex items-center gap-2.5 text-lg font-semibold">
+                    {chosenFixture ? (
+                      <TeamPair
+                        homeLogo={chosenFixture.home_logo}
+                        awayLogo={chosenFixture.away_logo}
+                        homeTeamId={chosenFixture.home_team_id}
+                        awayTeamId={chosenFixture.away_team_id}
+                        sport={chosenFixture.sport}
+                        size={26}
+                      />
+                    ) : null}
                     {match}
                   </div>
                 </div>
@@ -283,52 +276,10 @@ export function BetForm({
 
               {matchMode === "search" ? (
                 <div className="sm:col-span-2">
-                  <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-                    Match
-                  </div>
-                  <input
-                    value={matchQuery}
-                    onChange={(e) => setMatchQuery(e.target.value)}
-                    placeholder="Sök lag eller match"
-                    className="w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
+                  <FixturePicker
+                    active={open}
+                    onSelect={selectFixture}
                   />
-                  <div className="mt-2 max-h-56 overflow-auto rounded-[11px] border border-line bg-bg-soft">
-                    {fixturesLoading ? (
-                      <div className="px-3 py-3 text-sm text-faint">
-                        Hämtar…
-                      </div>
-                    ) : fixtures.length ? (
-                      fixtures.map((f) => (
-                        <button
-                          key={f.fixture_id}
-                          type="button"
-                          onClick={() => selectFixture(f)}
-                          className="flex w-full items-center gap-2 border-b border-line-soft px-3 py-2.5 text-left text-sm last:border-0 hover:bg-panel-2"
-                        >
-                          <span className="min-w-0 flex-1 truncate font-semibold">
-                            {f.home_name} – {f.away_name}
-                          </span>
-                          <span className="shrink-0 text-[12px] text-muted">
-                            {f.league_name}
-                          </span>
-                          <span className="shrink-0 font-mono-num text-[11px] text-faint">
-                            {new Date(f.kickoff).toLocaleString("sv-SE", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-3 py-3 text-sm text-faint">
-                        {matchQuery.trim()
-                          ? "Inget matchar. Prova ett annat namn eller ange matchen manuellt."
-                          : "Sök lag eller liga — eller ange matchen manuellt."}
-                      </div>
-                    )}
-                  </div>
                   <button
                     type="button"
                     onClick={goManual}
@@ -500,10 +451,34 @@ export function BetRow({
       <td className="whitespace-nowrap px-2.5 py-3 text-[#C3CBDB]">
         {bet.league || "—"}
       </td>
-      <td className="px-2.5 py-3">{bet.match}</td>
+      <td className="px-2.5 py-3">
+        <span className="flex items-center gap-2">
+          {bet.fixtures?.home_team_id || bet.fixtures?.home_logo ? (
+            <TeamPair
+              homeLogo={bet.fixtures?.home_logo}
+              awayLogo={bet.fixtures?.away_logo}
+              homeTeamId={bet.fixtures?.home_team_id}
+              awayTeamId={bet.fixtures?.away_team_id}
+              sport={bet.fixtures?.sport ?? bet.sport}
+              size={20}
+            />
+          ) : null}
+          <span className="min-w-0 truncate">{bet.match}</span>
+        </span>
+      </td>
       <td className="whitespace-nowrap px-2.5 py-3 font-bold">{bet.pick}</td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[12.5px] text-muted">
-        {bet.bookmakers?.name || "—"}
+        <span className="inline-flex items-center gap-1.5">
+          {bet.bookmakers?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={bet.bookmakers.logo_url}
+              alt=""
+              className="h-4 w-4 object-contain"
+            />
+          ) : null}
+          {bet.bookmakers?.name || "—"}
+        </span>
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 text-right font-mono-num">
         {Number(bet.stake).toLocaleString("sv-SE")}
