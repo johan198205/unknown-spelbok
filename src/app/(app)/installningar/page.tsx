@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/bets/SettingsForm";
+import { PushToggle } from "@/components/PushToggle";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 import {
@@ -151,6 +152,14 @@ export default async function InstallningarPage() {
           <SettingsForm profile={profile} />
         </Panel>
       </div>
+
+      <Panel className="p-[18px]">
+        <h2 className="mb-1.5 font-display text-lg font-semibold">Notiser</h2>
+        <p className="mb-4 text-[14px] text-muted">
+          Få ett meddelande när det händer något i Spelbok.
+        </p>
+        <PushToggle />
+      </Panel>
     </div>
   );
 }

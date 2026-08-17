@@ -106,3 +106,52 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+self.addEventListener("push", (event) => {
+  let payload: { title?: string; body?: string; url?: string } = {};
+  try {
+    payload = event.data?.json() ?? {};
+  } catch {
+    payload = {};
+  }
+
+  const title = payload.title || "Spelbok";
+  const body = payload.body || "";
+  const url = payload.url || "/";
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/badge-72.png",
+      data: { url },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetPath =
+    (event.notification.data as { url?: string } | undefined)?.url || "/";
+
+  event.waitUntil(
+    (async () => {
+      const origin = self.location.origin;
+      const targetUrl = new URL(targetPath, origin).href;
+      const clientList = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+
+      for (const client of clientList) {
+        if (!client.url.startsWith(origin) || !("focus" in client)) continue;
+        const windowClient = client as WindowClient;
+        await windowClient.focus();
+        await windowClient.navigate(targetUrl);
+        return;
+      }
+
+      await self.clients.openWindow(targetUrl);
+    })()
+  );
+});

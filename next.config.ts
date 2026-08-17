@@ -17,6 +17,7 @@ const withSerwist = withSerwistInit({
     { url: "/offline", revision },
     { url: "/manifest.json", revision },
     { url: "/icons/icon-192.png", revision },
+    { url: "/icons/badge-72.png", revision },
     { url: "/icons/icon-512.png", revision },
     { url: "/icons/icon-512-maskable.png", revision },
     { url: "/icons/apple-touch-icon.png", revision },
@@ -24,7 +25,7 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["web-push"],
 };
 
 export default withSerwist(nextConfig);

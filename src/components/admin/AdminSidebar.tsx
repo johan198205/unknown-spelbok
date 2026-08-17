@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Bell,
   Building2,
   CheckCircle2,
   FileText,
@@ -29,6 +30,7 @@ const NAV: {
   { href: "/admin/tavlingar", label: "Tävlingar", icon: Trophy },
   { href: "/admin/statistik", label: "Statistik", icon: BarChart3 },
   { href: "/admin/sattling", label: "Sättling", icon: CheckCircle2 },
+  { href: "/admin/notiser", label: "Notiser", icon: Bell },
   { href: "/admin/installningar", label: "Inställningar", icon: Settings },
 ];
 

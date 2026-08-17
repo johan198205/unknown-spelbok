@@ -572,6 +572,51 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          keys_auth: string
+          keys_p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          keys_auth: string
+          keys_p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          keys_auth?: string
+          keys_p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -867,6 +912,7 @@ export type Fixture = Tables<"fixtures">;
 export type Bookmaker = Tables<"bookmakers">;
 export type Banner = Tables<"banners">;
 export type Page = Tables<"pages">;
+export type PushSubscriptionRow = Tables<"push_subscriptions">;
 export type Competition = Tables<"competitions">;
 export type CompetitionEntry = Tables<"competition_entries">;
 export type AdminLog = Tables<"admin_logs">;
