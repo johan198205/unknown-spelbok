@@ -61,33 +61,42 @@ export function useLiveFixtures(
           ? `fixture_id=in.(${ids.join(",")})`
           : undefined;
 
-    const channel = supabase
-      .channel(`live-fixtures:${key.slice(0, 80)}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "fixtures",
-          ...(filter ? { filter } : {}),
-        },
-        (payload) => {
-          const parsed = patchFromRow(
-            (payload.new ?? {}) as Record<string, unknown>
-          );
-          if (!parsed || !ids.includes(parsed.id)) return;
-          setPatches((prev) => ({ ...prev, [parsed.id]: parsed.patch }));
-        }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") setRealtimeOk(true);
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setRealtimeOk(false);
-        }
-      });
+    // Unikt kanalnamn per mount — samma topic + .on() efter subscribe()
+    // kraschar om tabell och kort (eller Strict Mode) delar klient.
+    const topic = `lf:${crypto.randomUUID()}`;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel(topic)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "fixtures",
+            ...(filter ? { filter } : {}),
+          },
+          (payload) => {
+            const parsed = patchFromRow(
+              (payload.new ?? {}) as Record<string, unknown>
+            );
+            if (!parsed || !ids.includes(parsed.id)) return;
+            setPatches((prev) => ({ ...prev, [parsed.id]: parsed.patch }));
+          }
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") setRealtimeOk(true);
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            setRealtimeOk(false);
+          }
+        });
+    } catch {
+      setRealtimeOk(false);
+    }
 
     return () => {
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [key]);
 

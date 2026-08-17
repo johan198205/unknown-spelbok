@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { BetForm, BetsTable } from "@/components/bets/BetForm";
-import { MobileBetCards } from "@/components/pwa/MobileBetCards";
 import { NewSheetForm } from "@/components/bets/NewSheetForm";
+import { SpelbokLists } from "@/components/bets/SpelbokLists";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, EmptyState, Kpi } from "@/components/ui/Panel";
 import {
@@ -14,6 +13,15 @@ import {
   nettoColor,
 } from "@/lib/utils";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
+
+function toPlain<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function asOne<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
 
 export default async function SpelbokPage({
   searchParams,
@@ -60,6 +68,12 @@ export default async function SpelbokPage({
       bets = (query.data || []) as Bet[];
     }
   }
+
+  bets = toPlain(bets).map((bet) => ({
+    ...bet,
+    bookmakers: asOne(bet.bookmakers),
+    fixtures: asOne(bet.fixtures),
+  }));
   const stats = computeStats(bets);
   const bankroll = Number(activeSheet?.start_bankroll || 0) + stats.netto;
 
@@ -148,22 +162,11 @@ export default async function SpelbokPage({
                 label="ANNONSPLATS 320×100"
               />
 
-              <div className="hidden lg:block">
-                <BetForm
-                  sheets={sheetList}
-                  bookmakers={(bookmakers || []) as Bookmaker[]}
-                  defaultSheetId={activeSheet.id}
-                />
-              </div>
-
-              <div className="hidden lg:block">
-                <BetsTable bets={bets} canEdit />
-              </div>
-
-              <MobileBetCards
+              <SpelbokLists
                 bets={bets}
+                sheets={toPlain(sheetList)}
+                bookmakers={toPlain((bookmakers || []) as Bookmaker[])}
                 sheetId={activeSheet.id}
-                canEdit
               />
             </>
           ) : null}

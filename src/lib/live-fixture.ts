@@ -51,7 +51,9 @@ export function isFinishedStatus(status: string | null | undefined) {
 }
 
 export function formatKickoffTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("sv-SE", {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("sv-SE", {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Stockholm",

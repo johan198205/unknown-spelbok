@@ -1,6 +1,7 @@
 "use client";
 
 export default function SpelbokError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -10,6 +11,11 @@ export default function SpelbokError({
     <div className="px-1 py-8">
       <h1 className="font-display text-[28px] font-semibold">Spelboken</h1>
       <p className="mt-2 text-muted">Sidan gick inte att visa just nu.</p>
+      {error.message ? (
+        <p className="mt-2 max-w-xl font-mono-num text-[12px] text-faint">
+          {error.message}
+        </p>
+      ) : null}
       <button
         type="button"
         onClick={() => reset()}
