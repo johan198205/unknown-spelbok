@@ -3,10 +3,9 @@ import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist
 import {
   CacheFirst,
   ExpirationPlugin,
-  NetworkFirst,
   NetworkOnly,
   Serwist,
-  StaleWhileRevalidate,
+  setCacheNameDetails,
 } from "serwist";
 
 declare global {
@@ -17,7 +16,7 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-const TEN_MINUTES = 10 * 60;
+setCacheNameDetails({ prefix: "spelbok", suffix: "v3" });
 
 const runtimeCaching: RuntimeCaching[] = [
   {
@@ -57,20 +56,16 @@ const runtimeCaching: RuntimeCaching[] = [
     }),
   },
   {
+    matcher: ({ sameOrigin, url }) =>
+      sameOrigin && url.searchParams.has("_rsc"),
+    handler: new NetworkOnly(),
+  },
+  {
     matcher: ({ request, sameOrigin, url }) =>
       sameOrigin &&
       request.mode === "navigate" &&
       !url.pathname.startsWith("/api/"),
-    handler: new NetworkFirst({
-      cacheName: "pages-network-first",
-      networkTimeoutSeconds: 8,
-      plugins: [
-        new ExpirationPlugin({
-          maxEntries: 48,
-          maxAgeSeconds: 60 * 60 * 24,
-        }),
-      ],
-    }),
+    handler: new NetworkOnly(),
   },
   ...defaultCache,
 ];
@@ -82,7 +77,7 @@ const serwist = new Serwist({
   },
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
+  navigationPreload: false,
   disableDevLogs: true,
   runtimeCaching,
   fallbacks: {

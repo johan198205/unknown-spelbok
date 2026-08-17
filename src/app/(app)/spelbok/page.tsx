@@ -37,17 +37,29 @@ export default async function SpelbokPage({
   const activeSheet =
     sheetList.find((s) => s.id === sheetParam) || sheetList[0] || null;
 
-  const { data: betsData } = activeSheet
-    ? await supabase
+  let bets: Bet[] = [];
+  if (activeSheet) {
+    const query = await supabase
+      .from("bets")
+      .select(
+        "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport)"
+      )
+      .eq("sheet_id", activeSheet.id)
+      .order("placed_at", { ascending: false });
+
+    if (query.error) {
+      const fallback = await supabase
         .from("bets")
         .select(
-          "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport)"
+          "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport)"
         )
         .eq("sheet_id", activeSheet.id)
-        .order("placed_at", { ascending: false })
-    : { data: [] };
-
-  const bets = (betsData || []) as Bet[];
+        .order("placed_at", { ascending: false });
+      bets = (fallback.data || []) as Bet[];
+    } else {
+      bets = (query.data || []) as Bet[];
+    }
+  }
   const stats = computeStats(bets);
   const bankroll = Number(activeSheet?.start_bankroll || 0) + stats.netto;
 
