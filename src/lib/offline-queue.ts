@@ -6,18 +6,22 @@ export type PendingBet = {
   status: "pending" | "error";
   createdAt: string;
   errorMessage?: string;
-  payload: {
-    sheet_id: string;
-    match: string;
-    pick: string;
-    league: string | null;
-    sport: string;
-    odds: number;
-    stake: number;
-    bookmaker_id: string | null;
-    fixture_id: number | null;
-    result: "open";
-  };
+    payload: {
+      sheet_id: string;
+      match: string;
+      pick: string;
+      league: string | null;
+      sport: string;
+      odds: number;
+      stake: number;
+      bookmaker_id: string | null;
+      fixture_id: number | null;
+      result: BetResult;
+      payout?: number;
+      settled_at?: string | null;
+      settled_by?: "auto" | "user" | null;
+      placed_at?: string;
+    };
 };
 
 interface SpelbokDB extends DBSchema {
@@ -121,11 +125,11 @@ export function pendingToDisplayBet(pending: PendingBet): Bet & {
     bookmaker_id: pending.payload.bookmaker_id,
     odds: pending.payload.odds,
     stake: pending.payload.stake,
-    result: "open" as BetResult,
-    payout: 0,
-    placed_at: pending.createdAt,
-    settled_at: null,
-    settled_by: null,
+    result: pending.payload.result,
+    payout: pending.payload.payout ?? 0,
+    placed_at: pending.payload.placed_at || pending.createdAt,
+    settled_at: pending.payload.settled_at ?? null,
+    settled_by: pending.payload.settled_by ?? null,
     notify_goals: false,
     bookmakers: null,
     _pending: true,

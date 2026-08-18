@@ -14,7 +14,7 @@ import {
   SPORTS,
   leaguesForSport,
 } from "@/lib/picks";
-import { FixturePicker } from "@/components/bets/FixturePicker";
+import { FixturePicker, DayStrip } from "@/components/bets/FixturePicker";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
 import { MatchStack } from "@/components/bets/TeamPair";
@@ -25,6 +25,11 @@ import {
   needsLiveRefresh,
 } from "@/lib/live-fixture";
 import {
+  placedAtForPastBet,
+  settlementForFinishedPick,
+} from "@/lib/bet-settlement";
+import { stockholmYmd } from "@/lib/stockholm";
+import {
   formatMoney,
   formatOdds,
   nettoColor,
@@ -32,6 +37,7 @@ import {
   resultTone,
   betNetto,
   cn,
+  payoutForResult,
 } from "@/lib/utils";
 
 const RESULTS: BetResult[] = ["open", "win", "loss", "void", "halfwin", "halfloss"];
@@ -65,6 +71,7 @@ export function BetForm({
   const [fixtureId, setFixtureId] = useState<number | null>(null);
   const [chosenFixture, setChosenFixture] = useState<Fixture | null>(null);
   const [chosenKickoff, setChosenKickoff] = useState<string | null>(null);
+  const [ymd, setYmd] = useState(stockholmYmd());
 
   useEffect(() => {
     if (!open) return;
@@ -112,6 +119,7 @@ export function BetForm({
     setFixtureId(null);
     setChosenFixture(null);
     setChosenKickoff(null);
+    setYmd(stockholmYmd());
     setError(null);
     setSheetId(defaultSheetId || sheets[0]?.id || "");
   }
@@ -159,6 +167,22 @@ export function BetForm({
       return;
     }
 
+    const stakeValue = Number(stake);
+    const oddsValue = Number(odds);
+    const settled = settlementForFinishedPick({
+      pick: pick.trim(),
+      stake: stakeValue,
+      odds: oddsValue,
+      status: chosenFixture?.status,
+      kickoff: chosenFixture?.kickoff || chosenKickoff,
+      homeScore: chosenFixture?.home_score,
+      awayScore: chosenFixture?.away_score,
+    });
+    const placedAt = placedAtForPastBet(
+      ymd,
+      chosenFixture?.kickoff || chosenKickoff
+    );
+
     const { error: insertError } = await supabase.from("bets").insert({
       sheet_id: sheetId,
       user_id: user.id,
@@ -166,11 +190,15 @@ export function BetForm({
       pick: pick.trim(),
       league: league || null,
       sport,
-      odds: Number(odds),
-      stake: Number(stake),
+      odds: oddsValue,
+      stake: stakeValue,
       bookmaker_id: bookmakerId || null,
       fixture_id: fixtureId,
-      result: "open",
+      result: settled.result,
+      payout: settled.payout,
+      settled_at: settled.settled_at,
+      settled_by: settled.settled_by,
+      ...(placedAt ? { placed_at: placedAt } : {}),
     });
 
     setLoading(false);
@@ -289,6 +317,8 @@ export function BetForm({
                 <div className="sm:col-span-2">
                   <FixturePicker
                     active={open}
+                    ymd={ymd}
+                    onYmdChange={setYmd}
                     onSelect={selectFixture}
                   />
                   <button
@@ -303,6 +333,12 @@ export function BetForm({
 
               {matchMode === "manual" ? (
                 <>
+                  <div className="sm:col-span-2">
+                    <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+                      Datum
+                    </div>
+                    <DayStrip ymd={ymd} onChange={setYmd} />
+                  </div>
                   <div className="sm:col-span-2 flex items-center justify-between">
                     <div className="text-[11px] uppercase tracking-[0.1em] text-muted">
                       Manuell match · inget fixture_id
@@ -441,6 +477,7 @@ export function BetRow({
       .from("bets")
       .update({
         result,
+        payout: payoutForResult(result, Number(bet.stake), Number(bet.odds)),
         settled_at: result === "open" ? null : new Date().toISOString(),
         settled_by: result === "open" ? null : "user",
       })
@@ -488,24 +525,43 @@ export function BetRow({
       </td>
       <td className="whitespace-nowrap px-2.5 py-3">
         {canEdit ? (
-          <div className="inline-flex flex-wrap gap-1">
-            {(["win", "loss", "void", "open"] as BetResult[]).map((r) => {
-              const active = bet.result === r;
-              const t = resultTone(r);
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setResult(r)}
-                  className={`rounded border px-1.5 py-1 font-mono-num text-[10px] font-semibold ${
-                    active ? `${t.bg} ${t.fg} ${t.border}` : "border-line text-faint"
-                  }`}
-                >
-                  {r === "win" ? "W" : r === "loss" ? "L" : r === "void" ? "V" : "O"}
-                </button>
-              );
-            })}
-          </div>
+          bet.result === "open" ? (
+            <div className="inline-flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => setResult("win")}
+                className="rounded border border-win/40 px-2 py-1 text-[11px] font-semibold text-win hover:bg-win/10"
+              >
+                Vann
+              </button>
+              <button
+                type="button"
+                onClick={() => setResult("loss")}
+                className="rounded border border-loss/40 px-2 py-1 text-[11px] font-semibold text-loss hover:bg-loss/10"
+              >
+                Förlorade
+              </button>
+            </div>
+          ) : (
+            <div className="inline-flex flex-wrap gap-1">
+              {(["win", "loss", "void", "open"] as BetResult[]).map((r) => {
+                const active = bet.result === r;
+                const t = resultTone(r);
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setResult(r)}
+                    className={`rounded border px-1.5 py-1 font-mono-num text-[10px] font-semibold ${
+                      active ? `${t.bg} ${t.fg} ${t.border}` : "border-line text-faint"
+                    }`}
+                  >
+                    {r === "win" ? "W" : r === "loss" ? "L" : r === "void" ? "V" : "O"}
+                  </button>
+                );
+              })}
+            </div>
+          )
         ) : (
           <span
             className={`rounded px-2 py-1 font-mono-num text-[10px] font-semibold ${tone.bg} ${tone.fg}`}

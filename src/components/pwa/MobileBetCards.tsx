@@ -32,6 +32,7 @@ import {
   resultLabel,
   resultTone,
   computeStats,
+  payoutForResult,
 } from "@/lib/utils";
 
 type DisplayBet = Bet & {
@@ -51,8 +52,8 @@ const FILTERS: Array<{ id: string; label: string }> = [
 ];
 
 const SHEET_ACTIONS: Array<{ result: BetResult; label: string }> = [
-  { result: "win", label: "Vinst" },
-  { result: "loss", label: "Förlust" },
+  { result: "win", label: "Vann" },
+  { result: "loss", label: "Förlorade" },
   { result: "void", label: "Void" },
   { result: "halfwin", label: "Halvvinst" },
   { result: "halfloss", label: "Halvförlust" },
@@ -182,6 +183,7 @@ export function MobileBetCards({
       .from("bets")
       .update({
         result,
+        payout: payoutForResult(result, Number(bet.stake), Number(bet.odds)),
         settled_at: result === "open" ? null : new Date().toISOString(),
         settled_by: result === "open" ? null : "user",
       })
@@ -461,6 +463,27 @@ function SwipeBetCard({
             {formatOdds(Number(bet.odds))}
           </span>
         </div>
+
+        {bet.result === "open" && canEdit && online && !bet._pending ? (
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={onSwipeWin}
+              className="flex-1 rounded-[8px] border border-win/40 py-2 text-[13px] font-semibold text-win"
+            >
+              Vann
+            </button>
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={onSwipeLoss}
+              className="flex-1 rounded-[8px] border border-loss/40 py-2 text-[13px] font-semibold text-loss"
+            >
+              Förlorade
+            </button>
+          </div>
+        ) : null}
 
         {bet.result !== "open" ? (
           <div className={`mt-2 font-mono-num text-[22px] font-semibold ${nettoColor(netto)}`}>

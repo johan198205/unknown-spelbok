@@ -1,12 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolvePick, type Settlement } from "@/lib/settle-pick";
 import { notifySettledBets } from "@/lib/send-push";
+import { payoutForResult } from "@/lib/utils";
 
 type BetRow = {
   id: string;
   fixture_id: number | null;
   pick: string;
   match: string;
+  stake: number;
+  odds: number;
 };
 
 export type FinishedScore = { home: number; away: number };
@@ -42,7 +45,7 @@ export async function settleOpenBets(
 
   const { data: openBets, error: betsError } = await supabase
     .from("bets")
-    .select("id, fixture_id, pick, match")
+    .select("id, fixture_id, pick, match, stake, odds")
     .eq("result", "open")
     .in("fixture_id", touchedIds);
 
@@ -112,6 +115,8 @@ export async function settleOpenBets(
     byResult[outcome].push(bet.id);
   }
 
+  const byId = new Map(bets.map((b) => [b.id, b]));
+
   for (const [result, ids] of Object.entries(byResult) as [
     Settlement,
     string[],
@@ -121,12 +126,26 @@ export async function settleOpenBets(
     else summary.settled += ids.length;
     if (args.dryRun) continue;
 
-    const { error } = await supabase
-      .from("bets")
-      .update({ result, settled_at: settledAt, settled_by: "auto" })
-      .in("id", ids)
-      .eq("result", "open");
-    if (error) console.error(`kunde inte rätta ${result}`, error.message);
+    await Promise.all(
+      ids.map(async (id) => {
+        const bet = byId.get(id);
+        const { error } = await supabase
+          .from("bets")
+          .update({
+            result,
+            payout: payoutForResult(
+              result,
+              Number(bet?.stake ?? 0),
+              Number(bet?.odds ?? 0)
+            ),
+            settled_at: settledAt,
+            settled_by: "auto",
+          })
+          .eq("id", id)
+          .eq("result", "open");
+        if (error) console.error(`kunde inte rätta ${result}`, error.message);
+      })
+    );
   }
 
   const settledIds = [

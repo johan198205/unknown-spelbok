@@ -39,6 +39,7 @@ export type MatchFixture = {
   home_score?: number | null;
   away_score?: number | null;
   sport?: string | null;
+  venue?: string | null;
   receivedAt?: number;
 };
 
@@ -117,6 +118,38 @@ export function formatKickoffTime(iso: string) {
     minute: "2-digit",
     timeZone: "Europe/Stockholm",
   });
+}
+
+export function formatKickoffDay(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("sv-SE", {
+    day: "numeric",
+    month: "short",
+    timeZone: "Europe/Stockholm",
+  });
+}
+
+/** Enradigt val för färdiga matcher: "Chelsea 2–0 Tottenham · 2 maj, Stamford Bridge" */
+export function formatFinishedPickerLine(
+  fixture: Pick<
+    MatchFixture,
+    "home_name" | "away_name" | "home_score" | "away_score" | "kickoff" | "status"
+  > & { venue?: string | null }
+) {
+  if (
+    !isFinishedStatus(fixture.status) ||
+    fixture.home_score == null ||
+    fixture.away_score == null
+  ) {
+    return null;
+  }
+  const home = fixture.home_name || "Hemma";
+  const away = fixture.away_name || "Borta";
+  const day = formatKickoffDay(fixture.kickoff);
+  const venue = fixture.venue?.trim();
+  const meta = venue ? `${day}, ${venue}` : day;
+  return `${home} ${fixture.home_score}–${fixture.away_score} ${away} · ${meta}`;
 }
 
 /**

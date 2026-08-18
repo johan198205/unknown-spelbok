@@ -182,10 +182,19 @@ function authHeaders(baseUrl: string, apiKey: string): Record<string, string> {
 function withParams(
   baseUrl: string,
   path: string,
-  params: Record<string, string | number | boolean | undefined>
+  params: Record<string, string | number | boolean | undefined>,
+  defaultTimezone?: string
 ) {
   const url = new URL(path.replace(/^\//, ""), baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
-  for (const [key, value] of Object.entries(params)) {
+  const merged = { ...params };
+  if (
+    defaultTimezone &&
+    merged.timezone === undefined &&
+    /(^|\/)fixtures\/?$/.test(path)
+  ) {
+    merged.timezone = defaultTimezone;
+  }
+  for (const [key, value] of Object.entries(merged)) {
     if (value === undefined || value === "") continue;
     url.searchParams.set(key, String(value));
   }
@@ -217,7 +226,7 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     path: string,
     params: Record<string, string | number | boolean | undefined>
   ): Promise<ApiSportsEnvelope<unknown>> {
-    const url = withParams(config.baseUrl, path, params);
+    const url = withParams(config.baseUrl, path, params, config.timezone);
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -336,6 +345,7 @@ export function footballClientFromEnv(
     baseUrl: env.get("APISPORTS_FOOTBALL_URL") || DEFAULT_FOOTBALL_URL,
     apiKey,
     maxPerMinute: opts?.maxPerMinute,
+    timezone: DEFAULT_TIMEZONE,
   });
 }
 

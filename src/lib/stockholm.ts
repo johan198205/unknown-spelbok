@@ -1,6 +1,8 @@
 const TZ = "Europe/Stockholm";
 
 export const FIXTURE_PICKER_DAYS = 14;
+export const FIXTURE_PICKER_PAST_DAYS = 30;
+export const FIXTURE_PICKER_FUTURE_DAYS = 30;
 
 export function stockholmYmd(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -59,22 +61,37 @@ export type DayChip = {
   day: string;
   isToday: boolean;
   isTomorrow: boolean;
+  isYesterday: boolean;
 };
+
+function chipForOffset(today: string, offset: number): DayChip {
+  const ymd = addStockholmDays(today, offset);
+  const noon = new Date(`${ymd}T12:00:00Z`);
+  return {
+    ymd,
+    weekday: noon.toLocaleDateString("sv-SE", {
+      weekday: "short",
+      timeZone: TZ,
+    }),
+    day: String(Number(ymd.slice(8))),
+    isToday: offset === 0,
+    isTomorrow: offset === 1,
+    isYesterday: offset === -1,
+  };
+}
 
 export function upcomingDayChips(count = FIXTURE_PICKER_DAYS): DayChip[] {
   const today = stockholmYmd();
-  return Array.from({ length: count }, (_, i) => {
-    const ymd = addStockholmDays(today, i);
-    const noon = new Date(`${ymd}T12:00:00Z`);
-    return {
-      ymd,
-      weekday: noon.toLocaleDateString("sv-SE", {
-        weekday: "short",
-        timeZone: TZ,
-      }),
-      day: String(Number(ymd.slice(8))),
-      isToday: i === 0,
-      isTomorrow: i === 1,
-    };
-  });
+  return Array.from({ length: count }, (_, i) => chipForOffset(today, i));
+}
+
+/** 30 dagar bakåt + idag + 30 dagar framåt, med idag i mitten. */
+export function fixtureDayChips(
+  past = FIXTURE_PICKER_PAST_DAYS,
+  future = FIXTURE_PICKER_FUTURE_DAYS
+): DayChip[] {
+  const today = stockholmYmd();
+  return Array.from({ length: past + 1 + future }, (_, i) =>
+    chipForOffset(today, i - past)
+  );
 }

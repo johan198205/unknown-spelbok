@@ -16,21 +16,35 @@ const CACHE = { "Cache-Control": "private, max-age=30" };
 const MAX_LIMIT = 800;
 const DEFAULT_LIMIT = 500;
 const WINDOW_DAYS = 14;
-const UPCOMING = ["NS", "TBD", "1H", "HT", "2H", "ET", "BT", "P", "LIVE", "PST"];
+const UPCOMING = ["NS", "TBD", "1H", "HT", "2H", "ET", "BT", "P", "LIVE"];
+const HIDDEN_STATUSES = ["PST", "CANC", "ABD"];
 const FIXTURE_COLUMNS =
-  "fixture_id, kickoff, status, sport, league_id, league_name, league_logo, home_team_id, home_name, home_logo, away_team_id, away_name, away_logo, home_score, away_score, season, updated_at";
+  "fixture_id, kickoff, status, sport, league_id, league_name, league_logo, home_team_id, home_name, home_logo, away_team_id, away_name, away_logo, home_score, away_score, season, raw, updated_at";
 
 function sanitizeIlike(raw: string) {
   return raw.replace(/[%_,()\\]/g, " ").trim().slice(0, 80);
 }
 
-function withLogos<T extends Pick<Fixture, "home_logo" | "away_logo" | "home_team_id" | "away_team_id" | "sport">>(
-  row: T
-) {
+function venueFromRaw(raw: unknown) {
+  if (!raw || typeof raw !== "object") return null;
+  const name = (raw as { fixture?: { venue?: { name?: string | null } } })
+    .fixture?.venue?.name;
+  const trimmed = name?.trim();
+  return trimmed || null;
+}
+
+function withLogos<
+  T extends Pick<
+    Fixture,
+    "home_logo" | "away_logo" | "home_team_id" | "away_team_id" | "sport"
+  > & { raw?: unknown }
+>(row: T) {
+  const { raw, ...rest } = row;
   return {
-    ...row,
+    ...rest,
     home_logo: teamLogoUrl(row.home_logo, row.home_team_id, row.sport),
     away_logo: teamLogoUrl(row.away_logo, row.away_team_id, row.sport),
+    venue: venueFromRaw(raw),
   };
 }
 
@@ -116,7 +130,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) query = query.eq("status", status);
-    else query = query.in("status", UPCOMING);
+    else if (date) {
+      query = query.not(
+        "status",
+        "in",
+        `(${HIDDEN_STATUSES.join(",")})`
+      );
+    } else query = query.in("status", UPCOMING);
 
     if (q) {
       query = query.or(

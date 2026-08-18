@@ -1,14 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Calendar } from "lucide-react";
 import type { Fixture } from "@/lib/types";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
-import { mergeLivePatch, needsLiveRefresh } from "@/lib/live-fixture";
-import { upcomingDayChips, stockholmYmd } from "@/lib/stockholm";
+import {
+  formatFinishedPickerLine,
+  isFinishedStatus,
+  mergeLivePatch,
+  needsLiveRefresh,
+} from "@/lib/live-fixture";
+import {
+  addStockholmDays,
+  fixtureDayChips,
+  FIXTURE_PICKER_FUTURE_DAYS,
+  stockholmYmd,
+  type DayChip,
+} from "@/lib/stockholm";
 import { cn } from "@/lib/utils";
 
 type Coverage = { from: string; to: string };
+
+export type PickerFixture = Fixture & { venue?: string | null };
 
 function formatRange(from: string, to: string) {
   const fmt = (ymd: string) => {
@@ -22,37 +36,118 @@ function formatRange(from: string, to: string) {
   return `${fmt(from)} – ${fmt(to)}`;
 }
 
-function inCoverage(ymd: string, coverage: Coverage | null) {
-  if (!coverage) return true;
-  return ymd >= coverage.from && ymd <= coverage.to;
+function chipLabel(chip: DayChip) {
+  if (chip.isToday) return "Idag";
+  if (chip.isTomorrow) return "Imorgon";
+  if (chip.isYesterday) return "Igår";
+  return chip.weekday;
+}
+
+export function DayStrip({
+  ymd,
+  onChange,
+}: {
+  ymd: string;
+  onChange: (ymd: string) => void;
+}) {
+  const chips = useMemo(() => fixtureDayChips(), []);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const today = stockholmYmd();
+  const inStrip = chips.some((chip) => chip.ymd === ymd);
+  const maxYmd = addStockholmDays(today, FIXTURE_PICKER_FUTURE_DAYS);
+
+  useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const selected = scroller.querySelector<HTMLElement>(`[data-ymd="${ymd}"]`);
+    if (!selected) return;
+    const left =
+      selected.offsetLeft - scroller.clientWidth / 2 + selected.offsetWidth / 2;
+    scroller.scrollLeft = Math.max(0, left);
+  }, [ymd]);
+
+  return (
+    <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 sb-scroll" ref={scrollerRef}>
+      <label
+        className={cn(
+          "sticky left-0 z-10 mr-0.5 flex shrink-0 cursor-pointer flex-col items-center justify-center rounded-[10px] border px-2.5 py-2",
+          !inStrip
+            ? "border-win bg-win/10 text-win"
+            : "border-line bg-panel text-muted hover:text-text"
+        )}
+      >
+        <Calendar className="size-3.5" strokeWidth={2.25} />
+        <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.08em]">
+          Datum
+        </span>
+        <input
+          type="date"
+          value={ymd}
+          max={maxYmd}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(next)) onChange(next);
+          }}
+          className="absolute inset-0 cursor-pointer opacity-0"
+          aria-label="Välj datum"
+        />
+      </label>
+      {chips.map((chip) => {
+        const selected = chip.ymd === ymd;
+        return (
+          <button
+            key={chip.ymd}
+            type="button"
+            data-ymd={chip.ymd}
+            onClick={() => onChange(chip.ymd)}
+            className={cn(
+              "shrink-0 rounded-[10px] border px-2.5 py-2 text-center",
+              selected
+                ? "border-win bg-win/10 text-win"
+                : "border-line bg-bg-soft text-muted hover:text-text"
+            )}
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-[0.08em]">
+              {chipLabel(chip)}
+            </div>
+            <div className="font-mono-num text-[13px] font-semibold leading-tight">
+              {chip.day}
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PickerMatchOption({ fixture }: { fixture: PickerFixture }) {
+  const line = formatFinishedPickerLine(fixture);
+  if (line) {
+    return <span className="min-w-0 flex-1 text-left text-[13px] leading-snug text-text">{line}</span>;
+  }
+  return <FixtureMatch fixture={fixture} />;
 }
 
 export function FixturePicker({
   onSelect,
   active = true,
+  ymd,
+  onYmdChange,
 }: {
-  onSelect: (fixture: Fixture) => void;
+  onSelect: (fixture: PickerFixture) => void;
   active?: boolean;
+  ymd?: string;
+  onYmdChange?: (ymd: string) => void;
 }) {
   const [coverage, setCoverage] = useState<Coverage | null>(null);
-  const chips = useMemo(() => {
-    const all = upcomingDayChips();
-    if (!coverage) return all;
-    const visible = all.filter((chip) => inCoverage(chip.ymd, coverage));
-    return visible.length ? visible : all;
-  }, [coverage]);
-  const [ymd, setYmd] = useState(stockholmYmd());
+  const [internalYmd, setInternalYmd] = useState(stockholmYmd());
+  const selectedYmd = ymd ?? internalYmd;
+  const setSelectedYmd = onYmdChange ?? setInternalYmd;
   const [q, setQ] = useState("");
-  const [items, setItems] = useState<Fixture[]>([]);
+  const [items, setItems] = useState<PickerFixture[]>([]);
   const [loading, setLoading] = useState(false);
   const [filling, setFilling] = useState(false);
   const [planLimited, setPlanLimited] = useState(false);
-
-  useEffect(() => {
-    if (coverage && !inCoverage(ymd, coverage)) {
-      setYmd(stockholmYmd());
-    }
-  }, [coverage, ymd]);
 
   useEffect(() => {
     if (!active) return;
@@ -63,7 +158,7 @@ export function FixturePicker({
       if (initial) setLoading(true);
       try {
         const params = new URLSearchParams({
-          date: ymd,
+          date: selectedYmd,
           limit: "500",
         });
         if (q.trim()) params.set("q", q.trim());
@@ -96,10 +191,10 @@ export function FixturePicker({
       clearTimeout(debounce);
       if (poll) clearTimeout(poll);
     };
-  }, [ymd, q, active]);
+  }, [selectedYmd, q, active]);
 
   const byLeague = useMemo(() => {
-    const map = new Map<string, Fixture[]>();
+    const map = new Map<string, PickerFixture[]>();
     for (const f of items) {
       const key = f.league_name || "Övrigt";
       const list = map.get(key) ?? [];
@@ -117,7 +212,12 @@ export function FixturePicker({
 
   const live = useLiveFixtures(
     items.map((f) => f.fixture_id),
-    { hasLive: items.some((f) => needsLiveRefresh(f.status, f.kickoff)) }
+    {
+      hasLive: items.some(
+        (f) =>
+          !isFinishedStatus(f.status) && needsLiveRefresh(f.status, f.kickoff)
+      ),
+    }
   );
 
   return (
@@ -125,39 +225,7 @@ export function FixturePicker({
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
         Datum
       </div>
-      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1 sb-scroll">
-        {chips.map((chip) => {
-          const selected = chip.ymd === ymd;
-          const available = inCoverage(chip.ymd, coverage);
-          return (
-            <button
-              key={chip.ymd}
-              type="button"
-              disabled={!available}
-              onClick={() => setYmd(chip.ymd)}
-              className={cn(
-                "shrink-0 rounded-[10px] border px-2.5 py-2 text-center",
-                !available
-                  ? "cursor-not-allowed border-line bg-bg-soft text-faint opacity-40"
-                  : selected
-                    ? "border-win bg-win/10 text-win"
-                    : "border-line bg-bg-soft text-muted hover:text-text"
-              )}
-            >
-              <div className="text-[10px] font-semibold uppercase tracking-[0.08em]">
-                {chip.isToday
-                  ? "Idag"
-                  : chip.isTomorrow
-                    ? "Imorgon"
-                    : chip.weekday}
-              </div>
-              <div className="font-mono-num text-[13px] font-semibold leading-tight">
-                {chip.day}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      <DayStrip ymd={selectedYmd} onChange={setSelectedYmd} />
       {coverage ? (
         <p className="mb-3 text-[12px] leading-snug text-faint">
           Matchlistan täcker {formatRange(coverage.from, coverage.to)} med
@@ -193,7 +261,7 @@ export function FixturePicker({
                       onClick={() => onSelect(merged)}
                       className="flex w-full items-center border-b border-line-soft px-3 py-2 text-left text-sm last:border-0 hover:bg-panel-2"
                     >
-                      <FixtureMatch fixture={merged} />
+                      <PickerMatchOption fixture={merged} />
                     </button>
                   );
                 })}

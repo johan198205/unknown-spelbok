@@ -75,6 +75,21 @@ export function betNetto(bet: Pick<Bet, "stake" | "payout" | "result">) {
   return Number(bet.payout) - Number(bet.stake);
 }
 
+export function payoutForResult(
+  result: BetResult,
+  stake: number,
+  odds: number
+) {
+  if (result === "win") return Math.round(stake * odds * 100) / 100;
+  if (result === "loss" || result === "open") return 0;
+  if (result === "void") return stake;
+  if (result === "halfwin") {
+    return Math.round((stake + (stake * (odds - 1)) / 2) * 100) / 100;
+  }
+  if (result === "halfloss") return Math.round((stake / 2) * 100) / 100;
+  return 0;
+}
+
 export function computeStats(bets: Bet[]): BetStats {
   const settled = bets.filter((b) => b.result !== "open");
   const wins = settled.filter((b) => b.result === "win" || b.result === "halfwin");

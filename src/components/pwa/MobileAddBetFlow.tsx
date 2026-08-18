@@ -7,8 +7,13 @@ import { PICKS, STAKE_PRESETS } from "@/lib/picks";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { enqueuePendingBet } from "@/lib/offline-queue";
-import { FixturePicker } from "@/components/bets/FixturePicker";
+import { FixturePicker, DayStrip, type PickerFixture } from "@/components/bets/FixturePicker";
 import { cn, formatMoney, formatOdds } from "@/lib/utils";
+import {
+  placedAtForPastBet,
+  settlementForFinishedPick,
+} from "@/lib/bet-settlement";
+import { stockholmYmd } from "@/lib/stockholm";
 
 export function MobileAddBetFlow({
   sheets,
@@ -36,6 +41,8 @@ export function MobileAddBetFlow({
   const [stake, setStake] = useState("100");
   const [bookmakerId, setBookmakerId] = useState(bookmakers[0]?.id || "");
   const [fixtureId, setFixtureId] = useState<number | null>(null);
+  const [chosenFixture, setChosenFixture] = useState<PickerFixture | null>(null);
+  const [ymd, setYmd] = useState(stockholmYmd());
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -52,17 +59,33 @@ export function MobileAddBetFlow({
   async function save() {
     setLoading(true);
     setError(null);
+    const stakeValue = Number(stake);
+    const oddsValue = Number(odds);
+    const settled = settlementForFinishedPick({
+      pick: pick.trim(),
+      stake: stakeValue,
+      odds: oddsValue,
+      status: chosenFixture?.status,
+      kickoff: chosenFixture?.kickoff,
+      homeScore: chosenFixture?.home_score,
+      awayScore: chosenFixture?.away_score,
+    });
+    const placedAt = placedAtForPastBet(ymd, chosenFixture?.kickoff);
     const payload = {
       sheet_id: sheetId,
       match: match.trim(),
       pick: pick.trim(),
       league: league || null,
       sport,
-      odds: Number(odds),
-      stake: Number(stake),
+      odds: oddsValue,
+      stake: stakeValue,
       bookmaker_id: bookmakerId || null,
       fixture_id: fixtureId,
-      result: "open" as const,
+      result: settled.result,
+      payout: settled.payout,
+      settled_at: settled.settled_at,
+      settled_by: settled.settled_by,
+      ...(placedAt ? { placed_at: placedAt } : {}),
     };
 
     if (!online) {
@@ -136,8 +159,11 @@ export function MobileAddBetFlow({
               <>
                 <FixturePicker
                   active={step === 1}
+                  ymd={ymd}
+                  onYmdChange={setYmd}
                   onSelect={(f) => {
                     setFixtureId(f.fixture_id);
+                    setChosenFixture(f);
                     setMatch(`${f.home_name} – ${f.away_name}`);
                     setLeague(f.league_name || "");
                     setSport(f.sport || "Fotboll");
@@ -146,7 +172,11 @@ export function MobileAddBetFlow({
                 />
                 <button
                   type="button"
-                  onClick={() => setManual(true)}
+                  onClick={() => {
+                    setManual(true);
+                    setFixtureId(null);
+                    setChosenFixture(null);
+                  }}
                   className="w-full py-3 text-center text-sm font-semibold text-cyan"
                 >
                   Skriv match manuellt
@@ -154,6 +184,12 @@ export function MobileAddBetFlow({
               </>
             ) : (
               <div className="space-y-3">
+                <div>
+                  <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+                    Datum
+                  </div>
+                  <DayStrip ymd={ymd} onChange={setYmd} />
+                </div>
                 <input
                   value={match}
                   onChange={(e) => setMatch(e.target.value)}

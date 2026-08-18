@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { logAdmin } from "@/lib/admin/log";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { payoutForResult } from "@/lib/utils";
 
 /**
  * Sättlingsvyn läser och skriver spel för alla användare. bets har bara
@@ -350,10 +351,23 @@ export async function settleQueuedBet(
     .eq("id", betId)
     .maybeSingle();
 
+  const row = bet as {
+    match?: string;
+    pick?: string;
+    stake?: number;
+    odds?: number;
+    profiles?: { username?: string } | null;
+  } | null;
+
   const { error: betError } = await service
     .from("bets")
     .update({
       result,
+      payout: payoutForResult(
+        result,
+        Number(row?.stake ?? 0),
+        Number(row?.odds ?? 0)
+      ),
       settled_at: new Date().toISOString(),
       settled_by: "user",
     })
@@ -365,12 +379,6 @@ export async function settleQueuedBet(
     .update({ resolved: true })
     .eq("id", queueId);
   if (queueError) throw new Error(queueError.message);
-
-  const row = bet as {
-    match?: string;
-    pick?: string;
-    profiles?: { username?: string } | null;
-  } | null;
 
   await logAdmin(
     "settle.manual",
