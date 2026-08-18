@@ -227,6 +227,7 @@ export type Database = {
           id: string
           league: string | null
           match: string
+          notify_goals: boolean
           odds: number
           payout: number | null
           pick: string
@@ -245,6 +246,7 @@ export type Database = {
           id?: string
           league?: string | null
           match: string
+          notify_goals?: boolean
           odds: number
           payout?: number | null
           pick: string
@@ -263,6 +265,7 @@ export type Database = {
           id?: string
           league?: string | null
           match?: string
+          notify_goals?: boolean
           odds?: number
           payout?: number | null
           pick?: string
@@ -756,6 +759,7 @@ export type Database = {
           created_at: string
           id: string
           last_seen_at: string | null
+          notify_settle: boolean
           role: string
           username: string
         }
@@ -765,6 +769,7 @@ export type Database = {
           created_at?: string
           id: string
           last_seen_at?: string | null
+          notify_settle?: boolean
           role?: string
           username: string
         }
@@ -774,6 +779,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_seen_at?: string | null
+          notify_settle?: boolean
           role?: string
           username?: string
         }

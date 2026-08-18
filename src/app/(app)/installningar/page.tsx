@@ -3,6 +3,7 @@ import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/bets/SettingsForm";
 import { PushToggle } from "@/components/PushToggle";
+import { NotifySettleToggle } from "@/components/bets/NotifySettleToggle";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 import {
@@ -159,6 +160,11 @@ export default async function InstallningarPage() {
           Få ett meddelande när det händer något i Spelbok.
         </p>
         <PushToggle />
+        <div className="mt-4 border-t border-line-soft pt-4">
+          <NotifySettleToggle
+            enabled={profile.notify_settle !== false}
+          />
+        </div>
       </Panel>
     </div>
   );

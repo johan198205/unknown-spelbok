@@ -11,9 +11,10 @@ import {
   type SportSlug,
 } from "@/lib/apisports";
 import { mapFixtureRow } from "@/lib/map-fixture";
+import { isInPlayStatus, type LiveFixturePatch } from "@/lib/live-fixture";
+import { notifyGoals } from "@/lib/send-push";
 import { settleOpenBets } from "@/lib/settle-open";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { LiveFixturePatch } from "@/lib/live-fixture";
 
 const STALE_MS = 20_000;
 const filling = new Map<string, Promise<RefreshLiveResult>>();
@@ -163,6 +164,33 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
     mapFixtureRow(hit.item, hit.sport, now)
   );
   await upsertRows(admin, updates);
+
+  const goalNotices: Promise<unknown>[] = [];
+  for (const [id, hit] of results) {
+    const prev = rows.find((r) => r.fixture_id === id);
+    const next = currentScore(hit.item);
+    const status = hit.item.fixture.status.short;
+    if (!isInPlayStatus(status)) continue;
+    const prevHome = typeof prev?.home_score === "number" ? prev.home_score : 0;
+    const prevAway = typeof prev?.away_score === "number" ? prev.away_score : 0;
+    const nextHome = next.home ?? 0;
+    const nextAway = next.away ?? 0;
+    if (nextHome + nextAway <= prevHome + prevAway) continue;
+    goalNotices.push(
+      notifyGoals({
+        fixtureId: id,
+        homeName: hit.item.teams.home.name,
+        awayName: hit.item.teams.away.name,
+        homeScore: nextHome,
+        awayScore: nextAway,
+      })
+    );
+  }
+  if (goalNotices.length) {
+    void Promise.all(goalNotices).catch((err) =>
+      console.error("push vid mål", err)
+    );
+  }
 
   const finalById = new Map<number, { home: number; away: number }>();
   const awardedIds: number[] = [];

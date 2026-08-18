@@ -25,6 +25,7 @@ import {
   type SportSlug,
 } from "../_shared/apisports.ts";
 import { settleOpenBets } from "../_shared/settle-open.ts";
+import { notifySite } from "../_shared/site-notify.ts";
 import {
   createServiceClient,
   finishSyncLog,
@@ -36,6 +37,8 @@ const LIVE_BATCH = 60;
 type LiveFixture = {
   fixture_id: number;
   sport: string;
+  home_score: number | null;
+  away_score: number | null;
 };
 
 function envGet(key: string) {
@@ -67,7 +70,7 @@ export async function handlePollLive(req: Request) {
 
   const { data: pending, error: pendingError } = await supabase
     .from("fixtures")
-    .select("fixture_id, sport")
+    .select("fixture_id, sport, home_score, away_score")
     .lt("kickoff", nowIso)
     .not("status", "in", skipList)
     .order("kickoff", { ascending: false })
@@ -142,6 +145,26 @@ export async function handlePollLive(req: Request) {
         away_score: score.away,
         updated_at: now,
       });
+
+      const prevHome = fixture.home_score ?? 0;
+      const prevAway = fixture.away_score ?? 0;
+      const nextHome = score.home ?? 0;
+      const nextAway = score.away ?? 0;
+      const inPlay = ["1H", "2H", "ET", "LIVE", "INT"].includes(status);
+      if (
+        !dryRun &&
+        inPlay &&
+        nextHome + nextAway > prevHome + prevAway
+      ) {
+        notifySite({
+          kind: "goal",
+          fixtureId: fixture.fixture_id,
+          homeName: hit.item.teams.home.name,
+          awayName: hit.item.teams.away.name,
+          homeScore: nextHome,
+          awayScore: nextAway,
+        });
+      }
 
       if (statusBucket(status) === "final") {
         const regulation = regulationScore(hit.item);

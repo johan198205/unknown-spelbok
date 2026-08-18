@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
+import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
@@ -413,6 +414,12 @@ function SwipeBetCard({
             {bet.league || "Match"} · {date}
           </div>
           <div className="flex items-center gap-1.5">
+            {canEdit && bet.result === "open" && bet.fixture_id ? (
+              <GoalNotifyButton
+                betId={bet.id}
+                enabled={bet.notify_goals === true}
+              />
+            ) : null}
             <span
               className={cn(
                 "rounded-[6px] border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
@@ -435,7 +442,7 @@ function SwipeBetCard({
         </div>
 
         {fixture ? (
-          <FixtureMatch fixture={fixture} />
+          <FixtureMatch fixture={fixture} stacked />
         ) : (
           <div className="font-semibold text-text">{bet.match}</div>
         )}

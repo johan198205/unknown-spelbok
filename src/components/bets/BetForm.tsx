@@ -16,6 +16,7 @@ import {
 } from "@/lib/picks";
 import { FixturePicker } from "@/components/bets/FixturePicker";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
+import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
 import { MatchStack } from "@/components/bets/TeamPair";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
@@ -463,7 +464,7 @@ export function BetRow({
         {bet.league || "—"}
       </td>
       <td className="px-2.5 py-3">
-        {fixture ? <FixtureMatch fixture={fixture} /> : bet.match}
+        {fixture ? <FixtureMatch fixture={fixture} stacked /> : bet.match}
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 font-bold">{bet.pick}</td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[12.5px] text-muted">
@@ -522,13 +523,21 @@ export function BetRow({
       </td>
       {canEdit ? (
         <td className="px-2.5 py-3">
-          <button
-            type="button"
-            onClick={remove}
-            className="text-[12px] text-faint hover:text-loss"
-          >
-            Ta bort
-          </button>
+          <div className="flex items-center gap-2">
+            {bet.result === "open" && bet.fixture_id ? (
+              <GoalNotifyButton
+                betId={bet.id}
+                enabled={bet.notify_goals === true}
+              />
+            ) : null}
+            <button
+              type="button"
+              onClick={remove}
+              className="text-[12px] text-faint hover:text-loss"
+            >
+              Ta bort
+            </button>
+          </div>
         </td>
       ) : null}
     </tr>

@@ -126,6 +126,7 @@ export function pendingToDisplayBet(pending: PendingBet): Bet & {
     placed_at: pending.createdAt,
     settled_at: null,
     settled_by: null,
+    notify_goals: false,
     bookmakers: null,
     _pending: true,
     _pendingStatus: pending.status,

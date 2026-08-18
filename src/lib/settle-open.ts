@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolvePick, type Settlement } from "@/lib/settle-pick";
+import { notifySettledBets } from "@/lib/send-push";
 
 type BetRow = {
   id: string;
@@ -126,6 +127,17 @@ export async function settleOpenBets(
       .in("id", ids)
       .eq("result", "open");
     if (error) console.error(`kunde inte rätta ${result}`, error.message);
+  }
+
+  const settledIds = [
+    ...byResult.win,
+    ...byResult.loss,
+    ...byResult.void,
+  ];
+  if (settledIds.length && !args.dryRun) {
+    void notifySettledBets(settledIds).catch((err) =>
+      console.error("push vid rättning", err)
+    );
   }
 
   if (queueRows.length) {

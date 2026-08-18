@@ -13,12 +13,18 @@ export function FixtureMatch({
   fixture,
   className,
   showTime = true,
+  stacked = false,
 }: {
   fixture: MatchFixture;
   className?: string;
   showTime?: boolean;
+  stacked?: boolean;
 }) {
-  if (isInPlayStatus(fixture.status) || isFinishedStatus(fixture.status)) {
+  if (
+    stacked ||
+    isInPlayStatus(fixture.status) ||
+    isFinishedStatus(fixture.status)
+  ) {
     return <LiveMatchCard fixture={fixture} className={className} />;
   }
   return (
