@@ -8,7 +8,7 @@ import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
   fixtureFromBet,
-  isInPlayStatus,
+  needsLiveRefresh,
 } from "@/lib/live-fixture";
 import type { Bet, BetResult } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -163,7 +163,12 @@ export function MobileBetCards({
 
   const live = useLiveFixtures(
     filtered.map((b) => b.fixture_id).filter((id): id is number => id != null),
-    { hasLive: filtered.some((b) => isInPlayStatus(b.fixtures?.status)) }
+    {
+      hasLive: filtered.some((b) =>
+        needsLiveRefresh(b.fixtures?.status, b.fixtures?.kickoff)
+      ),
+      onSettled: () => router.refresh(),
+    }
   );
 
   const stats = computeStats(bets);

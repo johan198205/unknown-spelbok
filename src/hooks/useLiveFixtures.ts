@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   isInPlayStatus,
   type LiveFixturePatch,
 } from "@/lib/live-fixture";
 
-const FALLBACK_MS = 60_000;
+const POLL_MS = 20_000;
 const FILTER_ID_CAP = 40;
 
 function uniqueSortedIds(ids: number[]) {
@@ -32,23 +32,25 @@ function patchFromRow(row: {
       elapsed: typeof row.elapsed === "number" ? row.elapsed : null,
       home_score: typeof row.home_score === "number" ? row.home_score : null,
       away_score: typeof row.away_score === "number" ? row.away_score : null,
+      receivedAt: Date.now(),
     },
   };
 }
 
 /**
- * Prenumererar på fixtures-UPDATEs för synliga matcher.
- * Klienten pollar aldrig API-Football. Fallback mot /api/fixtures
- * bara om Realtime strular och minst en synlig match är live.
+ * Prenumererar på fixtures-UPDATEs och pollar /api/fixtures/live så länge
+ * minst en synlig match pågår. Servern hämtar API-Football, skriver cachen
+ * och autorättar när status blir FT.
  */
 export function useLiveFixtures(
   fixtureIds: number[],
-  options?: { hasLive?: boolean }
+  options?: { hasLive?: boolean; onSettled?: () => void }
 ): Record<number, LiveFixturePatch> {
   const key = uniqueSortedIds(fixtureIds).join(",");
   const ids = useMemo(() => (key ? key.split(",").map(Number) : []), [key]);
   const [patches, setPatches] = useState<Record<number, LiveFixturePatch>>({});
-  const [realtimeOk, setRealtimeOk] = useState(true);
+  const onSettledRef = useRef(options?.onSettled);
+  onSettledRef.current = options?.onSettled;
 
   useEffect(() => {
     if (!ids.length) return;
@@ -61,8 +63,6 @@ export function useLiveFixtures(
           ? `fixture_id=in.(${ids.join(",")})`
           : undefined;
 
-    // Unikt kanalnamn per mount — samma topic + .on() efter subscribe()
-    // kraschar om tabell och kort (eller Strict Mode) delar klient.
     const topic = `lf:${crypto.randomUUID()}`;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
@@ -85,14 +85,9 @@ export function useLiveFixtures(
             setPatches((prev) => ({ ...prev, [parsed.id]: parsed.patch }));
           }
         )
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") setRealtimeOk(true);
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            setRealtimeOk(false);
-          }
-        });
+        .subscribe();
     } catch {
-      setRealtimeOk(false);
+      /* Realtime saknas — polling räcker */
     }
 
     return () => {
@@ -103,11 +98,11 @@ export function useLiveFixtures(
   const hasLivePatch = Object.values(patches).some((p) =>
     isInPlayStatus(p.status)
   );
-  const enableFallback =
-    !realtimeOk && ids.length > 0 && !!(options?.hasLive || hasLivePatch);
+  const enablePoll =
+    ids.length > 0 && !!(options?.hasLive || hasLivePatch);
 
   useEffect(() => {
-    if (!enableFallback) return;
+    if (!enablePoll) return;
 
     let cancelled = false;
 
@@ -115,11 +110,13 @@ export function useLiveFixtures(
       try {
         const params = new URLSearchParams({
           ids: ids.join(","),
-          limit: String(Math.max(ids.length, 1)),
         });
-        const res = await fetch(`/api/fixtures?${params}`, { cache: "no-store" });
+        const res = await fetch(`/api/fixtures/live?${params}`, {
+          cache: "no-store",
+        });
         const json = (await res.json()) as {
           fixtures?: Array<Record<string, unknown>>;
+          settled?: number;
         };
         if (cancelled || !Array.isArray(json.fixtures)) return;
         const next: Record<number, LiveFixturePatch> = {};
@@ -128,18 +125,19 @@ export function useLiveFixtures(
           if (parsed) next[parsed.id] = parsed.patch;
         }
         setPatches((prev) => ({ ...prev, ...next }));
+        if ((json.settled ?? 0) > 0) onSettledRef.current?.();
       } catch {
         /* nätverksfel: försök igen nästa intervall */
       }
     }
 
     void refetch();
-    const timer = setInterval(() => void refetch(), FALLBACK_MS);
+    const timer = setInterval(() => void refetch(), POLL_MS);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [enableFallback, key]);
+  }, [enablePoll, key]);
 
   return patches;
 }

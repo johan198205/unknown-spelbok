@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Fixture } from "@/lib/types";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
-import { isInPlayStatus, mergeLivePatch } from "@/lib/live-fixture";
+import { mergeLivePatch, needsLiveRefresh } from "@/lib/live-fixture";
 import { upcomingDayChips, stockholmYmd } from "@/lib/stockholm";
 import { cn } from "@/lib/utils";
 
@@ -117,7 +117,7 @@ export function FixturePicker({
 
   const live = useLiveFixtures(
     items.map((f) => f.fixture_id),
-    { hasLive: items.some((f) => isInPlayStatus(f.status)) }
+    { hasLive: items.some((f) => needsLiveRefresh(f.status, f.kickoff)) }
   );
 
   return (

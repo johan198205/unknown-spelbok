@@ -22,6 +22,7 @@ export type LiveFixturePatch = {
   elapsed: number | null;
   home_score: number | null;
   away_score: number | null;
+  receivedAt?: number;
 };
 
 export type MatchFixture = {
@@ -38,6 +39,7 @@ export type MatchFixture = {
   home_score?: number | null;
   away_score?: number | null;
   sport?: string | null;
+  receivedAt?: number;
 };
 
 export function isInPlayStatus(status: string | null | undefined) {
@@ -48,6 +50,63 @@ export function isInPlayStatus(status: string | null | undefined) {
 export function isFinishedStatus(status: string | null | undefined) {
   if (!status) return false;
   return (FINISHED_STATUSES as readonly string[]).includes(status);
+}
+
+export function needsLiveRefresh(
+  status: string | null | undefined,
+  kickoff?: string | null
+) {
+  if (isFinishedStatus(status)) return false;
+  if (isInPlayStatus(status)) return true;
+  if ((status === "NS" || status === "TBD") && kickoff) {
+    const start = new Date(kickoff).getTime();
+    if (Number.isNaN(start)) return false;
+    return Date.now() >= start - 2 * 60_000;
+  }
+  return false;
+}
+
+/**
+ * Tickar spelminuten lokalt mellan API-uppdateringar.
+ * HT/paus står still. 1H/2H räknas upp max till tilläggstid.
+ */
+export function displayElapsed(
+  status: string,
+  elapsed: number | null | undefined,
+  receivedAt?: number | null,
+  now = Date.now(),
+  kickoff?: string
+) {
+  let minute = elapsed ?? null;
+  if (minute == null && kickoff && isInPlayStatus(status)) {
+    const start = new Date(kickoff).getTime();
+    const mins = Math.floor((now - start) / 60_000);
+    if (Number.isFinite(mins) && mins >= 0 && mins <= 130) {
+      if (status === "1H") minute = Math.min(mins, 59);
+      else if (status === "2H" || status === "LIVE") {
+        minute = Math.min(Math.max(mins - 15, 46), 105);
+      } else if (status === "ET") minute = Math.min(Math.max(mins - 15, 91), 125);
+    }
+  }
+  if (minute == null) return null;
+  if (
+    !isInPlayStatus(status) ||
+    status === "HT" ||
+    status === "BT" ||
+    status === "P" ||
+    status === "INT" ||
+    status === "SUSP"
+  ) {
+    return minute;
+  }
+  if (!receivedAt) return minute;
+  const extra = Math.floor((now - receivedAt) / 60_000);
+  if (extra <= 0) return minute;
+  const next = minute + extra;
+  if (status === "1H") return Math.min(next, 59);
+  if (status === "2H" || status === "LIVE") return Math.min(next, 105);
+  if (status === "ET") return Math.min(next, 125);
+  return next;
 }
 
 export function formatKickoffTime(iso: string) {

@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { TeamLogo } from "@/components/bets/TeamPair";
 import {
+  displayElapsed,
   formatMatchClock,
   isFinishedStatus,
   isInPlayStatus,
@@ -48,11 +50,27 @@ export function LiveMatchCard({
   const live = isInPlayStatus(fixture.status);
   const finished = isFinishedStatus(fixture.status);
   const showScore = live || finished;
-  const clock = formatMatchClock(
+  const tick =
+    live &&
+    fixture.status !== "HT" &&
+    fixture.status !== "BT" &&
+    fixture.status !== "P";
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!tick) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [tick]);
+
+  const elapsed = displayElapsed(
     fixture.status,
     fixture.elapsed ?? null,
+    fixture.receivedAt,
+    now,
     fixture.kickoff
   );
+  const clock = formatMatchClock(fixture.status, elapsed, fixture.kickoff);
   const clockColor = finished
     ? "text-faint"
     : live

@@ -21,7 +21,7 @@ import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
   fixtureFromBet,
-  isInPlayStatus,
+  needsLiveRefresh,
 } from "@/lib/live-fixture";
 import {
   formatMoney,
@@ -542,6 +542,7 @@ export function BetsTable({
   bets: Bet[];
   canEdit: boolean;
 }) {
+  const router = useRouter();
   const [filter, setFilter] = useState("all");
 
   const rows = useMemo(() => {
@@ -551,7 +552,12 @@ export function BetsTable({
 
   const live = useLiveFixtures(
     rows.map((b) => b.fixture_id).filter((id): id is number => id != null),
-    { hasLive: rows.some((b) => isInPlayStatus(b.fixtures?.status)) }
+    {
+      hasLive: rows.some((b) =>
+        needsLiveRefresh(b.fixtures?.status, b.fixtures?.kickoff)
+      ),
+      onSettled: () => router.refresh(),
+    }
   );
 
   return (
