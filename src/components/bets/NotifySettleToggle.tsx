@@ -1,19 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+
+async function saveNotifySettle(enabled: boolean) {
+  const res = await fetch("/api/settings/notify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ notify_settle: enabled }),
+  });
+  const data = (await res.json().catch(() => null)) as {
+    notify_settle?: boolean;
+    error?: string;
+  } | null;
+  if (!res.ok || data?.notify_settle !== enabled) {
+    throw new Error(data?.error || "Kunde inte spara inställningen.");
+  }
+}
 
 export function NotifySettleToggle({
   enabled,
+  persisted,
   disabled,
 }: {
   enabled: boolean;
+  persisted?: boolean;
   disabled?: boolean;
 }) {
+  const router = useRouter();
   const [on, setOn] = useState(enabled);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const seeded = useRef(false);
+
+  useEffect(() => {
+    if (persisted || seeded.current || disabled) return;
+    seeded.current = true;
+    void (async () => {
+      setBusy(true);
+      try {
+        await saveNotifySettle(on);
+        setSaved(true);
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Kunde inte spara inställningen."
+        );
+      } finally {
+        setBusy(false);
+      }
+    })();
+  }, [disabled, on, persisted, router]);
 
   async function toggle() {
     if (disabled || busy) return;
@@ -21,23 +60,18 @@ export function NotifySettleToggle({
     setOn(next);
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    setSaved(false);
+    try {
+      await saveNotifySettle(next);
+      setSaved(true);
+      router.refresh();
+    } catch (err) {
       setOn(!next);
+      setError(
+        err instanceof Error ? err.message : "Kunde inte spara inställningen."
+      );
+    } finally {
       setBusy(false);
-      return;
-    }
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ notify_settle: next })
-      .eq("id", user.id);
-    setBusy(false);
-    if (updateError) {
-      setOn(!next);
-      setError("Kunde inte spara inställningen.");
     }
   }
 
@@ -64,6 +98,9 @@ export function NotifySettleToggle({
         </span>
       </label>
       {error ? <p className="text-[13px] text-loss">{error}</p> : null}
+      {saved && !error ? (
+        <p className="text-[13px] text-win">Sparat i databasen.</p>
+      ) : null}
     </div>
   );
 }

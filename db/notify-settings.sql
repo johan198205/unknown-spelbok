@@ -14,3 +14,5 @@ alter table public.bets
 
 comment on column public.bets.notify_goals is
   'Push vid mål i den här matchen.';
+
+notify pgrst, 'reload schema';

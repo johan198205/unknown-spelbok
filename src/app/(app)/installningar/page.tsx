@@ -163,6 +163,7 @@ export default async function InstallningarPage() {
         <div className="mt-4 border-t border-line-soft pt-4">
           <NotifySettleToggle
             enabled={profile.notify_settle !== false}
+            persisted={typeof profile.notify_settle === "boolean"}
           />
         </div>
       </Panel>

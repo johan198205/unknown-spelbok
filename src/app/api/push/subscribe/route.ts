@@ -43,22 +43,33 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    {
-      user_id: user.id,
-      endpoint,
-      keys_p256dh: p256dh,
-      keys_auth: auth,
-      user_agent: request.headers.get("user-agent"),
-    },
-    { onConflict: "endpoint" }
-  );
+  const { data, error } = await supabase
+    .from("push_subscriptions")
+    .upsert(
+      {
+        user_id: user.id,
+        endpoint,
+        keys_p256dh: p256dh,
+        keys_auth: auth,
+        user_agent: request.headers.get("user-agent"),
+      },
+      { onConflict: "endpoint" }
+    )
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  if (!data?.id) {
+    return NextResponse.json(
+      { error: "Prenumerationen skrevs inte till databasen." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, id: data.id });
 }
 
 export async function DELETE(request: Request) {

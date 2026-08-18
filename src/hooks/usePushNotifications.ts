@@ -60,6 +60,13 @@ export function usePushNotifications() {
     const registration = await navigator.serviceWorker.getRegistration();
     const subscription = await registration?.pushManager.getSubscription();
     setIsSubscribed(Boolean(subscription));
+    if (subscription) {
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription.toJSON()),
+      }).catch(() => null);
+    }
     setReady(true);
   }, []);
 
@@ -95,11 +102,13 @@ export function usePushNotifications() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(subscription.toJSON()),
       });
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        id?: string;
+        error?: string;
+      } | null;
 
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
+      if (!res.ok || !data?.ok || !data.id) {
         throw new Error(data?.error || "Kunde inte spara prenumerationen.");
       }
 
