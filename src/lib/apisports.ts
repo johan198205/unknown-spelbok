@@ -14,7 +14,10 @@
 
 export const DEFAULT_TIMEZONE = "Europe/Stockholm";
 export const MAX_REQUESTS_PER_MINUTE = 8;
+export const PAID_REQUESTS_PER_MINUTE = 30;
 export const FIXTURE_IDS_PER_CALL = 20;
+export const API_PAGE_SIZE = 20;
+export const MAX_API_PAGES = 40;
 export const DEFAULT_FOOTBALL_URL = "https://v3.football.api-sports.io";
 export const DEFAULT_HOCKEY_URL = "https://v3.hockey.api-sports.io";
 
@@ -98,11 +101,21 @@ export type ApiSportsConfig = {
   timezone?: string;
 };
 
+export type ApiSportsPage<T> = {
+  items: T[];
+  current: number;
+  total: number;
+};
+
 export type ApiSportsClient = {
   get: <T>(
     path: string,
     params?: Record<string, string | number | boolean | undefined>
   ) => Promise<T[]>;
+  getPage: <T>(
+    path: string,
+    params?: Record<string, string | number | boolean | undefined>
+  ) => Promise<ApiSportsPage<T>>;
   /** Första sidans `response` som den är (objekt eller lista). */
   getResponse: <T>(
     path: string,
@@ -252,6 +265,28 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
       : new ApiSportsError("API-Sports: slut på försök");
   }
 
+  async function getPage<T>(
+    path: string,
+    params: Record<string, string | number | boolean | undefined> = {}
+  ): Promise<ApiSportsPage<T>> {
+    const page = Number(params.page ?? 1) || 1;
+    const query =
+      page <= 1
+        ? Object.fromEntries(
+            Object.entries(params).filter(([key]) => key !== "page")
+          )
+        : params;
+    const json = await fetchPage(path, query);
+    const items = (json.response ?? []) as T[];
+    const current = json.paging?.current ?? page;
+    const reported = Math.max(1, json.paging?.total ?? 1);
+    const total =
+      reported <= 1 && items.length === API_PAGE_SIZE && page < MAX_API_PAGES
+        ? page + 1
+        : Math.max(reported, page);
+    return { items, current, total };
+  }
+
   async function get<T>(
     path: string,
     params: Record<string, string | number | boolean | undefined> = {}
@@ -260,13 +295,11 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     let page = 1;
     let total = 1;
 
-    while (page <= total) {
-      const json = await fetchPage(
-        path,
-        page === 1 && total === 1 ? params : { ...params, page }
-      );
-      items.push(...((json.response ?? []) as T[]));
-      total = Math.max(1, json.paging?.total ?? 1);
+    while (page <= total && page <= MAX_API_PAGES) {
+      const result = await getPage<T>(path, { ...params, page });
+      items.push(...result.items);
+      total = Math.max(total, result.total);
+      if (!result.items.length) break;
       page += 1;
     }
 
@@ -283,14 +316,16 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
 
   return {
     get,
+    getPage,
     getResponse,
     requestCount: () => requests,
   };
 }
 
-export function footballClientFromEnv(env: {
-  get: (key: string) => string | undefined;
-}): ApiSportsClient {
+export function footballClientFromEnv(
+  env: { get: (key: string) => string | undefined },
+  opts?: { maxPerMinute?: number }
+): ApiSportsClient {
   const apiKey = env.get("APISPORTS_KEY") || env.get("APIFOOTBALL_KEY");
   if (!apiKey) {
     throw new ApiSportsError(
@@ -300,6 +335,7 @@ export function footballClientFromEnv(env: {
   return createApiSportsClient({
     baseUrl: env.get("APISPORTS_FOOTBALL_URL") || DEFAULT_FOOTBALL_URL,
     apiKey,
+    maxPerMinute: opts?.maxPerMinute,
   });
 }
 

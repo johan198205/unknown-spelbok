@@ -45,6 +45,7 @@ export function FixturePicker({
   const [q, setQ] = useState("");
   const [items, setItems] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(false);
+  const [filling, setFilling] = useState(false);
   const [planLimited, setPlanLimited] = useState(false);
 
   useEffect(() => {
@@ -55,29 +56,46 @@ export function FixturePicker({
 
   useEffect(() => {
     if (!active) return;
-    const t = setTimeout(async () => {
-      setLoading(true);
+    let cancelled = false;
+    let poll: ReturnType<typeof setTimeout> | undefined;
+
+    async function load(initial: boolean) {
+      if (initial) setLoading(true);
       try {
         const params = new URLSearchParams({
           date: ymd,
-          limit: "120",
+          limit: "500",
         });
         if (q.trim()) params.set("q", q.trim());
         const res = await fetch(`/api/fixtures?${params}`, { cache: "no-store" });
         const json = await res.json();
+        if (cancelled) return;
         if (json.coverage?.from && json.coverage?.to) {
           setCoverage(json.coverage);
         }
         setPlanLimited(json.reason === "plan");
         setItems(json.fixtures || []);
+        const more = !!json.filling;
+        setFilling(more);
+        if (more) poll = setTimeout(() => load(false), 2500);
       } catch {
+        if (cancelled) return;
         setItems([]);
         setPlanLimited(false);
+        setFilling(false);
       } finally {
-        setLoading(false);
+        if (initial && !cancelled) setLoading(false);
       }
+    }
+
+    const debounce = setTimeout(() => {
+      void load(true);
     }, 180);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+      if (poll) clearTimeout(poll);
+    };
   }, [ymd, q, active]);
 
   const byLeague = useMemo(() => {
@@ -157,29 +175,38 @@ export function FixturePicker({
         className="mb-2 w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
       />
       <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
-        {loading ? (
+        {loading && !items.length ? (
           <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
         ) : items.length ? (
-          byLeague.map(([league, rows]) => (
-            <div key={league}>
-              <div className="sticky top-0 bg-bg-soft px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint">
-                {league}
+          <>
+            {byLeague.map(([league, rows]) => (
+              <div key={league}>
+                <div className="sticky top-0 bg-bg-soft px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint">
+                  {league}
+                </div>
+                {rows.map((f) => {
+                  const merged = mergeLivePatch(f, live[f.fixture_id]);
+                  return (
+                    <button
+                      key={f.fixture_id}
+                      type="button"
+                      onClick={() => onSelect(merged)}
+                      className="flex w-full items-center border-b border-line-soft px-3 py-2 text-left text-sm last:border-0 hover:bg-panel-2"
+                    >
+                      <FixtureMatch fixture={merged} />
+                    </button>
+                  );
+                })}
               </div>
-              {rows.map((f) => {
-                const merged = mergeLivePatch(f, live[f.fixture_id]);
-                return (
-                  <button
-                    key={f.fixture_id}
-                    type="button"
-                    onClick={() => onSelect(merged)}
-                    className="flex w-full items-center border-b border-line-soft px-3 py-2 text-left text-sm last:border-0 hover:bg-panel-2"
-                  >
-                    <FixtureMatch fixture={merged} />
-                  </button>
-                );
-              })}
-            </div>
-          ))
+            ))}
+            {filling ? (
+              <div className="px-3 py-2 text-sm text-faint">
+                Hämtar fler matcher…
+              </div>
+            ) : null}
+          </>
+        ) : filling ? (
+          <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
         ) : (
           <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
         )}

@@ -19,18 +19,18 @@ export function MatchRow({
 
   return (
     <div className={cn("flex min-w-0 w-full items-center gap-2", className)}>
-      <span className="flex shrink-0 items-center gap-0.5">
+      <span className="flex min-w-0 flex-1 items-center gap-1.5">
         <TeamLogo
           src={teamLogoUrl(fixture.home_logo, fixture.home_team_id, fixture.sport)}
           size={20}
         />
+        <span className="min-w-0 truncate">{home}</span>
+        <span className="shrink-0 text-faint">–</span>
         <TeamLogo
           src={teamLogoUrl(fixture.away_logo, fixture.away_team_id, fixture.sport)}
           size={20}
         />
-      </span>
-      <span className="min-w-0 flex-1 truncate whitespace-nowrap">
-        {home} – {away}
+        <span className="min-w-0 truncate">{away}</span>
       </span>
       {showTime ? (
         <span className="shrink-0 font-mono-num text-[11px] text-faint">

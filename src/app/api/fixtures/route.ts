@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   ensureFixturesForDate,
   getFixtureCoverage,
+  isFixtureDayReady,
   resolveFixtureCoverage,
 } from "@/lib/ensure-fixtures";
 import { teamLogoUrl } from "@/lib/logos";
@@ -9,11 +10,11 @@ import { stockholmDayBounds } from "@/lib/stockholm";
 import { createClient } from "@/lib/supabase/server";
 import type { Fixture } from "@/lib/types";
 
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 const CACHE = { "Cache-Control": "private, max-age=30" };
-const MAX_LIMIT = 250;
-const DEFAULT_LIMIT = 120;
+const MAX_LIMIT = 800;
+const DEFAULT_LIMIT = 500;
 const WINDOW_DAYS = 14;
 const UPCOMING = ["NS", "TBD", "1H", "HT", "2H", "ET", "BT", "P", "LIVE", "PST"];
 const FIXTURE_COLUMNS =
@@ -136,15 +137,8 @@ export async function GET(request: NextRequest) {
     );
 
     if (date && !planLimited && !ids.length) {
-      const { count } = await supabase
-        .from("fixtures")
-        .select("fixture_id", { count: "exact", head: true })
-        .gte("kickoff", from!)
-        .lt("kickoff", to!);
-      if (!(count ?? 0)) {
-        await ensureFixturesForDate(date);
-        source = "api";
-      }
+      const filled = await ensureFixturesForDate(date);
+      if (filled > 0) source = "api";
     }
 
     const { data, error } = await load();
@@ -153,15 +147,19 @@ export async function GET(request: NextRequest) {
     }
 
     const latestCoverage = ids.length ? null : getFixtureCoverage() ?? coverage;
+    const filling =
+      !!(date && !planLimited && !ids.length) &&
+      !(await isFixtureDayReady(date));
     const fixtures = (data ?? []).map(withLogos);
     return NextResponse.json(
       {
         fixtures,
         source,
         coverage: latestCoverage,
+        filling: filling || undefined,
         reason: planLimited ? "plan" : undefined,
       },
-      { headers: CACHE }
+      { headers: filling ? { "Cache-Control": "no-store" } : CACHE }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Kunde inte hämta matcher";

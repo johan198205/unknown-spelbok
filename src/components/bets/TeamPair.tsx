@@ -56,7 +56,7 @@ function TeamLine({
   );
 }
 
-/** [logo A] Lag A – Lag B [logo B] */
+/** [logo A] Lag A – [logo B] Lag B */
 export function MatchSides({
   homeName,
   awayName,
@@ -81,8 +81,8 @@ export function MatchSides({
       <TeamLogo src={teamLogoUrl(homeLogo, homeTeamId, sport)} size={size} />
       <span className="min-w-0 truncate font-semibold">{homeName}</span>
       <span className="shrink-0 text-faint">–</span>
-      <span className="min-w-0 truncate font-semibold">{awayName}</span>
       <TeamLogo src={teamLogoUrl(awayLogo, awayTeamId, sport)} size={size} />
+      <span className="min-w-0 truncate font-semibold">{awayName}</span>
     </span>
   );
 }

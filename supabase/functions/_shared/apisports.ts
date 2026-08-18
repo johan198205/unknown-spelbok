@@ -14,7 +14,10 @@
 
 export const DEFAULT_TIMEZONE = "Europe/Stockholm";
 export const MAX_REQUESTS_PER_MINUTE = 8;
+export const PAID_REQUESTS_PER_MINUTE = 30;
 export const FIXTURE_IDS_PER_CALL = 20;
+export const API_PAGE_SIZE = 20;
+export const MAX_API_PAGES = 40;
 export const DEFAULT_FOOTBALL_URL = "https://v3.football.api-sports.io";
 export const DEFAULT_HOCKEY_URL = "https://v3.hockey.api-sports.io";
 
@@ -255,13 +258,19 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     let page = 1;
     let total = 1;
 
-    while (page <= total) {
+    while (page <= total && page <= MAX_API_PAGES) {
       const json = await fetchPage(
         path,
         page === 1 && total === 1 ? params : { ...params, page }
       );
-      items.push(...((json.response ?? []) as T[]));
-      total = Math.max(1, json.paging?.total ?? 1);
+      const batch = (json.response ?? []) as T[];
+      items.push(...batch);
+      const reported = Math.max(1, json.paging?.total ?? 1);
+      total = Math.max(total, reported);
+      // API-Football sätter ibland paging.total = 1 trots fler sidor à 20.
+      if (reported <= 1 && batch.length === API_PAGE_SIZE && page < MAX_API_PAGES) {
+        total = page + 1;
+      }
       page += 1;
     }
 
