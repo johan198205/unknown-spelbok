@@ -4,14 +4,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
-import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
+import { LeagueLogo } from "@/components/bets/LeagueLogo";
+import { ManualMatchLabel } from "@/components/bets/TeamPair";
+import { BetRowActions } from "@/components/bets/BetRowActions";
+import {
+  LoggedBeforeKickoffBadge,
+  LoggedBeforeKickoffIcon,
+} from "@/components/bets/LoggedBeforeKickoff";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
   fixtureFromBet,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
+import { canRyggaBet } from "@/lib/rygga";
 import type { Bet, BetResult } from "@/lib/types";
+import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import {
@@ -22,6 +30,7 @@ import {
   syncPendingBets,
   type PendingBet,
 } from "@/lib/offline-queue";
+import { betLeagueLogo } from "@/lib/logos";
 import {
   betNetto,
   cn,
@@ -32,7 +41,6 @@ import {
   resultLabel,
   resultTone,
   computeStats,
-  payoutForResult,
 } from "@/lib/utils";
 
 type DisplayBet = Bet & {
@@ -102,10 +110,17 @@ export function MobileBetCards({
   bets,
   sheetId,
   canEdit,
+  canRygga = false,
+  onRygga,
+  hideChrome = false,
 }: {
   bets: Bet[];
   sheetId: string;
   canEdit: boolean;
+  canRygga?: boolean;
+  onRygga?: (bet: Bet) => void;
+  /** Dölj KPI-rad + statuschips (när parent hanterar filter/metrics). */
+  hideChrome?: boolean;
 }) {
   const router = useRouter();
   const online = useOnlineStatus();
@@ -159,9 +174,9 @@ export function MobileBetCards({
   }, [pending, bets]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return displayBets;
+    if (hideChrome || filter === "all") return displayBets;
     return displayBets.filter((b) => b.result === filter);
-  }, [displayBets, filter]);
+  }, [displayBets, filter, hideChrome]);
 
   const live = useLiveFixtures(
     filtered.map((b) => b.fixture_id).filter((id): id is number => id != null),
@@ -173,21 +188,24 @@ export function MobileBetCards({
     }
   );
 
-  const stats = computeStats(bets);
+  const stats = hideChrome ? null : computeStats(bets);
 
   async function setResult(bet: DisplayBet, result: BetResult) {
     if (bet._pending || !online) return;
     vibrate(18);
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("bets")
       .update({
         result,
-        payout: payoutForResult(result, Number(bet.stake), Number(bet.odds)),
         settled_at: result === "open" ? null : new Date().toISOString(),
         settled_by: result === "open" ? null : "user",
       })
       .eq("id", bet.id);
+    if (error) {
+      alert(error.message || "Kunde inte sätta resultat");
+      return;
+    }
     setSheetBet(null);
     router.refresh();
   }
@@ -228,44 +246,48 @@ export function MobileBetCards({
 
   return (
     <div className="lg:hidden">
-      <div className="mb-3 flex gap-2 overflow-x-auto sb-scroll snap-x snap-mandatory pb-1">
-        {[
-          { label: "Netto", value: formatMoney(stats.netto), color: nettoColor(stats.netto) },
-          { label: "ROI", value: formatRoi(stats.roi), color: nettoColor(stats.roi) },
-          { label: "Hitrate", value: `${stats.hitrate.toFixed(0)}%`, color: "text-text" },
-          { label: "Spel", value: String(stats.bets), color: "text-text" },
-        ].map((k) => (
-          <div
-            key={k.label}
-            className="min-w-[104px] snap-start rounded-[13px] border border-line bg-panel px-3.5 py-3"
-          >
-            <div className="text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted">
-              {k.label}
-            </div>
-            <div className={`mt-1 font-mono-num text-[17px] font-semibold ${k.color}`}>
-              {k.value}
-            </div>
+      {!hideChrome && stats ? (
+        <>
+          <div className="mb-3 flex gap-2 overflow-x-auto sb-scroll snap-x snap-mandatory pb-1">
+            {[
+              { label: "Netto", value: formatMoney(stats.netto), color: nettoColor(stats.netto) },
+              { label: "ROI", value: formatRoi(stats.roi), color: nettoColor(stats.roi) },
+              { label: "Hitrate", value: `${stats.hitrate.toFixed(0)}%`, color: "text-text" },
+              { label: "Spel", value: String(stats.bets), color: "text-text" },
+            ].map((k) => (
+              <div
+                key={k.label}
+                className="min-w-[104px] snap-start rounded-[13px] border border-line bg-panel px-3.5 py-3"
+              >
+                <div className="text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted">
+                  {k.label}
+                </div>
+                <div className={`mt-1 font-mono-num text-[17px] font-semibold ${k.color}`}>
+                  {k.value}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div className="mb-3 flex gap-2 overflow-x-auto sb-scroll pb-1">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => setFilter(f.id)}
-            className={cn(
-              "shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold",
-              filter === f.id
-                ? "border-win bg-win/10 text-win"
-                : "border-line bg-panel text-muted"
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+          <div className="mb-3 flex gap-2 overflow-x-auto sb-scroll pb-1">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilter(f.id)}
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold",
+                  filter === f.id
+                    ? "border-win bg-win/10 text-win"
+                    : "border-line bg-panel text-muted"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       {syncing ? (
         <div className="mb-2 text-center text-[12px] text-muted">Synkar offline-kö…</div>
@@ -277,11 +299,14 @@ export function MobileBetCards({
             key={bet.id}
             bet={applyLiveToBet(bet, live)}
             canEdit={canEdit && !bet._pending}
+            canRygga={canRygga && !bet._pending}
             online={online}
             onSwipeWin={() => setResult(bet, "win")}
             onSwipeLoss={() => setResult(bet, "loss")}
             onOpenSheet={() => setSheetBet(bet)}
             onRetry={() => retryPending(bet)}
+            onRygga={onRygga ? () => onRygga(bet) : undefined}
+            onRemove={() => void remove(bet)}
           />
         ))}
         {!filtered.length ? (
@@ -302,28 +327,56 @@ export function MobileBetCards({
           <div className="relative w-full rounded-t-[15px] border-t border-line bg-panel px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line-strong" />
             <div className="mb-3 font-semibold">{sheetBet.match}</div>
+            {sheetBet.logged_before_kickoff != null ? (
+              <div className="mb-3">
+                <LoggedBeforeKickoffBadge value={sheetBet.logged_before_kickoff} />
+              </div>
+            ) : null}
             <div className="grid gap-2">
-              {SHEET_ACTIONS.map((a) => (
+              {canEdit && !sheetBet._pending
+                ? SHEET_ACTIONS.map((a) => (
+                    <button
+                      key={a.result}
+                      type="button"
+                      disabled={!online || !!sheetBet._pending}
+                      title={!online ? "Kräver uppkoppling" : undefined}
+                      onClick={() => setResult(sheetBet, a.result)}
+                      className="rounded-[10px] border border-line bg-panel-2 px-4 py-3 text-left font-semibold disabled:opacity-40"
+                    >
+                      {a.label}
+                    </button>
+                  ))
+                : null}
+              {canRygga &&
+              onRygga &&
+              !sheetBet._pending &&
+              canRyggaBet(sheetBet) ? (
                 <button
-                  key={a.result}
                   type="button"
-                  disabled={!online || !!sheetBet._pending}
-                  title={!online ? "Kräver uppkoppling" : undefined}
-                  onClick={() => setResult(sheetBet, a.result)}
-                  className="rounded-[10px] border border-line bg-panel-2 px-4 py-3 text-left font-semibold disabled:opacity-40"
+                  onClick={() => {
+                    onRygga(sheetBet);
+                    setSheetBet(null);
+                  }}
+                  className="rounded-[10px] border border-line bg-panel-2 px-4 py-3 text-left font-semibold"
                 >
-                  {a.label}
+                  Rygga spel
                 </button>
-              ))}
-              <button
-                type="button"
-                disabled={!online && !sheetBet._pending}
-                title={!online && !sheetBet._pending ? "Kräver uppkoppling" : undefined}
-                onClick={() => remove(sheetBet)}
-                className="rounded-[10px] border border-loss/40 bg-loss/10 px-4 py-3 text-left font-semibold text-loss disabled:opacity-40"
-              >
-                Ta bort
-              </button>
+              ) : null}
+              {canEdit || sheetBet._pending ? (
+                <button
+                  type="button"
+                  disabled={!online && !sheetBet._pending}
+                  title={
+                    !online && !sheetBet._pending
+                      ? "Kräver uppkoppling"
+                      : undefined
+                  }
+                  onClick={() => remove(sheetBet)}
+                  className="rounded-[10px] border border-loss/40 bg-loss/10 px-4 py-3 text-left font-semibold text-loss disabled:opacity-40"
+                >
+                  Ta bort
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -335,19 +388,25 @@ export function MobileBetCards({
 function SwipeBetCard({
   bet,
   canEdit,
+  canRygga,
   online,
   onSwipeWin,
   onSwipeLoss,
   onOpenSheet,
   onRetry,
+  onRygga,
+  onRemove,
 }: {
   bet: DisplayBet;
   canEdit: boolean;
+  canRygga: boolean;
   online: boolean;
   onSwipeWin: () => void;
   onSwipeLoss: () => void;
   onOpenSheet: () => void;
   onRetry: () => void;
+  onRygga?: () => void;
+  onRemove?: () => void;
 }) {
   const x = useMotionValue(0);
   const winOpacity = useTransform(x, [0, 120], [0, 1]);
@@ -412,16 +471,33 @@ function SwipeBetCard({
         className="relative rounded-[12px] border border-line bg-panel p-3.5"
       >
         <div className="mb-2 flex items-start justify-between gap-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">
-            {bet.league || "Match"} · {date}
+          <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">
+            {bet.league ? (
+              <>
+                <LeagueLogo
+                  src={betLeagueLogo(bet)}
+                  leagueId={bet.league_id ?? bet.fixtures?.league_id}
+                  sport={bet.sport ?? bet.fixtures?.sport}
+                  name={bet.league}
+                  size={14}
+                />
+                <span className="min-w-0 truncate">
+                  {bet.league} · {date}
+                </span>
+              </>
+            ) : (
+              <span>Match · {date}</span>
+            )}
           </div>
           <div className="flex items-center gap-1.5">
-            {canEdit && bet.result === "open" && bet.fixture_id ? (
-              <GoalNotifyButton
-                betId={bet.id}
-                enabled={bet.notify_goals === true}
-              />
-            ) : null}
+            <BetRowActions
+              bet={bet}
+              canEdit={canEdit}
+              canRygga={canRygga}
+              onRygga={onRygga}
+              onRemove={onRemove}
+              hoverReveal={false}
+            />
             <span
               className={cn(
                 "rounded-[6px] border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
@@ -430,7 +506,7 @@ function SwipeBetCard({
             >
               {badge.label}
             </span>
-            {canEdit || bet._pending ? (
+            {canEdit || bet._pending || (canRygga && canRyggaBet(bet)) ? (
               <button
                 type="button"
                 onClick={onOpenSheet}
@@ -446,18 +522,21 @@ function SwipeBetCard({
         {fixture ? (
           <FixtureMatch fixture={fixture} stacked />
         ) : (
-          <div className="font-semibold text-text">{bet.match}</div>
+          <ManualMatchLabel match={bet.match} stacked />
         )}
-        <div className="mt-1 text-[15px] font-bold">{bet.pick}</div>
+        <div className="mt-1 flex items-center gap-1.5 text-[15px] font-bold">
+          <span className="inline-flex w-3.5 shrink-0 justify-center">
+            <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
+          </span>
+          {bet.pick}
+        </div>
         <div className="mt-2 flex items-center gap-1.5 font-mono-num text-[12.5px] text-muted">
-          {bet.bookmakers?.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={bet.bookmakers.logo_url}
-              alt=""
-              className="h-3.5 w-3.5 object-contain"
-            />
-          ) : null}
+          <BookmakerLogo
+            logoPath={bet.bookmakers?.logo_url}
+            name={bet.bookmakers?.name}
+            placeholder={!bet.bookmaker_id}
+            size={14}
+          />
           <span>
             {bet.bookmakers?.name || "—"} · {Number(bet.stake).toLocaleString("sv-SE")} ·{" "}
             {formatOdds(Number(bet.odds))}

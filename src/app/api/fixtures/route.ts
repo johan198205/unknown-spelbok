@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sportLabel, sportSlug } from "@/lib/apisports";
 import {
   ensureFixturesForDate,
   getFixtureCoverage,
   isFixtureDayReady,
   resolveFixtureCoverage,
 } from "@/lib/ensure-fixtures";
-import { teamLogoUrl } from "@/lib/logos";
+import { leagueLogoUrl, teamLogoUrl } from "@/lib/logos";
 import { stockholmDayBounds } from "@/lib/stockholm";
 import { createClient } from "@/lib/supabase/server";
 import type { Fixture } from "@/lib/types";
@@ -36,7 +37,13 @@ function venueFromRaw(raw: unknown) {
 function withLogos<
   T extends Pick<
     Fixture,
-    "home_logo" | "away_logo" | "home_team_id" | "away_team_id" | "sport"
+    | "home_logo"
+    | "away_logo"
+    | "home_team_id"
+    | "away_team_id"
+    | "sport"
+    | "league_logo"
+    | "league_id"
   > & { raw?: unknown }
 >(row: T) {
   const { raw, ...rest } = row;
@@ -44,6 +51,7 @@ function withLogos<
     ...rest,
     home_logo: teamLogoUrl(row.home_logo, row.home_team_id, row.sport),
     away_logo: teamLogoUrl(row.away_logo, row.away_team_id, row.sport),
+    league_logo: leagueLogoUrl(row.league_logo, row.league_id, row.sport),
     venue: venueFromRaw(raw),
   };
 }
@@ -72,6 +80,7 @@ export async function GET(request: NextRequest) {
 
   const params = request.nextUrl.searchParams;
   const league = params.get("league");
+  const sportParam = params.get("sport");
   const date = params.get("date");
   let from = params.get("from");
   let to = params.get("to");
@@ -88,6 +97,13 @@ export async function GET(request: NextRequest) {
     .map((part) => Number(part.trim()))
     .filter((id) => Number.isFinite(id) && id > 0)
     .slice(0, MAX_LIMIT);
+
+  if (!ids.length && !league && !date && !from && !to) {
+    return NextResponse.json(
+      { error: "Parametern league eller date krävs" },
+      { status: 400 }
+    );
+  }
 
   if (date) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -118,6 +134,10 @@ export async function GET(request: NextRequest) {
       query = query.eq("league_id", id);
     }
 
+    if (sportParam) {
+      query = query.eq("sport", sportLabel(sportSlug(sportParam)));
+    }
+
     if (from || to) {
       if (from) query = query.gte("kickoff", from);
       if (to) query = query.lt("kickoff", to);
@@ -140,7 +160,7 @@ export async function GET(request: NextRequest) {
 
     if (q) {
       query = query.or(
-        `home_name.ilike.%${q}%,away_name.ilike.%${q}%,league_name.ilike.%${q}%`
+        `home_name.ilike.%${q}%,away_name.ilike.%${q}%`
       );
     }
 

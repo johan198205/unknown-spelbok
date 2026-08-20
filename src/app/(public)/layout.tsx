@@ -15,7 +15,9 @@ export default async function PublicLayout({
   const pathname = (await headers()).get("x-pathname") || "";
   const useAppChrome =
     !!profile &&
-    (pathname.startsWith("/topplista") || pathname.startsWith("/spelbolag"));
+    (pathname.startsWith("/topplista") ||
+      pathname.startsWith("/spelbolag") ||
+      pathname.startsWith("/s/"));
 
   if (!useAppChrome) {
     return (
@@ -39,7 +41,7 @@ export default async function PublicLayout({
         .select("*")
         .eq("user_id", profile!.id)
         .order("created_at", { ascending: true }),
-      supabase.from("bookmakers").select("*").eq("active", true).order("rank"),
+      supabase.from("bookmakers").select("*").eq("active", true).order("rank").order("name"),
     ]);
 
   const settled = (bets || []).filter((b) => b.result !== "open");

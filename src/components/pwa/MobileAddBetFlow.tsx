@@ -8,7 +8,10 @@ import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { enqueuePendingBet } from "@/lib/offline-queue";
 import { FixturePicker, DayStrip, type PickerFixture } from "@/components/bets/FixturePicker";
+import { LeagueLogo } from "@/components/bets/LeagueLogo";
+import { ManualMatchLabel, MatchStack } from "@/components/bets/TeamPair";
 import { cn, formatMoney, formatOdds } from "@/lib/utils";
+import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import {
   placedAtForPastBet,
   settlementForFinishedPick,
@@ -36,6 +39,8 @@ export function MobileAddBetFlow({
   const [match, setMatch] = useState("");
   const [pick, setPick] = useState("");
   const [league, setLeague] = useState("");
+  const [leagueId, setLeagueId] = useState<number | null>(null);
+  const [leagueLogo, setLeagueLogo] = useState<string | null>(null);
   const [sport, setSport] = useState("Fotboll");
   const [odds, setOdds] = useState("1.90");
   const [stake, setStake] = useState("100");
@@ -76,13 +81,14 @@ export function MobileAddBetFlow({
       match: match.trim(),
       pick: pick.trim(),
       league: league || null,
+      league_id: leagueId,
+      league_logo: leagueLogo,
       sport,
       odds: oddsValue,
       stake: stakeValue,
       bookmaker_id: bookmakerId || null,
       fixture_id: fixtureId,
       result: settled.result,
-      payout: settled.payout,
       settled_at: settled.settled_at,
       settled_by: settled.settled_by,
       ...(placedAt ? { placed_at: placedAt } : {}),
@@ -161,11 +167,24 @@ export function MobileAddBetFlow({
                   active={step === 1}
                   ymd={ymd}
                   onYmdChange={setYmd}
+                  onMetaChange={({
+                    sport: nextSport,
+                    league: nextLeague,
+                    leagueId: nextLeagueId,
+                    leagueLogo: nextLeagueLogo,
+                  }) => {
+                    if (nextSport) setSport(nextSport);
+                    if (nextLeague) setLeague(nextLeague);
+                    if (nextLeagueId != null) setLeagueId(nextLeagueId);
+                    if (nextLeagueLogo != null) setLeagueLogo(nextLeagueLogo);
+                  }}
                   onSelect={(f) => {
                     setFixtureId(f.fixture_id);
                     setChosenFixture(f);
                     setMatch(`${f.home_name} – ${f.away_name}`);
                     setLeague(f.league_name || "");
+                    setLeagueId(f.league_id ?? null);
+                    setLeagueLogo(f.league_logo ?? null);
                     setSport(f.sport || "Fotboll");
                     setStep(2);
                   }}
@@ -176,6 +195,8 @@ export function MobileAddBetFlow({
                     setManual(true);
                     setFixtureId(null);
                     setChosenFixture(null);
+                    setLeagueId(null);
+                    setLeagueLogo(null);
                   }}
                   className="w-full py-3 text-center text-sm font-semibold text-cyan"
                 >
@@ -226,10 +247,38 @@ export function MobileAddBetFlow({
         {step === 2 ? (
           <div className="space-y-4">
             <div className="rounded-[12px] border border-line bg-panel p-3.5">
-              <div className="text-[11px] uppercase tracking-[0.12em] text-faint">
-                {league || "Match"}
+              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em] text-faint">
+                {league ? (
+                  <>
+                    <LeagueLogo
+                      src={leagueLogo}
+                      leagueId={leagueId}
+                      sport={sport}
+                      name={league}
+                      size={14}
+                    />
+                    <span>{league}</span>
+                  </>
+                ) : (
+                  "Match"
+                )}
               </div>
-              <div className="mt-1 font-semibold">{match}</div>
+              <div className="mt-1">
+                {chosenFixture ? (
+                  <MatchStack
+                    homeName={chosenFixture.home_name || ""}
+                    awayName={chosenFixture.away_name || ""}
+                    homeLogo={chosenFixture.home_logo}
+                    awayLogo={chosenFixture.away_logo}
+                    homeTeamId={chosenFixture.home_team_id}
+                    awayTeamId={chosenFixture.away_team_id}
+                    sport={chosenFixture.sport}
+                    size={18}
+                  />
+                ) : (
+                  <ManualMatchLabel match={match} size={18} stacked />
+                )}
+              </div>
             </div>
             <div>
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
@@ -264,21 +313,34 @@ export function MobileAddBetFlow({
                 Bolag
               </div>
               <div className="flex gap-2 overflow-x-auto sb-scroll pb-1">
-                {bookmakers.map((b) => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => setBookmakerId(b.id)}
-                    className={cn(
-                      "shrink-0 rounded-full border px-3.5 py-2 text-[13px] font-semibold",
-                      bookmakerId === b.id
-                        ? "border-win bg-win/10 text-win"
-                        : "border-line bg-panel text-muted"
-                    )}
-                  >
-                    {b.name}
-                  </button>
-                ))}
+                {bookmakers.map((b) => {
+                  const logo = getBookmakerLogoUrl(b.logo_url);
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setBookmakerId(b.id)}
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-semibold",
+                        bookmakerId === b.id
+                          ? "border-win bg-win/10 text-win"
+                          : "border-line bg-panel text-muted"
+                      )}
+                    >
+                      {logo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={logo}
+                          alt=""
+                          width={18}
+                          height={18}
+                          className="h-[18px] w-[18px] object-contain"
+                        />
+                      ) : null}
+                      {b.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             {sheets.length > 1 ? (

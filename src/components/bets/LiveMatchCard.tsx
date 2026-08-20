@@ -29,7 +29,7 @@ function TeamLine({
 }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <TeamLogo src={teamLogoUrl(logo, teamId, sport)} size={16} />
+      <TeamLogo src={teamLogoUrl(logo, teamId, sport)} size={16} initial={name} />
       <span className="min-w-0 flex-1 truncate text-[13px] text-text">{name}</span>
       {showScore ? (
         <span className="w-5 shrink-0 text-right font-mono-num text-[13px] font-bold text-text">

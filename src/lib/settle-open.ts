@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolvePick, type Settlement } from "@/lib/settle-pick";
 import { notifySettledBets } from "@/lib/send-push";
-import { payoutForResult } from "@/lib/utils";
 
 type BetRow = {
   id: string;
@@ -115,8 +114,6 @@ export async function settleOpenBets(
     byResult[outcome].push(bet.id);
   }
 
-  const byId = new Map(bets.map((b) => [b.id, b]));
-
   for (const [result, ids] of Object.entries(byResult) as [
     Settlement,
     string[],
@@ -128,16 +125,10 @@ export async function settleOpenBets(
 
     await Promise.all(
       ids.map(async (id) => {
-        const bet = byId.get(id);
         const { error } = await supabase
           .from("bets")
           .update({
             result,
-            payout: payoutForResult(
-              result,
-              Number(bet?.stake ?? 0),
-              Number(bet?.odds ?? 0)
-            ),
             settled_at: settledAt,
             settled_by: "auto",
           })

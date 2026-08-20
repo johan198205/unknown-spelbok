@@ -226,6 +226,9 @@ export type Database = {
           fixture_id: number | null
           id: string
           league: string | null
+          league_id: number | null
+          league_logo: string | null
+          logged_before_kickoff: boolean | null
           match: string
           notify_goals: boolean
           odds: number
@@ -239,12 +242,17 @@ export type Database = {
           sport: string | null
           stake: number
           user_id: string
+          copied_from_bet_id: string | null
+          copied_from_user_id: string | null
         }
         Insert: {
           bookmaker_id?: string | null
           fixture_id?: number | null
           id?: string
           league?: string | null
+          league_id?: number | null
+          league_logo?: string | null
+          logged_before_kickoff?: boolean | null
           match: string
           notify_goals?: boolean
           odds: number
@@ -258,12 +266,17 @@ export type Database = {
           sport?: string | null
           stake: number
           user_id: string
+          copied_from_bet_id?: string | null
+          copied_from_user_id?: string | null
         }
         Update: {
           bookmaker_id?: string | null
           fixture_id?: number | null
           id?: string
           league?: string | null
+          league_id?: number | null
+          league_logo?: string | null
+          logged_before_kickoff?: boolean | null
           match?: string
           notify_goals?: boolean
           odds?: number
@@ -277,6 +290,8 @@ export type Database = {
           sport?: string | null
           stake?: number
           user_id?: string
+          copied_from_bet_id?: string | null
+          copied_from_user_id?: string | null
         }
         Relationships: [
           {
@@ -761,6 +776,7 @@ export type Database = {
           last_seen_at: string | null
           notify_settle: boolean
           role: string
+          unit_size: number
           username: string
         }
         Insert: {
@@ -771,6 +787,7 @@ export type Database = {
           last_seen_at?: string | null
           notify_settle?: boolean
           role?: string
+          unit_size?: number
           username: string
         }
         Update: {
@@ -781,6 +798,7 @@ export type Database = {
           last_seen_at?: string | null
           notify_settle?: boolean
           role?: string
+          unit_size?: number
           username?: string
         }
         Relationships: []
@@ -821,27 +839,33 @@ export type Database = {
         Row: {
           created_at: string
           currency: string
+          description: string | null
           id: string
           is_public: boolean
           name: string
+          slug: string
           start_bankroll: number
           user_id: string
         }
         Insert: {
           created_at?: string
           currency?: string
+          description?: string | null
           id?: string
           is_public?: boolean
           name?: string
+          slug?: string
           start_bankroll?: number
           user_id: string
         }
         Update: {
           created_at?: string
           currency?: string
+          description?: string | null
           id?: string
           is_public?: boolean
           name?: string
+          slug?: string
           start_bankroll?: number
           user_id?: string
         }
@@ -896,6 +920,31 @@ export type Database = {
       }
     }
     Functions: {
+      get_bet_stats: {
+        Args: {
+          p_sheet_id: string
+          p_from_date?: string | null
+          p_to_date?: string | null
+          p_unit_size?: number | null
+        }
+        Returns: Json
+      }
+      get_league_stats: {
+        Args: {
+          p_sheet_id: string
+          p_from_date?: string | null
+          p_to_date?: string | null
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      get_public_sheets_leaderboard: {
+        Args: {
+          p_limit?: number
+          p_exclude_user_id?: string | null
+        }
+        Returns: Json
+      }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
@@ -1085,6 +1134,9 @@ export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
     | "home_name"
     | "away_name"
     | "sport"
+    | "league_id"
+    | "league_logo"
+    | "league_name"
   > | null;
 };
 

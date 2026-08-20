@@ -166,6 +166,9 @@ export async function saveBookmaker(input: BookmakerInput): Promise<SaveResult> 
   const name = input.name.trim();
   if (!name) return { ok: false, error: "Namn krävs." };
 
+  const logo = textOrNull(input.logo_url);
+  if (!logo) return { ok: false, error: "Logotyp krävs." };
+
   const slug = slugify(input.slug?.trim() || name);
   if (!slug) return { ok: false, error: "Slug krävs." };
 
@@ -173,7 +176,7 @@ export async function saveBookmaker(input: BookmakerInput): Promise<SaveResult> 
   const payload = {
     name,
     slug,
-    logo_url: textOrNull(input.logo_url),
+    logo_url: logo,
     rating: clampRating(input.rating),
     bonus: textOrNull(input.bonus),
     bonus_value: Math.max(0, Math.round(Number(input.bonus_value) || 0)),

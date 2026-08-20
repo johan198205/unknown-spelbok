@@ -11,6 +11,8 @@ export type PendingBet = {
       match: string;
       pick: string;
       league: string | null;
+      league_id?: number | null;
+      league_logo?: string | null;
       sport: string;
       odds: number;
       stake: number;
@@ -120,6 +122,8 @@ export function pendingToDisplayBet(pending: PendingBet): Bet & {
     fixture_id: pending.payload.fixture_id,
     sport: pending.payload.sport,
     league: pending.payload.league,
+    league_id: pending.payload.league_id ?? null,
+    league_logo: pending.payload.league_logo ?? null,
     match: pending.payload.match,
     pick: pending.payload.pick,
     bookmaker_id: pending.payload.bookmaker_id,
@@ -131,6 +135,9 @@ export function pendingToDisplayBet(pending: PendingBet): Bet & {
     settled_at: pending.payload.settled_at ?? null,
     settled_by: pending.payload.settled_by ?? null,
     notify_goals: false,
+    logged_before_kickoff: null,
+    copied_from_bet_id: null,
+    copied_from_user_id: null,
     bookmakers: null,
     _pending: true,
     _pendingStatus: pending.status,
@@ -148,7 +155,8 @@ export async function syncPendingBets(
   const results: Array<{ id: string; ok: boolean; error?: string }> = [];
 
   for (const item of queue) {
-    const { error } = await insert({ ...item.payload, user_id: userId });
+    const { payout: _payout, ...safePayload } = item.payload;
+    const { error } = await insert({ ...safePayload, user_id: userId });
     if (error) {
       await markPendingError(item.id, error);
       results.push({ id: item.id, ok: false, error });

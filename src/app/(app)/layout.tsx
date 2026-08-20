@@ -36,7 +36,8 @@ export default async function AppLayout({
           .from("bookmakers")
           .select("*")
           .eq("active", true)
-          .order("rank"),
+          .order("rank")
+          .order("name"),
       ]);
 
     const settled = (bets || []).filter((b) => b.result !== "open");

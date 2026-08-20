@@ -16,8 +16,10 @@ import {
 } from "@/lib/picks";
 import { FixturePicker, DayStrip } from "@/components/bets/FixturePicker";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
-import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
-import { MatchStack } from "@/components/bets/TeamPair";
+import { BetRowActions } from "@/components/bets/BetRowActions";
+import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
+import { LeagueLogo } from "@/components/bets/LeagueLogo";
+import { ManualMatchLabel, MatchStack } from "@/components/bets/TeamPair";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
@@ -28,6 +30,7 @@ import {
   placedAtForPastBet,
   settlementForFinishedPick,
 } from "@/lib/bet-settlement";
+import { betLeagueLogo } from "@/lib/logos";
 import { stockholmYmd } from "@/lib/stockholm";
 import {
   formatMoney,
@@ -37,12 +40,26 @@ import {
   resultTone,
   betNetto,
   cn,
-  payoutForResult,
 } from "@/lib/utils";
-
-const RESULTS: BetResult[] = ["open", "win", "loss", "void", "halfwin", "halfloss"];
+import { getBookmakerLogoUrl } from "@/lib/bookmakers";
+import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
+import type { LeagueOption } from "@/app/api/leagues/route";
+import type { DropdownOption } from "@/components/ui/SearchDropdown";
 
 type MatchMode = "search" | "manual" | "chosen";
+
+function sportToApiSlug(sport: string) {
+  const s = sport.toLowerCase();
+  if (s.includes("hockey")) return "hockey";
+  if (s.includes("fotboll") || s.includes("football")) return "football";
+  return null;
+}
+
+function leagueOptionIcon(name: string, logo: string | null, id?: number | null) {
+  return (
+    <LeagueLogo src={logo} leagueId={id} name={name} size={16} />
+  );
+}
 
 export function BetForm({
   sheets,
@@ -64,7 +81,9 @@ export function BetForm({
   const [match, setMatch] = useState("");
   const [pick, setPick] = useState("");
   const [league, setLeague] = useState("");
-  const [sport, setSport] = useState("Fotboll");
+  const [leagueId, setLeagueId] = useState<number | null>(null);
+  const [leagueLogo, setLeagueLogo] = useState<string | null>(null);
+  const [sport, setSport] = useState("");
   const [odds, setOdds] = useState("1.85");
   const [stake, setStake] = useState("100");
   const [bookmakerId, setBookmakerId] = useState("");
@@ -72,6 +91,7 @@ export function BetForm({
   const [chosenFixture, setChosenFixture] = useState<Fixture | null>(null);
   const [chosenKickoff, setChosenKickoff] = useState<string | null>(null);
   const [ymd, setYmd] = useState(stockholmYmd());
+  const [apiLeagues, setApiLeagues] = useState<LeagueOption[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -88,6 +108,27 @@ export function BetForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  useEffect(() => {
+    const slug = sportToApiSlug(sport || "Fotboll");
+    if (!slug || matchMode !== "manual") {
+      setApiLeagues([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/leagues?sport=${slug}`, { cache: "force-cache" })
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        setApiLeagues(Array.isArray(json.leagues) ? json.leagues : []);
+      })
+      .catch(() => {
+        if (!cancelled) setApiLeagues([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sport, matchMode]);
+
   const pickGroups = useMemo(() => {
     const groups = PICK_GROUPS[sport] || PICK_GROUPS.Fotboll;
     return groups.map((g) => ({
@@ -96,14 +137,30 @@ export function BetForm({
     }));
   }, [sport]);
 
-  const leagueOptions = useMemo(() => {
-    const forSport = leaguesForSport(sport);
+  const leagueOptions = useMemo((): DropdownOption[] => {
+    if (apiLeagues.length) {
+      return apiLeagues.map((l) => ({
+        value: l.name,
+        label: l.country ? `${l.name} (${l.country})` : l.name,
+        icon: leagueOptionIcon(l.name, l.logo, l.id),
+      }));
+    }
+    const forSport = leaguesForSport(sport || "Fotboll");
     const list = forSport.length ? forSport : Object.keys(LEAGUES);
-    return list.map((l) => ({ value: l, label: l }));
-  }, [sport]);
+    return list.map((l) => ({
+      value: l,
+      label: l,
+      icon: leagueOptionIcon(l, null),
+    }));
+  }, [apiLeagues, sport]);
 
   const bookmakerOptions = useMemo(
-    () => bookmakers.map((b) => ({ value: b.id, label: b.name })),
+    () =>
+      bookmakers.map((b) => ({
+        value: b.id,
+        label: b.name,
+        iconUrl: getBookmakerLogoUrl(b.logo_url),
+      })),
     [bookmakers]
   );
 
@@ -112,7 +169,9 @@ export function BetForm({
     setMatch("");
     setPick("");
     setLeague("");
-    setSport("Fotboll");
+    setLeagueId(null);
+    setLeagueLogo(null);
+    setSport("");
     setOdds("1.85");
     setStake("100");
     setBookmakerId("");
@@ -134,6 +193,8 @@ export function BetForm({
     setChosenFixture(f);
     setMatch(`${f.home_name} – ${f.away_name}`);
     setLeague(f.league_name || "");
+    setLeagueId(f.league_id ?? null);
+    setLeagueLogo(f.league_logo ?? null);
     setSport(f.sport || "Fotboll");
     setChosenKickoff(f.kickoff);
     setMatchMode("chosen");
@@ -152,6 +213,25 @@ export function BetForm({
     setChosenFixture(null);
     setChosenKickoff(null);
     setMatch("");
+  }
+
+  function applyLeagueChoice(name: string) {
+    setLeague(name);
+    const fromApi = apiLeagues.find((l) => l.name === name);
+    if (fromApi) {
+      setLeagueId(fromApi.id);
+      setLeagueLogo(fromApi.logo);
+      setSport(sport || (sportToApiSlug(sport) === "hockey" ? "Ishockey" : "Fotboll"));
+      setPick("");
+      return;
+    }
+    setLeagueId(null);
+    setLeagueLogo(null);
+    const mapped = LEAGUES[name];
+    if (mapped) {
+      setSport(mapped);
+      setPick("");
+    }
   }
 
   async function submit() {
@@ -189,13 +269,14 @@ export function BetForm({
       match: match.trim(),
       pick: pick.trim(),
       league: league || null,
-      sport,
+      league_id: leagueId,
+      league_logo: leagueLogo,
+      sport: sport || "Fotboll",
       odds: oddsValue,
       stake: stakeValue,
       bookmaker_id: bookmakerId || null,
       fixture_id: fixtureId,
       result: settled.result,
-      payout: settled.payout,
       settled_at: settled.settled_at,
       settled_by: settled.settled_by,
       ...(placedAt ? { placed_at: placedAt } : {}),
@@ -274,8 +355,21 @@ export function BetForm({
               {matchMode === "chosen" ? (
                 <div className="sm:col-span-2 rounded-xl border border-blue/35 bg-bg-soft p-3.5 animate-sbfade">
                   <div className="mb-3 flex items-center gap-2">
-                    <span className="flex-1 text-[13px] text-muted">
-                      {league || "Match"}
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px] text-muted">
+                      {league ? (
+                        <>
+                          <LeagueLogo
+                            src={leagueLogo}
+                            leagueId={leagueId}
+                            sport={sport}
+                            name={league}
+                            size={16}
+                          />
+                          <span className="min-w-0 truncate">{league}</span>
+                        </>
+                      ) : (
+                        "Match"
+                      )}
                       {chosenKickoff
                         ? ` · ${new Date(chosenKickoff).toLocaleString("sv-SE", {
                             weekday: "short",
@@ -307,7 +401,7 @@ export function BetForm({
                         size={22}
                       />
                     ) : (
-                      <span className="font-semibold">{match}</span>
+                      <ManualMatchLabel match={match} size={22} stacked />
                     )}
                   </div>
                 </div>
@@ -320,6 +414,17 @@ export function BetForm({
                     ymd={ymd}
                     onYmdChange={setYmd}
                     onSelect={selectFixture}
+                    onMetaChange={({
+                      sport: nextSport,
+                      league: nextLeague,
+                      leagueId: nextLeagueId,
+                      leagueLogo: nextLeagueLogo,
+                    }) => {
+                      if (nextSport) setSport(nextSport);
+                      if (nextLeague) setLeague(nextLeague);
+                      if (nextLeagueId != null) setLeagueId(nextLeagueId);
+                      if (nextLeagueLogo != null) setLeagueLogo(nextLeagueLogo);
+                    }}
                   />
                   <button
                     type="button"
@@ -359,8 +464,9 @@ export function BetForm({
                     options={SPORTS.map((s) => ({ value: s, label: s }))}
                     onChange={(s) => {
                       setSport(s);
-                      const ok = leaguesForSport(s);
-                      if (league && !ok.includes(league)) setLeague("");
+                      setLeague("");
+                      setLeagueId(null);
+                      setLeagueLogo(null);
                       setPick("");
                     }}
                   />
@@ -372,14 +478,7 @@ export function BetForm({
                     options={leagueOptions}
                     allowCustom
                     customPlaceholder="t.ex. Serie A"
-                    onChange={(l) => {
-                      setLeague(l);
-                      const mapped = LEAGUES[l];
-                      if (mapped) {
-                        setSport(mapped);
-                        setPick("");
-                      }
-                    }}
+                    onChange={applyLeagueChoice}
                   />
                   <div className="sm:col-span-2">
                     <Input
@@ -462,26 +561,34 @@ export function BetForm({
 export function BetRow({
   bet,
   canEdit,
+  canRygga = false,
+  onRygga,
 }: {
   bet: Bet;
   canEdit: boolean;
+  canRygga?: boolean;
+  onRygga?: (bet: Bet) => void;
 }) {
   const router = useRouter();
   const tone = resultTone(bet.result);
   const netto = betNetto(bet);
   const fixture = fixtureFromBet(bet);
+  const showActions = canEdit || canRygga;
 
   async function setResult(result: BetResult) {
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("bets")
       .update({
         result,
-        payout: payoutForResult(result, Number(bet.stake), Number(bet.odds)),
         settled_at: result === "open" ? null : new Date().toISOString(),
         settled_by: result === "open" ? null : "user",
       })
       .eq("id", bet.id);
+    if (error) {
+      alert(error.message || "Kunde inte sätta resultat");
+      return;
+    }
     router.refresh();
   }
 
@@ -493,27 +600,49 @@ export function BetRow({
   }
 
   return (
-    <tr className="border-b border-[#171E2C] hover:bg-[#1A2233]">
+    <tr className="group/row border-b border-[#171E2C] hover:bg-[#1A2233]">
       <td className="whitespace-nowrap px-2.5 py-3 font-mono-num text-[12.5px] text-[#C3CBDB]">
         {new Date(bet.placed_at).toLocaleDateString("sv-SE")}
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[#C3CBDB]">
-        {bet.league || "—"}
+        {bet.league ? (
+          <span className="inline-flex items-center gap-1.5">
+            <LeagueLogo
+              src={betLeagueLogo(bet)}
+              leagueId={bet.league_id ?? bet.fixtures?.league_id}
+              sport={bet.sport ?? bet.fixtures?.sport}
+              name={bet.league}
+              size={20}
+            />
+            <span>{bet.league}</span>
+          </span>
+        ) : (
+          "—"
+        )}
       </td>
       <td className="px-2.5 py-3">
-        {fixture ? <FixtureMatch fixture={fixture} stacked /> : bet.match}
+        {fixture ? (
+          <FixtureMatch fixture={fixture} stacked />
+        ) : (
+          <ManualMatchLabel match={bet.match} stacked />
+        )}
       </td>
-      <td className="whitespace-nowrap px-2.5 py-3 font-bold">{bet.pick}</td>
+      <td className="whitespace-nowrap px-2.5 py-3 font-bold">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex w-3.5 shrink-0 justify-center">
+            <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
+          </span>
+          {bet.pick}
+        </span>
+      </td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[12.5px] text-muted">
         <span className="inline-flex items-center gap-1.5">
-          {bet.bookmakers?.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={bet.bookmakers.logo_url}
-              alt=""
-              className="h-4 w-4 object-contain"
-            />
-          ) : null}
+          <BookmakerLogo
+            logoPath={bet.bookmakers?.logo_url}
+            name={bet.bookmakers?.name}
+            placeholder={!bet.bookmaker_id}
+            size={16}
+          />
           {bet.bookmakers?.name || "—"}
         </span>
       </td>
@@ -577,23 +706,15 @@ export function BetRow({
       >
         {bet.result === "open" ? "—" : formatMoney(netto)}
       </td>
-      {canEdit ? (
-        <td className="px-2.5 py-3">
-          <div className="flex items-center gap-2">
-            {bet.result === "open" && bet.fixture_id ? (
-              <GoalNotifyButton
-                betId={bet.id}
-                enabled={bet.notify_goals === true}
-              />
-            ) : null}
-            <button
-              type="button"
-              onClick={remove}
-              className="text-[12px] text-faint hover:text-loss"
-            >
-              Ta bort
-            </button>
-          </div>
+      {showActions ? (
+        <td className="w-[128px] min-w-[128px] px-2.5 py-3">
+          <BetRowActions
+            bet={bet}
+            canEdit={canEdit}
+            canRygga={canRygga}
+            onRygga={onRygga ? () => onRygga(bet) : undefined}
+            onRemove={canEdit ? () => void remove() : undefined}
+          />
         </td>
       ) : null}
     </tr>
@@ -603,22 +724,21 @@ export function BetRow({
 export function BetsTable({
   bets,
   canEdit,
+  canRygga = false,
+  onRygga,
 }: {
   bets: Bet[];
   canEdit: boolean;
+  canRygga?: boolean;
+  onRygga?: (bet: Bet) => void;
 }) {
   const router = useRouter();
-  const [filter, setFilter] = useState("all");
-
-  const rows = useMemo(() => {
-    if (filter === "all") return bets;
-    return bets.filter((b) => b.result === filter);
-  }, [bets, filter]);
+  const showActions = canEdit || canRygga;
 
   const live = useLiveFixtures(
-    rows.map((b) => b.fixture_id).filter((id): id is number => id != null),
+    bets.map((b) => b.fixture_id).filter((id): id is number => id != null),
     {
-      hasLive: rows.some((b) =>
+      hasLive: bets.some((b) =>
         needsLiveRefresh(b.fixtures?.status, b.fixtures?.kickoff)
       ),
       onSettled: () => router.refresh(),
@@ -626,70 +746,55 @@ export function BetsTable({
   );
 
   return (
-    <div>
-      <div className="mb-3 flex flex-wrap gap-2">
-        {["all", ...RESULTS].map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-[13px] font-semibold",
-              filter === f
-                ? "border-win bg-win/10 text-win"
-                : "border-line bg-panel text-muted"
-            )}
-          >
-            {f === "all" ? "Alla" : resultLabel(f as BetResult)}
-          </button>
-        ))}
-      </div>
-      <Panel className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-[13.5px]">
-          <thead>
-            <tr>
-              {[
-                "Datum",
-                "Liga",
-                "Match",
-                "Tipp",
-                "Bolag",
-                "Insats",
-                "Odds",
-                "Resultat",
-                "Netto",
-                ...(canEdit ? [""] : []),
-              ].map((label) => (
-                <th
-                  key={label || "actions"}
-                  className="sticky top-0 border-b border-line bg-bg-soft px-2.5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted"
-                >
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((bet) => (
-              <BetRow
-                key={bet.id}
-                bet={applyLiveToBet(bet, live)}
-                canEdit={canEdit}
-              />
+    <Panel className="overflow-x-auto">
+      <table className="w-full min-w-[900px] border-collapse text-[13.5px]">
+        <thead>
+          <tr>
+            {[
+              "Datum",
+              "Liga",
+              "Match",
+              "Spel",
+              "Bolag",
+              "Insats",
+              "Odds",
+              "Resultat",
+              "Netto",
+              ...(showActions ? [""] : []),
+            ].map((label) => (
+              <th
+                key={label || "actions"}
+                className={`sticky top-0 border-b border-line bg-bg-soft px-2.5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted ${
+                  !label ? "w-[128px] min-w-[128px]" : ""
+                }`}
+              >
+                {label}
+              </th>
             ))}
-            {!rows.length ? (
-              <tr>
-                <td
-                  colSpan={canEdit ? 10 : 9}
-                  className="px-4 py-10 text-center text-muted"
-                >
-                  Inga spel ännu.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </Panel>
-    </div>
+          </tr>
+        </thead>
+        <tbody>
+          {bets.map((bet) => (
+            <BetRow
+              key={bet.id}
+              bet={applyLiveToBet(bet, live)}
+              canEdit={canEdit}
+              canRygga={canRygga}
+              onRygga={onRygga}
+            />
+          ))}
+          {!bets.length ? (
+            <tr>
+              <td
+                colSpan={showActions ? 10 : 9}
+                className="px-4 py-10 text-center text-muted"
+              >
+                Inga spel ännu.
+              </td>
+            </tr>
+          ) : null}
+        </tbody>
+      </table>
+    </Panel>
   );
 }

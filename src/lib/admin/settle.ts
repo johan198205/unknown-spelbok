@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { logAdmin } from "@/lib/admin/log";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { payoutForResult } from "@/lib/utils";
 
 /**
  * Sättlingsvyn läser och skriver spel för alla användare. bets har bara
@@ -363,11 +362,6 @@ export async function settleQueuedBet(
     .from("bets")
     .update({
       result,
-      payout: payoutForResult(
-        result,
-        Number(row?.stake ?? 0),
-        Number(row?.odds ?? 0)
-      ),
       settled_at: new Date().toISOString(),
       settled_by: "user",
     })

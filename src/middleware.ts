@@ -63,7 +63,9 @@ export async function middleware(request: NextRequest) {
   if ((isApp || isAdmin) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", path);
+    const returnTo = path + (request.nextUrl.search || "");
+    url.search = "";
+    url.searchParams.set("next", returnTo);
     return NextResponse.redirect(url);
   }
 

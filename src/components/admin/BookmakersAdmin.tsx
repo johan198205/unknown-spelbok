@@ -38,6 +38,7 @@ import {
   type ClickPoint,
 } from "@/lib/admin/bookmakers";
 import { cn, slugify } from "@/lib/utils";
+import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 
 const PAYMENT_OPTIONS = ["Swish", "Trustly", "Bankkort", "Apple Pay", "Klarna"];
 
@@ -250,6 +251,14 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
   }
 
   function save() {
+    if (!draft.name.trim()) {
+      setStatus({ tone: "error", text: "Namn krävs." });
+      return;
+    }
+    if (!draft.logo_url.trim()) {
+      setStatus({ tone: "error", text: "Logotyp krävs." });
+      return;
+    }
     startTransition(async () => {
       const result = await saveBookmaker({
         id: draft.id,
@@ -389,7 +398,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
                 {draft.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={draft.logo_url}
+                    src={getBookmakerLogoUrl(draft.logo_url) ?? draft.logo_url}
                     alt=""
                     className="max-h-9 max-w-[80%] object-contain"
                   />
@@ -399,10 +408,11 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               </span>
               <div className="flex-1 rounded-[10px] border border-dashed border-line-strong p-3">
                 <ImageUpload
-                  bucket="logos"
-                  label="SVG eller PNG"
+                  bucket="bookmaker-logos"
+                  label="Logotyp"
                   value={draft.logo_url}
                   onChange={(url) => patch({ logo_url: url })}
+                  required
                 />
               </div>
             </div>
@@ -666,7 +676,7 @@ function SortableBookmakerRow({
         {bookmaker.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={bookmaker.logo_url}
+            src={getBookmakerLogoUrl(bookmaker.logo_url) ?? bookmaker.logo_url}
             alt=""
             className="max-h-[22px] max-w-[78%] object-contain"
           />

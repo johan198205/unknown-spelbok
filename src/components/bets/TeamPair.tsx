@@ -1,23 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import { teamLogoUrl } from "@/lib/logos";
+import { useEffect, useState } from "react";
+import { parseMatchSides, teamInitial, teamLogoUrl } from "@/lib/logos";
 
 export function TeamLogo({
   src,
   size,
+  initial,
 }: {
   src: string | null;
   size: number;
+  initial?: string | null;
 }) {
   const [failed, setFailed] = useState(false);
+  const letter = teamInitial(initial);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   if (!src || failed) {
     return (
       <span
-        className="shrink-0 rounded-full bg-panel-2"
-        style={{ width: size, height: size }}
-      />
+        className="inline-flex shrink-0 items-center justify-center rounded-full bg-panel-2 font-semibold text-muted"
+        style={{
+          width: size,
+          height: size,
+          fontSize: Math.max(8, Math.round(size * 0.45)),
+        }}
+        aria-hidden
+      >
+        {letter}
+      </span>
     );
   }
 
@@ -28,6 +42,8 @@ export function TeamLogo({
       alt=""
       width={size}
       height={size}
+      loading="lazy"
+      decoding="async"
       className="shrink-0 object-contain"
       style={{ width: size, height: size }}
       onError={() => setFailed(true)}
@@ -50,7 +66,11 @@ function TeamLine({
 }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <TeamLogo src={teamLogoUrl(logo, teamId, sport)} size={size} />
+      <TeamLogo
+        src={teamLogoUrl(logo, teamId, sport)}
+        size={size}
+        initial={name}
+      />
       <span className="min-w-0 truncate font-semibold leading-tight">{name}</span>
     </span>
   );
@@ -78,10 +98,18 @@ export function MatchSides({
 }) {
   return (
     <span className="flex min-w-0 flex-1 items-center gap-1.5">
-      <TeamLogo src={teamLogoUrl(homeLogo, homeTeamId, sport)} size={size} />
+      <TeamLogo
+        src={teamLogoUrl(homeLogo, homeTeamId, sport)}
+        size={size}
+        initial={homeName}
+      />
       <span className="min-w-0 truncate font-semibold">{homeName}</span>
       <span className="shrink-0 text-faint">–</span>
-      <TeamLogo src={teamLogoUrl(awayLogo, awayTeamId, sport)} size={size} />
+      <TeamLogo
+        src={teamLogoUrl(awayLogo, awayTeamId, sport)}
+        size={size}
+        initial={awayName}
+      />
       <span className="min-w-0 truncate font-semibold">{awayName}</span>
     </span>
   );
@@ -125,4 +153,26 @@ export function MatchStack({
       />
     </span>
   );
+}
+
+/** Manuell match eller fri text: logga-platshållare med initialer när möjligt. */
+export function ManualMatchLabel({
+  match,
+  size = 18,
+  stacked = false,
+}: {
+  match: string;
+  size?: number;
+  stacked?: boolean;
+}) {
+  const sides = parseMatchSides(match);
+  if (!sides) {
+    return <span className="font-semibold text-text">{match}</span>;
+  }
+  if (stacked) {
+    return (
+      <MatchStack homeName={sides.home} awayName={sides.away} size={size} />
+    );
+  }
+  return <MatchSides homeName={sides.home} awayName={sides.away} size={size} />;
 }

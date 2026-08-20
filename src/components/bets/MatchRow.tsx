@@ -9,10 +9,12 @@ export function MatchRow({
   fixture,
   className,
   showTime = true,
+  size = 18,
 }: {
   fixture: MatchFixture;
   className?: string;
   showTime?: boolean;
+  size?: number;
 }) {
   const home = fixture.home_name || "";
   const away = fixture.away_name || "";
@@ -22,13 +24,15 @@ export function MatchRow({
       <span className="flex min-w-0 flex-1 items-center gap-1.5">
         <TeamLogo
           src={teamLogoUrl(fixture.home_logo, fixture.home_team_id, fixture.sport)}
-          size={20}
+          size={size}
+          initial={home}
         />
         <span className="min-w-0 truncate">{home}</span>
         <span className="shrink-0 text-faint">–</span>
         <TeamLogo
           src={teamLogoUrl(fixture.away_logo, fixture.away_team_id, fixture.sport)}
-          size={20}
+          size={size}
+          initial={away}
         />
         <span className="min-w-0 truncate">{away}</span>
       </span>

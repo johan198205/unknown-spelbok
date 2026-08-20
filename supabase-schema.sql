@@ -51,6 +51,9 @@ create table public.sheets (
   start_bankroll  numeric(12,2) not null default 0,
   currency        text not null default 'SEK',
   is_public       boolean not null default false,  -- syns i topplista/profil
+  description     text,                            -- byline under spelbokens namn
+  slug            text not null unique             -- stabil delbar URL /s/{slug}
+                  default substr(replace(gen_random_uuid()::text, '-', ''), 1, 8),
   created_at      timestamptz not null default now()
 );
 
@@ -117,6 +120,8 @@ create table public.bets (
   fixture_id    bigint references public.fixtures(fixture_id),
   sport         text,
   league        text,
+  league_id     int,                          -- API-Sports league.id
+  league_logo   text,                         -- media.api-sports.io/.../leagues/{id}.png
   match         text not null,                -- "Liverpool – Arsenal"
   pick          text not null,                -- "1", "Över 2.5", spelarens val
   bookmaker_id  uuid references public.bookmakers(id),
@@ -135,8 +140,14 @@ create table public.bets (
                 ) stored,
   placed_at     timestamptz not null default now(),
   settled_at    timestamptz,
-  settled_by    text check (settled_by in ('user','auto'))  -- inför automatisk sättling
+  settled_by    text check (settled_by in ('user','auto')),  -- inför automatisk sättling
+  copied_from_bet_id  uuid references public.bets(id) on delete set null,
+  copied_from_user_id uuid
 );
+
+create unique index bets_rygga_dedup_uidx
+  on public.bets (copied_from_bet_id, sheet_id)
+  where copied_from_bet_id is not null;
 
 create index bets_sheet_idx   on public.bets(sheet_id);
 create index bets_user_idx    on public.bets(user_id);

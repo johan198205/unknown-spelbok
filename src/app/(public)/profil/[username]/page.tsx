@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, formatMoney, formatRoi, initialOf } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
@@ -78,12 +79,13 @@ export default async function PublicProfilePage({
       ) : (
         <div className="space-y-2">
           {sheets.map((s) => (
-            <div
+            <Link
               key={s.id}
-              className="rounded-[12px] border border-line bg-panel px-4 py-3 font-semibold"
+              href={s.slug ? `/s/${encodeURIComponent(s.slug)}` : "#"}
+              className="block rounded-[12px] border border-line bg-panel px-4 py-3 font-semibold text-text no-underline hover:border-win/40 hover:no-underline"
             >
               {s.name}
-            </div>
+            </Link>
           ))}
         </div>
       )}

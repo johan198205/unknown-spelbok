@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, IBM_Plex_Mono, Oswald } from "next/font/google";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 const oswald = Oswald({
@@ -74,7 +75,7 @@ export default function RootLayout({
       className={`${oswald.variable} ${barlow.variable} ${plex.variable} h-full`}
     >
       <body className="min-h-full flex flex-col bg-bg text-text antialiased">
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

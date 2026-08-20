@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { AdSlot } from "@/components/ui/AdSlot";
@@ -89,19 +90,22 @@ export default async function LandingPage() {
       no: "01",
       title: "Skapa ett spreadsheet",
       body: "En bok per strategi. Sätt startbankroll, välj om den ska vara publik och börja logga.",
-      img: "SKÄRMBILD: nytt spreadsheet",
+      img: "/img/sa-funkar-det/skapa-spreadsheet.png",
+      alt: "Formuläret för nytt spreadsheet med namn, startbankroll och publik-val.",
     },
     {
       no: "02",
       title: "Bokför varje spel",
       body: "Match, tipp, odds, insats och resultat. Filtrera på liga, spelbolag eller oddsintervall.",
-      img: "SKÄRMBILD: lägg spel",
+      img: "/img/sa-funkar-det/bokfor-spel.png",
+      alt: "Spellistan med datum, liga, match, tipp, odds, resultat och netto per rad.",
     },
     {
       no: "03",
       title: "Läs av sanningen",
       body: "Netto, ROI och hitrate räknas om direkt. Jämför dig i topplistan och i tävlingar.",
-      img: "SKÄRMBILD: statistik",
+      img: "/img/sa-funkar-det/statistik.png",
+      alt: "Statistikvyn med netto, ROI, hitrate och grafen över ackumulerat netto.",
     },
   ];
 
@@ -243,8 +247,14 @@ export default async function LandingPage() {
         <div className="grid gap-[18px] md:grid-cols-3">
           {steps.map((s) => (
             <Panel key={s.no} className="overflow-hidden">
-              <div className="flex h-[150px] items-center justify-center bg-[repeating-linear-gradient(135deg,#101623,#101623_10px,#141B2B_10px,#141B2B_20px)] px-4 text-center font-mono-num text-[11.5px] tracking-[0.1em] text-faint">
-                {s.img}
+              <div className="relative h-[150px] border-b border-line-soft bg-bg-soft">
+                <Image
+                  src={s.img}
+                  alt={s.alt}
+                  fill
+                  sizes="(min-width: 768px) 380px, 100vw"
+                  className="object-cover object-top"
+                />
               </div>
               <div className="p-[18px]">
                 <div className="font-display mb-1.5 text-[13px] tracking-[0.14em] text-win">

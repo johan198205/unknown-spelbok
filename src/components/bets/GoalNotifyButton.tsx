@@ -63,7 +63,7 @@ export function GoalNotifyButton({
         aria-label={on ? "Stäng av målnotiser" : "Aktivera målnotiser"}
         aria-pressed={on}
         className={cn(
-          "inline-flex size-8 items-center justify-center rounded-[8px] border transition",
+          "inline-flex size-9 items-center justify-center rounded-[8px] border transition",
           on
             ? "border-win/40 bg-win/10 text-win"
             : "border-line bg-transparent text-faint hover:text-text",

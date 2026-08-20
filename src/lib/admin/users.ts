@@ -114,7 +114,7 @@ export async function getAdminUsers(opts: {
   if (ids.length) {
     const { data: bets } = await supabase
       .from("bets")
-      .select("user_id, stake, payout, result")
+      .select("user_id, stake, payout, result, logged_before_kickoff")
       .in("user_id", ids);
 
     for (const b of bets ?? []) {
@@ -177,7 +177,9 @@ export async function getUserDetail(userId: string) {
       .order("created_at"),
     supabase
       .from("bets")
-      .select("id, match, pick, odds, stake, payout, result, placed_at")
+      .select(
+        "id, match, pick, odds, stake, payout, result, placed_at, logged_before_kickoff"
+      )
       .eq("user_id", userId)
       .order("placed_at", { ascending: false })
       .limit(5),
@@ -185,7 +187,7 @@ export async function getUserDetail(userId: string) {
 
   const { data: allBets } = await supabase
     .from("bets")
-    .select("stake, payout, result")
+    .select("stake, payout, result, logged_before_kickoff")
     .eq("user_id", userId);
 
   const settled = (allBets ?? []).filter((b) => b.result !== "open");

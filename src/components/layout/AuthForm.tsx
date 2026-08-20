@@ -62,7 +62,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
         <Panel className="p-[26px]">
           <div className="mb-5 flex gap-1 rounded-[10px] border border-line-soft bg-bg-soft p-1">
             <Link
-              href="/login"
+              href={next !== "/hem" ? `/login?next=${encodeURIComponent(next)}` : "/login"}
               className={`flex-1 rounded-[7px] px-2 py-2.5 text-center text-sm font-semibold no-underline ${
                 mode === "login"
                   ? "bg-panel-2 text-text"
@@ -72,7 +72,11 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
               Logga in
             </Link>
             <Link
-              href="/registrera"
+              href={
+                next !== "/hem"
+                  ? `/registrera?next=${encodeURIComponent(next)}`
+                  : "/registrera"
+              }
               className={`flex-1 rounded-[7px] px-2 py-2.5 text-center text-sm font-semibold no-underline ${
                 mode === "register"
                   ? "bg-panel-2 text-text"

@@ -2,8 +2,8 @@
  * Delad API-Sports-klient (API-Football v3 / API-Hockey v3).
  *
  * Används av Edge Functions (kopia i supabase/functions/_shared/apisports.ts)
- * och eventuella serverscript. Route handlers i Next.js ska ALDRIG anropa
- * det externa API:et — de läser bara Supabase-cachen.
+ * och Next.js route handlers som proxar (/api/leagues) eller fyller cachen
+ * (ensure-fixtures). API-nyckeln stannar alltid server-side.
  *
  * Sport-agnostisk: skicka in rätt base-URL.
  *   football → APISPORTS_FOOTBALL_URL (https://v3.football.api-sports.io)

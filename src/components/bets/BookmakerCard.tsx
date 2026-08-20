@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import { cn } from "@/lib/utils";
 
 export type BookmakerCardData = {
@@ -66,7 +67,7 @@ export function BookmakerCard({
         {data.logo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={data.logo_url}
+            src={getBookmakerLogoUrl(data.logo_url) ?? data.logo_url}
             alt={data.name}
             className="max-h-10 max-w-[70%] object-contain"
           />

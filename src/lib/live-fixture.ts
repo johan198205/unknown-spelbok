@@ -130,8 +130,8 @@ export function formatKickoffDay(iso: string) {
   });
 }
 
-/** Enradigt val för färdiga matcher: "Chelsea 2–0 Tottenham · 2 maj, Stamford Bridge" */
-export function formatFinishedPickerLine(
+/** Meta för färdiga matcher i pickern: score + "2 maj, Stamford Bridge". */
+export function finishedPickerMeta(
   fixture: Pick<
     MatchFixture,
     "home_name" | "away_name" | "home_score" | "away_score" | "kickoff" | "status"
@@ -144,12 +144,26 @@ export function formatFinishedPickerLine(
   ) {
     return null;
   }
-  const home = fixture.home_name || "Hemma";
-  const away = fixture.away_name || "Borta";
   const day = formatKickoffDay(fixture.kickoff);
   const venue = fixture.venue?.trim();
-  const meta = venue ? `${day}, ${venue}` : day;
-  return `${home} ${fixture.home_score}–${fixture.away_score} ${away} · ${meta}`;
+  return {
+    home: fixture.home_name || "Hemma",
+    away: fixture.away_name || "Borta",
+    score: `${fixture.home_score}–${fixture.away_score}`,
+    meta: venue ? `${day}, ${venue}` : day,
+  };
+}
+
+/** Enradigt val för färdiga matcher: "Chelsea 2–0 Tottenham · 2 maj, Stamford Bridge" */
+export function formatFinishedPickerLine(
+  fixture: Pick<
+    MatchFixture,
+    "home_name" | "away_name" | "home_score" | "away_score" | "kickoff" | "status"
+  > & { venue?: string | null }
+) {
+  const row = finishedPickerMeta(fixture);
+  if (!row) return null;
+  return `${row.home} ${row.score} ${row.away} · ${row.meta}`;
 }
 
 /**

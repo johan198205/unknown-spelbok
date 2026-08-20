@@ -123,6 +123,23 @@ export function cumulativeNetto(bets: Bet[]) {
   });
 }
 
+/** Ackumulerat netto per settlad speldag (YYYY-MM-DD), sorterat stigande. */
+export function cumulativeNettoByDay(bets: Bet[]) {
+  const byDay = new Map<string, number>();
+  for (const bet of bets) {
+    if (bet.result === "open") continue;
+    const day = bet.placed_at.slice(0, 10);
+    byDay.set(day, (byDay.get(day) || 0) + betNetto(bet));
+  }
+
+  const days = [...byDay.keys()].sort();
+  let running = 0;
+  return days.map((date) => {
+    running += byDay.get(date) || 0;
+    return { date, value: running };
+  });
+}
+
 export function initialOf(name: string) {
   return (name?.trim()?.[0] || "?").toUpperCase();
 }

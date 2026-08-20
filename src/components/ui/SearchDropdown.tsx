@@ -1,11 +1,27 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { cn } from "@/lib/utils";
+
+export type DropdownOption = {
+  value: string;
+  label: string;
+  /** Valfri bild-URL (t.ex. spelbolagslogo) — 18×18 i listan och valt värde */
+  iconUrl?: string | null;
+  /** Custom ikon (t.ex. LeagueLogo med fallback) — prioriteras framför iconUrl */
+  icon?: ReactNode;
+};
 
 export type DropdownGroup = {
   label: string;
-  options: { value: string; label: string }[];
+  options: DropdownOption[];
 };
 
 type SearchDropdownProps = {
@@ -13,13 +29,14 @@ type SearchDropdownProps = {
   value: string;
   placeholder?: string;
   searchPlaceholder?: string;
-  options?: { value: string; label: string }[];
+  options?: DropdownOption[];
   groups?: DropdownGroup[];
   onChange: (value: string) => void;
   /** Visar "+ Annat – skriv själv" och låter användaren skriva eget värde */
   allowCustom?: boolean;
   customPlaceholder?: string;
   boldValue?: boolean;
+  disabled?: boolean;
   className?: string;
 };
 
@@ -34,6 +51,7 @@ export function SearchDropdown({
   allowCustom = false,
   customPlaceholder = "Skriv själv …",
   boldValue = false,
+  disabled = false,
   className,
 }: SearchDropdownProps) {
   const id = useId();
@@ -65,8 +83,19 @@ export function SearchDropdown({
   }, [allGroups, q]);
 
   const empty = filtered.every((g) => g.options.length === 0);
-  const display = value || placeholder;
+  const selected = useMemo(() => {
+    for (const g of allGroups) {
+      const match = g.options.find((o) => o.value === value);
+      if (match) return match;
+    }
+    return value ? ({ value, label: value } as DropdownOption) : null;
+  }, [allGroups, value]);
+  const display = selected?.label || placeholder;
   const isPlaceholder = !value;
+
+  useEffect(() => {
+    if (disabled && open) setOpen(false);
+  }, [disabled, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -101,27 +130,49 @@ export function SearchDropdown({
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-        {label}
-      </div>
+      {label ? (
+        <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+          {label}
+        </div>
+      ) : null}
       <button
         type="button"
         id={id}
         aria-haspopup="listbox"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((v) => !v);
+        }}
         className={cn(
           "flex w-full items-center gap-2.5 rounded-[9px] border bg-bg-soft px-3 py-2.5 text-left text-[14px] transition",
           open ? "border-blue" : "border-line hover:border-line-hover",
           isPlaceholder ? "text-faint" : "text-text",
-          boldValue && !isPlaceholder && "font-bold"
+          boldValue && !isPlaceholder && "font-bold",
+          disabled && "cursor-not-allowed opacity-45 hover:border-line"
         )}
       >
+        {!isPlaceholder && (selected?.icon || selected?.iconUrl) ? (
+          selected.icon ? (
+            <span className="inline-flex shrink-0">{selected.icon}</span>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={selected.iconUrl!}
+              alt=""
+              width={18}
+              height={18}
+              loading="lazy"
+              className="h-[18px] w-[18px] shrink-0 object-contain"
+            />
+          )
+        ) : null}
         <span className="min-w-0 flex-1 truncate">{display}</span>
         <span className="text-[11px] font-normal text-faint">▾</span>
       </button>
 
-      {open ? (
+      {open && !disabled ? (
         <div
           role="listbox"
           className="absolute left-0 right-0 top-full z-30 mt-1.5 flex max-h-80 flex-col rounded-[11px] border border-line-strong bg-panel-elevated shadow-[0_18px_50px_rgba(0,0,0,.6)]"
@@ -136,8 +187,13 @@ export function SearchDropdown({
             />
           </div>
           <div className="overflow-auto p-1.5">
-            {filtered.map((g) => (
-              <div key={g.label || "all"}>
+            {filtered.map((g, groupIndex) => (
+              <div
+                key={g.label || `group-${groupIndex}`}
+                className={cn(
+                  groupIndex > 0 && "mt-1 border-t border-line-soft pt-1"
+                )}
+              >
                 {g.label ? (
                   <div className="px-2.5 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-faint">
                     {g.label}
@@ -153,11 +209,24 @@ export function SearchDropdown({
                       aria-selected={active}
                       onClick={() => pick(o.value)}
                       className={cn(
-                        "w-full rounded-[7px] px-2.5 py-2 text-left text-[13.5px] font-semibold transition hover:bg-[#1F293C]",
+                        "flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[13.5px] font-semibold transition hover:bg-[#1F293C]",
                         active ? "bg-[#1F293C] text-win" : "text-text"
                       )}
                     >
-                      {o.label}
+                      {o.icon ? (
+                        <span className="inline-flex shrink-0">{o.icon}</span>
+                      ) : o.iconUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={o.iconUrl}
+                          alt=""
+                          width={18}
+                          height={18}
+                          loading="lazy"
+                          className="h-[18px] w-[18px] shrink-0 object-contain"
+                        />
+                      ) : null}
+                      <span className="min-w-0 truncate">{o.label}</span>
                     </button>
                   );
                 })}

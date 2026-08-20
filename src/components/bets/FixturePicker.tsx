@@ -4,13 +4,16 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Calendar } from "lucide-react";
 import type { Fixture } from "@/lib/types";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
+import { LeagueLogo } from "@/components/bets/LeagueLogo";
+import { TeamLogo } from "@/components/bets/TeamPair";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
-  formatFinishedPickerLine,
+  finishedPickerMeta,
   isFinishedStatus,
   mergeLivePatch,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
+import { teamLogoUrl } from "@/lib/logos";
 import {
   addStockholmDays,
   fixtureDayChips,
@@ -120,21 +123,71 @@ export function DayStrip({
   );
 }
 
+function FinishedPickerOption({ fixture }: { fixture: PickerFixture }) {
+  const row = finishedPickerMeta(fixture);
+  if (!row) return null;
+  return (
+    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-[13px] leading-snug text-text">
+      <TeamLogo
+        src={teamLogoUrl(fixture.home_logo, fixture.home_team_id, fixture.sport)}
+        size={18}
+        initial={row.home}
+      />
+      <span className="min-w-0 truncate font-semibold">{row.home}</span>
+      <span className="shrink-0 font-mono-num font-semibold">{row.score}</span>
+      <TeamLogo
+        src={teamLogoUrl(fixture.away_logo, fixture.away_team_id, fixture.sport)}
+        size={18}
+        initial={row.away}
+      />
+      <span className="min-w-0 truncate font-semibold">{row.away}</span>
+      {row.meta ? (
+        <span className="min-w-0 truncate text-faint">· {row.meta}</span>
+      ) : null}
+    </span>
+  );
+}
+
 function PickerMatchOption({ fixture }: { fixture: PickerFixture }) {
-  const line = formatFinishedPickerLine(fixture);
-  if (line) {
-    return <span className="min-w-0 flex-1 text-left text-[13px] leading-snug text-text">{line}</span>;
+  if (finishedPickerMeta(fixture)) {
+    return <FinishedPickerOption fixture={fixture} />;
   }
   return <FixtureMatch fixture={fixture} />;
 }
 
+function LeagueHeader({
+  name,
+  logo,
+  leagueId,
+  sport,
+}: {
+  name: string;
+  logo: string | null;
+  leagueId?: number | null;
+  sport?: string | null;
+}) {
+  return (
+    <div className="sticky top-0 flex items-center gap-1.5 bg-bg-soft px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint">
+      <LeagueLogo src={logo} leagueId={leagueId} sport={sport} name={name} size={16} />
+      <span className="min-w-0 truncate">{name}</span>
+    </div>
+  );
+}
+
 export function FixturePicker({
   onSelect,
+  onMetaChange,
   active = true,
   ymd,
   onYmdChange,
 }: {
   onSelect: (fixture: PickerFixture) => void;
+  onMetaChange?: (meta: {
+    sport?: string | null;
+    league?: string | null;
+    leagueId?: number | null;
+    leagueLogo?: string | null;
+  }) => void;
   active?: boolean;
   ymd?: string;
   onYmdChange?: (ymd: string) => void;
@@ -194,12 +247,33 @@ export function FixturePicker({
   }, [selectedYmd, q, active]);
 
   const byLeague = useMemo(() => {
-    const map = new Map<string, PickerFixture[]>();
+    const map = new Map<
+      string,
+      {
+        logo: string | null;
+        leagueId: number | null;
+        sport: string | null;
+        rows: PickerFixture[];
+      }
+    >();
     for (const f of items) {
       const key = f.league_name || "Övrigt";
-      const list = map.get(key) ?? [];
-      list.push(f);
-      map.set(key, list);
+      const existing = map.get(key);
+      if (existing) {
+        existing.rows.push(f);
+        if (!existing.logo && f.league_logo) existing.logo = f.league_logo;
+        if (existing.leagueId == null && f.league_id != null) {
+          existing.leagueId = f.league_id;
+        }
+        if (!existing.sport && f.sport) existing.sport = f.sport;
+      } else {
+        map.set(key, {
+          logo: f.league_logo ?? null,
+          leagueId: f.league_id ?? null,
+          sport: f.sport ?? null,
+          rows: [f],
+        });
+      }
     }
     return [...map.entries()];
   }, [items]);
@@ -247,18 +321,29 @@ export function FixturePicker({
           <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
         ) : items.length ? (
           <>
-            {byLeague.map(([league, rows]) => (
+            {byLeague.map(([league, group]) => (
               <div key={league}>
-                <div className="sticky top-0 bg-bg-soft px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint">
-                  {league}
-                </div>
-                {rows.map((f) => {
+                <LeagueHeader
+                  name={league}
+                  logo={group.logo}
+                  leagueId={group.leagueId}
+                  sport={group.sport}
+                />
+                {group.rows.map((f) => {
                   const merged = mergeLivePatch(f, live[f.fixture_id]);
                   return (
                     <button
                       key={f.fixture_id}
                       type="button"
-                      onClick={() => onSelect(merged)}
+                      onClick={() => {
+                        onMetaChange?.({
+                          sport: merged.sport,
+                          league: merged.league_name,
+                          leagueId: merged.league_id,
+                          leagueLogo: merged.league_logo,
+                        });
+                        onSelect(merged);
+                      }}
                       className="flex w-full items-center border-b border-line-soft px-3 py-2 text-left text-sm last:border-0 hover:bg-panel-2"
                     >
                       <PickerMatchOption fixture={merged} />

@@ -1,17 +1,15 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NewSheetForm } from "@/components/bets/NewSheetForm";
-import { SpelbokLists } from "@/components/bets/SpelbokLists";
-import { AdSlot } from "@/components/ui/AdSlot";
-import { Badge, EmptyState, Kpi } from "@/components/ui/Panel";
+import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
+import { EmptyState } from "@/components/ui/Panel";
 import {
-  computeStats,
-  formatMoney,
-  formatNumber,
-  formatRoi,
-  nettoColor,
-} from "@/lib/utils";
+  fetchPublicSheetsLeaderboard,
+  fetchSheetStatsBundle,
+  type AffiliateTopRow,
+} from "@/lib/bet-stats";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
 
 function toPlain<T>(value: T): T {
@@ -29,6 +27,7 @@ export default async function SpelbokPage({
   searchParams: Promise<{ sheet?: string }>;
 }) {
   const user = await requireUser();
+  const profile = await getProfile();
   const { sheet: sheetParam } = await searchParams;
   const supabase = await createClient();
 
@@ -38,7 +37,12 @@ export default async function SpelbokPage({
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: true }),
-    supabase.from("bookmakers").select("*").eq("active", true).order("rank"),
+    supabase
+      .from("bookmakers")
+      .select("*")
+      .eq("active", true)
+      .order("rank")
+      .order("name"),
   ]);
 
   const sheetList = (sheets || []) as Sheet[];
@@ -50,7 +54,7 @@ export default async function SpelbokPage({
     const query = await supabase
       .from("bets")
       .select(
-        "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport)"
+        "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo)"
       )
       .eq("sheet_id", activeSheet.id)
       .order("placed_at", { ascending: false });
@@ -74,8 +78,55 @@ export default async function SpelbokPage({
     bookmakers: asOne(bet.bookmakers),
     fixtures: asOne(bet.fixtures),
   }));
-  const stats = computeStats(bets);
-  const bankroll = Number(activeSheet?.start_bankroll || 0) + stats.netto;
+
+  const username = profile?.username || "användare";
+  const unitSize =
+    profile?.unit_size && profile.unit_size > 0 ? Number(profile.unit_size) : 100;
+
+  const affiliates: AffiliateTopRow[] = ((bookmakers || []) as Bookmaker[])
+    .slice()
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 3)
+    .map((b) => ({
+      id: b.id,
+      name: b.name,
+      slug: b.slug,
+      rank: b.rank,
+      rating: b.rating,
+      bonus_value: b.bonus_value,
+      bonus: b.bonus,
+      usp: b.usp,
+      terms: b.terms,
+    }));
+
+  const [statsBundle, publicSheets] = await Promise.all([
+    activeSheet
+      ? fetchSheetStatsBundle(supabase, activeSheet.id, "all", unitSize)
+      : Promise.resolve({
+          stats: {
+            antal_spel: 0,
+            vinster: 0,
+            forluster: 0,
+            void: 0,
+            oppna_spel: 0,
+            oppen_risk: 0,
+            oppen_potentiell_vinst: 0,
+            insats: 0,
+            vunnet: 0,
+            forlorat: 0,
+            netto: 0,
+            roi: 0,
+            unit_size: unitSize,
+            unitnetto: 0,
+            vinstprocent: 0,
+            medelodds: 0,
+            medelinsats: 0,
+            medelvinst: 0,
+          },
+          leagues: [],
+        }),
+    fetchPublicSheetsLeaderboard(supabase, 5, user.id),
+  ]);
 
   return (
     <div className="animate-sbfade space-y-5">
@@ -117,58 +168,25 @@ export default async function SpelbokPage({
           </div>
 
           {activeSheet ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-2xl font-semibold">
-                  {activeSheet.name}
-                </h2>
-                <Badge tone={activeSheet.is_public ? "cyan" : "muted"}>
-                  {activeSheet.is_public ? "Publik" : "Privat"}
-                </Badge>
-              </div>
-
-              <div className="hidden gap-3 sm:grid-cols-2 lg:grid lg:grid-cols-4 xl:grid-cols-7">
-                <Kpi
-                  label="Netto"
-                  value={formatMoney(stats.netto)}
-                  color={nettoColor(stats.netto)}
-                />
-                <Kpi
-                  label="ROI"
-                  value={formatRoi(stats.roi)}
-                  color={nettoColor(stats.roi)}
-                />
-                <Kpi
-                  label="Hitrate"
-                  value={`${formatNumber(stats.hitrate, 0)}%`}
-                />
-                <Kpi label="Spel" value={String(stats.bets)} />
-                <Kpi label="Öppna" value={String(stats.open)} />
-                <Kpi label="Snittodds" value={formatNumber(stats.avgOdds, 2)} />
-                <Kpi
-                  label="Bankroll"
-                  value={formatMoney(bankroll).replace("+", "")}
-                />
-              </div>
-
-              <AdSlot
-                placement="sheet"
-                className="hidden h-[90px] lg:flex"
-                label="ANNONSPLATS 970×90"
-              />
-              <AdSlot
-                placement="sheet"
-                className="h-[100px] lg:hidden"
-                label="ANNONSPLATS 320×100"
-              />
-
-              <SpelbokLists
+            <Suspense
+              fallback={
+                <div className="py-10 text-center text-muted">Laddar…</div>
+              }
+            >
+              <SpelbokSheetView
+                sheet={toPlain(activeSheet)}
                 bets={bets}
                 sheets={toPlain(sheetList)}
                 bookmakers={toPlain((bookmakers || []) as Bookmaker[])}
-                sheetId={activeSheet.id}
+                username={username}
+                initialStats={toPlain(statsBundle.stats)}
+                initialLeagues={toPlain(statsBundle.leagues)}
+                affiliates={toPlain(affiliates)}
+                publicSheets={toPlain(publicSheets)}
+                unitSize={unitSize}
+                isAuthenticated
               />
-            </>
+            </Suspense>
           ) : null}
         </>
       )}
