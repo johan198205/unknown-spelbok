@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getProfile, getSessionUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
+import { AdSlot } from "@/components/ui/AdSlot";
 import {
   fetchPublicSheetsLeaderboard,
   fetchSheetStatsBundle,
@@ -142,6 +143,20 @@ export default async function PublicSheetPage({
           viewerSheets={viewerSheets}
           unitSize={unitSize}
           isAuthenticated={!!user}
+          ads={
+            <>
+              <AdSlot
+                placement="sheet"
+                className="hidden h-[90px] lg:flex"
+                label="ANNONSPLATS 970×90"
+              />
+              <AdSlot
+                placement="sheet"
+                className="h-[100px] lg:hidden"
+                label="ANNONSPLATS 320×100"
+              />
+            </>
+          }
         />
       </Suspense>
     </div>

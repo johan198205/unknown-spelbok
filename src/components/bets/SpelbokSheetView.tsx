@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AccumulatedNettoChart } from "@/components/bets/AccumulatedNettoChart";
@@ -14,7 +14,6 @@ import {
 } from "@/components/bets/ShareSheetControls";
 import { SheetDescriptionEdit } from "@/components/bets/SheetDescriptionEdit";
 import { MobileBetCards } from "@/components/pwa/MobileBetCards";
-import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Input";
 import { Kpi } from "@/components/ui/Panel";
@@ -65,6 +64,7 @@ export function SpelbokSheetView({
   viewerSheets,
   unitSize = 100,
   isAuthenticated = true,
+  ads,
 }: {
   sheet: Sheet;
   bets: Bet[];
@@ -81,6 +81,8 @@ export function SpelbokSheetView({
   viewerSheets?: Sheet[];
   unitSize?: number;
   isAuthenticated?: boolean;
+  /** Server-rendered AdSlots passed as children of the client boundary */
+  ads?: ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -119,16 +121,7 @@ export function SpelbokSheetView({
   return (
     <div className="space-y-5">
       {ryggaModal}
-      <AdSlot
-        placement="sheet"
-        className="hidden h-[90px] lg:flex"
-        label="ANNONSPLATS 970×90"
-      />
-      <AdSlot
-        placement="sheet"
-        className="h-[100px] lg:hidden"
-        label="ANNONSPLATS 320×100"
-      />
+      {ads}
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">

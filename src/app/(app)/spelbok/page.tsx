@@ -4,6 +4,7 @@ import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NewSheetForm } from "@/components/bets/NewSheetForm";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
+import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState } from "@/components/ui/Panel";
 import {
   fetchPublicSheetsLeaderboard,
@@ -185,6 +186,20 @@ export default async function SpelbokPage({
                 publicSheets={toPlain(publicSheets)}
                 unitSize={unitSize}
                 isAuthenticated
+                ads={
+                  <>
+                    <AdSlot
+                      placement="sheet"
+                      className="hidden h-[90px] lg:flex"
+                      label="ANNONSPLATS 970×90"
+                    />
+                    <AdSlot
+                      placement="sheet"
+                      className="h-[100px] lg:hidden"
+                      label="ANNONSPLATS 320×100"
+                    />
+                  </>
+                }
               />
             </Suspense>
           ) : null}
