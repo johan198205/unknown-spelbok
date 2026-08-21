@@ -6,6 +6,7 @@ import type { Fixture } from "@/lib/types";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { SearchDropdown, type DropdownOption } from "@/components/ui/SearchDropdown";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   finishedPickerMeta,
@@ -28,8 +29,8 @@ type Coverage = { from: string; to: string };
 export type PickerFixture = Fixture & { venue?: string | null };
 
 const PICKER_SPORTS = ["Fotboll", "Ishockey"] as const;
-
-type PickerStep = "sport" | "league" | "match";
+/** Sentinel — liga är valfritt filter, inte ett obligatoriskt steg */
+const ALL_LEAGUES = "__all__";
 
 type LeagueGroup = {
   key: string;
@@ -169,55 +170,6 @@ function PickerMatchOption({ fixture }: { fixture: PickerFixture }) {
   return <FixtureMatch fixture={fixture} />;
 }
 
-function StepCrumb({
-  sport,
-  league,
-  step,
-  onSport,
-  onLeague,
-}: {
-  sport: string | null;
-  league: string | null;
-  step: PickerStep;
-  onSport: () => void;
-  onLeague: () => void;
-}) {
-  if (step === "sport") return null;
-  return (
-    <div className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] text-muted">
-      <button
-        type="button"
-        onClick={onSport}
-        className="font-semibold text-blue hover:text-[#7FB0FF]"
-      >
-        {sport}
-      </button>
-      {league || step === "match" ? (
-        <>
-          <span className="text-faint">›</span>
-          {step === "match" && league ? (
-            <button
-              type="button"
-              onClick={onLeague}
-              className="font-semibold text-blue hover:text-[#7FB0FF]"
-            >
-              {league}
-            </button>
-          ) : (
-            <span className="text-faint">Välj liga</span>
-          )}
-        </>
-      ) : null}
-      {step === "match" ? (
-        <>
-          <span className="text-faint">›</span>
-          <span className="text-text">Match</span>
-        </>
-      ) : null}
-    </div>
-  );
-}
-
 export function FixturePicker({
   onSelect,
   onMetaChange,
@@ -240,9 +192,8 @@ export function FixturePicker({
   const [internalYmd, setInternalYmd] = useState(stockholmYmd());
   const selectedYmd = ymd ?? internalYmd;
   const setSelectedYmd = onYmdChange ?? setInternalYmd;
-  const [step, setStep] = useState<PickerStep>("sport");
   const [sport, setSport] = useState<string | null>(null);
-  const [leagueKey, setLeagueKey] = useState<string | null>(null);
+  const [leagueKey, setLeagueKey] = useState(ALL_LEAGUES);
   const [q, setQ] = useState("");
   const [items, setItems] = useState<PickerFixture[]>([]);
   const [loading, setLoading] = useState(false);
@@ -251,9 +202,8 @@ export function FixturePicker({
 
   function pickSport(next: string) {
     setSport(next);
-    setLeagueKey(null);
+    setLeagueKey(ALL_LEAGUES);
     setQ("");
-    setStep("league");
     onMetaChange?.({
       sport: next,
       league: null,
@@ -262,37 +212,20 @@ export function FixturePicker({
     });
   }
 
-  function goSport() {
-    setStep("sport");
-    setSport(null);
-    setLeagueKey(null);
+  function changeYmd(next: string) {
+    setSelectedYmd(next);
+    setLeagueKey(ALL_LEAGUES);
     setQ("");
-    setItems([]);
-    onMetaChange?.({
-      sport: null,
-      league: null,
-      leagueId: null,
-      leagueLogo: null,
-    });
   }
 
-  function goLeague() {
-    setStep("league");
-    setLeagueKey(null);
-    setQ("");
+  function clearLeagueFilter() {
+    setLeagueKey(ALL_LEAGUES);
     onMetaChange?.({
       sport,
       league: null,
       leagueId: null,
       leagueLogo: null,
     });
-  }
-
-  function changeYmd(next: string) {
-    setSelectedYmd(next);
-    setLeagueKey(null);
-    setQ("");
-    if (sport) setStep("league");
   }
 
   useEffect(() => {
@@ -372,47 +305,85 @@ export function FixturePicker({
     );
   }, [items]);
 
+  // Om vald liga försvinner (nytt datum) → tillbaka till alla
+  useEffect(() => {
+    if (leagueKey === ALL_LEAGUES) return;
+    if (!byLeague.some((g) => g.key === leagueKey)) {
+      setLeagueKey(ALL_LEAGUES);
+    }
+  }, [byLeague, leagueKey]);
+
   const selectedLeague = useMemo(
     () => byLeague.find((g) => g.key === leagueKey) ?? null,
     [byLeague, leagueKey]
   );
 
-  const leagueRows = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle || step !== "league") return byLeague;
-    return byLeague.filter((g) => g.name.toLowerCase().includes(needle));
-  }, [byLeague, q, step]);
+  const leagueOptions = useMemo((): DropdownOption[] => {
+    return [
+      { value: ALL_LEAGUES, label: "Alla ligor" },
+      ...byLeague.map((g) => ({
+        value: g.key,
+        label: g.name,
+        icon: (
+          <LeagueLogo
+            src={g.logo}
+            leagueId={g.leagueId}
+            sport={g.sport || sport}
+            name={g.name}
+            size={16}
+          />
+        ),
+      })),
+    ];
+  }, [byLeague, sport]);
 
-  const matchRows = useMemo(() => {
-    if (!selectedLeague) return [];
+  const visibleGroups = useMemo((): LeagueGroup[] => {
+    if (selectedLeague) return [selectedLeague];
+    return byLeague;
+  }, [byLeague, selectedLeague]);
+
+  const matchGroups = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return selectedLeague.rows;
-    return selectedLeague.rows.filter(
-      (f) =>
-        (f.home_name || "").toLowerCase().includes(needle) ||
-        (f.away_name || "").toLowerCase().includes(needle)
-    );
-  }, [selectedLeague, q]);
+    if (!needle) return visibleGroups;
+    return visibleGroups
+      .map((g) => ({
+        ...g,
+        rows: g.rows.filter(
+          (f) =>
+            (f.home_name || "").toLowerCase().includes(needle) ||
+            (f.away_name || "").toLowerCase().includes(needle) ||
+            (f.league_name || "").toLowerCase().includes(needle)
+        ),
+      }))
+      .filter((g) => g.rows.length > 0);
+  }, [visibleGroups, q]);
+
+  const flatMatchRows = useMemo(
+    () => matchGroups.flatMap((g) => g.rows),
+    [matchGroups]
+  );
 
   const emptyMessage = planLimited && coverage
     ? `API-planen visar bara matcher ${formatRange(coverage.from, coverage.to)}. Välj ett av de datumen, eller ange matchen manuellt.`
-    : step === "league"
-      ? q.trim()
-        ? "Ingen liga matchar. Prova ett annat namn."
-        : "Inga ligor med matcher den här dagen. Välj ett annat datum."
-      : q.trim()
+    : q.trim()
+      ? selectedLeague
         ? "Inget matchar i den här ligan. Prova ett annat namn."
-        : "Inga matcher i den här ligan den här dagen.";
+        : "Ingen match matchar. Prova ett annat namn."
+      : selectedLeague
+        ? "Inga matcher i den här ligan den här dagen."
+        : "Inga matcher den här dagen. Välj ett annat datum.";
 
   const live = useLiveFixtures(
-    matchRows.map((f) => f.fixture_id),
+    flatMatchRows.map((f) => f.fixture_id),
     {
-      hasLive: matchRows.some(
+      hasLive: flatMatchRows.some(
         (f) =>
           !isFinishedStatus(f.status) && needsLiveRefresh(f.status, f.kickoff)
       ),
     }
   );
+
+  const showGrouped = !selectedLeague && matchGroups.length > 1;
 
   return (
     <div>
@@ -427,147 +398,125 @@ export function FixturePicker({
         </p>
       ) : null}
 
-      <StepCrumb
-        sport={sport}
-        league={selectedLeague?.name ?? null}
-        step={step}
-        onSport={goSport}
-        onLeague={goLeague}
-      />
-
-      {step === "sport" ? (
-        <>
-          <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-            Sport
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {PICKER_SPORTS.map((label) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => pickSport(label)}
-                className="rounded-[10px] border border-line bg-bg-soft px-3.5 py-2.5 text-[14px] font-semibold text-text hover:border-blue hover:bg-panel-2"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : null}
-
-      {step === "league" ? (
-        <>
-          <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-            Liga
-          </div>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök liga…"
-            className="mb-2 w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
-          />
-          <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
-            {loading && !byLeague.length ? (
-              <div className="px-3 py-3 text-sm text-faint">Hämtar ligor…</div>
-            ) : leagueRows.length ? (
-              <>
-                {leagueRows.map((group) => (
-                  <button
-                    key={group.key}
-                    type="button"
-                    onClick={() => {
-                      setLeagueKey(group.key);
-                      setQ("");
-                      setStep("match");
-                      onMetaChange?.({
-                        sport: group.sport || sport,
-                        league: group.name,
-                        leagueId: group.leagueId,
-                        leagueLogo: group.logo,
-                      });
-                    }}
-                    className="flex w-full items-center gap-2 border-b border-line-soft px-3 py-2.5 text-left text-sm last:border-0 hover:bg-panel-2"
-                  >
-                    <LeagueLogo
-                      src={group.logo}
-                      leagueId={group.leagueId}
-                      sport={group.sport || sport}
-                      name={group.name}
-                      size={18}
-                    />
-                    <span className="min-w-0 flex-1 truncate font-semibold text-text">
-                      {group.name}
-                    </span>
-                    <span className="shrink-0 font-mono-num text-[12px] text-faint">
-                      {group.rows.length}
-                    </span>
-                  </button>
-                ))}
-                {filling ? (
-                  <div className="px-3 py-2 text-sm text-faint">
-                    Hämtar fler matcher…
-                  </div>
-                ) : null}
-              </>
-            ) : filling ? (
-              <div className="px-3 py-3 text-sm text-faint">Hämtar ligor…</div>
-            ) : (
-              <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
+      <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+        Sport
+      </div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {PICKER_SPORTS.map((label) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => pickSport(label)}
+            className={cn(
+              "rounded-[10px] border px-3.5 py-2.5 text-[14px] font-semibold",
+              sport === label
+                ? "border-win bg-win/10 text-win"
+                : "border-line bg-bg-soft text-text hover:border-blue hover:bg-panel-2"
             )}
-          </div>
-        </>
-      ) : null}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {step === "match" ? (
-        <>
-          <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-            Match
-          </div>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök lag…"
-            className="mb-2 w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
+      {sport ? (
+        <div className="space-y-3">
+          <SearchDropdown
+            label="Liga"
+            value={leagueKey}
+            placeholder="Filtrera liga…"
+            searchPlaceholder="Sök liga…"
+            options={leagueOptions}
+            disabled={loading && !byLeague.length}
+            onChange={(next) => {
+              if (next === ALL_LEAGUES) {
+                clearLeagueFilter();
+                return;
+              }
+              const group = byLeague.find((g) => g.key === next);
+              setLeagueKey(next);
+              if (group) {
+                onMetaChange?.({
+                  sport: group.sport || sport,
+                  league: group.name,
+                  leagueId: group.leagueId,
+                  leagueLogo: group.logo,
+                });
+              }
+            }}
           />
-          <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
-            {loading && !matchRows.length ? (
-              <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
-            ) : matchRows.length ? (
-              <>
-                {matchRows.map((f) => {
-                  const merged = mergeLivePatch(f, live[f.fixture_id]);
-                  return (
-                    <button
-                      key={f.fixture_id}
-                      type="button"
-                      onClick={() => {
-                        onMetaChange?.({
-                          sport: merged.sport,
-                          league: merged.league_name,
-                          leagueId: merged.league_id,
-                          leagueLogo: merged.league_logo,
-                        });
-                        onSelect(merged);
-                      }}
-                      className="flex w-full items-center border-b border-line-soft px-3 py-2 text-left text-sm last:border-0 hover:bg-panel-2"
-                    >
-                      <PickerMatchOption fixture={merged} />
-                    </button>
-                  );
-                })}
-                {filling ? (
-                  <div className="px-3 py-2 text-sm text-faint">
-                    Hämtar fler matcher…
-                  </div>
-                ) : null}
-              </>
-            ) : filling ? (
-              <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
-            ) : (
-              <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
-            )}
+
+          <div>
+            <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+              Match
+            </div>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Sök lag…"
+              className="mb-2 w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
+            />
+            <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
+              {loading && !flatMatchRows.length ? (
+                <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
+              ) : flatMatchRows.length ? (
+                <>
+                  {matchGroups.map((group) => (
+                    <div key={group.key}>
+                      {showGrouped ? (
+                        <div className="sticky top-0 z-[1] flex items-center gap-2 border-b border-line-soft bg-panel-2 px-3 py-1.5">
+                          <LeagueLogo
+                            src={group.logo}
+                            leagueId={group.leagueId}
+                            sport={group.sport || sport}
+                            name={group.name}
+                            size={14}
+                          />
+                          <span className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+                            {group.name}
+                          </span>
+                          <span className="shrink-0 font-mono-num text-[11px] text-faint">
+                            {group.rows.length}
+                          </span>
+                        </div>
+                      ) : null}
+                      {group.rows.map((f) => {
+                        const merged = mergeLivePatch(f, live[f.fixture_id]);
+                        return (
+                          <button
+                            key={f.fixture_id}
+                            type="button"
+                            onClick={() => {
+                              onMetaChange?.({
+                                sport: merged.sport,
+                                league: merged.league_name,
+                                leagueId: merged.league_id,
+                                leagueLogo: merged.league_logo,
+                              });
+                              onSelect(merged);
+                            }}
+                            className="flex w-full items-center border-b border-line-soft px-3 py-2 text-left text-sm last:border-0 hover:bg-panel-2"
+                          >
+                            <PickerMatchOption fixture={merged} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  {filling ? (
+                    <div className="px-3 py-2 text-sm text-faint">
+                      Hämtar fler matcher…
+                    </div>
+                  ) : null}
+                </>
+              ) : filling ? (
+                <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
+              ) : (
+                <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
+              )}
+            </div>
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );

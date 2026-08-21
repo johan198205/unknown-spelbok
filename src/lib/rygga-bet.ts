@@ -78,7 +78,13 @@ export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
     .eq("id", input.targetSheetId)
     .maybeSingle();
 
-  if (sheetError || !targetSheet || targetSheet.user_id !== user.id) {
+  if (sheetError) {
+    return {
+      ok: false,
+      error: sheetError.message || "Kunde inte läsa målspelboken.",
+    };
+  }
+  if (!targetSheet || targetSheet.user_id !== user.id) {
     return {
       ok: false,
       error: "Målspelboken hittades inte.",
