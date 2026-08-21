@@ -27,6 +27,19 @@ type Coverage = { from: string; to: string };
 
 export type PickerFixture = Fixture & { venue?: string | null };
 
+const PICKER_SPORTS = ["Fotboll", "Ishockey"] as const;
+
+type PickerStep = "sport" | "league" | "match";
+
+type LeagueGroup = {
+  key: string;
+  name: string;
+  logo: string | null;
+  leagueId: number | null;
+  sport: string | null;
+  rows: PickerFixture[];
+};
+
 function formatRange(from: string, to: string) {
   const fmt = (ymd: string) => {
     const [year, month, day] = ymd.split("-").map(Number);
@@ -134,13 +147,14 @@ function FinishedPickerOption({ fixture }: { fixture: PickerFixture }) {
         initial={row.home}
       />
       <span className="min-w-0 truncate font-semibold">{row.home}</span>
-      <span className="shrink-0 font-mono-num font-semibold">{row.score}</span>
+      <span className="shrink-0 text-faint">–</span>
       <TeamLogo
         src={teamLogoUrl(fixture.away_logo, fixture.away_team_id, fixture.sport)}
         size={18}
         initial={row.away}
       />
       <span className="min-w-0 truncate font-semibold">{row.away}</span>
+      <span className="shrink-0 font-mono-num font-semibold">{row.score}</span>
       {row.meta ? (
         <span className="min-w-0 truncate text-faint">· {row.meta}</span>
       ) : null}
@@ -155,21 +169,51 @@ function PickerMatchOption({ fixture }: { fixture: PickerFixture }) {
   return <FixtureMatch fixture={fixture} />;
 }
 
-function LeagueHeader({
-  name,
-  logo,
-  leagueId,
+function StepCrumb({
   sport,
+  league,
+  step,
+  onSport,
+  onLeague,
 }: {
-  name: string;
-  logo: string | null;
-  leagueId?: number | null;
-  sport?: string | null;
+  sport: string | null;
+  league: string | null;
+  step: PickerStep;
+  onSport: () => void;
+  onLeague: () => void;
 }) {
+  if (step === "sport") return null;
   return (
-    <div className="sticky top-0 flex items-center gap-1.5 bg-bg-soft px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-faint">
-      <LeagueLogo src={logo} leagueId={leagueId} sport={sport} name={name} size={16} />
-      <span className="min-w-0 truncate">{name}</span>
+    <div className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] text-muted">
+      <button
+        type="button"
+        onClick={onSport}
+        className="font-semibold text-blue hover:text-[#7FB0FF]"
+      >
+        {sport}
+      </button>
+      {league || step === "match" ? (
+        <>
+          <span className="text-faint">›</span>
+          {step === "match" && league ? (
+            <button
+              type="button"
+              onClick={onLeague}
+              className="font-semibold text-blue hover:text-[#7FB0FF]"
+            >
+              {league}
+            </button>
+          ) : (
+            <span className="text-faint">Välj liga</span>
+          )}
+        </>
+      ) : null}
+      {step === "match" ? (
+        <>
+          <span className="text-faint">›</span>
+          <span className="text-text">Match</span>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -196,14 +240,69 @@ export function FixturePicker({
   const [internalYmd, setInternalYmd] = useState(stockholmYmd());
   const selectedYmd = ymd ?? internalYmd;
   const setSelectedYmd = onYmdChange ?? setInternalYmd;
+  const [step, setStep] = useState<PickerStep>("sport");
+  const [sport, setSport] = useState<string | null>(null);
+  const [leagueKey, setLeagueKey] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [items, setItems] = useState<PickerFixture[]>([]);
   const [loading, setLoading] = useState(false);
   const [filling, setFilling] = useState(false);
   const [planLimited, setPlanLimited] = useState(false);
 
+  function pickSport(next: string) {
+    setSport(next);
+    setLeagueKey(null);
+    setQ("");
+    setStep("league");
+    onMetaChange?.({
+      sport: next,
+      league: null,
+      leagueId: null,
+      leagueLogo: null,
+    });
+  }
+
+  function goSport() {
+    setStep("sport");
+    setSport(null);
+    setLeagueKey(null);
+    setQ("");
+    setItems([]);
+    onMetaChange?.({
+      sport: null,
+      league: null,
+      leagueId: null,
+      leagueLogo: null,
+    });
+  }
+
+  function goLeague() {
+    setStep("league");
+    setLeagueKey(null);
+    setQ("");
+    onMetaChange?.({
+      sport,
+      league: null,
+      leagueId: null,
+      leagueLogo: null,
+    });
+  }
+
+  function changeYmd(next: string) {
+    setSelectedYmd(next);
+    setLeagueKey(null);
+    setQ("");
+    if (sport) setStep("league");
+  }
+
   useEffect(() => {
-    if (!active) return;
+    if (!active || !sport) {
+      setItems([]);
+      setLoading(false);
+      setFilling(false);
+      return;
+    }
+    const sportParam = sport;
     let cancelled = false;
     let poll: ReturnType<typeof setTimeout> | undefined;
 
@@ -212,9 +311,9 @@ export function FixturePicker({
       try {
         const params = new URLSearchParams({
           date: selectedYmd,
+          sport: sportParam,
           limit: "500",
         });
-        if (q.trim()) params.set("q", q.trim());
         const res = await fetch(`/api/fixtures?${params}`, { cache: "no-store" });
         const json = await res.json();
         if (cancelled) return;
@@ -236,28 +335,19 @@ export function FixturePicker({
       }
     }
 
-    const debounce = setTimeout(() => {
-      void load(true);
-    }, 180);
+    void load(true);
     return () => {
       cancelled = true;
-      clearTimeout(debounce);
       if (poll) clearTimeout(poll);
     };
-  }, [selectedYmd, q, active]);
+  }, [selectedYmd, sport, active]);
 
-  const byLeague = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        logo: string | null;
-        leagueId: number | null;
-        sport: string | null;
-        rows: PickerFixture[];
-      }
-    >();
+  const byLeague = useMemo((): LeagueGroup[] => {
+    const map = new Map<string, LeagueGroup>();
     for (const f of items) {
-      const key = f.league_name || "Övrigt";
+      const name = f.league_name || "Övrigt";
+      const key =
+        f.league_id != null ? `id:${f.league_id}` : `name:${name.toLowerCase()}`;
       const existing = map.get(key);
       if (existing) {
         existing.rows.push(f);
@@ -268,6 +358,8 @@ export function FixturePicker({
         if (!existing.sport && f.sport) existing.sport = f.sport;
       } else {
         map.set(key, {
+          key,
+          name,
           logo: f.league_logo ?? null,
           leagueId: f.league_id ?? null,
           sport: f.sport ?? null,
@@ -275,19 +367,47 @@ export function FixturePicker({
         });
       }
     }
-    return [...map.entries()];
+    return [...map.values()].sort((a, b) =>
+      a.name.localeCompare(b.name, "sv")
+    );
   }, [items]);
+
+  const selectedLeague = useMemo(
+    () => byLeague.find((g) => g.key === leagueKey) ?? null,
+    [byLeague, leagueKey]
+  );
+
+  const leagueRows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle || step !== "league") return byLeague;
+    return byLeague.filter((g) => g.name.toLowerCase().includes(needle));
+  }, [byLeague, q, step]);
+
+  const matchRows = useMemo(() => {
+    if (!selectedLeague) return [];
+    const needle = q.trim().toLowerCase();
+    if (!needle) return selectedLeague.rows;
+    return selectedLeague.rows.filter(
+      (f) =>
+        (f.home_name || "").toLowerCase().includes(needle) ||
+        (f.away_name || "").toLowerCase().includes(needle)
+    );
+  }, [selectedLeague, q]);
 
   const emptyMessage = planLimited && coverage
     ? `API-planen visar bara matcher ${formatRange(coverage.from, coverage.to)}. Välj ett av de datumen, eller ange matchen manuellt.`
-    : q.trim()
-      ? "Inget matchar den här dagen. Prova ett annat namn."
-      : "Inga matcher den här dagen. Välj ett annat datum.";
+    : step === "league"
+      ? q.trim()
+        ? "Ingen liga matchar. Prova ett annat namn."
+        : "Inga ligor med matcher den här dagen. Välj ett annat datum."
+      : q.trim()
+        ? "Inget matchar i den här ligan. Prova ett annat namn."
+        : "Inga matcher i den här ligan den här dagen.";
 
   const live = useLiveFixtures(
-    items.map((f) => f.fixture_id),
+    matchRows.map((f) => f.fixture_id),
     {
-      hasLive: items.some(
+      hasLive: matchRows.some(
         (f) =>
           !isFinishedStatus(f.status) && needsLiveRefresh(f.status, f.kickoff)
       ),
@@ -299,7 +419,7 @@ export function FixturePicker({
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
         Datum
       </div>
-      <DayStrip ymd={selectedYmd} onChange={setSelectedYmd} />
+      <DayStrip ymd={selectedYmd} onChange={changeYmd} />
       {coverage ? (
         <p className="mb-3 text-[12px] leading-snug text-faint">
           Matchlistan täcker {formatRange(coverage.from, coverage.to)} med
@@ -307,29 +427,114 @@ export function FixturePicker({
         </p>
       ) : null}
 
-      <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-        Match
-      </div>
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Sök lag eller liga…"
-        className="mb-2 w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
+      <StepCrumb
+        sport={sport}
+        league={selectedLeague?.name ?? null}
+        step={step}
+        onSport={goSport}
+        onLeague={goLeague}
       />
-      <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
-        {loading && !items.length ? (
-          <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
-        ) : items.length ? (
-          <>
-            {byLeague.map(([league, group]) => (
-              <div key={league}>
-                <LeagueHeader
-                  name={league}
-                  logo={group.logo}
-                  leagueId={group.leagueId}
-                  sport={group.sport}
-                />
-                {group.rows.map((f) => {
+
+      {step === "sport" ? (
+        <>
+          <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+            Sport
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {PICKER_SPORTS.map((label) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => pickSport(label)}
+                className="rounded-[10px] border border-line bg-bg-soft px-3.5 py-2.5 text-[14px] font-semibold text-text hover:border-blue hover:bg-panel-2"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {step === "league" ? (
+        <>
+          <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+            Liga
+          </div>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Sök liga…"
+            className="mb-2 w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
+          />
+          <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
+            {loading && !byLeague.length ? (
+              <div className="px-3 py-3 text-sm text-faint">Hämtar ligor…</div>
+            ) : leagueRows.length ? (
+              <>
+                {leagueRows.map((group) => (
+                  <button
+                    key={group.key}
+                    type="button"
+                    onClick={() => {
+                      setLeagueKey(group.key);
+                      setQ("");
+                      setStep("match");
+                      onMetaChange?.({
+                        sport: group.sport || sport,
+                        league: group.name,
+                        leagueId: group.leagueId,
+                        leagueLogo: group.logo,
+                      });
+                    }}
+                    className="flex w-full items-center gap-2 border-b border-line-soft px-3 py-2.5 text-left text-sm last:border-0 hover:bg-panel-2"
+                  >
+                    <LeagueLogo
+                      src={group.logo}
+                      leagueId={group.leagueId}
+                      sport={group.sport || sport}
+                      name={group.name}
+                      size={18}
+                    />
+                    <span className="min-w-0 flex-1 truncate font-semibold text-text">
+                      {group.name}
+                    </span>
+                    <span className="shrink-0 font-mono-num text-[12px] text-faint">
+                      {group.rows.length}
+                    </span>
+                  </button>
+                ))}
+                {filling ? (
+                  <div className="px-3 py-2 text-sm text-faint">
+                    Hämtar fler matcher…
+                  </div>
+                ) : null}
+              </>
+            ) : filling ? (
+              <div className="px-3 py-3 text-sm text-faint">Hämtar ligor…</div>
+            ) : (
+              <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
+            )}
+          </div>
+        </>
+      ) : null}
+
+      {step === "match" ? (
+        <>
+          <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+            Match
+          </div>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Sök lag…"
+            className="mb-2 w-full rounded-[10px] border border-line bg-bg-soft px-3 py-3 text-[15px] text-text outline-none placeholder:text-faint focus:border-blue"
+          />
+          <div className="max-h-72 overflow-auto rounded-[11px] border border-line bg-bg-soft">
+            {loading && !matchRows.length ? (
+              <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
+            ) : matchRows.length ? (
+              <>
+                {matchRows.map((f) => {
                   const merged = mergeLivePatch(f, live[f.fixture_id]);
                   return (
                     <button
@@ -350,20 +555,20 @@ export function FixturePicker({
                     </button>
                   );
                 })}
-              </div>
-            ))}
-            {filling ? (
-              <div className="px-3 py-2 text-sm text-faint">
-                Hämtar fler matcher…
-              </div>
-            ) : null}
-          </>
-        ) : filling ? (
-          <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
-        ) : (
-          <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
-        )}
-      </div>
+                {filling ? (
+                  <div className="px-3 py-2 text-sm text-faint">
+                    Hämtar fler matcher…
+                  </div>
+                ) : null}
+              </>
+            ) : filling ? (
+              <div className="px-3 py-3 text-sm text-faint">Hämtar matcher…</div>
+            ) : (
+              <div className="px-3 py-3 text-sm text-faint">{emptyMessage}</div>
+            )}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

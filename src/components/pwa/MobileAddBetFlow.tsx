@@ -16,6 +16,7 @@ import {
   placedAtForPastBet,
   settlementForFinishedPick,
 } from "@/lib/bet-settlement";
+import { isFinishedStatus } from "@/lib/live-fixture";
 import { stockholmYmd } from "@/lib/stockholm";
 
 export function MobileAddBetFlow({
@@ -274,6 +275,13 @@ export function MobileAddBetFlow({
                     awayTeamId={chosenFixture.away_team_id}
                     sport={chosenFixture.sport}
                     size={18}
+                    homeScore={chosenFixture.home_score}
+                    awayScore={chosenFixture.away_score}
+                    showScore={
+                      isFinishedStatus(chosenFixture.status) &&
+                      chosenFixture.home_score != null &&
+                      chosenFixture.away_score != null
+                    }
                   />
                 ) : (
                   <ManualMatchLabel match={match} size={18} stacked />

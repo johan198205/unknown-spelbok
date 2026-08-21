@@ -60,6 +60,18 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/installningar");
   const isAdmin = path.startsWith("/admin");
 
+  // Inloggade ska landa på Hem, inte marknadsföringsstartsidan.
+  if (user && (path === "/" || path === "/login" || path === "/registrera")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/hem";
+    url.search = "";
+    const redirect = NextResponse.redirect(url);
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      redirect.cookies.set(cookie);
+    }
+    return redirect;
+  }
+
   if ((isApp || isAdmin) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

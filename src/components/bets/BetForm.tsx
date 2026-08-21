@@ -24,6 +24,7 @@ import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
   fixtureFromBet,
+  isFinishedStatus,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
 import {
@@ -399,6 +400,13 @@ export function BetForm({
                         awayTeamId={chosenFixture.away_team_id}
                         sport={chosenFixture.sport}
                         size={22}
+                        homeScore={chosenFixture.home_score}
+                        awayScore={chosenFixture.away_score}
+                        showScore={
+                          isFinishedStatus(chosenFixture.status) &&
+                          chosenFixture.home_score != null &&
+                          chosenFixture.away_score != null
+                        }
                       />
                     ) : (
                       <ManualMatchLabel match={match} size={22} stacked />

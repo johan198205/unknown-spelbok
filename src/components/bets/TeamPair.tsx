@@ -57,12 +57,16 @@ function TeamLine({
   teamId,
   sport,
   size,
+  score,
+  showScore,
 }: {
   name: string;
   logo?: string | null;
   teamId?: number | null;
   sport?: string | null;
   size: number;
+  score?: number | null;
+  showScore?: boolean;
 }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
@@ -71,7 +75,14 @@ function TeamLine({
         size={size}
         initial={name}
       />
-      <span className="min-w-0 truncate font-semibold leading-tight">{name}</span>
+      <span className="min-w-0 flex-1 truncate font-semibold leading-tight">
+        {name}
+      </span>
+      {showScore ? (
+        <span className="w-5 shrink-0 text-right font-mono-num font-bold leading-tight">
+          {score ?? 0}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -125,6 +136,9 @@ export function MatchStack({
   awayTeamId,
   sport,
   size = 18,
+  homeScore,
+  awayScore,
+  showScore = false,
 }: {
   homeName: string;
   awayName: string;
@@ -134,6 +148,9 @@ export function MatchStack({
   awayTeamId?: number | null;
   sport?: string | null;
   size?: number;
+  homeScore?: number | null;
+  awayScore?: number | null;
+  showScore?: boolean;
 }) {
   return (
     <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -143,6 +160,8 @@ export function MatchStack({
         teamId={homeTeamId}
         sport={sport}
         size={size}
+        score={homeScore}
+        showScore={showScore}
       />
       <TeamLine
         name={awayName}
@@ -150,6 +169,8 @@ export function MatchStack({
         teamId={awayTeamId}
         sport={sport}
         size={size}
+        score={awayScore}
+        showScore={showScore}
       />
     </span>
   );
