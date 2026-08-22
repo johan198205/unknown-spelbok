@@ -380,6 +380,29 @@ export const TERMINAL_STATUSES = [
   ...STATUS.voided,
 ] as const;
 
+/**
+ * Matchen rullar och målsiffran kan ändras.
+ *
+ * Bara poll-live får skriva score för dessa. Målupptäckten jämför API:ets
+ * ställning mot den som redan står i fixtures — skriver någon annan dit den
+ * nya siffran först ser poll-live ingen förändring, och målnotisen uteblir
+ * tyst.
+ */
+export const IN_PLAY_STATUSES = [
+  "1H",
+  "HT",
+  "2H",
+  "ET",
+  "BT",
+  "P",
+  "LIVE",
+  "INT",
+] as const;
+
+export function isInPlay(short: string) {
+  return (IN_PLAY_STATUSES as readonly string[]).includes(short);
+}
+
 /** poll-live hoppar över dessa (inkl. PST) och gör inget API-anrop om listan är tom. */
 export const POLL_LIVE_SKIP_STATUSES = [
   ...STATUS.final,

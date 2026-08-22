@@ -17,6 +17,7 @@ import {
   currentScore,
   DEFAULT_TIMEZONE,
   FIXTURE_IDS_PER_CALL,
+  isInPlay,
   POLL_LIVE_SKIP_STATUSES,
   regulationScore,
   sportSlug,
@@ -180,7 +181,7 @@ export async function handlePollLive(req: Request) {
       const prevAway = fixture.away_score ?? 0;
       const nextHome = score.home ?? 0;
       const nextAway = score.away ?? 0;
-      const inPlay = ["1H", "2H", "ET", "LIVE", "INT"].includes(status);
+      const inPlay = isInPlay(status);
       if (
         !dryRun &&
         inPlay &&

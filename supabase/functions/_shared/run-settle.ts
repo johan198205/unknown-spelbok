@@ -8,6 +8,7 @@ import {
   chunk,
   DEFAULT_TIMEZONE,
   FIXTURE_IDS_PER_CALL,
+  isInPlay,
   regulationScore,
   sportSlug,
   statusBucket,
@@ -128,7 +129,11 @@ export async function handleSettleResults(req: Request) {
       }
 
       const row = mapFixtureRow(hit.item, hit.sport, now);
-      updates.push(row);
+      // Pågående matcher ägs av poll-live. Skulle vi skriva den nya
+      // ställningen här ser poll-live ingen förändring nästa körning och
+      // målnotisen uteblir — settle-results skickar själv inga målnotiser.
+      // Vi har ändå inget att göra med raden förrän matchen är slut.
+      if (!isInPlay(row.status)) updates.push(row);
 
       const bucket = statusBucket(row.status);
       const score = regulationScore(hit.item);
