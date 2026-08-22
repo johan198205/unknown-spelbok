@@ -1,11 +1,18 @@
-"use server";
-
+// Anropas bara från servern (app-layouten). Inget "use server" — vi vill inte
+// exponera en action-endpoint som tar emot en profil utifrån.
 import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import type { Profile } from "@/lib/types";
 
-/** Update last_seen_at at most once per hour. */
-export async function touchLastSeen() {
-  const profile = await getProfile();
+/**
+ * Update last_seen_at at most once per hour.
+ *
+ * Skicka in profilen när anroparen redan har den — körs detta via after() finns
+ * inte React-cachen kvar, och ett getProfile() här hade kostat två extra
+ * nätverksanrop i onödan.
+ */
+export async function touchLastSeen(known?: Profile | null) {
+  const profile = known ?? (await getProfile());
   if (!profile) return;
 
   const last = profile.last_seen_at

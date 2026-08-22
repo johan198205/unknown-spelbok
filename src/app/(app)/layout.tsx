@@ -14,7 +14,7 @@ export default async function AppLayout({
 }) {
   const profile = await getProfile();
   // Bokföring, inte rendering — kör efter svaret så navigeringen inte väntar.
-  if (profile) after(touchLastSeen);
+  if (profile) after(() => touchLastSeen(profile));
   const supabase = await createClient();
 
   let netto = 0;

@@ -1,8 +1,29 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+
+/**
+ * Sitter inuti <Link> så useLinkStatus ser navigeringen. Länken markeras direkt
+ * vid klick — annars ser desktop-navet dött ut tills servern svarat.
+ */
+function NavItemBody({ label, active }: { label: string; active: boolean }) {
+  const { pending } = useLinkStatus();
+
+  return (
+    <span
+      className={cn(
+        "block rounded-[8px] px-3.5 py-2 transition-colors duration-100",
+        active || pending
+          ? "bg-[#1B2436] text-[#E6EAF2]"
+          : "bg-transparent text-[#8A94AB] group-hover:bg-[#1B2436] group-hover:text-[#E6EAF2]"
+      )}
+    >
+      {label}
+    </span>
+  );
+}
 
 export function AppNav({
   items,
@@ -20,14 +41,10 @@ export function AppNav({
           <Link
             key={item.href}
             href={item.href}
-            className={cn(
-              "whitespace-nowrap rounded-[8px] px-3.5 py-2 text-[14px] font-semibold no-underline transition hover:no-underline",
-              active
-                ? "bg-[#1B2436] text-[#E6EAF2] hover:text-[#E6EAF2]"
-                : "bg-transparent text-[#8A94AB] hover:bg-[#1B2436] hover:text-[#E6EAF2]"
-            )}
+            aria-current={active ? "page" : undefined}
+            className="group whitespace-nowrap text-[14px] font-semibold no-underline hover:no-underline"
           >
-            {item.label}
+            <NavItemBody label={item.label} active={active} />
           </Link>
         );
       })}

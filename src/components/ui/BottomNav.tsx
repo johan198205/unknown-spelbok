@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -96,6 +96,45 @@ const TABS = [
   },
 ] as const;
 
+type Tab = (typeof TABS)[number];
+
+/**
+ * Måste sitta inuti <Link> för att useLinkStatus ska se navigeringen. Fliken
+ * färgas direkt vid tryck så det syns att klicket gick fram, även innan
+ * servern hunnit svara.
+ */
+function TabBody({ tab, active }: { tab: Tab; active: boolean }) {
+  const { pending } = useLinkStatus();
+  const lit = active || pending;
+
+  return (
+    <span
+      className={cn(
+        "flex flex-col items-center gap-1 transition-colors duration-100",
+        lit ? "text-win" : "text-faint",
+        pending && !active ? "opacity-70" : null
+      )}
+    >
+      <tab.Icon filled={lit} />
+      {tab.label}
+    </span>
+  );
+}
+
+function NavTab({ tab, pathname }: { tab: Tab; pathname: string }) {
+  const active = tab.match(pathname);
+
+  return (
+    <Link
+      href={tab.href}
+      aria-current={active ? "page" : undefined}
+      className="flex flex-col items-center gap-1 py-1 text-[10.5px] font-semibold no-underline active:scale-95 transition-transform duration-100"
+    >
+      <TabBody tab={tab} active={active} />
+    </Link>
+  );
+}
+
 export function BottomNav({ onAdd }: { onAdd: () => void }) {
   const pathname = usePathname() || "";
 
@@ -105,22 +144,9 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
       aria-label="Huvudnavigering"
     >
       <div className="grid grid-cols-5 items-end px-1">
-        {TABS.slice(0, 2).map((tab) => {
-          const active = tab.match(pathname);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                "flex flex-col items-center gap-1 py-1 text-[10.5px] font-semibold no-underline",
-                active ? "text-win" : "text-faint"
-              )}
-            >
-              <tab.Icon filled={active} />
-              {tab.label}
-            </Link>
-          );
-        })}
+        {TABS.slice(0, 2).map((tab) => (
+          <NavTab key={tab.href} tab={tab} pathname={pathname} />
+        ))}
 
         <div className="flex justify-center">
           <button
@@ -133,22 +159,9 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
           </button>
         </div>
 
-        {TABS.slice(2).map((tab) => {
-          const active = tab.match(pathname);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                "flex flex-col items-center gap-1 py-1 text-[10.5px] font-semibold no-underline",
-                active ? "text-win" : "text-faint"
-              )}
-            >
-              <tab.Icon filled={active} />
-              {tab.label}
-            </Link>
-          );
-        })}
+        {TABS.slice(2).map((tab) => (
+          <NavTab key={tab.href} tab={tab} pathname={pathname} />
+        ))}
       </div>
     </nav>
   );
