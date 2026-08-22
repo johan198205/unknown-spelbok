@@ -24,6 +24,7 @@ import {
   type ApiFixtureItem,
   type SportSlug,
 } from "../_shared/apisports.ts";
+import { mapFixtureRow } from "../_shared/map.ts";
 import { settleOpenBets } from "../_shared/settle-open.ts";
 import { notifySite } from "../_shared/site-notify.ts";
 import {
@@ -121,15 +122,13 @@ export async function handlePollLive(req: Request) {
     }
 
     const now = new Date().toISOString();
-    const updates: {
-      fixture_id: number;
-      status: string;
-      elapsed: number | null;
-      home_score: number | null;
-      away_score: number | null;
-      updated_at: string;
-    }[] = [];
+    // Hela raden, inte bara de fält som ändrats: upsert kör INSERT .. ON
+    // CONFLICT, och Postgres kontrollerar NOT NULL på den föreslagna raden
+    // innan konflikten upptäcks. En smal payload utan kickoff smäller alltså
+    // även när raden redan finns.
+    const updates: ReturnType<typeof mapFixtureRow>[] = [];
     const finalById = new Map<number, { home: number; away: number }>();
+    const goalNotices: Promise<void>[] = [];
 
     for (const fixture of fixtures) {
       const hit = results.get(fixture.fixture_id);
@@ -137,14 +136,7 @@ export async function handlePollLive(req: Request) {
 
       const status = hit.item.fixture.status.short;
       const score = currentScore(hit.item);
-      updates.push({
-        fixture_id: fixture.fixture_id,
-        status,
-        elapsed: hit.item.fixture.status.elapsed ?? null,
-        home_score: score.home,
-        away_score: score.away,
-        updated_at: now,
-      });
+      updates.push(mapFixtureRow(hit.item, hit.sport, now));
 
       const prevHome = fixture.home_score ?? 0;
       const prevAway = fixture.away_score ?? 0;
@@ -156,14 +148,16 @@ export async function handlePollLive(req: Request) {
         inPlay &&
         nextHome + nextAway > prevHome + prevAway
       ) {
-        notifySite({
-          kind: "goal",
-          fixtureId: fixture.fixture_id,
-          homeName: hit.item.teams.home.name,
-          awayName: hit.item.teams.away.name,
-          homeScore: nextHome,
-          awayScore: nextAway,
-        });
+        goalNotices.push(
+          notifySite({
+            kind: "goal",
+            fixtureId: fixture.fixture_id,
+            homeName: hit.item.teams.home.name,
+            awayName: hit.item.teams.away.name,
+            homeScore: nextHome,
+            awayScore: nextAway,
+          })
+        );
       }
 
       if (statusBucket(status) === "final") {
@@ -181,6 +175,10 @@ export async function handlePollLive(req: Request) {
     } else {
       summary.updated = updates.length;
     }
+
+    // Före sättlingen: notifyGoals på site-sidan filtrerar på result='open',
+    // så ett mål i slutminuten tystas om spelen hinner rättas först.
+    if (goalNotices.length) await Promise.all(goalNotices);
 
     if (finalById.size) {
       const settled = await settleOpenBets(supabase, {

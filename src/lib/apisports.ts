@@ -289,8 +289,11 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     const items = (json.response ?? []) as T[];
     const current = json.paging?.current ?? page;
     const reported = Math.max(1, json.paging?.total ?? 1);
+    // /fixtures?ids= är inte paginerat — skickar man page dit svarar API:et
+    // "The Page field do not exist." och hela batchen går förlorad.
+    const pageable = params.ids === undefined;
     const total =
-      reported <= 1 && items.length === API_PAGE_SIZE && page < MAX_API_PAGES
+      pageable && reported <= 1 && items.length === API_PAGE_SIZE && page < MAX_API_PAGES
         ? page + 1
         : Math.max(reported, page);
     return { items, current, total };

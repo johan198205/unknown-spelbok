@@ -257,6 +257,9 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     const items: T[] = [];
     let page = 1;
     let total = 1;
+    // /fixtures?ids= är inte paginerat — skickar man page dit svarar API:et
+    // "The Page field do not exist." och hela batchen går förlorad.
+    const pageable = params.ids === undefined;
 
     while (page <= total && page <= MAX_API_PAGES) {
       const json = await fetchPage(
@@ -265,6 +268,7 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
       );
       const batch = (json.response ?? []) as T[];
       items.push(...batch);
+      if (!pageable) break;
       const reported = Math.max(1, json.paging?.total ?? 1);
       total = Math.max(total, reported);
       // API-Football sätter ibland paging.total = 1 trots fler sidor à 20.
@@ -283,6 +287,16 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
   };
 }
 
+/**
+ * Free plan tål 10 anrop/min — vi kör 8 med marginal. Betald plan tål mer;
+ * sätt secret APISPORTS_MAX_PER_MINUTE=30 så hinner settle-results igenom
+ * sina batchar innan Edge Functions timeout.
+ */
+function maxPerMinuteFromEnv(env: { get: (key: string) => string | undefined }) {
+  const raw = Number(env.get("APISPORTS_MAX_PER_MINUTE"));
+  return Number.isFinite(raw) && raw > 0 ? raw : MAX_REQUESTS_PER_MINUTE;
+}
+
 export function footballClientFromEnv(env: {
   get: (key: string) => string | undefined;
 }): ApiSportsClient {
@@ -295,6 +309,7 @@ export function footballClientFromEnv(env: {
   return createApiSportsClient({
     baseUrl: env.get("APISPORTS_FOOTBALL_URL") || DEFAULT_FOOTBALL_URL,
     apiKey,
+    maxPerMinute: maxPerMinuteFromEnv(env),
   });
 }
 
@@ -308,6 +323,7 @@ export function hockeyClientFromEnv(env: {
   return createApiSportsClient({
     baseUrl: env.get("APISPORTS_HOCKEY_URL") || DEFAULT_HOCKEY_URL,
     apiKey,
+    maxPerMinute: maxPerMinuteFromEnv(env),
   });
 }
 

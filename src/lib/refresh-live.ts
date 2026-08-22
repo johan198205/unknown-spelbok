@@ -186,8 +186,10 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
       })
     );
   }
+  // Måste await:as: Vercel fryser funktionen så fort svaret gått ut, en
+  // fire-and-forget push hinner då aldrig i väg.
   if (goalNotices.length) {
-    void Promise.all(goalNotices).catch((err) =>
+    await Promise.all(goalNotices).catch((err) =>
       console.error("push vid mål", err)
     );
   }

@@ -145,7 +145,7 @@ export async function settleOpenBets(
     ...byResult.void,
   ];
   if (settledIds.length && !args.dryRun) {
-    void notifySettledBets(settledIds).catch((err) =>
+    await notifySettledBets(settledIds).catch((err) =>
       console.error("push vid rättning", err)
     );
   }

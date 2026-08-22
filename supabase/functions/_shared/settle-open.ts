@@ -140,7 +140,7 @@ export async function settleOpenBets(
     ...byResult.void,
   ];
   if (settledIds.length && !args.dryRun) {
-    notifySite({ betIds: settledIds });
+    await notifySite({ betIds: settledIds });
   }
 
   if (queueRows.length) {
