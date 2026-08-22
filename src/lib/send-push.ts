@@ -81,10 +81,23 @@ export async function sendPushToUsers(
               typeof (err as { statusCode: unknown }).statusCode === "number"
             ? (err as { statusCode: number }).statusCode
             : undefined;
+      const host = (() => {
+        try {
+          return new URL(batch[index].endpoint).host;
+        } catch {
+          return "okänd";
+        }
+      })();
       if (statusCode === 404 || statusCode === 410) {
+        console.warn(`push: rensar död prenumeration ${host} (${statusCode})`);
         stale.push(batch[index].endpoint);
         return;
       }
+      // 403 = VAPID-nycklarna matchar inte dem prenumerationen skapades med.
+      console.error(
+        `push misslyckades ${host} status=${statusCode ?? "?"}`,
+        err instanceof WebPushError ? String(err.body).slice(0, 200) : err
+      );
       failed += 1;
     });
   }
@@ -92,6 +105,12 @@ export async function sendPushToUsers(
   if (stale.length) {
     const admin = createAdminClient();
     await admin.from("push_subscriptions").delete().in("endpoint", stale);
+  }
+
+  if (failed || stale.length) {
+    console.warn(
+      `push: ${sent} skickade, ${failed} misslyckade, ${stale.length} rensade`
+    );
   }
 
   return { sent, failed };
@@ -124,7 +143,14 @@ export async function notifySettledBets(betIds: string[]) {
     .from("bets")
     .select("id, user_id, match, pick, result, stake, payout")
     .in("id", betIds);
-  if (error || !bets?.length) return;
+  if (error) {
+    console.error("push vid rättning: kunde inte läsa spel", error.message);
+    return;
+  }
+  if (!bets?.length) {
+    console.warn(`push vid rättning: hittade inga spel för ${betIds.length} id`);
+    return;
+  }
 
   const userIds = [...new Set((bets as SettledBet[]).map((b) => b.user_id))];
   const { data: profiles, error: profileError } = await admin
@@ -192,9 +218,13 @@ export async function notifyGoals(args: {
   ];
   if (!userIds.length) return;
 
-  await sendPushToUsers(userIds, {
+  const result = await sendPushToUsers(userIds, {
     title: "Mål",
     body: `${args.homeName} ${args.homeScore}–${args.awayScore} ${args.awayName}`,
     url: "/spelbok",
   });
+  console.log(
+    `push vid mål ${args.fixtureId}: ${result.sent} skickade till ${userIds.length} användare`
+  );
+  return result;
 }

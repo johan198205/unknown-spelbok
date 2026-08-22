@@ -69,9 +69,38 @@ export async function handlePollLive(req: Request) {
   const nowIso = new Date().toISOString();
   const skipList = `("${POLL_LIVE_SKIP_STATUSES.join('","')}")`;
 
+  const cols = "fixture_id, sport, home_score, away_score";
+
+  // Matcher med öppna spel går ALLTID först. Upp till ~190 matcher världen
+  // över kan sparka i gång inom samma tvåtimmarsfönster, så en bettad match
+  // trillar annars ur listan minuter efter avspark och användaren får inga
+  // målnotiser — helt tyst, eftersom settle-results ändå rättar den efteråt.
+  const { data: betRows } = await supabase
+    .from("bets")
+    .select("fixture_id")
+    .eq("result", "open")
+    .not("fixture_id", "is", null);
+
+  const betIds = [
+    ...new Set(
+      ((betRows ?? []) as { fixture_id: number }[]).map((b) => b.fixture_id)
+    ),
+  ];
+
+  const priority = betIds.length
+    ? (
+        await supabase
+          .from("fixtures")
+          .select(cols)
+          .in("fixture_id", betIds)
+          .lt("kickoff", nowIso)
+          .not("status", "in", skipList)
+      ).data ?? []
+    : [];
+
   const { data: pending, error: pendingError } = await supabase
     .from("fixtures")
-    .select("fixture_id, sport, home_score, away_score")
+    .select(cols)
     .lt("kickoff", nowIso)
     .not("status", "in", skipList)
     .order("kickoff", { ascending: false })
@@ -81,9 +110,18 @@ export async function handlePollLive(req: Request) {
     return json({ error: pendingError.message }, 500);
   }
 
-  const fixtures = (pending ?? []) as LiveFixture[];
+  const fixtures = (priority as LiveFixture[]).slice(0, LIVE_BATCH);
+  const seen = new Set(fixtures.map((f) => f.fixture_id));
+  for (const row of (pending ?? []) as LiveFixture[]) {
+    if (fixtures.length >= LIVE_BATCH) break;
+    if (seen.has(row.fixture_id)) continue;
+    fixtures.push(row);
+    seen.add(row.fixture_id);
+  }
+
   const summary = {
     checked: fixtures.length,
+    withBets: fixtures.filter((f) => betIds.includes(f.fixture_id)).length,
     updated: 0,
     settled: 0,
     voided: 0,
