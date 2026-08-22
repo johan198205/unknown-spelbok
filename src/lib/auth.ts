@@ -1,22 +1,26 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { createClient } from "./supabase/server";
 import type { Profile } from "./types";
 
-export async function getSessionUser() {
+/**
+ * getUser() går mot Supabase Auth över nätet. Utan memoisering gjorde en enda
+ * navigering 4–5 sådana anrop i serie (layout + header + requireUser +
+ * getProfile). cache() gör att varje request bara betalar för ett.
+ */
+export const getSessionUser = cache(async function getSessionUser() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
-}
+});
 
-export async function getProfile(): Promise<Profile | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const getProfile = cache(async function getProfile(): Promise<Profile | null> {
+  const user = await getSessionUser();
   if (!user) return null;
 
+  const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
     .select("*")
@@ -24,7 +28,7 @@ export async function getProfile(): Promise<Profile | null> {
     .maybeSingle();
 
   return data as Profile | null;
-}
+});
 
 export async function requireUser() {
   const user = await getSessionUser();

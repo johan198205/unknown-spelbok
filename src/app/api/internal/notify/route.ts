@@ -3,11 +3,28 @@ import { notifyGoals, notifySettledBets } from "@/lib/send-push";
 
 export const runtime = "nodejs";
 
+/**
+ * Anropas av Edge Functions (poll-live / settle-results) via site-notify.ts.
+ *
+ * Godtar INTERNAL_NOTIFY_SECRET i första hand. Service role-nyckeln finns
+ * kvar som fallback, men duger inte ensam: Supabase injicerar sin egen
+ * SUPABASE_SERVICE_ROLE_KEY i Edge Functions, och på projekt med nya
+ * nyckelsystemet är den inte samma sträng som Vercel har.
+ */
 function authorized(request: Request) {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) return false;
   const header = request.headers.get("authorization") || "";
-  return header === `Bearer ${key}`;
+  const accepted = [
+    process.env.INTERNAL_NOTIFY_SECRET,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  ].filter((k): k is string => !!k);
+
+  if (!accepted.length) {
+    console.error("notify: varken INTERNAL_NOTIFY_SECRET eller service role satt");
+    return false;
+  }
+  const ok = accepted.some((key) => header === `Bearer ${key}`);
+  if (!ok) console.warn("notify: avvisade anrop med fel nyckel");
+  return ok;
 }
 
 export async function POST(request: Request) {

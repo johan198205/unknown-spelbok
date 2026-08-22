@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { SiteFooter, SiteHeader } from "@/components/layout/SiteHeader";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileChrome } from "@/components/layout/MobileChrome";
@@ -12,7 +13,8 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const profile = await getProfile();
-  if (profile) await touchLastSeen();
+  // Bokföring, inte rendering — kör efter svaret så navigeringen inte väntar.
+  if (profile) after(touchLastSeen);
   const supabase = await createClient();
 
   let netto = 0;

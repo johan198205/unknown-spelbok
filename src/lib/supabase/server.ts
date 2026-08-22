@@ -1,7 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
-export async function createClient() {
+/**
+ * Memoiserad per request: layout, header, footer och sidan delar samma klient
+ * istället för att bygga en ny (och dubbla auth-anropen) i varje komponent.
+ */
+export const createClient = cache(async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -24,4 +29,4 @@ export async function createClient() {
       },
     }
   );
-}
+});
