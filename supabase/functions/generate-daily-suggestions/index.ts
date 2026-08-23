@@ -19,7 +19,10 @@
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { notifySite } from "../_shared/site-notify.ts";
 import {
+  ambiguousLeagueNames,
+  MAX_SUGGESTIONS_PER_SHEET,
   MAX_SUGGESTIONS_PER_USER,
+  MIN_SHEET_SETTLED_BETS,
   MIN_TOTAL_SETTLED_BETS,
   suggestionsForUser,
   toSuggestionRow,
@@ -37,6 +40,7 @@ const JOB = "generate-daily-suggestions";
 const TIMEZONE = "Europe/Stockholm";
 const MAX_FIXTURES = 2000;
 const MAX_USERS = 500;
+const MAX_SHEETS = 1500;
 /** Uppskjutet/inställt ska inte föreslås. */
 const HIDDEN_STATUSES = ["PST", "CANC", "ABD", "FT", "AET", "PEN", "AWD", "WO"];
 const FIXTURE_COLUMNS =
@@ -48,6 +52,8 @@ type CandidateUser = {
   settled_bets: number;
   dominant_sport: string;
 };
+
+type CandidateSheet = CandidateUser & { sheet_id: string };
 
 type BetTeamRow = {
   user_id: string;
@@ -171,10 +177,15 @@ export async function handleGenerateDailySuggestions(req: Request) {
     date: ymd,
     fixtures: 0,
     users: 0,
+    sheets: 0,
+    ambiguousLeagues: 0,
     suggestions: 0,
     pushed: 0,
     dryRun,
-    ...(Object.keys(thresholds).length ? { thresholds } : {}),
+    // Kopia, inte referens: ambiguousLeagueNames läggs på thresholds senare
+    // och är ett Set, som JSON-serialiseras till {} — det såg ut som att
+    // inga tvetydiga namn hittats trots att räknaren sa 18.
+    ...(Object.keys(thresholds).length ? { thresholds: { ...thresholds } } : {}),
   };
 
   let logId: string | null = null;
@@ -224,6 +235,11 @@ export async function handleGenerateDailySuggestions(req: Request) {
 
     if (!dryRun) logId = await startSyncLog(supabase, JOB, "mixed");
 
+    // Byggs en gång och delas av alla scope: vilka liganamn som är
+    // tvetydiga beror på dagens matcher, inte på användaren.
+    thresholds.ambiguousLeagueNames = ambiguousLeagueNames(fixtures);
+    summary.ambiguousLeagues = thresholds.ambiguousLeagueNames.size;
+
     const teamHistory = await loadTeamHistory(
       supabase,
       users.map((u) => u.user_id)
@@ -232,33 +248,78 @@ export async function handleGenerateDailySuggestions(req: Request) {
     const rows: ReturnType<typeof toSuggestionRow>[] = [];
     const perUser = new Map<string, number>();
 
-    for (const user of users) {
+    /**
+     * Poängsätter dagen för ett scope och lägger till raderna.
+     * sheetId null = kontots förslag, annars spelbokens egna.
+     */
+    async function collect(
+      userId: string,
+      dominantSport: string,
+      sheetId: string | null,
+      limit: number
+    ) {
       const { data: segmentRows, error: profileError } = await supabase.rpc(
         "get_user_betting_profile",
-        { p_user_id: user.user_id }
+        { p_user_id: userId, p_sheet_id: sheetId }
       );
       if (profileError) {
         console.warn(
-          `${JOB}: profil för ${user.user_id} misslyckades — ${profileError.message}`
+          `${JOB}: profil för ${userId}/${sheetId ?? "konto"} misslyckades — ${profileError.message}`
         );
-        continue;
+        return 0;
       }
 
       const hits = suggestionsForUser(
         fixtures,
         {
-          userId: user.user_id,
-          dominantSport: user.dominant_sport,
+          userId,
+          dominantSport,
           segments: (segmentRows ?? []) as ProfileSegment[],
-          teamIds: teamHistory.get(user.user_id) ?? new Set<number>(),
+          teamIds: teamHistory.get(userId) ?? new Set<number>(),
         },
-        MAX_SUGGESTIONS_PER_USER,
+        limit,
         thresholds
       );
 
-      if (!hits.length) continue;
-      perUser.set(user.user_id, hits.length);
-      for (const hit of hits) rows.push(toSuggestionRow(user.user_id, ymd, hit));
+      for (const hit of hits) {
+        rows.push(toSuggestionRow(userId, ymd, hit, sheetId));
+      }
+      return hits.length;
+    }
+
+    // Kontots förslag — de som visas på Hem.
+    for (const user of users) {
+      const n = await collect(
+        user.user_id,
+        user.dominant_sport,
+        null,
+        MAX_SUGGESTIONS_PER_USER
+      );
+      if (n > 0) perUser.set(user.user_id, n);
+    }
+
+    // Per spelbok. Profilen räknas bara på den spelbokens egna spel, annars
+    // hade alla spelböcker visat samma matcher.
+    const { data: sheetRows, error: sheetError } = await supabase.rpc(
+      "suggestion_candidate_sheets",
+      { p_min_bets: MIN_SHEET_SETTLED_BETS }
+    );
+    if (sheetError) {
+      // Migrationen för per-spelbok kanske inte är körd — kontots förslag
+      // ska fungera ändå.
+      console.warn(`${JOB}: kandidatspelböcker hoppas över — ${sheetError.message}`);
+    }
+
+    const sheets = ((sheetRows ?? []) as CandidateSheet[]).slice(0, MAX_SHEETS);
+    summary.sheets = sheets.length;
+
+    for (const sheet of sheets) {
+      await collect(
+        sheet.user_id,
+        sheet.dominant_sport,
+        sheet.sheet_id,
+        MAX_SUGGESTIONS_PER_SHEET
+      );
     }
 
     summary.suggestions = rows.length;
@@ -266,7 +327,9 @@ export async function handleGenerateDailySuggestions(req: Request) {
     if (rows.length && !dryRun) {
       const { error: upsertError } = await supabase
         .from("daily_suggestions")
-        .upsert(rows, { onConflict: "user_id,suggestion_date,fixture_id" });
+        .upsert(rows, {
+          onConflict: "user_id,sheet_id,suggestion_date,fixture_id",
+        });
       if (upsertError) throw new Error(`upsert: ${upsertError.message}`);
     }
 
@@ -298,6 +361,7 @@ export async function handleGenerateDailySuggestions(req: Request) {
     // hamnar på korten, så de är det man vill granska.
     const preview = dryRun
       ? rows.slice(0, 10).map((row) => ({
+          scope: row.sheet_id ? `spelbok ${row.sheet_id.slice(0, 8)}` : "konto",
           match: `${row.home_team} – ${row.away_team}`,
           liga: row.league_name,
           poang: row.match_score,

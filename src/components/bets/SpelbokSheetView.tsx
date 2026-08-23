@@ -14,6 +14,8 @@ import {
   SheetPublicToggle,
 } from "@/components/bets/ShareSheetControls";
 import { SheetDescriptionEdit } from "@/components/bets/SheetDescriptionEdit";
+import { DailySuggestions } from "@/components/suggestions/DailySuggestions";
+import type { DailySuggestion } from "@/lib/suggestions";
 import { MobileBetCards } from "@/components/pwa/MobileBetCards";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Input";
@@ -70,6 +72,7 @@ export function SpelbokSheetView({
   viewerSheets,
   unitSize = 100,
   isAuthenticated = true,
+  suggestions,
   ads,
 }: {
   sheet: Sheet;
@@ -88,6 +91,11 @@ export function SpelbokSheetView({
   viewerSheets?: Sheet[];
   unitSize?: number;
   isAuthenticated?: boolean;
+  /**
+   * Spelbokens egna dagsförslag. Skickas bara för ägaren — den publika
+   * vyn ska inte avslöja vad någon annans historik matchar mot.
+   */
+  suggestions?: DailySuggestion[];
   /** Server-rendered AdSlots passed as children of the client boundary */
   ads?: ReactNode;
 }) {
@@ -208,6 +216,10 @@ export function SpelbokSheetView({
           ) : null}
         </div>
       </div>
+
+      {isOwner && suggestions?.length ? (
+        <DailySuggestions initial={suggestions} scope="sheet" />
+      ) : null}
 
       <SheetFilterBar
         filters={filters}

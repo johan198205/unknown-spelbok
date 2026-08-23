@@ -74,10 +74,14 @@ export default async function HemPage() {
         .order("placed_at", { ascending: false }),
       // Serverrenderat: sektionen ska inte blinka in efter laddning. Saknas
       // tabellen (migrationen inte körd) blir data null och sektionen uteblir.
+      //
+      // sheet_id is null = kontots förslag. Spelbökernas egna rader ligger i
+      // samma tabell men hämtas på /spelbok.
       supabase
         .from("daily_suggestions")
         .select(SUGGESTION_COLUMNS)
         .eq("user_id", user.id)
+        .is("sheet_id", null)
         .eq("suggestion_date", stockholmYmd())
         .eq("dismissed", false)
         .order("match_score", { ascending: false })

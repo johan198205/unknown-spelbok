@@ -6,6 +6,8 @@ import { NewSheetForm } from "@/components/bets/NewSheetForm";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState } from "@/components/ui/Panel";
+import { stockholmYmd } from "@/lib/stockholm";
+import { SUGGESTION_COLUMNS, normalizeSuggestion } from "@/lib/suggestions";
 import {
   emptyStatsBundle,
   fetchPublicSheetsLeaderboard,
@@ -101,12 +103,28 @@ export default async function SpelbokPage({
       terms: b.terms,
     }));
 
-  const [statsBundle, publicSheets] = await Promise.all([
-    activeSheet
-      ? fetchSheetStatsBundle(supabase, activeSheet.id, "all", unitSize)
-      : Promise.resolve(emptyStatsBundle(unitSize)),
-    fetchPublicSheetsLeaderboard(supabase, 5, user.id),
-  ]);
+  const [statsBundle, publicSheets, { data: suggestionRows }] =
+    await Promise.all([
+      activeSheet
+        ? fetchSheetStatsBundle(supabase, activeSheet.id, "all", unitSize)
+        : Promise.resolve(emptyStatsBundle(unitSize)),
+      fetchPublicSheetsLeaderboard(supabase, 5, user.id),
+      // Spelbokens egna förslag, inte kontots. Utan aktiv spelbok finns
+      // inget att hämta — .eq() på tom sträng hade gett ett fel.
+      activeSheet
+        ? supabase
+            .from("daily_suggestions")
+            .select(SUGGESTION_COLUMNS)
+            .eq("user_id", user.id)
+            .eq("sheet_id", activeSheet.id)
+            .eq("suggestion_date", stockholmYmd())
+            .eq("dismissed", false)
+            .order("match_score", { ascending: false })
+            .order("kickoff", { ascending: true })
+        : Promise.resolve({ data: null }),
+    ]);
+
+  const suggestions = (suggestionRows ?? []).map(normalizeSuggestion);
 
   return (
     <div className="animate-sbfade space-y-5">
@@ -162,6 +180,7 @@ export default async function SpelbokPage({
                 initialStats={toPlain(statsBundle.stats)}
                 initialLeagues={toPlain(statsBundle.leagues)}
                 initialBreakdowns={toPlain(statsBundle.breakdowns)}
+                suggestions={toPlain(suggestions)}
                 affiliates={toPlain(affiliates)}
                 publicSheets={toPlain(publicSheets)}
                 unitSize={unitSize}

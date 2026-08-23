@@ -506,6 +506,7 @@ export type Database = {
           league_name: string
           match_score: number
           reasons: Json
+          sheet_id: string | null
           sport: string
           suggested_bet_type: string | null
           suggestion_date: string
@@ -531,6 +532,7 @@ export type Database = {
           league_name: string
           match_score: number
           reasons?: Json
+          sheet_id?: string | null
           sport: string
           suggested_bet_type?: string | null
           suggestion_date: string
@@ -556,6 +558,7 @@ export type Database = {
           league_name?: string
           match_score?: number
           reasons?: Json
+          sheet_id?: string | null
           sport?: string
           suggested_bet_type?: string | null
           suggestion_date?: string
@@ -1038,7 +1041,7 @@ export type Database = {
     Functions: {
       bet_type_family: { Args: { p_pick: string }; Returns: string }
       get_user_betting_profile: {
-        Args: { p_user_id: string }
+        Args: { p_user_id: string; p_sheet_id?: string | null }
         Returns: {
           sport: string
           league_id: number | null
@@ -1051,6 +1054,15 @@ export type Database = {
           avg_odds: number | null
           last_bet_at: string | null
           established: boolean
+        }[]
+      }
+      suggestion_candidate_sheets: {
+        Args: { p_min_bets?: number }
+        Returns: {
+          sheet_id: string
+          user_id: string
+          settled_bets: number
+          dominant_sport: string
         }[]
       }
       suggestion_candidate_users: {

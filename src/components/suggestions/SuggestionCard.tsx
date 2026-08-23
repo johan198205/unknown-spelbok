@@ -4,7 +4,6 @@ import { X } from "lucide-react";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { MatchSides } from "@/components/bets/TeamPair";
 import { Badge } from "@/components/ui/Badge";
-import { AiReasonButton } from "@/components/suggestions/AiReasonButton";
 import { kickoffLabel, topReasons, type DailySuggestion } from "@/lib/suggestions";
 import { cn } from "@/lib/utils";
 
@@ -18,13 +17,11 @@ export function SuggestionCard({
   leaving,
   onOpen,
   onDismiss,
-  onAiReason,
 }: {
   suggestion: DailySuggestion;
   leaving?: boolean;
   onOpen: () => void;
   onDismiss: () => void;
-  onAiReason: (reason: string) => void;
 }) {
   const reasons = topReasons(suggestion);
   const sport = suggestion.sport === "hockey" ? "Ishockey" : "Fotboll";
@@ -50,7 +47,7 @@ export function SuggestionCard({
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full px-3.5 pb-3 pt-3.5 text-left"
+        className="block w-full px-3.5 pb-3.5 pt-3.5 text-left"
       >
         <div className="flex items-center gap-1.5 pr-14 text-[12px] text-muted">
           <LeagueLogo
@@ -61,11 +58,17 @@ export function SuggestionCard({
             size={16}
           />
           <span className="min-w-0 truncate">{suggestion.league_name}</span>
+          {/*
+            Relevanspoängen (0–100). Utan enhet läses siffran lätt som odds
+            eller sannolikhet, vilket den inte är — därav både etiketten och
+            nämnaren.
+          */}
           <span
             className="ml-auto shrink-0 font-mono-num text-[11px] text-faint"
-            title="Matchpoäng"
+            title="Matchpoäng: hur väl matchen stämmer med din spelhistorik (0–100)"
           >
             {Math.round(Number(suggestion.match_score))}
+            <span className="text-[9.5px]">/100</span>
           </span>
         </div>
 
@@ -104,10 +107,6 @@ export function SuggestionCard({
           </div>
         ) : null}
       </button>
-
-      <div className="px-3.5 pb-3.5">
-        <AiReasonButton suggestion={suggestion} onGenerated={onAiReason} />
-      </div>
     </div>
   );
 }

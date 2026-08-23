@@ -21,10 +21,19 @@ export const WEIGHTS = {
 
 export const MIN_MATCH_SCORE = 40;
 export const MAX_SUGGESTIONS_PER_USER = 5;
+/** En spelbok är en smalare yta än dashboarden — färre kort får plats. */
+export const MAX_SUGGESTIONS_PER_SHEET = 3;
 /** Under 5 rättade spel är segmentet för tunt för att säga något. */
 export const MIN_SEGMENT_BETS = 5;
 /** Minst så många rättade spel totalt innan användaren får förslag alls. */
 export const MIN_TOTAL_SETTLED_BETS = 10;
+/**
+ * Motsvarande gräns per spelbok. Lägre än kontots med flit: tio är ett
+ * kontovärde, och en spelbok är per definition en delmängd. Den riktiga
+ * kvalitetsspärren är ändå MIN_SEGMENT_BETS — den här sållar bara bort
+ * spelböcker som knappt använts.
+ */
+export const MIN_SHEET_SETTLED_BETS = 5;
 
 const HITRATE_STRONG = 55;
 const HITRATE_OK = 45;
@@ -92,6 +101,13 @@ export type ScoredSuggestion = {
 export type Thresholds = {
   minSegmentBets?: number;
   minMatchScore?: number;
+  /**
+   * Liganamn (gemener) som dagens matcher visar tillhör mer än en liga —
+   * "premier league" finns i England, Ryssland, Hongkong, Vitryssland …
+   * För dem stängs namnmatchningen av: hellre inget förslag än ett som
+   * påstår engelsk historik om en vitrysk match.
+   */
+  ambiguousLeagueNames?: Set<string>;
 };
 
 function num(value: number | string | null | undefined): number | null {
@@ -113,13 +129,46 @@ export function sportSlugOf(raw: string | null | undefined): string {
   return normalizeSport(raw) === "Ishockey" ? "hockey" : "football";
 }
 
-function sameLeague(segment: ProfileSegment, fixture: CandidateFixture) {
+/**
+ * Manuellt inskrivna spel saknar league_id, så namnet är enda kopplingen.
+ * Det duger för unika namn ("Allsvenskan") men inte för generiska: ett
+ * engelskt Premier League-spel ska inte matcha en vitrysk match med samma
+ * liganamn. Namn som dagens matcher visar är tvetydiga stängs därför av.
+ */
+function sameLeague(
+  segment: ProfileSegment,
+  fixture: CandidateFixture,
+  ambiguousLeagueNames?: Set<string>
+) {
   if (segment.league_id != null && fixture.league_id != null) {
     return Number(segment.league_id) === Number(fixture.league_id);
   }
   const a = (segment.league_name || "").trim().toLowerCase();
   const b = (fixture.league_name || "").trim().toLowerCase();
-  return a.length > 0 && a === b;
+  if (!a || a !== b) return false;
+  return !ambiguousLeagueNames?.has(a);
+}
+
+/**
+ * Liganamn som förekommer med mer än ett league_id i dagens matcher.
+ * Byggs en gång per körning och delas av alla användare.
+ */
+export function ambiguousLeagueNames(
+  fixtures: CandidateFixture[]
+): Set<string> {
+  const idsByName = new Map<string, Set<number>>();
+  for (const fixture of fixtures) {
+    const name = (fixture.league_name || "").trim().toLowerCase();
+    if (!name || fixture.league_id == null) continue;
+    const ids = idsByName.get(name) ?? new Set<number>();
+    ids.add(Number(fixture.league_id));
+    idsByName.set(name, ids);
+  }
+  const ambiguous = new Set<string>();
+  for (const [name, ids] of idsByName) {
+    if (ids.size > 1) ambiguous.add(name);
+  }
+  return ambiguous;
 }
 
 /** Timme i svensk lokaltid — avsparkspoängen är definierad i lokal tid. */
@@ -162,7 +211,7 @@ export function scoreFixture(
       (s.established || minSegmentBets < MIN_SEGMENT_BETS) &&
       s.bets >= minSegmentBets &&
       normalizeSport(s.sport) === fixtureSport &&
-      sameLeague(s, fixture)
+      sameLeague(s, fixture, thresholds.ambiguousLeagueNames)
   );
 
   if (leagueSegments.length) {
@@ -271,15 +320,21 @@ export function suggestionsForUser(
     .slice(0, limit);
 }
 
-/** Rad redo för upsert mot daily_suggestions. */
+/**
+ * Rad redo för upsert mot daily_suggestions.
+ *
+ * sheetId null = kontots förslag (Hem), annars spelbokens egna.
+ */
 export function toSuggestionRow(
   userId: string,
   suggestionDate: string,
-  hit: ScoredSuggestion
+  hit: ScoredSuggestion,
+  sheetId: string | null = null
 ) {
   const f = hit.fixture;
   return {
     user_id: userId,
+    sheet_id: sheetId,
     suggestion_date: suggestionDate,
     fixture_id: f.fixture_id,
     sport: sportSlugOf(f.sport),

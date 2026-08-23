@@ -20,7 +20,14 @@ const LEAVE_MS = 200;
  * PATCH:en får misslyckas i tysthet. Fälten är uppföljningsdata, inget
  * användaren märker om det tappas.
  */
-export function DailySuggestions({ initial }: { initial: DailySuggestion[] }) {
+export function DailySuggestions({
+  initial,
+  scope = "account",
+}: {
+  initial: DailySuggestion[];
+  /** account = hela kontot (Hem), sheet = en enskild spelbok. */
+  scope?: "account" | "sheet";
+}) {
   const [items, setItems] = useState(initial);
   const [leaving, setLeaving] = useState<string | null>(null);
   const chrome = useMobileChrome();
@@ -61,26 +68,19 @@ export function DailySuggestions({ initial }: { initial: DailySuggestion[] }) {
     [patch]
   );
 
-  const setAiReason = useCallback((id: string, reason: string) => {
-    setItems((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? { ...s, ai_reason: reason, ai_generated_at: new Date().toISOString() }
-          : s
-      )
-    );
-  }, []);
-
   if (!items.length) return null;
 
+  const isSheet = scope === "sheet";
+  const headingId = isSheet ? "dagens-matcher-spelbok" : "dagens-matcher";
+
   return (
-    <section aria-labelledby="dagens-matcher">
+    <section aria-labelledby={headingId}>
       <div className="mb-2.5 flex items-baseline justify-between gap-3 px-1">
         <h2
-          id="dagens-matcher"
+          id={headingId}
           className="font-display text-[17px] font-semibold uppercase tracking-[0.04em]"
         >
-          Dagens matcher för dig
+          {isSheet ? "Dagens matcher för spelboken" : "Dagens matcher för dig"}
         </h2>
         <span className="shrink-0 text-[12.5px] text-muted">
           {suggestionDateLabel()}
@@ -95,14 +95,14 @@ export function DailySuggestions({ initial }: { initial: DailySuggestion[] }) {
             leaving={leaving === suggestion.id}
             onOpen={() => open(suggestion)}
             onDismiss={() => dismiss(suggestion.id)}
-            onAiReason={(reason) => setAiReason(suggestion.id, reason)}
           />
         ))}
       </div>
 
       <p className="mt-2 px-1 text-[11.5px] leading-snug text-faint">
-        Matcherna är valda utifrån din egen spelhistorik och är värda att
-        kolla upp. Ingen prognos av utfallet.
+        {isSheet
+          ? "Matcherna är valda utifrån den här spelbokens egen historik och är värda att kolla upp. Ingen prognos av utfallet."
+          : "Matcherna är valda utifrån din egen spelhistorik och är värda att kolla upp. Ingen prognos av utfallet."}
       </p>
     </section>
   );
