@@ -30,6 +30,8 @@ const RESULT_LABELS: Record<NonNullable<ImportedBet["result"]>, string> = {
   win: "Vinst",
   loss: "Förlust",
   void: "Void",
+  halfwin: "Halv vinst",
+  halfloss: "Halv förlust",
   pending: "Orättat",
 };
 
@@ -47,8 +49,8 @@ function slimRows(parsed: ParsedFile, mapping: ColumnMapping) {
 }
 
 function resultClass(result: ImportedBet["result"]) {
-  if (result === "win") return "text-win";
-  if (result === "loss") return "text-loss";
+  if (result === "win" || result === "halfwin") return "text-win";
+  if (result === "loss" || result === "halfloss") return "text-loss";
   return "text-muted";
 }
 

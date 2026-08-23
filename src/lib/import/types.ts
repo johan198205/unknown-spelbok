@@ -6,7 +6,13 @@
  * prefixet i external_id byts ut ('file:' → 'sharps:').
  */
 
-export type ImportResultValue = "win" | "loss" | "void" | "pending";
+export type ImportResultValue =
+  | "win"
+  | "loss"
+  | "void"
+  | "halfwin"
+  | "halfloss"
+  | "pending";
 
 export type ImportedBet = {
   /** 'file:{filhash}:{radhash}' — dedupnyckel mot bets.import_external_id */
@@ -20,7 +26,10 @@ export type ImportedBet = {
   stake: number | null;
   bookmaker: string | null;
   result: ImportResultValue | null;
+  /** utdelning: insats × odds vid vinst */
   payout: number | null;
+  /** vinst/förlust: payout − insats. Vanligaste kolumnen i egna kalkylark. */
+  netto: number | null;
 };
 
 /** Fälten en kolumn kan mappas till. external_id räknas alltid fram. */
@@ -37,6 +46,7 @@ export const IMPORT_FIELDS: ImportField[] = [
   "bookmaker",
   "result",
   "payout",
+  "netto",
 ];
 
 export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
@@ -49,7 +59,8 @@ export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
   stake: "Insats",
   bookmaker: "Spelbolag",
   result: "Resultat",
-  payout: "Vinst",
+  payout: "Vinst (utdelning)",
+  netto: "Netto (vinst/förlust)",
 };
 
 /** Utan dessa går det inte att skapa ett spel. */

@@ -172,6 +172,14 @@ const RESULT_VALUES: Array<{ result: ImportResultValue; values: string[] }> = [
     ],
   },
   {
+    result: "halfwin",
+    values: ["halvvinst", "halv vinst", "halfwin", "half win"],
+  },
+  {
+    result: "halfloss",
+    values: ["halvförlust", "halv förlust", "halfloss", "half loss"],
+  },
+  {
     result: "pending",
     values: [
       "ej rättat",
@@ -183,6 +191,12 @@ const RESULT_VALUES: Array<{ result: ImportResultValue; values: string[] }> = [
       "öppen",
       "oppen",
       "väntar",
+      // Kalkylark skriver ofta status i beloppskolumnen för spel som
+      // fortfarande rullar.
+      "levande",
+      "live",
+      "pågår",
+      "pagar",
     ],
   },
 ];
@@ -206,9 +220,90 @@ export function payoutForImport(
   odds: number
 ): number | null {
   if (result === "win") return stake * odds;
+  if (result === "halfwin") return (stake / 2) * odds + stake / 2;
   if (result === "void") return stake;
+  if (result === "halfloss") return stake / 2;
   if (result === "loss") return 0;
   return null;
+}
+
+/**
+ * Härleder rättningen ur ett belopp när filen saknar resultatkolumn — det
+ * vanligaste fallet i egna kalkylark, där en netto- eller vinstkolumn bär
+ * hela informationen.
+ *
+ * `kind: "netto"` = vinst/förlust (payout − insats), `"payout"` = utdelning.
+ */
+export function resultFromAmount(
+  amount: number,
+  kind: "netto" | "payout",
+  stake: number,
+  odds: number
+): ImportResultValue | null {
+  // Avrundning i källfilen får inte fälla matchningen.
+  const tolerance = Math.max(1, stake * 0.005);
+
+  const outcomes: ImportResultValue[] = [
+    "win",
+    "halfwin",
+    "void",
+    "halfloss",
+    "loss",
+  ];
+  const scored = outcomes
+    .map((outcome) => {
+      const payout = payoutForImport(outcome, stake, odds);
+      if (payout == null) return null;
+      const expected = kind === "netto" ? payout - stake : payout;
+      return { outcome, distance: Math.abs(amount - expected) };
+    })
+    .filter((c): c is { outcome: ImportResultValue; distance: number } => !!c)
+    .sort((a, b) => a.distance - b.distance);
+
+  const [best, runnerUp] = scored;
+  if (!best || best.distance > tolerance) return null;
+  // Vid låga odds ligger utfallen tätt. Hellre orättat än fel rättning.
+  if (runnerUp && runnerUp.distance <= best.distance) return null;
+  return best.outcome;
+}
+
+/**
+ * Rättningen i prioritetsordning: explicit resultatkolumn, sedan text i en
+ * beloppskolumn ("Void", "Levande"), sist själva summan.
+ */
+function resolveResult(args: {
+  resultRaw: string;
+  nettoRaw: string;
+  payoutRaw: string;
+  stake: number | null;
+  odds: number | null;
+}): { result: ImportResultValue; unknown: boolean } {
+  if (args.resultRaw) {
+    const direct = normalizeResult(args.resultRaw);
+    if (!direct.unknown) return direct;
+  }
+
+  const amounts = [
+    { raw: args.nettoRaw, kind: "netto" as const },
+    { raw: args.payoutRaw, kind: "payout" as const },
+  ];
+
+  for (const { raw, kind } of amounts) {
+    if (!raw) continue;
+    const amount = parseNumber(raw);
+    if (amount == null) {
+      // Ren text i beloppskolumnen. Siffror får aldrig gå den här vägen:
+      // "0" i en nettokolumn är void, inte förlust.
+      const text = normalizeResult(raw);
+      if (!text.unknown) return text;
+      continue;
+    }
+    if (args.stake == null || args.odds == null) continue;
+    const derived = resultFromAmount(amount, kind, args.stake, args.odds);
+    if (derived) return { result: derived, unknown: false };
+  }
+
+  return { result: "pending", unknown: !!args.resultRaw };
 }
 
 function round2(value: number) {
@@ -270,8 +365,19 @@ export function normalizeRows({
     const matchLabel = normalizeMatchLabel(cell(row, "match_label"));
     const odds = parseNumber(cell(row, "odds"));
     const rawStake = parseNumber(cell(row, "stake"));
-    const rawPayout = header.payout ? parseNumber(cell(row, "payout")) : null;
-    const { result, unknown } = normalizeResult(cell(row, "result"));
+    const payoutRaw = cell(row, "payout");
+    const nettoRaw = cell(row, "netto");
+    const rawPayout = parseNumber(payoutRaw);
+    const rawNetto = parseNumber(nettoRaw);
+    // Beloppen jämförs mot filens råa insats, före unitkonvertering — allt
+    // i samma fil ligger i samma skala.
+    const { result, unknown } = resolveResult({
+      resultRaw: cell(row, "result"),
+      nettoRaw,
+      payoutRaw,
+      stake: rawStake,
+      odds,
+    });
 
     // Radhashen bygger på filens råa insats, inte den unitkonverterade —
     // annars skulle external_id ändras när användaren justerar unitvärdet.
@@ -302,12 +408,13 @@ export function normalizeRows({
     else if (stake == null) reason = "Saknar insats";
     else if (stake <= 0) reason = "Ogiltig insats";
 
-    const payout =
-      stake != null && odds != null
-        ? rawPayout != null
-          ? round2(rawPayout * unit)
-          : payoutForImport(result, stake, odds)
-        : null;
+    const netto = rawNetto == null ? null : round2(rawNetto * unit);
+    let payout: number | null = null;
+    if (stake != null && odds != null) {
+      if (rawPayout != null) payout = round2(rawPayout * unit);
+      else if (netto != null) payout = round2(stake + netto);
+      else payout = payoutForImport(result, stake, odds);
+    }
 
     const bet: ImportedBet = {
       external_id: `file:${fileHash}:${rowKey}`,
@@ -321,6 +428,7 @@ export function normalizeRows({
       bookmaker,
       result,
       payout,
+      netto,
     };
 
     out.push({

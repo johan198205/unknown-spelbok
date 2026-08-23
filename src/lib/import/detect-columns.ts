@@ -20,7 +20,10 @@ const SYNONYMS: Record<ImportField, string[]> = {
   stake: ["insats", "stake", "units", "unit", "belopp", "satsat"],
   bookmaker: ["bookmaker", "spelbolag", "bolag", "book", "site"],
   result: ["resultat", "status", "result", "utfall", "w/l"],
-  payout: ["vinst", "utdelning", "payout", "retur", "return", "netto"],
+  payout: ["vinst", "utdelning", "payout", "retur", "return"],
+  // Netto är vinst/förlust, inte utdelning — egna kalkylark har nästan
+  // alltid den kolumnen i stället för en resultatkolumn.
+  netto: ["netto", "net", "vinst/förlust", "p/l", "pl", "profit", "resultat kr"],
 };
 
 function normalizeHeader(header: string) {
