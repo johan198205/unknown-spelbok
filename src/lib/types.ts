@@ -244,6 +244,9 @@ export type Database = {
           user_id: string
           copied_from_bet_id: string | null
           copied_from_user_id: string | null
+          import_source: string | null
+          import_external_id: string | null
+          import_source_url: string | null
         }
         Insert: {
           bookmaker_id?: string | null
@@ -268,6 +271,9 @@ export type Database = {
           user_id: string
           copied_from_bet_id?: string | null
           copied_from_user_id?: string | null
+          import_source?: string | null
+          import_external_id?: string | null
+          import_source_url?: string | null
         }
         Update: {
           bookmaker_id?: string | null
@@ -292,6 +298,9 @@ export type Database = {
           user_id?: string
           copied_from_bet_id?: string | null
           copied_from_user_id?: string | null
+          import_source?: string | null
+          import_external_id?: string | null
+          import_source_url?: string | null
         }
         Relationships: [
           {
@@ -475,6 +484,113 @@ export type Database = {
           visibility?: string
         }
         Relationships: []
+      }
+      daily_suggestions: {
+        Row: {
+          ai_generated_at: string | null
+          ai_reason: string | null
+          away_logo: string | null
+          away_team: string
+          away_team_id: number | null
+          clicked: boolean
+          created_at: string
+          dismissed: boolean
+          fixture_id: number
+          home_logo: string | null
+          home_team: string
+          home_team_id: number | null
+          id: string
+          kickoff: string
+          league_id: number
+          league_logo: string | null
+          league_name: string
+          match_score: number
+          reasons: Json
+          sport: string
+          suggested_bet_type: string | null
+          suggestion_date: string
+          user_id: string
+        }
+        Insert: {
+          ai_generated_at?: string | null
+          ai_reason?: string | null
+          away_logo?: string | null
+          away_team: string
+          away_team_id?: number | null
+          clicked?: boolean
+          created_at?: string
+          dismissed?: boolean
+          fixture_id: number
+          home_logo?: string | null
+          home_team: string
+          home_team_id?: number | null
+          id?: string
+          kickoff: string
+          league_id: number
+          league_logo?: string | null
+          league_name: string
+          match_score: number
+          reasons?: Json
+          sport: string
+          suggested_bet_type?: string | null
+          suggestion_date: string
+          user_id: string
+        }
+        Update: {
+          ai_generated_at?: string | null
+          ai_reason?: string | null
+          away_logo?: string | null
+          away_team?: string
+          away_team_id?: number | null
+          clicked?: boolean
+          created_at?: string
+          dismissed?: boolean
+          fixture_id?: number
+          home_logo?: string | null
+          home_team?: string
+          home_team_id?: number | null
+          id?: string
+          kickoff?: string
+          league_id?: number
+          league_logo?: string | null
+          league_name?: string
+          match_score?: number
+          reasons?: Json
+          sport?: string
+          suggested_bet_type?: string | null
+          suggestion_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_generation_log: {
+        Row: {
+          created_at: string
+          id: string
+          suggestion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          suggestion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          suggestion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generation_log_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "daily_suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fixtures: {
         Row: {
@@ -920,6 +1036,31 @@ export type Database = {
       }
     }
     Functions: {
+      bet_type_family: { Args: { p_pick: string }; Returns: string }
+      get_user_betting_profile: {
+        Args: { p_user_id: string }
+        Returns: {
+          sport: string
+          league_id: number | null
+          league_name: string
+          bet_type: string
+          bets: number
+          weighted_bets: number
+          hitrate: number | null
+          roi: number | null
+          avg_odds: number | null
+          last_bet_at: string | null
+          established: boolean
+        }[]
+      }
+      suggestion_candidate_users: {
+        Args: { p_min_bets?: number }
+        Returns: {
+          user_id: string
+          settled_bets: number
+          dominant_sport: string
+        }[]
+      }
       get_bet_stats: {
         Args: {
           p_sheet_id: string
@@ -1113,6 +1254,7 @@ export type AppSetting = Tables<"app_settings">;
 export type SettleQueueItem = Tables<"settle_queue">;
 export type LeaderboardRow = Tables<"leaderboard">;
 export type BannerStats = Tables<"banner_stats">;
+export type AiGenerationLog = Tables<"ai_generation_log">;
 
 export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
   result: BetResult;

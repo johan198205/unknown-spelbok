@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
+import { track } from "@/lib/analytics";
 import { ryggaBet } from "@/lib/rygga-bet";
 import type { Bet, Sheet } from "@/lib/types";
 import { formatOdds } from "@/lib/utils";
@@ -27,6 +28,16 @@ function writeLastSheetId(id: string) {
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * Ryggning sker från en publik spelbok (/s/<slug>). Slugen finns inte på
+ * källspelet, så den läses ur adressen — annars märker vi händelsen som
+ * "egen" (ryggning inifrån den egna spelboken).
+ */
+function sourceSlugFromPath(pathname: string) {
+  const match = /^\/s\/([^/?#]+)/.exec(pathname);
+  return match ? decodeURIComponent(match[1]) : "egen";
 }
 
 function pickDefaultSheetId(sheets: Sheet[]) {
@@ -50,6 +61,7 @@ export function RyggaSpelModal({
   onCreatedSheetRequest?: () => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const defaultStake = unitSize > 0 ? String(Math.round(unitSize)) : "100";
 
@@ -93,6 +105,7 @@ export function RyggaSpelModal({
     }
 
     writeLastSheetId(result.sheetId);
+    track({ event: "rygga_spel", source_slug: sourceSlugFromPath(pathname) });
     toast(`Spelet tillagt i ${result.sheetName}`, {
       label: "Visa spelbok",
       href: `/spelbok?sheet=${result.sheetId}`,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { track } from "@/lib/analytics";
 
 export function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -113,6 +114,7 @@ export function usePushNotifications() {
       }
 
       setIsSubscribed(true);
+      track({ event: "push_subscribe" });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Kunde inte aktivera notiser."

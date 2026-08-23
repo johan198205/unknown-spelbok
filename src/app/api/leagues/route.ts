@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { logApiSportsCacheHit } from "@/lib/api-sports/logRequest";
 import {
   clientForSport,
   type ApiLeagueItem,
@@ -89,7 +90,15 @@ function sortLeagues(sport: SportSlug, items: ApiLeagueItem[]): LeagueOption[] {
   return [...priority, ...other];
 }
 
+/**
+ * Räknas upp varje gång vi faktiskt går ut mot API-Sports. GET jämför före
+ * och efter — står den still serverades ligorna ur unstable_cache, och det
+ * är en cacheträff värd att logga i förbrukningsstatistiken.
+ */
+let apiFetches = 0;
+
 async function fetchLeaguesFromApi(sport: SportSlug): Promise<LeagueOption[]> {
+  apiFetches += 1;
   const api = clientForSport(sport, {
     get: (key) => process.env[key],
   });
@@ -139,7 +148,15 @@ export async function GET(request: NextRequest) {
   const sport = raw as SportSlug;
 
   try {
+    const before = apiFetches;
     const leagues = await cachedLeagues(sport);
+    if (apiFetches === before) {
+      logApiSportsCacheHit(
+        sport === "hockey" ? "api-hockey" : "api-football",
+        "/leagues",
+        { sport, current: true }
+      );
+    }
     return NextResponse.json(
       { leagues, sport },
       {

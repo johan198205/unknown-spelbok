@@ -1,3 +1,4 @@
+import { logApiSportsCacheHit } from "@/lib/api-sports/logRequest";
 import {
   chunk,
   clientForSport,
@@ -130,6 +131,23 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
   });
 
   if (!staleIds.length || !hasApiKey()) {
+    // Alla matcher uppdaterades för mindre än STALE_MS sedan: cachen svarar
+    // och API-anropet uteblir. Logga per sport, precis som anropet hade gjorts.
+    if (staleIds.length === 0) {
+      const cachedBySport = new Map<SportSlug, number>();
+      for (const id of ids) {
+        const row = rows.find((r) => r.fixture_id === id);
+        const slug = sportSlug((row?.sport as string) || "football");
+        cachedBySport.set(slug, (cachedBySport.get(slug) ?? 0) + 1);
+      }
+      for (const [slug, count] of cachedBySport) {
+        logApiSportsCacheHit(
+          slug === "hockey" ? "api-hockey" : "api-football",
+          "/fixtures",
+          { ids: count }
+        );
+      }
+    }
     return { fixtures: await loadCached(admin, ids), settled: 0, skipped: true };
   }
 

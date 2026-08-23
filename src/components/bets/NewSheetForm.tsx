@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
+import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import { randomSheetSlug } from "@/lib/sheet-slug";
 
@@ -48,6 +49,7 @@ export function NewSheetForm({
       alert(error.message || "Kunde inte skapa spelbok");
       return;
     }
+    track({ event: "create_spelbok" });
     setOpen(false);
     if (data?.id) onCreated?.(data.id);
     router.refresh();

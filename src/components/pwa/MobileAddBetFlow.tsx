@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Bookmaker, Sheet } from "@/lib/types";
 import { PICKS, STAKE_PRESETS } from "@/lib/picks";
+import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { enqueuePendingBet } from "@/lib/offline-queue";
@@ -24,30 +25,47 @@ export function MobileAddBetFlow({
   bookmakers,
   onClose,
   onSaved,
+  prefillFixture,
 }: {
   sheets: Sheet[];
   bookmakers: Bookmaker[];
   onClose: () => void;
   onSaved: () => void;
+  /** Matchen är redan vald (förslagskort) — guiden startar på steg 2. */
+  prefillFixture?: PickerFixture | null;
 }) {
   const router = useRouter();
   const online = useOnlineStatus();
-  const [step, setStep] = useState(1);
+  // Guiden monteras om varje gång den öppnas, så förifyllningen hör hemma
+  // i initialvärdena i stället för i en effekt.
+  const [step, setStep] = useState(prefillFixture ? 2 : 1);
   const [manual, setManual] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState(sheets[0]?.id || "");
-  const [match, setMatch] = useState("");
+  const [match, setMatch] = useState(
+    prefillFixture
+      ? `${prefillFixture.home_name} – ${prefillFixture.away_name}`
+      : ""
+  );
   const [pick, setPick] = useState("");
-  const [league, setLeague] = useState("");
-  const [leagueId, setLeagueId] = useState<number | null>(null);
-  const [leagueLogo, setLeagueLogo] = useState<string | null>(null);
-  const [sport, setSport] = useState("Fotboll");
+  const [league, setLeague] = useState(prefillFixture?.league_name || "");
+  const [leagueId, setLeagueId] = useState<number | null>(
+    prefillFixture?.league_id ?? null
+  );
+  const [leagueLogo, setLeagueLogo] = useState<string | null>(
+    prefillFixture?.league_logo ?? null
+  );
+  const [sport, setSport] = useState(prefillFixture?.sport || "Fotboll");
   const [odds, setOdds] = useState("1.90");
   const [stake, setStake] = useState("100");
   const [bookmakerId, setBookmakerId] = useState(bookmakers[0]?.id || "");
-  const [fixtureId, setFixtureId] = useState<number | null>(null);
-  const [chosenFixture, setChosenFixture] = useState<PickerFixture | null>(null);
+  const [fixtureId, setFixtureId] = useState<number | null>(
+    prefillFixture?.fixture_id ?? null
+  );
+  const [chosenFixture, setChosenFixture] = useState<PickerFixture | null>(
+    prefillFixture ?? null
+  );
   const [ymd, setYmd] = useState(stockholmYmd());
 
   useEffect(() => {
@@ -123,6 +141,15 @@ export function MobileAddBetFlow({
       setError(insertError.message);
       return;
     }
+
+    track({
+      event: "create_bet",
+      sport,
+      liga: league || "Okänd liga",
+      odds: oddsValue,
+      insats: stakeValue,
+    });
+
     onSaved();
     router.refresh();
   }

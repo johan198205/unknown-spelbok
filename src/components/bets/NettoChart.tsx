@@ -1,7 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { compactAxisValue } from "@/lib/sheet-filters";
 import { formatMoney } from "@/lib/utils";
+
+// Närmaste "snygga" steg (1, 2, 2,5, 5, 10 × 10^n) för y-axelns etiketter.
+function niceStep(rough: number) {
+  if (!(rough > 0)) return 1;
+  const base = Math.pow(10, Math.floor(Math.log10(rough)));
+  const frac = rough / base;
+  const mult = frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 2.5 ? 2.5 : frac <= 5 ? 5 : 10;
+  return mult * base;
+}
 
 type Series = {
   id: string;
@@ -27,8 +37,13 @@ export function NettoChart({
     ...points.map((p) => p.value),
     ...(showSeries ? series.flatMap((s) => s.points.map((p) => p.value)) : []),
   ];
-  const min = Math.min(0, ...values);
-  const max = Math.max(0, ...values);
+  // Skalan snäpps till jämna steg så att y-axelns topp- och bottenvärde
+  // blir läsbara tal — och eftersom rawMin <= 0 <= rawMax hamnar 0 på en linje.
+  const rawMin = Math.min(0, ...values);
+  const rawMax = Math.max(0, ...values);
+  const tickStep = niceStep((rawMax - rawMin || 1) / 4);
+  const min = Math.floor(rawMin / tickStep) * tickStep;
+  const max = Math.ceil(rawMax / tickStep) * tickStep;
   const span = max - min || 1;
   const w = 1000;
   const h = compact ? 160 : 230;
@@ -58,6 +73,16 @@ export function NettoChart({
     }));
   }, [series, showSeries, h, min, span, w]);
 
+  const axisTicks = (() => {
+    const eps = tickStep * 1e-6;
+    const out: Array<{ value: number; y: number }> = [];
+    for (let v = min; v <= max + eps && out.length < 12; v += tickStep) {
+      const value = Math.abs(v) < eps ? 0 : v;
+      out.push({ value, y: h - ((value - min) / span) * h });
+    }
+    return out;
+  })();
+
   if (!points.length) return null;
 
   const line = coords
@@ -73,17 +98,23 @@ export function NettoChart({
   }
 
   return (
-    <div className="flex gap-2">
-      {!compact ? (
-        <div
-          className="flex w-[62px] flex-col justify-between text-right font-mono-num text-[11px] text-faint"
-          style={{ height: h }}
-        >
-          <div>{Math.round(max).toLocaleString("sv-SE")}</div>
-          <div>0</div>
-          <div>{Math.round(min).toLocaleString("sv-SE")}</div>
-        </div>
-      ) : null}
+    <div className="flex items-start gap-2">
+      <div
+        className="relative shrink-0"
+        style={{ height: h, width: compact ? 38 : 52 }}
+      >
+        {axisTicks.map((tick) => (
+          <div
+            key={tick.value}
+            className={`absolute right-0 font-mono-num leading-[12px] text-faint ${
+              compact ? "text-[10px]" : "text-[11px]"
+            }`}
+            style={{ top: Math.min(Math.max(tick.y - 6, 0), h - 12) }}
+          >
+            {compactAxisValue(tick.value)}
+          </div>
+        ))}
+      </div>
       <div className="relative min-w-0 flex-1">
         {activePoint ? (
           <div className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 rounded-[8px] border border-line bg-panel-elevated px-2.5 py-1.5 text-center shadow-[var(--shadow-tooltip)]">
@@ -129,18 +160,20 @@ export function NettoChart({
           onPointerUp={() => setActive(null)}
           onPointerLeave={() => setActive(null)}
         >
-          {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-            <line
-              key={t}
-              x1="0"
-              y1={h * t}
-              x2={w}
-              y2={h * t}
-              stroke="#1C2333"
-              strokeWidth="1"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {axisTicks
+            .filter((tick) => tick.value !== 0)
+            .map((tick) => (
+              <line
+                key={tick.value}
+                x1="0"
+                y1={tick.y}
+                x2={w}
+                y2={tick.y}
+                stroke="#1C2333"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
           <line
             x1="0"
             y1={zeroY}

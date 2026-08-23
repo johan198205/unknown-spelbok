@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   GeneralSettingsForm,
   NotifySettingsForm,
+  TrackingSettingsForm,
 } from "@/components/admin/SettingsAdmin";
 import {
   getAdminLogs,
@@ -12,11 +13,12 @@ import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Inställningar" };
 
-type Section = "allmant" | "nycklar" | "notiser" | "loggar";
+type Section = "allmant" | "nycklar" | "sparning" | "notiser" | "loggar";
 
 const SECTIONS: { key: Section; label: string }[] = [
   { key: "allmant", label: "Allmänt" },
   { key: "nycklar", label: "API-nycklar" },
+  { key: "sparning", label: "Spårning" },
   { key: "notiser", label: "Notiser" },
   { key: "loggar", label: "Loggar" },
 ];
@@ -48,6 +50,7 @@ const ACTION_LABELS: Record<string, string> = {
   "settings.site_updated": "Sajtinställningar sparade",
   "settings.competitions_toggled": "Tävlingar på/av",
   "settings.notify_updated": "Notiser sparade",
+  "settings.tracking_updated": "Spårning sparad",
 };
 
 function actionLabel(action: string) {
@@ -89,7 +92,7 @@ export default async function AdminSettingsPage({
   const actionFilter = sp.action ?? "all";
   const page = Math.max(1, Number(sp.page || 1));
 
-  const [{ site, notify }, keys, logs] = await Promise.all([
+  const [{ site, notify, tracking }, keys, logs] = await Promise.all([
     getAdminSettings(),
     getApiKeyStatus(),
     section === "loggar"
@@ -204,6 +207,10 @@ export default async function AdminSettingsPage({
               </span>
             </div>
           </div>
+        ) : null}
+
+        {section === "sparning" ? (
+          <TrackingSettingsForm tracking={tracking} />
         ) : null}
 
         {section === "notiser" ? <NotifySettingsForm notify={notify} /> : null}

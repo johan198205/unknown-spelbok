@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { logAdmin } from "@/lib/admin/log";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +9,14 @@ import {
   SITE_SETTINGS_KEY,
   type SiteSettings,
 } from "@/lib/site-settings";
+import {
+  GTM_ID_PATTERN,
+  normalizeGtmId,
+  parseTrackingSettings,
+  TRACKING_CACHE_TAG,
+  TRACKING_SETTINGS_KEY,
+  type TrackingSettings,
+} from "@/lib/tracking-settings";
 import type { Json } from "@/lib/types";
 
 export type NotifyChannel = "email" | "none";
@@ -50,6 +58,7 @@ function parseNotify(value: unknown): NotifySettings {
 export async function getAdminSettings(): Promise<{
   site: SiteSettings;
   notify: NotifySettings;
+  tracking: TrackingSettings;
 }> {
   await requireAdmin();
   const supabase = await createClient();
@@ -57,7 +66,7 @@ export async function getAdminSettings(): Promise<{
   const { data } = await supabase
     .from("app_settings")
     .select("key, value")
-    .in("key", [SITE_SETTINGS_KEY, NOTIFY_KEY]);
+    .in("key", [SITE_SETTINGS_KEY, NOTIFY_KEY, TRACKING_SETTINGS_KEY]);
 
   const rows = new Map(
     ((data ?? []) as { key: string; value: unknown }[]).map((r) => [
@@ -69,7 +78,47 @@ export async function getAdminSettings(): Promise<{
   return {
     site: parseSiteSettings(rows.get(SITE_SETTINGS_KEY)),
     notify: parseNotify(rows.get(NOTIFY_KEY)),
+    tracking: parseTrackingSettings(rows.get(TRACKING_SETTINGS_KEY)),
   };
+}
+
+/**
+ * Tomt värde = GTM av. Allt annat måste matcha container-formatet, annars
+ * skulle ett felskrivet id injicera en skriptagg som aldrig laddar.
+ */
+export async function saveTrackingSettings(input: TrackingSettings) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const id = normalizeGtmId(input.gtm_container_id);
+  if (id && !GTM_ID_PATTERN.test(id)) {
+    throw new Error("Ogiltigt GTM-id. Formatet är GTM-XXXXXXX.");
+  }
+
+  const value: TrackingSettings = { gtm_container_id: id };
+  const { error } = await supabase.from("app_settings").upsert(
+    {
+      key: TRACKING_SETTINGS_KEY,
+      value: value as unknown as Json,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" }
+  );
+  if (error) throw new Error(error.message);
+
+  await logAdmin(
+    "settings.tracking_updated",
+    id ? `GTM ${id}` : "GTM inaktiverat",
+    { gtm_container_id: id }
+  );
+
+  // Rot-layouten läser id:t genom unstable_cache — utan taggen slår ändringen
+  // inte igenom förrän de 60 sekunderna löpt ut. updateTag (till skillnad från
+  // revalidateTag) gör nästa sidvisning färsk direkt i stället för stale.
+  updateTag(TRACKING_CACHE_TAG);
+  revalidatePath("/admin/installningar");
+  revalidatePath("/", "layout");
+  return value;
 }
 
 export async function saveSiteSettings(input: SiteSettings) {

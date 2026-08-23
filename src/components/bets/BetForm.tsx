@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
 import { SearchDropdown } from "@/components/ui/SearchDropdown";
+import { settleOutcome, track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import type { Bet, BetResult, Bookmaker, Fixture, Sheet } from "@/lib/types";
 import {
@@ -68,30 +69,60 @@ export function BetForm({
   bookmakers,
   defaultSheetId,
   onDone,
+  prefillFixture,
+  hideTrigger,
+  onClose,
 }: {
   sheets: Sheet[];
   bookmakers: Bookmaker[];
   defaultSheetId?: string;
   onDone?: () => void;
+  /**
+   * Öppnar modalen direkt med matchen vald — kaskad-väljaren hoppas över.
+   * Används av förslagskorten på dashboarden.
+   */
+  prefillFixture?: Fixture | null;
+  /** Utan egen knapp: den som monterar komponenten styr när den visas. */
+  hideTrigger?: boolean;
+  onClose?: () => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!hideTrigger);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sheetId, setSheetId] = useState(defaultSheetId || sheets[0]?.id || "");
-  const [matchMode, setMatchMode] = useState<MatchMode>("search");
-  const [match, setMatch] = useState("");
+  // Förifyllningen sker i initialvärdena, inte i en effekt: komponenten
+  // monteras om varje gång ett förslagskort öppnar den, och en effekt
+  // hade slagits ut av resetForm() vid stängning.
+  const [matchMode, setMatchMode] = useState<MatchMode>(
+    prefillFixture ? "chosen" : "search"
+  );
+  const [match, setMatch] = useState(
+    prefillFixture
+      ? `${prefillFixture.home_name} – ${prefillFixture.away_name}`
+      : ""
+  );
   const [pick, setPick] = useState("");
-  const [league, setLeague] = useState("");
-  const [leagueId, setLeagueId] = useState<number | null>(null);
-  const [leagueLogo, setLeagueLogo] = useState<string | null>(null);
-  const [sport, setSport] = useState("");
+  const [league, setLeague] = useState(prefillFixture?.league_name || "");
+  const [leagueId, setLeagueId] = useState<number | null>(
+    prefillFixture?.league_id ?? null
+  );
+  const [leagueLogo, setLeagueLogo] = useState<string | null>(
+    prefillFixture?.league_logo ?? null
+  );
+  const [sport, setSport] = useState(prefillFixture?.sport || "");
   const [odds, setOdds] = useState("1.85");
   const [stake, setStake] = useState("100");
   const [bookmakerId, setBookmakerId] = useState("");
-  const [fixtureId, setFixtureId] = useState<number | null>(null);
-  const [chosenFixture, setChosenFixture] = useState<Fixture | null>(null);
-  const [chosenKickoff, setChosenKickoff] = useState<string | null>(null);
+  const [fixtureId, setFixtureId] = useState<number | null>(
+    prefillFixture?.fixture_id ?? null
+  );
+  const [chosenFixture, setChosenFixture] = useState<Fixture | null>(
+    prefillFixture ?? null
+  );
+  const [chosenKickoff, setChosenKickoff] = useState<string | null>(
+    prefillFixture?.kickoff ?? null
+  );
   const [ymd, setYmd] = useState(stockholmYmd());
   const [apiLeagues, setApiLeagues] = useState<LeagueOption[]>([]);
 
@@ -188,6 +219,7 @@ export function BetForm({
   function close() {
     setOpen(false);
     resetForm();
+    onClose?.();
   }
 
   function selectFixture(f: Fixture) {
@@ -290,12 +322,24 @@ export function BetForm({
       return;
     }
 
+    track({
+      event: "create_bet",
+      sport: sport || "Fotboll",
+      liga: league || "Okänd liga",
+      odds: oddsValue,
+      insats: stakeValue,
+    });
+
     close();
     onDone?.();
     router.refresh();
   }
 
   if (!sheets.length) {
+    // Utan egen knapp äger anroparen ytan — en lös panel skulle dyka upp
+    // mitt i layouten. Vägen hit (förslagskort) förutsätter ändå spel, och
+    // spel förutsätter ett spreadsheet.
+    if (hideTrigger) return null;
     return (
       <Panel className="p-4 text-sm text-muted">
         Skapa ett spreadsheet först under Spelbok.
@@ -305,7 +349,9 @@ export function BetForm({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>+ Lägg nytt spel</Button>
+      {hideTrigger ? null : (
+        <Button onClick={() => setOpen(true)}>+ Lägg nytt spel</Button>
+      )}
 
       {open ? (
         <div
@@ -617,6 +663,8 @@ export function BetRow({
       alert(error.message || "Kunde inte sätta resultat");
       return;
     }
+    const outcome = settleOutcome(result);
+    if (outcome) track({ event: "settle_bet", outcome });
     router.refresh();
   }
 

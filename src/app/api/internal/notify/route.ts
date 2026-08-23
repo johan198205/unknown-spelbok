@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { notifyGoals, notifySettledBets } from "@/lib/send-push";
+import {
+  notifyDailySuggestions,
+  notifyGoals,
+  notifySettledBets,
+} from "@/lib/send-push";
 
 export const runtime = "nodejs";
 
@@ -40,6 +44,7 @@ export async function POST(request: Request) {
     awayName?: unknown;
     homeScore?: unknown;
     awayScore?: unknown;
+    users?: unknown;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -60,6 +65,25 @@ export async function POST(request: Request) {
         homeScore: Number(body.homeScore) || 0,
         awayScore: Number(body.awayScore) || 0,
       });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (body.kind === "suggestions") {
+      const entries = Array.isArray(body.users)
+        ? body.users.flatMap((row) => {
+            if (!row || typeof row !== "object") return [];
+            const { userId, count } = row as Record<string, unknown>;
+            const n = Number(count);
+            if (typeof userId !== "string" || !Number.isFinite(n) || n <= 0) {
+              return [];
+            }
+            return [{ userId, count: Math.round(n) }];
+          })
+        : [];
+      if (!entries.length) {
+        return NextResponse.json({ ok: true, skipped: true });
+      }
+      await notifyDailySuggestions(entries);
       return NextResponse.json({ ok: true });
     }
 

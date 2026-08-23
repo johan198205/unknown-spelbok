@@ -48,6 +48,14 @@ function stockholmMidnight(ymd: string) {
   return new Date(guess.getTime() - tzOffsetMs(TZ, guess));
 }
 
+/** ISO-tidpunkt för en lokal svensk klockslag, t.ex. ("2026-01-15", 12, 0). */
+export function stockholmIso(ymd: string, hour = 12, minute = 0) {
+  const hh = String(hour).padStart(2, "0");
+  const mm = String(minute).padStart(2, "0");
+  const guess = new Date(`${ymd}T${hh}:${mm}:00Z`);
+  return new Date(guess.getTime() - tzOffsetMs(TZ, guess)).toISOString();
+}
+
 /** [from, to) för ett kalenderdygn i svensk tid, som ISO-strängar. */
 export function stockholmDayBounds(ymd: string) {
   const from = stockholmMidnight(ymd);

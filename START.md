@@ -99,6 +99,8 @@ Schemaläggningen (var 15:e minut via `pg_cron` + `pg_net`) står färdig och ko
 2. `db/admin-migration.sql` — admin: klick, bannerstatistik, loggar, inställningar, sättlingskö
 3. `db/site-settings-policy.sql` — låter utloggade läsa nyckeln `site` (underhållsläge + öppen registrering)
 4. `db/cron.sql` — schemalägg `settle-bets` (kommenterad, kräver dina nycklar)
+5. `db/api-usage-migration.sql` — förbrukningslogg mot API-Sports + `get_api_usage` (krävs för `/admin/api-usage`)
+6. `db/import-migration.sql` — `import_source`/`import_external_id`/`import_source_url` på `bets` + dubblettindex (krävs för Importera-knappen i Spelboken)
 
 ## Import av spelbolagen
 

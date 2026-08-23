@@ -12,6 +12,8 @@
  * Håll i synk med supabase/functions/_shared/apisports.ts.
  */
 
+import { apiSportsLogger } from "@/lib/api-sports/logRequest";
+
 export const DEFAULT_TIMEZONE = "Europe/Stockholm";
 export const MAX_REQUESTS_PER_MINUTE = 8;
 export const PAID_REQUESTS_PER_MINUTE = 30;
@@ -93,12 +95,29 @@ export class ApiSportsError extends Error {
   }
 }
 
+/** Ett faktiskt anrop ut på nätet — inte cacheträffar. */
+export type ApiSportsRequestEvent = {
+  path: string;
+  params: Record<string, string | number | boolean | undefined>;
+  /** null vid nätverksfel innan svaret kom. */
+  status: number | null;
+  requestsRemaining: number | null;
+  requestsLimit: number | null;
+  responseTimeMs: number;
+};
+
 export type ApiSportsConfig = {
   baseUrl: string;
   apiKey: string;
   /** Max anrop per minut. Free plan är 10; vi håller oss till 8 med marginal. */
   maxPerMinute?: number;
   timezone?: string;
+  /**
+   * Fire-and-forget-krok för förbrukningsloggen (api_request_log).
+   * Anropas en gång per externt försök, även vid 429 och nätverksfel.
+   * Får aldrig kasta och får aldrig awaitas — huvudflödet ska inte vänta.
+   */
+  onRequest?: (event: ApiSportsRequestEvent) => void;
 };
 
 export type ApiSportsPage<T> = {
@@ -179,6 +198,15 @@ function authHeaders(baseUrl: string, apiKey: string): Record<string, string> {
   return { "x-apisports-key": apiKey };
 }
 
+/** Kvotheaders från API-Sports: t.ex. x-ratelimit-requests-remaining: "7412". */
+function intHeader(res: Response | null, name: string): number | null {
+  if (!res) return null;
+  const raw = res.headers.get(name);
+  if (raw == null || raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? Math.round(value) : null;
+}
+
 function withParams(
   baseUrl: string,
   path: string,
@@ -222,6 +250,27 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     lastRequestAt = Date.now();
   }
 
+  function report(
+    path: string,
+    params: Record<string, string | number | boolean | undefined>,
+    res: Response | null,
+    startedAt: number
+  ) {
+    if (!config.onRequest) return;
+    try {
+      config.onRequest({
+        path,
+        params,
+        status: res?.status ?? null,
+        requestsRemaining: intHeader(res, "x-ratelimit-requests-remaining"),
+        requestsLimit: intHeader(res, "x-ratelimit-requests-limit"),
+        responseTimeMs: Date.now() - startedAt,
+      });
+    } catch {
+      /* loggning får aldrig störa hämtningen */
+    }
+  }
+
   async function fetchPage(
     path: string,
     params: Record<string, string | number | boolean | undefined>
@@ -232,9 +281,13 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     for (let attempt = 1; attempt <= 3; attempt++) {
       await throttle();
       requests += 1;
+      const startedAt = Date.now();
+      let response: Response | null = null;
 
       try {
         const res = await fetch(url, { headers });
+        response = res;
+        report(path, params, res, startedAt);
 
         if (res.status === 429) {
           const retryAfter = Number(res.headers.get("retry-after"));
@@ -259,6 +312,8 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
 
         return json;
       } catch (err) {
+        // Kom vi aldrig fram (nätverksfel/timeout) är anropet ändå förbrukat.
+        if (!response) report(path, params, null, startedAt);
         lastError = err;
         const retryable =
           err instanceof ApiSportsError
@@ -349,6 +404,7 @@ export function footballClientFromEnv(
     apiKey,
     maxPerMinute: opts?.maxPerMinute,
     timezone: DEFAULT_TIMEZONE,
+    onRequest: apiSportsLogger("api-football"),
   });
 }
 
@@ -362,6 +418,7 @@ export function hockeyClientFromEnv(env: {
   return createApiSportsClient({
     baseUrl: env.get("APISPORTS_HOCKEY_URL") || DEFAULT_HOCKEY_URL,
     apiKey,
+    onRequest: apiSportsLogger("api-hockey"),
   });
 }
 

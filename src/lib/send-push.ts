@@ -195,6 +195,50 @@ export async function notifySettledBets(betIds: string[]) {
   );
 }
 
+/**
+ * Push vid dagens förslag. Anropas av Edge Functionen
+ * generate-daily-suggestions via /api/internal/notify.
+ *
+ * Ingen ny inställning: användare utan push-prenumeration filtreras bort
+ * i sendPushToUsers, och det är hela villkoret enligt promptboarden.
+ * Texten är avsiktligt neutral — "matchar din spelstil", aldrig ett tips.
+ */
+export async function notifyDailySuggestions(
+  entries: { userId: string; count: number }[]
+) {
+  const valid = entries.filter((e) => e.userId && e.count > 0);
+  if (!valid.length) return { sent: 0, failed: 0 };
+
+  // Gruppera på antal så att N användare blir högst en handfull batchar
+  // i stället för ett sendPushToUsers-anrop per person.
+  const byCount = new Map<number, string[]>();
+  for (const entry of valid) {
+    const list = byCount.get(entry.count) ?? [];
+    list.push(entry.userId);
+    byCount.set(entry.count, list);
+  }
+
+  let sent = 0;
+  let failed = 0;
+  for (const [count, userIds] of byCount) {
+    const result = await sendPushToUsers(userIds, {
+      title: "Dagens matcher för dig",
+      body:
+        count === 1
+          ? "1 match matchar din spelstil idag"
+          : `${count} matcher matchar din spelstil idag`,
+      url: "/hem",
+    });
+    sent += result.sent;
+    failed += result.failed;
+  }
+
+  console.log(
+    `push vid dagens förslag: ${sent} skickade till ${valid.length} användare`
+  );
+  return { sent, failed };
+}
+
 export async function notifyGoals(args: {
   fixtureId: number;
   homeName: string;

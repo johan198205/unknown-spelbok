@@ -5,8 +5,13 @@ import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { NettoChart } from "@/components/bets/NettoChart";
 import { BreakdownCard } from "@/components/bets/BreakdownCard";
+import { LeagueLogo } from "@/components/bets/LeagueLogo";
+import { ManualMatchLabel, MatchSides } from "@/components/bets/TeamPair";
 import { StatsAccordion } from "@/components/pwa/StatsAccordion";
 import { MonthlyBars } from "@/components/pwa/MonthlyBars";
+import { DailySuggestions } from "@/components/suggestions/DailySuggestions";
+import { stockholmYmd } from "@/lib/stockholm";
+import { SUGGESTION_COLUMNS, normalizeSuggestion } from "@/lib/suggestions";
 import {
   ODDS_BUCKETS,
   bookmakerKey,
@@ -16,6 +21,7 @@ import {
   pickKey,
   sportKey,
 } from "@/lib/breakdowns";
+import { betLeagueLogo } from "@/lib/logos";
 import {
   betNetto,
   computeStats,
@@ -27,26 +33,58 @@ import {
 } from "@/lib/utils";
 import type { Bet, Sheet } from "@/lib/types";
 
+/** Lagloggor från kopplad fixture, annars initialer ur matchsträngen. */
+function BetMatch({ bet, size = 18 }: { bet: Bet; size?: number }) {
+  const f = bet.fixtures;
+  if (f?.home_name && f?.away_name) {
+    return (
+      <MatchSides
+        homeName={f.home_name}
+        awayName={f.away_name}
+        homeLogo={f.home_logo}
+        awayLogo={f.away_logo}
+        homeTeamId={f.home_team_id}
+        awayTeamId={f.away_team_id}
+        sport={f.sport ?? bet.sport}
+        size={size}
+      />
+    );
+  }
+  return <ManualMatchLabel match={bet.match} size={size} />;
+}
+
 export default async function HemPage() {
   const user = await requireUser();
   const profile = await getProfile();
   const supabase = await createClient();
 
-  const [{ data: sheets }, { data: betsData }] = await Promise.all([
-    supabase
-      .from("sheets")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("bets")
-      .select(
-        "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
-      )
-      .eq("user_id", user.id)
-      .order("placed_at", { ascending: false }),
-  ]);
+  const [{ data: sheets }, { data: betsData }, { data: suggestionRows }] =
+    await Promise.all([
+      supabase
+        .from("sheets")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("bets")
+        .select(
+          "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
+        )
+        .eq("user_id", user.id)
+        .order("placed_at", { ascending: false }),
+      // Serverrenderat: sektionen ska inte blinka in efter laddning. Saknas
+      // tabellen (migrationen inte körd) blir data null och sektionen uteblir.
+      supabase
+        .from("daily_suggestions")
+        .select(SUGGESTION_COLUMNS)
+        .eq("user_id", user.id)
+        .eq("suggestion_date", stockholmYmd())
+        .eq("dismissed", false)
+        .order("match_score", { ascending: false })
+        .order("kickoff", { ascending: true }),
+    ]);
 
+  const suggestions = (suggestionRows ?? []).map(normalizeSuggestion);
   const sheetList = (sheets || []) as Sheet[];
   const bets = (betsData || []) as Bet[];
   const stats = computeStats(bets);
@@ -170,6 +208,8 @@ export default async function HemPage() {
         ))}
       </div>
 
+      <DailySuggestions initial={suggestions} />
+
       <div>
         <div className="mb-2.5 flex items-center justify-between">
           <h2 className="font-display text-[17px] font-semibold uppercase tracking-[0.04em]">
@@ -257,9 +297,20 @@ export default async function HemPage() {
                 key={b.id}
                 className="rounded-[12px] border border-line bg-panel px-3.5 py-3"
               >
-                <div className="text-[12px] text-faint">{b.league || "Match"}</div>
-                <div className="font-semibold">{b.match}</div>
-                <div className="text-sm text-muted">
+                <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-faint">
+                  <LeagueLogo
+                    src={betLeagueLogo(b)}
+                    leagueId={b.league_id ?? b.fixtures?.league_id}
+                    sport={b.sport ?? b.fixtures?.sport}
+                    name={b.league}
+                    size={16}
+                  />
+                  <span className="min-w-0 truncate">{b.league || "Match"}</span>
+                </div>
+                <div className="mt-1 flex min-w-0">
+                  <BetMatch bet={b} />
+                </div>
+                <div className="mt-0.5 text-sm text-muted">
                   {b.pick} @ {Number(b.odds).toFixed(2)}
                 </div>
               </div>
@@ -285,8 +336,10 @@ export default async function HemPage() {
                     className={`h-2 w-2 rounded-full ${n >= 0 ? "bg-win" : "bg-loss"}`}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{b.match}</div>
-                    <div className="truncate text-[12.5px] text-muted">
+                    <div className="flex min-w-0">
+                      <BetMatch bet={b} size={17} />
+                    </div>
+                    <div className="mt-0.5 truncate text-[12.5px] text-muted">
                       {b.pick} @ {Number(b.odds).toFixed(2)}
                     </div>
                   </div>

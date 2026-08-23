@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AccumulatedNettoChart } from "@/components/bets/AccumulatedNettoChart";
 import { BetForm, BetsTable } from "@/components/bets/BetForm";
+import { ImportBetsButton } from "@/components/bets/ImportBetsModal";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { useRyggaFlow } from "@/components/bets/RyggaSpelModal";
 import {
@@ -34,6 +35,7 @@ import {
   type SheetSportFilter,
   type SheetViewMode,
 } from "@/lib/sheet-filters";
+import { track } from "@/lib/analytics";
 import { betLeagueLogo } from "@/lib/logos";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
 import { SpelbokStatsBottom } from "@/components/bets/SpelbokStatsBottom";
@@ -104,6 +106,16 @@ export function SpelbokSheetView({
     () => parseSheetFilters(searchParams),
     [searchParams]
   );
+
+  // En view per spelbok och sidvisning. Filterbyten skriver om URL:en med
+  // router.replace, så effekten får inte hänga på pathname/searchParams.
+  const viewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const slug = sheet.slug ?? sheet.id;
+    if (viewedRef.current === slug) return;
+    viewedRef.current = slug;
+    track({ event: "view_spelbok", slug, is_owner: isOwner });
+  }, [sheet.slug, sheet.id, isOwner]);
 
   const leagues = useMemo(() => distinctLeagues(bets), [bets]);
   const picks = useMemo(() => distinctPicks(bets), [bets]);
@@ -186,6 +198,7 @@ export function SpelbokSheetView({
           {isOwner && sheet.is_public && sheet.slug ? (
             <ShareSheetButton slug={sheet.slug} />
           ) : null}
+          {isOwner ? <ImportBetsButton sheetId={sheet.id} /> : null}
           {isOwner ? (
             <BetForm
               sheets={sheets}

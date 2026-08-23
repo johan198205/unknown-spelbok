@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import { cn } from "@/lib/utils";
 
@@ -109,6 +110,9 @@ export function BookmakerCard({
               href={`/go/${data.slug}${src ? `?src=${src}` : ""}`}
               target="_blank"
               rel="noopener sponsored nofollow"
+              // Synkron push innan navigeringen — /go-routen är server-side och
+              // hinner aldrig röra dataLayer. Supabase-klicket loggas där.
+              onClick={() => track({ event: "affiliate_click", bookmaker: data.slug })}
               className="mt-auto block rounded-[11px] bg-[#3FA662] px-3.5 py-3 text-center text-white no-underline hover:bg-[#348C53] hover:text-white hover:no-underline"
             >
               {cta}

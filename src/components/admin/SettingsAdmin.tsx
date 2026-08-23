@@ -5,10 +5,16 @@ import { useState, useTransition } from "react";
 import {
   saveNotifySettings,
   saveSiteSettings,
+  saveTrackingSettings,
   type NotifyChannel,
   type NotifySettings,
 } from "@/lib/admin/settings";
 import type { SiteSettings } from "@/lib/site-settings";
+import {
+  GTM_ID_PATTERN,
+  normalizeGtmId,
+  type TrackingSettings,
+} from "@/lib/tracking-settings";
 import { cn } from "@/lib/utils";
 
 function Toggle({
@@ -186,6 +192,112 @@ export function GeneralSettingsForm({ site }: { site: SiteSettings }) {
             } catch (e) {
               setError(
                 e instanceof Error ? e.message : "Kunde inte spara inställningarna"
+              );
+            }
+          });
+        }}
+      />
+    </>
+  );
+}
+
+export function TrackingSettingsForm({
+  tracking,
+}: {
+  tracking: TrackingSettings;
+}) {
+  const router = useRouter();
+  const [draft, setDraft] = useState(tracking.gtm_container_id);
+  const [pending, startTransition] = useTransition();
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<string | null>(null);
+
+  const normalized = normalizeGtmId(draft);
+  const dirty = normalized !== tracking.gtm_container_id;
+  const formatOk = !normalized || GTM_ID_PATTERN.test(normalized);
+
+  return (
+    <>
+      <div className="rounded-[14px] border border-line bg-panel p-5">
+        <div className="mb-1.5 font-display text-[17px] font-semibold uppercase tracking-[0.05em]">
+          Spårning
+        </div>
+        <div className="mb-4 text-[13px] text-muted">
+          GTM laddas på alla sidor och tar emot händelser via dataLayer.
+          Adminstatistiken läser Supabase direkt och påverkas inte av om GTM
+          blockeras.
+        </div>
+
+        <label className="block max-w-[360px]">
+          <span className="mb-1.5 block text-[10.5px] uppercase tracking-[0.12em] text-dim">
+            GTM Container-ID
+          </span>
+          <input
+            value={draft}
+            onChange={(e) => {
+              setSaved(false);
+              setInvalid(null);
+              setDraft(e.target.value);
+            }}
+            placeholder="GTM-XXXXXXX"
+            spellCheck={false}
+            autoComplete="off"
+            aria-invalid={!formatOk || !!invalid}
+            className={cn(
+              "font-mono-num w-full rounded-[9px] border bg-bg px-3 py-[11px] text-[14px] uppercase outline-none",
+              formatOk && !invalid
+                ? "border-line focus:border-line-hover"
+                : "border-loss/50 focus:border-loss"
+            )}
+          />
+        </label>
+
+        {!formatOk || invalid ? (
+          <p className="mt-2 text-[13px] font-medium text-loss">
+            {invalid ?? "Ogiltigt GTM-id. Formatet är GTM-XXXXXXX."}
+          </p>
+        ) : (
+          <p className="mt-2 text-[12.5px] text-dim">
+            Lämna tomt för att inaktivera GTM.
+          </p>
+        )}
+
+        <div className="mt-3.5 flex flex-wrap items-center gap-3 rounded-[11px] border border-line-soft bg-bg-soft px-3.5 py-3">
+          <span
+            className={cn(
+              "size-[9px] shrink-0 rounded-full",
+              tracking.gtm_container_id ? "bg-win" : "bg-muted"
+            )}
+          />
+          <span className="text-[13px] text-muted">
+            {tracking.gtm_container_id
+              ? `GTM laddas med ${tracking.gtm_container_id}`
+              : "GTM är avstängt"}
+          </span>
+        </div>
+      </div>
+
+      <SaveBar
+        dirty={dirty && formatOk}
+        pending={pending}
+        saved={saved}
+        error={error}
+        onSave={() => {
+          setError(null);
+          setInvalid(null);
+          if (!formatOk) {
+            setInvalid("Ogiltigt GTM-id. Formatet är GTM-XXXXXXX.");
+            return;
+          }
+          startTransition(async () => {
+            try {
+              await saveTrackingSettings({ gtm_container_id: normalized });
+              setSaved(true);
+              router.refresh();
+            } catch (e) {
+              setError(
+                e instanceof Error ? e.message : "Kunde inte spara spårningen"
               );
             }
           });

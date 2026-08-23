@@ -4,6 +4,7 @@ import {
   getStatsData,
   parsePeriod,
   STATS_PERIODS,
+  type StatsBannerRow,
   type StatsBar,
 } from "@/lib/admin/stats";
 import { cn } from "@/lib/utils";
@@ -194,6 +195,19 @@ export default async function AdminStatsPage({
         </div>
       </div>
 
+      <div className="mb-4 rounded-[14px] border border-line bg-panel p-[18px]">
+        <div className="mb-3.5 font-display text-[16px] font-semibold uppercase tracking-[0.05em]">
+          Bannerklick per banner
+        </div>
+        {data.banners.length ? (
+          <BannerTable rows={data.banners} />
+        ) : (
+          <div className="py-4 text-[13.5px] text-dim">
+            Inga händelser under perioden.
+          </div>
+        )}
+      </div>
+
       <div className="rounded-[14px] border border-line bg-panel p-[18px]">
         <div className="mb-4 font-display text-[16px] font-semibold uppercase tracking-[0.05em]">
           Konvertering
@@ -259,6 +273,63 @@ export default async function AdminStatsPage({
           som registrerades under {data.periodLabel.toLowerCase()}.
         </p>
       </div>
+    </div>
+  );
+}
+
+function BannerTable({ rows }: { rows: StatsBannerRow[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] border-collapse">
+        <thead>
+          <tr className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted">
+            <th className="pb-2 text-left font-semibold">Banner</th>
+            <th className="w-[100px] pb-2 text-right font-semibold">
+              Visningar
+            </th>
+            <th className="w-[80px] pb-2 text-right font-semibold">Klick</th>
+            <th className="w-[80px] pb-2 text-right font-semibold">CTR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((b) => (
+            <tr key={b.id} className="border-t border-line-soft">
+              <td className="py-2.5 pr-3">
+                <span className="flex items-center gap-3">
+                  {b.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={b.imageUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-8 w-[72px] shrink-0 rounded-[5px] border border-line object-cover"
+                    />
+                  ) : (
+                    <span className="h-8 w-[72px] shrink-0 rounded-[5px] border border-dashed border-line-strong" />
+                  )}
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13.5px] text-text-soft">
+                      {b.title}
+                    </span>
+                    <span className="block text-[11.5px] text-dim">
+                      {b.placement}
+                    </span>
+                  </span>
+                </span>
+              </td>
+              <td className="font-mono-num py-2.5 text-right text-[12.5px] text-muted">
+                {b.views.toLocaleString("sv-SE")}
+              </td>
+              <td className="font-mono-num py-2.5 text-right text-[12.5px] font-semibold">
+                {b.clicks.toLocaleString("sv-SE")}
+              </td>
+              <td className="font-mono-num py-2.5 text-right text-[12.5px] text-cyan">
+                {pct(b.ctr)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

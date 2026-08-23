@@ -1,5 +1,4 @@
 import { cache } from "react";
-import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Banner, BannerPlacement } from "@/lib/types";
 
@@ -43,18 +42,3 @@ export const getBannerForPlacement = cache(
     return banners[dayOfYear() % banners.length];
   }
 );
-
-/**
- * Cached for the same reason, so one request counts one impression. The
- * client is built up front because `after` callbacks in a Server Component
- * may not touch request APIs such as `cookies()`.
- */
-export const logBannerView = cache(async (bannerId: string) => {
-  const supabase = await createClient();
-  after(async () => {
-    const { error } = await supabase
-      .from("banner_events")
-      .insert({ banner_id: bannerId, event: "view" });
-    if (error) console.error("logBannerView failed", error.message);
-  });
-});

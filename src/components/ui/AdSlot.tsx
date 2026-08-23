@@ -1,5 +1,5 @@
 import { BannerLink } from "./BannerLink";
-import { getBannerForPlacement, logBannerView } from "@/lib/banners";
+import { getBannerForPlacement } from "@/lib/banners";
 import { cn } from "@/lib/utils";
 import type { BannerPlacement } from "@/lib/types";
 
@@ -27,11 +27,12 @@ export async function AdSlot({
     );
   }
 
-  await logBannerView(banner.id);
-
+  // Visningen loggas i klienten när bannern faktiskt syns — en serverrendering
+  // säger inget om att besökaren scrollade ner till annonsplatsen.
   return (
     <BannerLink
       bannerId={banner.id}
+      placement={placement}
       href={banner.link_url}
       title={banner.title}
       imageUrl={banner.image_url}

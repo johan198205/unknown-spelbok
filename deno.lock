@@ -1,0 +1,46 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@supabase/supabase-js@2": "2.112.3"
+  },
+  "jsr": {
+    "@supabase/supabase-js@2.112.3": {
+      "integrity": "114dd7d327daa11fb5b876bc447c47a8c1b9bf3f0d0ed05b308a60639b134b7b"
+    }
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@dnd-kit/core@^6.3.1",
+        "npm:@dnd-kit/sortable@10",
+        "npm:@dnd-kit/utilities@^3.2.2",
+        "npm:@next/third-parties@^16.3.2",
+        "npm:@serwist/next@^9.5.12",
+        "npm:@supabase/ssr@~0.12.4",
+        "npm:@supabase/supabase-js@^2.112.3",
+        "npm:@tailwindcss/postcss@4",
+        "npm:@types/node@^20.19.43",
+        "npm:@types/react-dom@19",
+        "npm:@types/react@19",
+        "npm:@types/web-push@^3.6.4",
+        "npm:dotenv@^17.4.2",
+        "npm:eslint-config-next@16.3.1",
+        "npm:eslint@9",
+        "npm:framer-motion@^13.1.0",
+        "npm:idb@^8.0.3",
+        "npm:lucide-react@^1.31.0",
+        "npm:next@16.3.1",
+        "npm:react-dom@19.2.8",
+        "npm:react-markdown@^10.1.0",
+        "npm:react@19.2.8",
+        "npm:recharts@^3.10.1",
+        "npm:remark-gfm@^4.0.1",
+        "npm:serwist@^9.5.12",
+        "npm:tailwindcss@4",
+        "npm:tsx@^4.23.12",
+        "npm:typescript@5",
+        "npm:web-push@^3.6.7"
+      ]
+    }
+  }
+}

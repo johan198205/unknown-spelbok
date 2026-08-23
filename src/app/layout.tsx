@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, IBM_Plex_Mono, Oswald } from "next/font/google";
+import { GoogleTagManager } from "@next/third-parties/google";
 import { ToastProvider } from "@/components/ui/Toast";
+import { getGtmContainerId } from "@/lib/tracking-settings";
 import "./globals.css";
 
 const oswald = Oswald({
@@ -64,16 +66,20 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Tomt container-id i /admin/installningar → ingen GTM alls på sidan.
+  const gtmId = await getGtmContainerId();
+
   return (
     <html
       lang="sv"
       className={`${oswald.variable} ${barlow.variable} ${plex.variable} h-full`}
     >
+      {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
       <body className="min-h-full flex flex-col bg-bg text-text antialiased">
         <ToastProvider>{children}</ToastProvider>
       </body>

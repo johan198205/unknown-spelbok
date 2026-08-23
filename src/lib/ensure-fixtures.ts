@@ -1,3 +1,4 @@
+import { logApiSportsCacheHit } from "@/lib/api-sports/logRequest";
 import {
   chunk,
   DEFAULT_TIMEZONE,
@@ -278,13 +279,24 @@ export async function ensureFixturesForDate(ymd: string) {
   const window = await resolveFixtureCoverage();
   if (outsideCoverage(ymd, window)) return 0;
 
+  // Varje retur nedan är ett API-anrop vi slapp göra — logga det som
+  // cacheträff så /admin/api-usage kan visa vad cachen sparar.
   const markedEmpty = emptyUntil.get(ymd);
-  if (markedEmpty && markedEmpty > Date.now()) return 0;
-  if (recentlyComplete(ymd)) return 0;
+  if (markedEmpty && markedEmpty > Date.now()) {
+    logApiSportsCacheHit("api-football", "/fixtures", { date: ymd });
+    return 0;
+  }
+  if (recentlyComplete(ymd)) {
+    logApiSportsCacheHit("api-football", "/fixtures", { date: ymd });
+    return 0;
+  }
 
   let pending = filling.get(ymd);
   if (pending) return pending;
-  if (await hasCompleteLog(ymd)) return 0;
+  if (await hasCompleteLog(ymd)) {
+    logApiSportsCacheHit("api-football", "/fixtures", { date: ymd });
+    return 0;
+  }
 
   pending = filling.get(ymd);
   if (!pending) {

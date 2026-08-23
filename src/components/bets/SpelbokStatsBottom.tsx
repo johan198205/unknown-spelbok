@@ -15,6 +15,7 @@ import {
   type StatsPeriod,
 } from "@/lib/bet-stats";
 import { BreakdownCard } from "@/components/bets/BreakdownCard";
+import { track } from "@/lib/analytics";
 import { cn, formatMoney, formatNumber, nettoColor } from "@/lib/utils";
 
 type Props = {
@@ -368,6 +369,9 @@ function AffiliatesCard({ affiliates }: { affiliates: AffiliateTopRow[] }) {
                 href={`/go/${bm.slug}?src=spelbok_topp3`}
                 target="_blank"
                 rel="sponsored noopener"
+                onClick={() =>
+                  track({ event: "affiliate_click", bookmaker: bm.slug })
+                }
                 className="block bg-win px-3 py-2.5 text-center font-display text-[14px] font-bold tracking-[0.08em] text-win-ink no-underline hover:brightness-105 hover:no-underline"
               >
                 HÄMTA BONUS

@@ -6,6 +6,7 @@ import { FormEvent, Suspense, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
+import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 
 function AuthForm({ mode }: { mode: "login" | "register" }) {
@@ -35,12 +36,14 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
           },
         });
         if (signUpError) throw signUpError;
+        track({ event: "sign_up", method: "password" });
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signInError) throw signInError;
+        track({ event: "login", method: "password" });
       }
       router.push(next);
       router.refresh();

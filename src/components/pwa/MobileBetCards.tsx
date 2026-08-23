@@ -21,6 +21,7 @@ import {
 import { canRyggaBet } from "@/lib/rygga";
 import type { Bet, BetResult } from "@/lib/types";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
+import { settleOutcome, track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import {
@@ -234,6 +235,8 @@ export function MobileBetCards({
       alert(error.message || "Kunde inte sätta resultat");
       return;
     }
+    const outcome = settleOutcome(result);
+    if (outcome) track({ event: "settle_bet", outcome });
     setSheetBet(null);
     router.refresh();
   }

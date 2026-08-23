@@ -46,6 +46,17 @@ export type StatsFunnelStep = {
   step: number | null;
 };
 
+export type StatsBannerRow = {
+  id: string;
+  title: string;
+  imageUrl: string | null;
+  placement: string;
+  views: number;
+  clicks: number;
+  /** Klick delat med visningar, i procent. 0 när bannern inte visats. */
+  ctr: number;
+};
+
 export type StatsData = {
   period: StatsPeriod;
   periodLabel: string;
@@ -56,6 +67,7 @@ export type StatsData = {
   chart: StatsPoint[];
   affiliate: StatsBar[];
   leagues: StatsBar[];
+  banners: StatsBannerRow[];
   funnel: StatsFunnelStep[];
 };
 
@@ -204,6 +216,8 @@ export async function getStatsData(
     clicksPrev,
     bookmakers,
     cohort,
+    bannerEvents,
+    banners,
   ] = await Promise.all([
     // Bets in the period carry active users, bet volume and league mix.
     selectAll<{ user_id: string; placed_at: string; league: string | null }>(
@@ -263,6 +277,18 @@ export async function getStatsData(
         .lt("created_at", endIso)
         .range(from, to)
     ),
+    // Bannervisningar och -klick i perioden. Aggregeras i appen så kortet
+    // följer samma periodfilter som resten av sidan (vyn banner_stats är
+    // total sedan start och duger bara till /admin/banners).
+    selectAll<{ banner_id: string; event: string }>((from, to) =>
+      supabase
+        .from("banner_events")
+        .select("banner_id, event")
+        .gte("occurred_at", startIso)
+        .lt("occurred_at", endIso)
+        .range(from, to)
+    ),
+    supabase.from("banners").select("id, title, image_url, placement"),
   ]);
 
   // ---- Daily active users, current vs previous period -----------------------
@@ -336,6 +362,43 @@ export async function getStatsData(
       .sort((a, b) => b.count - a.count)
       .slice(0, 8)
   );
+
+  // ---- Banner impressions and clicks ---------------------------------------
+  const bannerMeta = new Map(
+    (
+      (banners.data ?? []) as {
+        id: string;
+        title: string;
+        image_url: string | null;
+        placement: string | null;
+      }[]
+    ).map((b) => [b.id, b])
+  );
+
+  const bannerCounts = new Map<string, { views: number; clicks: number }>();
+  for (const row of bannerEvents) {
+    const entry = bannerCounts.get(row.banner_id) ?? { views: 0, clicks: 0 };
+    if (row.event === "click") entry.clicks += 1;
+    else entry.views += 1;
+    bannerCounts.set(row.banner_id, entry);
+  }
+
+  // Bara banners med händelser i perioden — raderade banners kan sakna
+  // metadata men har kvar sina rader tills cascaden städat dem.
+  const bannerRows: StatsBannerRow[] = [...bannerCounts.entries()]
+    .map(([id, counts]) => {
+      const meta = bannerMeta.get(id);
+      return {
+        id,
+        title: meta?.title ?? "Raderad banner",
+        imageUrl: meta?.image_url ?? null,
+        placement: meta?.placement ?? "—",
+        views: counts.views,
+        clicks: counts.clicks,
+        ctr: counts.views > 0 ? (counts.clicks / counts.views) * 100 : 0,
+      };
+    })
+    .sort((a, b) => b.clicks - a.clicks || b.views - a.views);
 
   // ---- Conversion funnel over the users registered in the period -----------
   const cohortIds = cohort.map((c) => c.id);
@@ -419,6 +482,7 @@ export async function getStatsData(
     chart,
     affiliate,
     leagues,
+    banners: bannerRows,
     funnel,
   };
 }
