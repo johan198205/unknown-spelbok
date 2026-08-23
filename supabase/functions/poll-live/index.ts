@@ -25,6 +25,11 @@ import {
   type ApiFixtureItem,
   type SportSlug,
 } from "../_shared/apisports.ts";
+import {
+  notifyFulltime,
+  notifySettleReminders,
+  type FinishedMatchNotice,
+} from "../_shared/finish-notify.ts";
 import { mapFixtureRow } from "../_shared/map.ts";
 import { settleOpenBets } from "../_shared/settle-open.ts";
 import { notifySite } from "../_shared/site-notify.ts";
@@ -168,6 +173,7 @@ export async function handlePollLive(req: Request) {
     const updates: ReturnType<typeof mapFixtureRow>[] = [];
     const finalById = new Map<number, { home: number; away: number }>();
     const goalNotices: Promise<void>[] = [];
+    const finished: FinishedMatchNotice[] = [];
 
     for (const fixture of fixtures) {
       const hit = results.get(fixture.fixture_id);
@@ -191,6 +197,13 @@ export async function handlePollLive(req: Request) {
           notifySite({
             kind: "goal",
             fixtureId: fixture.fixture_id,
+            // Vem som gjorde målet vet vi inte från /fixtures — bara vilken
+            // sida siffran växte på. Räcker för händelsenyckeln.
+            teamId:
+              nextHome > prevHome
+                ? hit.item.teams.home.id
+                : hit.item.teams.away.id,
+            elapsed: hit.item.fixture.status.elapsed ?? null,
             homeName: hit.item.teams.home.name,
             awayName: hit.item.teams.away.name,
             homeScore: nextHome,
@@ -202,6 +215,13 @@ export async function handlePollLive(req: Request) {
       if (statusBucket(status) === "final") {
         const regulation = regulationScore(hit.item);
         if (regulation) finalById.set(fixture.fixture_id, regulation);
+        finished.push({
+          fixtureId: fixture.fixture_id,
+          homeName: hit.item.teams.home.name,
+          awayName: hit.item.teams.away.name,
+          homeScore: nextHome,
+          awayScore: nextAway,
+        });
       }
     }
 
@@ -219,6 +239,9 @@ export async function handlePollLive(req: Request) {
     // så ett mål i slutminuten tystas om spelen hinner rättas först.
     if (goalNotices.length) await Promise.all(goalNotices);
 
+    // Slutsignalen måste ut före rättningen, av samma skäl som målnotisen.
+    if (finished.length && !dryRun) await notifyFulltime(finished);
+
     if (finalById.size) {
       const settled = await settleOpenBets(supabase, {
         finalById,
@@ -228,6 +251,10 @@ export async function handlePollLive(req: Request) {
       summary.voided = settled.voided;
       summary.queued = settled.queued;
     }
+
+    // Efter rättningen: det som fortfarande står öppet gick inte att
+    // auto-rätta (t.ex. "Målskytt när som helst") och kräver handpåläggning.
+    if (finished.length && !dryRun) await notifySettleReminders(finished);
 
     if (logId) {
       await finishSyncLog(supabase, logId, {
@@ -239,7 +266,11 @@ export async function handlePollLive(req: Request) {
       });
     }
 
-    return json({ ...summary, ms: Date.now() - startedAt });
+    return json({
+      ...summary,
+      finished: finished.length,
+      ms: Date.now() - startedAt,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("poll-live", message);

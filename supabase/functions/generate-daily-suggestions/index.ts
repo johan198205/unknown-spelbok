@@ -24,6 +24,7 @@ import {
   ambiguousLeagueNames,
   MAX_SUGGESTIONS_PER_SHEET,
   MAX_SUGGESTIONS_PER_USER,
+  MIN_SEGMENT_BETS,
   MIN_SHEET_SETTLED_BETS,
   MIN_TOTAL_SETTLED_BETS,
   sportSlugOf,
@@ -197,6 +198,8 @@ export async function handleGenerateDailySuggestions(req: Request) {
     users: 0,
     sheets: 0,
     ambiguousLeagues: 0,
+    syncedLeagues: 0,
+    minSegmentBets: 0,
     activeRules: 0,
     signals: null as unknown,
     suggestions: 0,
@@ -228,6 +231,37 @@ export async function handleGenerateDailySuggestions(req: Request) {
 
     const fixtures = (fixtureRows ?? []) as CandidateFixture[];
     summary.fixtures = fixtures.length;
+
+    /**
+     * Segmenttröskeln som inställning i stället för konstant.
+     *
+     * Den styr hela motorns känslighet — hur många rättade spel i samma
+     * liga och spelform som krävs innan segmentet räknas. Att ändra den
+     * har hittills krävt en deploy, vilket gjort den praktiskt omöjlig att
+     * tuna. Nu läses den ur app_settings:
+     *
+     *   insert into app_settings (key, value)
+     *   values ('suggestions', '{"min_segment_bets": 3}')
+     *   on conflict (key) do update set value = excluded.value;
+     *
+     * Saknas nyckeln gäller MIN_SEGMENT_BETS. En dry-run-override vinner
+     * över båda — den är felsökningsverktyget.
+     */
+    if (thresholds.minSegmentBets === undefined) {
+      const { data: setting } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "suggestions")
+        .maybeSingle();
+      const configured = Number(
+        (setting?.value as { min_segment_bets?: unknown } | null)
+          ?.min_segment_bets
+      );
+      if (Number.isFinite(configured) && configured > 0) {
+        thresholds.minSegmentBets = Math.floor(configured);
+      }
+    }
+    summary.minSegmentBets = thresholds.minSegmentBets ?? MIN_SEGMENT_BETS;
 
     // Tom cache = api-sports nekade eller sync-fixtures har inte hunnit.
     // Skriv ingenting, pusha ingenting, krascha ingenting.
@@ -360,9 +394,28 @@ export async function handleGenerateDailySuggestions(req: Request) {
       }
     }
 
+    // Ligorna admin valt att synka räknas också, även utan användarhistorik.
+    //
+    // Avsteg från promptboarden ("beräkna aldrig signaler för övriga ligor"),
+    // beslutat medvetet: utan det är /admin/regler tomt tills någon råkar
+    // bygga fem rättade spel i en liga, och en förhandsgranskning som aldrig
+    // visar något går inte att lita på. Mängden är operatörsstyrd och liten,
+    // så kostnadsdisciplinen som regeln skyddade står kvar.
+    const { data: syncedLeagues } = await supabase
+      .from("active_leagues")
+      .select("league_id")
+      .eq("active", true);
+    const syncedLeagueIds = new Set(
+      ((syncedLeagues ?? []) as { league_id: number }[]).map((l) =>
+        Number(l.league_id)
+      )
+    );
+    summary.syncedLeagues = syncedLeagueIds.size;
+
     const signalFixtures = fixtures.filter((f) => {
-      if (f.league_id != null && relevantLeagueIds.has(Number(f.league_id))) {
-        return true;
+      if (f.league_id != null) {
+        if (relevantLeagueIds.has(Number(f.league_id))) return true;
+        if (syncedLeagueIds.has(Number(f.league_id))) return true;
       }
       const name = (f.league_name || "").trim().toLowerCase();
       // Tvetydiga liganamn matchar ingen profil ändå — beräkna inte på dem.

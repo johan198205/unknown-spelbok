@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import {
   notifyDailySuggestions,
+  notifyFulltime,
   notifyGoals,
   notifySettledBets,
+  notifySettleReminders,
+  type FinishedMatch,
 } from "@/lib/send-push";
 
 export const runtime = "nodejs";
@@ -31,6 +34,25 @@ function authorized(request: Request) {
   return ok;
 }
 
+function parseMatches(value: unknown): FinishedMatch[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const m = row as Record<string, unknown>;
+    const fixtureId = Number(m.fixtureId);
+    if (!Number.isFinite(fixtureId) || fixtureId <= 0) return [];
+    return [
+      {
+        fixtureId,
+        homeName: typeof m.homeName === "string" ? m.homeName : "Hemma",
+        awayName: typeof m.awayName === "string" ? m.awayName : "Borta",
+        homeScore: Number(m.homeScore) || 0,
+        awayScore: Number(m.awayScore) || 0,
+      },
+    ];
+  });
+}
+
 export async function POST(request: Request) {
   if (!authorized(request)) {
     return NextResponse.json({ error: "Förbjudet" }, { status: 403 });
@@ -40,10 +62,13 @@ export async function POST(request: Request) {
     kind?: unknown;
     betIds?: unknown;
     fixtureId?: unknown;
+    teamId?: unknown;
+    elapsed?: unknown;
     homeName?: unknown;
     awayName?: unknown;
     homeScore?: unknown;
     awayScore?: unknown;
+    matches?: unknown;
     users?: unknown;
   };
   try {
@@ -60,12 +85,31 @@ export async function POST(request: Request) {
       }
       await notifyGoals({
         fixtureId,
+        teamId: Number.isFinite(Number(body.teamId))
+          ? Number(body.teamId)
+          : null,
+        elapsed: Number.isFinite(Number(body.elapsed))
+          ? Number(body.elapsed)
+          : null,
         homeName: typeof body.homeName === "string" ? body.homeName : "Hemma",
         awayName: typeof body.awayName === "string" ? body.awayName : "Borta",
         homeScore: Number(body.homeScore) || 0,
         awayScore: Number(body.awayScore) || 0,
       });
       return NextResponse.json({ ok: true });
+    }
+
+    if (body.kind === "fulltime" || body.kind === "settle-reminder") {
+      const matches = parseMatches(body.matches);
+      if (!matches.length) {
+        return NextResponse.json({ ok: true, skipped: true });
+      }
+      if (body.kind === "fulltime") {
+        await notifyFulltime(matches);
+      } else {
+        await notifySettleReminders(matches);
+      }
+      return NextResponse.json({ ok: true, matches: matches.length });
     }
 
     if (body.kind === "suggestions") {

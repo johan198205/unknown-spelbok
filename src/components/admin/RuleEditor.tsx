@@ -48,8 +48,14 @@ type PreviewResult = {
   truncated?: boolean;
 };
 
+/**
+ * Utan bredd: cn() är ren sammanfogning, inte tailwind-merge, så en
+ * w-full här hade vunnit över w-[72px] på villkorsraden och tvingat
+ * varje kontroll till egen rad. Bredden sätts per användning.
+ */
 const inputClass =
-  "w-full rounded-[var(--radius-input)] border border-line bg-bg-soft px-3 py-2.5 text-[14px] text-text outline-none focus:border-blue";
+  "rounded-[var(--radius-input)] border border-line bg-bg-soft px-3 py-2.5 text-[14px] text-text outline-none focus:border-blue";
+const fullInput = `w-full ${inputClass}`;
 const labelClass =
   "mb-1.5 block text-[11px] uppercase tracking-[0.1em] text-muted";
 
@@ -239,7 +245,7 @@ export function RuleEditor({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Målrik matchbild"
-              className={inputClass}
+              className={fullInput}
             />
             {fieldErrors.name ? (
               <p className="mt-1 text-[12px] text-loss">{fieldErrors.name}</p>
@@ -254,7 +260,7 @@ export function RuleEditor({
               id="rule-sport"
               value={sport}
               onChange={(e) => changeSport(e.target.value)}
-              className={inputClass}
+              className={fullInput}
             >
               {SIGNAL_SPORTS.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -272,7 +278,7 @@ export function RuleEditor({
               id="rule-bettype"
               value={betType}
               onChange={(e) => setBetType(e.target.value)}
-              className={inputClass}
+              className={fullInput}
             >
               {SIGNAL_BET_TYPES.map((b) => (
                 <option key={b.value} value={b.value}>
@@ -315,7 +321,7 @@ export function RuleEditor({
               max={60}
               value={minMatches}
               onChange={(e) => changeMinMatches(Number(e.target.value) || 0)}
-              className={cn(inputClass, "font-mono-num")}
+              className={cn(fullInput, "font-mono-num")}
             />
             <p className="mt-1 text-[11.5px] leading-snug text-faint">
               Båda lagen. Under den här gränsen träffar regeln aldrig.
@@ -352,7 +358,13 @@ export function RuleEditor({
 
       {error ? (
         <div className="rounded-[var(--radius-panel)] border border-loss/35 bg-loss/10 px-4 py-3 text-sm text-loss">
-          {error}
+          {/*
+            "Valideringsfel" som ensam text säger inget när felen redan står
+            vid respektive fält. Peka dit i stället.
+          */}
+          {Object.keys(fieldErrors).length
+            ? "Rätta fälten som är markerade i rött ovan."
+            : error}
         </div>
       ) : null}
 
@@ -529,7 +541,7 @@ function TemplateCard({
         value={template}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Målrik matchbild – {combined.avg_total_goals} mål/match i snitt"
-        className={inputClass}
+        className={fullInput}
       />
       {error ? <p className="mt-1 text-[12px] text-loss">{error}</p> : null}
 

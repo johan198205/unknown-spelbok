@@ -54,7 +54,13 @@ async function loadSubscriptions(admin: ReturnType<typeof createAdminClient>) {
     from += PAGE_SIZE;
   }
 
-  return rows;
+  // En endpoint = en enhet. Dubbletter i tabellen ger annars flera identiska
+  // notiser på samma telefon.
+  const byEndpoint = new Map<string, PushSubscriptionRow>();
+  for (const row of rows) {
+    if (!byEndpoint.has(row.endpoint)) byEndpoint.set(row.endpoint, row);
+  }
+  return [...byEndpoint.values()];
 }
 
 export async function GET() {

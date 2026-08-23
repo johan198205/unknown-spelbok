@@ -1041,6 +1041,27 @@ export type Database = {
           },
         ]
       }
+      sent_notifications: {
+        Row: {
+          created_at: string
+          event_key: string
+          fixture_id: number | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          event_key: string
+          fixture_id?: number | null
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          event_key?: string
+          fixture_id?: number | null
+          id?: string
+        }
+        Relationships: []
+      }
       sheets: {
         Row: {
           created_at: string
@@ -1351,6 +1372,7 @@ export type AffiliateClick = Tables<"affiliate_clicks">;
 export type BannerEvent = Tables<"banner_events">;
 export type AppSetting = Tables<"app_settings">;
 export type SettleQueueItem = Tables<"settle_queue">;
+export type SentNotification = Tables<"sent_notifications">;
 export type LeaderboardRow = Tables<"leaderboard">;
 export type BannerStats = Tables<"banner_stats">;
 export type AiGenerationLog = Tables<"ai_generation_log">;
