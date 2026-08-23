@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import {
@@ -10,6 +11,7 @@ import {
   type CompetitionDraft,
   type CompetitionRow,
 } from "@/lib/admin/competitions";
+import { setCompetitionsEnabled } from "@/lib/admin/settings";
 import {
   formatStake,
   medalColor,
@@ -89,7 +91,83 @@ function draftFrom(competition: CompetitionRow): Draft {
   };
 }
 
-export function CompetitionsAdmin({ items }: { items: CompetitionRow[] }) {
+/**
+ * Växeln styr bara frontend — admin kan fortsätta lägga upp och redigera
+ * tävlingar medan de är avstängda för användarna.
+ */
+function EnabledSwitch({ enabled }: { enabled: boolean }) {
+  const router = useRouter();
+  const [on, setOn] = useState(enabled);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle() {
+    const next = !on;
+    setError(null);
+    setOn(next);
+    startTransition(async () => {
+      try {
+        await setCompetitionsEnabled(next);
+        router.refresh();
+      } catch (e) {
+        setOn(!next);
+        setError(e instanceof Error ? e.message : "Kunde inte spara växeln");
+      }
+    });
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-3.5 rounded-[var(--radius-card-lg)] border px-4 py-3.5",
+        on ? "border-line bg-panel" : "border-yellow/40 bg-yellow/10"
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="text-[14.5px] font-semibold">
+          Tävlingar i frontend
+        </div>
+        <div
+          className={cn("text-[12.5px]", on ? "text-muted" : "text-yellow")}
+        >
+          {on
+            ? "Tävlingar visas på /tavlingar, i menyn och på topplistan."
+            : "Avstängt — tävlingar döljs för användarna. Du kan fortfarande administrera dem här."}
+        </div>
+        {error ? (
+          <div className="mt-1 text-[12.5px] text-loss">{error}</div>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Tävlingar i frontend"
+        disabled={pending}
+        onClick={toggle}
+        className={cn(
+          "relative h-[26px] w-[46px] shrink-0 cursor-pointer rounded-full border transition-colors disabled:opacity-50",
+          on ? "border-win/40 bg-win/25" : "border-line-strong bg-panel-2"
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-[2px] size-[18px] rounded-full transition-[left]",
+            on ? "left-[24px] bg-win" : "left-[2px] bg-muted"
+          )}
+        />
+      </button>
+    </div>
+  );
+}
+
+export function CompetitionsAdmin({
+  items,
+  competitionsEnabled,
+}: {
+  items: CompetitionRow[];
+  competitionsEnabled: boolean;
+}) {
   const [tab, setTab] = useState<CompetitionStatus>("live");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [confirmEnd, setConfirmEnd] = useState<CompetitionRow | null>(null);
@@ -131,6 +209,8 @@ export function CompetitionsAdmin({ items }: { items: CompetitionRow[] }) {
 
   return (
     <div className="animate-sbfade space-y-4">
+      <EnabledSwitch enabled={competitionsEnabled} />
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-[3px] rounded-[11px] border border-line bg-panel p-1">
           {TABS.map((t) => {

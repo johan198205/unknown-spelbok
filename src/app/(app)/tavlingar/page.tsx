@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fetchSiteSettings } from "@/lib/site-settings";
 import { Badge, EmptyState, Panel } from "@/components/ui/Panel";
 import { JoinCompetitionButton } from "@/components/bets/JoinCompetitionButton";
 import { CompetitionBoard } from "@/components/competitions/CompetitionBoard";
@@ -17,6 +19,10 @@ export default async function TavlingarPage() {
   await requireUser();
   const profile = await getProfile();
   const supabase = await createClient();
+
+  // Middleware fångar det normalt — det här skyddar direktrender och cache.
+  const site = await fetchSiteSettings(supabase);
+  if (!site.competitions_enabled) redirect("/topplista");
 
   const { data: competitions } = await supabase
     .from("competitions")

@@ -15,6 +15,7 @@ import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
   fixtureFromBet,
+  isInPlayStatus,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
 import { canRyggaBet } from "@/lib/rygga";
@@ -67,6 +68,22 @@ const SHEET_ACTIONS: Array<{ result: BetResult; label: string }> = [
   { result: "halfloss", label: "Halvförlust" },
 ];
 
+/** Samma fyra rättningar som i desktoptabellen — inte bara vann/förlorade. */
+const QUICK_RESULTS: Array<{ result: BetResult; label: string }> = [
+  { result: "win", label: "Vann" },
+  { result: "loss", label: "Förlorade" },
+  { result: "void", label: "Void" },
+  { result: "open", label: "Öppen" },
+];
+
+function quickResultTone(result: BetResult) {
+  // resultTone("open") är samma grå som inaktivt läge → egen aktiv-ton.
+  if (result === "open") {
+    return { bg: "bg-blue/15", fg: "text-blue", border: "border-blue/45" };
+  }
+  return resultTone(result);
+}
+
 function vibrate(ms = 12) {
   try {
     navigator.vibrate?.(ms);
@@ -75,7 +92,11 @@ function vibrate(ms = 12) {
   }
 }
 
-function statusBadge(bet: DisplayBet) {
+function statusBadge(bet: DisplayBet): {
+  label: string;
+  className: string;
+  live?: boolean;
+} {
   if (bet._pendingStatus === "error") {
     return {
       label: "Kunde inte synkas",
@@ -88,10 +109,17 @@ function statusBadge(bet: DisplayBet) {
       className: "bg-yellow/15 text-yellow border-yellow/40",
     };
   }
+  if (bet.result === "open" && isInPlayStatus(bet.fixtures?.status)) {
+    return {
+      label: "Live",
+      className: "bg-live/15 text-live border-live/45",
+      live: true,
+    };
+  }
   if (bet.result === "open") {
     return {
-      label: bet.settled_by === "auto" ? "AUTO-RÄTTAS" : "Öppet",
-      className: "bg-cyan/15 text-cyan border-cyan/40",
+      label: bet.settled_by === "auto" ? "AUTO-RÄTTAS" : "Orättat",
+      className: "bg-blue/15 text-blue border-blue/45",
     };
   }
   if (bet.settled_by === "auto") {
@@ -301,8 +329,7 @@ export function MobileBetCards({
             canEdit={canEdit && !bet._pending}
             canRygga={canRygga && !bet._pending}
             online={online}
-            onSwipeWin={() => setResult(bet, "win")}
-            onSwipeLoss={() => setResult(bet, "loss")}
+            onSetResult={(result) => setResult(bet, result)}
             onOpenSheet={() => setSheetBet(bet)}
             onRetry={() => retryPending(bet)}
             onRygga={onRygga ? () => onRygga(bet) : undefined}
@@ -390,8 +417,7 @@ function SwipeBetCard({
   canEdit,
   canRygga,
   online,
-  onSwipeWin,
-  onSwipeLoss,
+  onSetResult,
   onOpenSheet,
   onRetry,
   onRygga,
@@ -401,8 +427,7 @@ function SwipeBetCard({
   canEdit: boolean;
   canRygga: boolean;
   online: boolean;
-  onSwipeWin: () => void;
-  onSwipeLoss: () => void;
+  onSetResult: (result: BetResult) => void;
   onOpenSheet: () => void;
   onRetry: () => void;
   onRygga?: () => void;
@@ -415,6 +440,7 @@ function SwipeBetCard({
   const badge = statusBadge(bet);
   const netto = betNetto(bet);
   const fixture = fixtureFromBet(bet);
+  const isLive = isInPlayStatus(fixture?.status);
   const date = new Date(bet.placed_at).toLocaleDateString("sv-SE", {
     day: "2-digit",
     month: "short",
@@ -461,14 +487,21 @@ function SwipeBetCard({
           clearHold();
           if (info.offset.x > 110) {
             vibrate(25);
-            onSwipeWin();
+            onSetResult("win");
           } else if (info.offset.x < -110) {
             vibrate(25);
-            onSwipeLoss();
+            onSetResult("loss");
           }
           animate(x, 0, { type: "spring", stiffness: 420, damping: 32 });
         }}
-        className="relative rounded-[12px] border border-line bg-panel p-3.5"
+        className={cn(
+          "relative rounded-[12px] border bg-panel p-3.5",
+          isLive
+            ? "border-live/45 bg-live/[0.06]"
+            : bet.result === "open"
+              ? "border-blue/30"
+              : "border-line"
+        )}
       >
         <div className="mb-2 flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">
@@ -479,7 +512,7 @@ function SwipeBetCard({
                   leagueId={bet.league_id ?? bet.fixtures?.league_id}
                   sport={bet.sport ?? bet.fixtures?.sport}
                   name={bet.league}
-                  size={14}
+                  size={18}
                 />
                 <span className="min-w-0 truncate">
                   {bet.league} · {date}
@@ -500,10 +533,13 @@ function SwipeBetCard({
             />
             <span
               className={cn(
-                "rounded-[6px] border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
+                "inline-flex items-center gap-1 rounded-[6px] border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
                 badge.className
               )}
             >
+              {badge.live ? (
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
+              ) : null}
               {badge.label}
             </span>
             {canEdit || bet._pending || (canRygga && canRyggaBet(bet)) ? (
@@ -520,9 +556,9 @@ function SwipeBetCard({
         </div>
 
         {fixture ? (
-          <FixtureMatch fixture={fixture} stacked />
+          <FixtureMatch fixture={fixture} stacked logoSize={20} />
         ) : (
-          <ManualMatchLabel match={bet.match} stacked />
+          <ManualMatchLabel match={bet.match} stacked size={20} />
         )}
         <div className="mt-1 flex items-center gap-1.5 text-[15px] font-bold">
           <span className="inline-flex w-3.5 shrink-0 justify-center">
@@ -530,37 +566,47 @@ function SwipeBetCard({
           </span>
           {bet.pick}
         </div>
-        <div className="mt-2 flex items-center gap-1.5 font-mono-num text-[12.5px] text-muted">
+        <div className="mt-2 flex items-center gap-2 font-mono-num text-[12.5px] text-muted">
           <BookmakerLogo
             logoPath={bet.bookmakers?.logo_url}
             name={bet.bookmakers?.name}
-            placeholder={!bet.bookmaker_id}
-            size={14}
+            placeholder
+            size={18}
+            maxWidth={68}
           />
           <span>
-            {bet.bookmakers?.name || "—"} · {Number(bet.stake).toLocaleString("sv-SE")} ·{" "}
+            {Number(bet.stake).toLocaleString("sv-SE")} ·{" "}
             {formatOdds(Number(bet.odds))}
           </span>
         </div>
 
-        {bet.result === "open" && canEdit && online && !bet._pending ? (
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={onSwipeWin}
-              className="flex-1 rounded-[8px] border border-win/40 py-2 text-[13px] font-semibold text-win"
-            >
-              Vann
-            </button>
-            <button
-              type="button"
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={onSwipeLoss}
-              className="flex-1 rounded-[8px] border border-loss/40 py-2 text-[13px] font-semibold text-loss"
-            >
-              Förlorade
-            </button>
+        {canEdit && online && !bet._pending ? (
+          <div
+            role="group"
+            aria-label="Rättning"
+            className="mt-3 grid grid-cols-4 gap-1.5"
+          >
+            {QUICK_RESULTS.map(({ result, label }) => {
+              const active = bet.result === result;
+              const t = quickResultTone(result);
+              return (
+                <button
+                  key={result}
+                  type="button"
+                  aria-pressed={active}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => onSetResult(result)}
+                  className={cn(
+                    "truncate rounded-[8px] border py-2 text-[12px] font-semibold transition",
+                    active
+                      ? `${t.bg} ${t.fg} ${t.border}`
+                      : "border-line text-muted"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         ) : null}
 

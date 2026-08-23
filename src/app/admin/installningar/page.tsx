@@ -46,6 +46,7 @@ const ACTION_LABELS: Record<string, string> = {
   "settle.manual": "Manuell sättling",
   "fixtures.synced": "Fixtures synkade",
   "settings.site_updated": "Sajtinställningar sparade",
+  "settings.competitions_toggled": "Tävlingar på/av",
   "settings.notify_updated": "Notiser sparade",
 };
 

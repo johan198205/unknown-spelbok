@@ -90,6 +90,7 @@ export async function saveSiteSettings(input: SiteSettings) {
   await logAdmin("settings.site_updated", `sajtinställningar ${value.name}`, {
     registrations_open: value.registrations_open,
     maintenance: value.maintenance,
+    competitions_enabled: value.competitions_enabled,
     currency: value.currency,
   });
 
@@ -97,6 +98,58 @@ export async function saveSiteSettings(input: SiteSettings) {
   revalidatePath("/registrera");
   revalidatePath("/", "layout");
   return value;
+}
+
+/**
+ * Tävlingsväxeln sitter på /admin/tavlingar och rör bara ett fält — läs in
+ * resten av 'site' först så inga andra inställningar skrivs över.
+ */
+export async function setCompetitionsEnabled(enabled: boolean) {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", SITE_SETTINGS_KEY)
+    .maybeSingle();
+
+  const current = parseSiteSettings((data as { value: unknown } | null)?.value);
+  const value: SiteSettings = { ...current, competitions_enabled: enabled };
+
+  const { error } = await supabase.from("app_settings").upsert(
+    {
+      key: SITE_SETTINGS_KEY,
+      value: value as unknown as Json,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" }
+  );
+  if (error) throw new Error(error.message);
+
+  await logAdmin(
+    "settings.competitions_toggled",
+    enabled ? "tävlingar påslagna" : "tävlingar avstängda",
+    { competitions_enabled: enabled }
+  );
+
+  revalidatePath("/admin/tavlingar");
+  revalidatePath("/admin/installningar");
+  revalidatePath("/tavlingar");
+  revalidatePath("/topplista");
+  revalidatePath("/", "layout");
+  return value;
+}
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", SITE_SETTINGS_KEY)
+    .maybeSingle();
+  return parseSiteSettings((data as { value: unknown } | null)?.value);
 }
 
 export async function saveNotifySettings(input: NotifySettings) {

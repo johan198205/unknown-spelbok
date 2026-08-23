@@ -2,12 +2,24 @@ import Link from "next/link";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AdSlot } from "@/components/ui/AdSlot";
-import { Badge } from "@/components/ui/Panel";
+import { Badge, Panel } from "@/components/ui/Panel";
 import { NettoChart } from "@/components/bets/NettoChart";
+import { BreakdownCard } from "@/components/bets/BreakdownCard";
+import { StatsAccordion } from "@/components/pwa/StatsAccordion";
+import { MonthlyBars } from "@/components/pwa/MonthlyBars";
+import {
+  ODDS_BUCKETS,
+  bookmakerKey,
+  groupBets,
+  groupByOdds,
+  leagueKey,
+  pickKey,
+  sportKey,
+} from "@/lib/breakdowns";
 import {
   betNetto,
   computeStats,
-  cumulativeNetto,
+  cumulativeNettoBySheet,
   formatMoney,
   formatRoi,
   initialOf,
@@ -38,7 +50,10 @@ export default async function HemPage() {
   const sheetList = (sheets || []) as Sheet[];
   const bets = (betsData || []) as Bet[];
   const stats = computeStats(bets);
-  const series = cumulativeNetto(bets);
+  const { total: series, series: sheetSeries } = cumulativeNettoBySheet(
+    bets,
+    sheetList
+  );
   const openToday = bets.filter((b) => {
     if (b.result !== "open") return false;
     const d = new Date(b.placed_at).toDateString();
@@ -52,8 +67,38 @@ export default async function HemPage() {
     return { sheet: s, stats: st };
   });
 
+  const settled = bets.filter((b) => b.result !== "open");
+
+  const byLeague = groupBets(settled, leagueKey);
+  const byBook = groupBets(settled, bookmakerKey);
+  const byPick = groupBets(settled, pickKey);
+  const bySport = groupBets(settled, sportKey);
+  const byOdds = groupByOdds(settled);
+
+  const byMonth = Object.values(
+    settled.reduce<Record<string, { key: string; label: string; netto: number }>>(
+      (acc, b) => {
+        const d = new Date(b.placed_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (!acc[key]) {
+          acc[key] = {
+            key,
+            label: d.toLocaleDateString("sv-SE", {
+              month: "short",
+              year: "2-digit",
+            }),
+            netto: 0,
+          };
+        }
+        acc[key].netto += Number(b.payout) - Number(b.stake);
+        return acc;
+      },
+      {}
+    )
+  ).sort((a, b) => a.key.localeCompare(b.key));
+
   return (
-    <div className="animate-sbfade space-y-5 lg:mx-auto lg:max-w-[720px]">
+    <div className="animate-sbfade space-y-5 lg:mx-auto lg:max-w-[980px]">
       <div className="flex items-start justify-between gap-3 px-1">
         <div>
           <div className="text-[14px] text-muted">
@@ -78,7 +123,7 @@ export default async function HemPage() {
 
       <div className="rounded-[16px] border border-line bg-panel px-3.5 pb-2.5 pt-3.5">
         {series.length ? (
-          <NettoChart points={series} compact />
+          <NettoChart points={series} series={sheetSeries} compact />
         ) : (
           <div className="py-10 text-center text-sm text-muted">
             Grafen fylls när du sätter resultat.
@@ -86,13 +131,18 @@ export default async function HemPage() {
         )}
       </div>
 
-      <div className="flex gap-2.5 overflow-x-auto sb-scroll snap-x snap-mandatory pb-1">
+      <div className="flex gap-2.5 overflow-x-auto sb-scroll snap-x snap-mandatory pb-1 lg:grid lg:grid-cols-6 lg:overflow-visible lg:pb-0">
         {[
           { label: "Netto", value: formatMoney(stats.netto), color: nettoColor(stats.netto) },
           { label: "ROI", value: formatRoi(stats.roi), color: nettoColor(stats.roi) },
           {
             label: "Hitrate",
             value: `${stats.hitrate.toFixed(1)}%`,
+            color: "text-text",
+          },
+          {
+            label: "Omsättning",
+            value: formatMoney(stats.stake).replace("+", ""),
             color: "text-text",
           },
           {
@@ -158,6 +208,36 @@ export default async function HemPage() {
             </div>
           ) : null}
         </div>
+      </div>
+
+      {byMonth.length ? (
+        <Panel className="p-4">
+          <div className="font-display mb-3 text-[17px] font-semibold">
+            Netto per månad
+          </div>
+          <MonthlyBars months={byMonth} />
+        </Panel>
+      ) : null}
+
+      <div className="space-y-2 lg:hidden">
+        <StatsAccordion title="Per liga" rows={byLeague} />
+        <StatsAccordion title="Per spelbolag" rows={byBook} />
+        <StatsAccordion title="Per spelform" rows={byPick} />
+        <StatsAccordion title="Per sport" rows={bySport} />
+        <StatsAccordion title="Per oddsintervall" rows={byOdds} />
+      </div>
+
+      <div className="hidden gap-4 lg:grid lg:grid-cols-2">
+        <BreakdownCard title="Per liga" rows={byLeague} />
+        <BreakdownCard title="Per spelbolag" rows={byBook} />
+        <BreakdownCard title="Per spelform" rows={byPick} />
+        <BreakdownCard title="Per sport" rows={bySport} />
+        <BreakdownCard
+          title="Per oddsintervall"
+          rows={byOdds}
+          limit={ODDS_BUCKETS.length}
+          className="lg:col-span-2"
+        />
       </div>
 
       <AdSlot

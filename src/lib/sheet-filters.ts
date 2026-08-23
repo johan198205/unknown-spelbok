@@ -1,5 +1,6 @@
 import type { Bet, BetResult } from "@/lib/types";
 import { betLeagueLogo, leagueInitials } from "@/lib/logos";
+import { pickKey } from "@/lib/breakdowns";
 
 export type SheetSportFilter = "all" | "football" | "hockey";
 export type SheetResultFilter = "all" | BetResult;
@@ -60,6 +61,8 @@ export const CHART_PERIOD_OPTIONS: Array<{
 export interface SheetFilterState {
   sport: SheetSportFilter;
   league: string; // "" = alla
+  pick: string; // "" = alla spelformer
+  bookmaker: string; // bookmaker_id, "" = alla spelbolag
   result: SheetResultFilter;
   period: SheetPeriodFilter;
   view: SheetViewMode;
@@ -69,6 +72,8 @@ export interface SheetFilterState {
 export const DEFAULT_SHEET_FILTERS: SheetFilterState = {
   sport: "all",
   league: "",
+  pick: "",
+  bookmaker: "",
   result: "all",
   period: "all",
   view: "table",
@@ -118,13 +123,20 @@ export function matchesSportFilter(
 
 export function filterSheetBets(
   bets: Bet[],
-  filters: Pick<SheetFilterState, "sport" | "league" | "result" | "period">,
+  filters: Pick<
+    SheetFilterState,
+    "sport" | "league" | "pick" | "bookmaker" | "result" | "period"
+  >,
   now = new Date()
 ): Bet[] {
   const cut = periodCutoff(filters.period, now);
   return bets.filter((bet) => {
     if (!matchesSportFilter(bet, filters.sport)) return false;
     if (filters.league && (bet.league || "") !== filters.league) return false;
+    if (filters.pick && pickKey(bet) !== filters.pick) return false;
+    if (filters.bookmaker && (bet.bookmaker_id || "") !== filters.bookmaker) {
+      return false;
+    }
     if (filters.result !== "all" && bet.result !== filters.result) return false;
     if (cut != null && +new Date(bet.placed_at) < cut) return false;
     return true;
@@ -177,6 +189,49 @@ export function distinctLeagues(bets: Bet[]): LeagueOption[] {
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
 
+export interface PickOption {
+  /** Samma nyckel som breakdown-raderna under "Per spelform". */
+  key: string;
+  count: number;
+}
+
+export function distinctPicks(bets: Bet[]): PickOption[] {
+  const map = new Map<string, PickOption>();
+  for (const bet of bets) {
+    const key = pickKey(bet);
+    const existing = map.get(key);
+    if (existing) existing.count += 1;
+    else map.set(key, { key, count: 1 });
+  }
+  return [...map.values()].sort(
+    (a, b) => b.count - a.count || a.key.localeCompare(b.key, "sv")
+  );
+}
+
+export interface BookmakerOption {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export function distinctBookmakers(bets: Bet[]): BookmakerOption[] {
+  const map = new Map<string, BookmakerOption>();
+  for (const bet of bets) {
+    const id = bet.bookmaker_id;
+    if (!id) continue;
+    const existing = map.get(id);
+    if (existing) existing.count += 1;
+    else {
+      map.set(id, {
+        id,
+        name: bet.bookmakers?.name || "Okänt spelbolag",
+        count: 1,
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "sv"));
+}
+
 export function parseSheetFilters(
   params: URLSearchParams
 ): SheetFilterState {
@@ -223,6 +278,8 @@ export function parseSheetFilters(
   return {
     sport,
     league: params.get("league") || "",
+    pick: (params.get("pick") || "").trim(),
+    bookmaker: params.get("book") || "",
     result,
     period,
     view,
@@ -242,6 +299,8 @@ export function sheetFiltersToParams(
 
   setOrDelete("sport", filters.sport, "all");
   setOrDelete("league", filters.league, "");
+  setOrDelete("pick", filters.pick, "");
+  setOrDelete("book", filters.bookmaker, "");
   setOrDelete("result", filters.result, "all");
   setOrDelete("period", filters.period, "all");
   setOrDelete("chart", filters.chart, "all");

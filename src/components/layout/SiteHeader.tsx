@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AppNav } from "@/components/layout/AppNav";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 import { getProfile } from "@/lib/auth";
+import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, initialOf } from "@/lib/utils";
 
@@ -26,11 +27,14 @@ export async function SiteHeader({
     );
   }
 
+  const site = await fetchSiteSettings(supabase);
+
   const appNav = [
     { href: "/hem", label: "Hem" },
     { href: "/spelbok", label: "Spelbok" },
-    { href: "/statistik", label: "Statistik" },
-    { href: "/tavlingar", label: "Tävlingar" },
+    ...(site.competitions_enabled
+      ? [{ href: "/tavlingar", label: "Tävlingar" }]
+      : []),
     { href: "/topplista", label: "Topplistor" },
     { href: "/installningar", label: "Profil" },
   ];

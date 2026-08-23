@@ -3,21 +3,14 @@
 import { useState } from "react";
 import { formatMoney, formatRoi, nettoColor } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-
-type Row = {
-  name: string;
-  n: number;
-  netto: number;
-  roi: number;
-  stake?: number;
-};
+import type { BreakdownRow } from "@/lib/breakdowns";
 
 export function StatsAccordion({
   title,
   rows,
 }: {
   title: string;
-  rows: Row[];
+  rows: BreakdownRow[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -42,10 +35,10 @@ export function StatsAccordion({
                 <div className="truncate font-semibold">{r.name}</div>
                 {open ? (
                   <div className="text-[12px] text-muted">
-                    {r.n} spel · ROI {formatRoi(r.roi)}
+                    {r.bets} spel · ROI {formatRoi(r.roi)}
                   </div>
                 ) : (
-                  <div className="text-[12px] text-muted">{r.n} spel</div>
+                  <div className="text-[12px] text-muted">{r.bets} spel</div>
                 )}
               </div>
               <span

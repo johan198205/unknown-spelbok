@@ -4,6 +4,7 @@ import { EmptyState, Panel } from "@/components/ui/Panel";
 import { CompetitionBoard } from "@/components/competitions/CompetitionBoard";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
+import { fetchSiteSettings } from "@/lib/site-settings";
 import {
   formatCountdown,
   formatPeriod,
@@ -20,28 +21,51 @@ import {
 } from "@/lib/utils";
 import type { Bet, Competition, LeaderboardRow } from "@/lib/types";
 import { StickySelfRank } from "@/components/pwa/StickySelfRank";
+import { TopListCard } from "@/components/topplista/TopListCard";
+import {
+  betCountList,
+  MIN_BETS_TOTAL,
+  MIN_BETS_WEEK,
+  ryggadList,
+  sheetNettoList,
+  sheetRoiList,
+  TOP_LIST_SIZE,
+  WEEK_MS,
+  type ToplistSheet,
+} from "@/lib/toplists";
 
 export default async function TopplistaPage() {
   const profile = await getProfile();
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
 
-  const [{ data: sheets }, { data: competitions }] = await Promise.all([
+  const site = await fetchSiteSettings(supabase);
+  const competitionsEnabled = site.competitions_enabled;
+
+  const [{ data: sheets }, { data: competitions }, { data: ryggade }] =
+    await Promise.all([
     supabase
       .from("sheets")
       .select(
-        "id, name, user_id, currency, profiles(username, avatar_url), bets(stake, payout, result, odds)"
+        "id, name, slug, user_id, currency, profiles(username, avatar_url), bets(stake, payout, result, odds, placed_at)"
       )
       .eq("is_public", true),
+    competitionsEnabled
+      ? supabase
+          .from("competitions")
+          .select("*")
+          .eq("active", true)
+          .eq("visibility", "public")
+          .lte("starts_at", nowIso)
+          .gte("ends_at", nowIso)
+          .order("ends_at", { ascending: true })
+          .limit(1)
+      : Promise.resolve({ data: null }),
     supabase
-      .from("competitions")
-      .select("*")
-      .eq("active", true)
-      .eq("visibility", "public")
-      .lte("starts_at", nowIso)
-      .gte("ends_at", nowIso)
-      .order("ends_at", { ascending: true })
-      .limit(1),
+      .from("bets")
+      .select("copied_from_user_id")
+      .not("copied_from_user_id", "is", null)
+      .limit(5000),
   ]);
 
   const competition = ((competitions || []) as Competition[])[0] ?? null;
@@ -54,22 +78,92 @@ export default async function TopplistaPage() {
     compEntries = rankBoard((data || []) as LeaderboardRow[], competition);
   }
 
-  const board = (sheets || [])
-    .map((sheet) => {
-      const bets = (sheet.bets || []) as Bet[];
-      const stats = computeStats(bets);
-      const owner =
-        (sheet.profiles as unknown as { username: string } | null)?.username ||
-        "Okänd";
-      return {
-        id: sheet.id,
-        name: sheet.name,
-        owner,
-        userId: sheet.user_id as string,
-        ...stats,
-      };
-    })
+  const toplistSheets: ToplistSheet[] = (sheets || []).map((sheet) => ({
+    id: sheet.id,
+    name: sheet.name,
+    slug: (sheet.slug as string | null) ?? null,
+    owner:
+      (sheet.profiles as unknown as { username: string } | null)?.username ||
+      "Okänd",
+    userId: sheet.user_id as string,
+    bets: (sheet.bets || []) as Bet[],
+  }));
+
+  const board = toplistSheets
+    .map((sheet) => ({
+      id: sheet.id,
+      name: sheet.name,
+      owner: sheet.owner,
+      userId: sheet.userId,
+      ...computeStats(sheet.bets),
+    }))
     .sort((a, b) => b.roi - a.roi);
+
+  // Antal ryggningar per originalspelare — namnen slås upp separat eftersom
+  // en ryggad spelare inte behöver ha en publik spelbok.
+  const ryggaCounts = new Map<string, number>();
+  for (const row of (ryggade || []) as Array<{
+    copied_from_user_id: string | null;
+  }>) {
+    const id = row.copied_from_user_id;
+    if (!id) continue;
+    ryggaCounts.set(id, (ryggaCounts.get(id) || 0) + 1);
+  }
+
+  const ryggaNames = new Map<string, string>();
+  if (ryggaCounts.size) {
+    const topIds = [...ryggaCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, TOP_LIST_SIZE)
+      .map(([id]) => id);
+    const { data: ryggaProfiles } = await supabase
+      .from("profiles")
+      .select("id, username")
+      .in("id", topIds);
+    for (const p of (ryggaProfiles || []) as Array<{
+      id: string;
+      username: string;
+    }>) {
+      ryggaNames.set(p.id, p.username);
+    }
+  }
+
+  const weekStart = +new Date(nowIso) - WEEK_MS;
+  const topLists = [
+    {
+      title: "Topp 10 spelböcker",
+      subtitle: `ROI · minst ${MIN_BETS_TOTAL} avgjorda spel`,
+      entries: sheetRoiList(toplistSheets),
+      empty: "Inga spelböcker kvalar in ännu.",
+    },
+    {
+      title: "Topp 10 senaste veckan",
+      subtitle: `ROI 7 dagar · minst ${MIN_BETS_WEEK} avgjorda spel`,
+      entries: sheetRoiList(toplistSheets, {
+        since: weekStart,
+        minBets: MIN_BETS_WEEK,
+      }),
+      empty: "Inga avgjorda spel den senaste veckan.",
+    },
+    {
+      title: "Topp 10 största netto",
+      subtitle: "Netto i kronor · alla tider",
+      entries: sheetNettoList(toplistSheets),
+      empty: "Inga spelböcker kvalar in ännu.",
+    },
+    {
+      title: "Topp 10 flest spel",
+      subtitle: "Loggade spel i publika spelböcker",
+      entries: betCountList(toplistSheets),
+      empty: "Inga loggade spel ännu.",
+    },
+    {
+      title: "Mest ryggad",
+      subtitle: "Antal gånger andra kopierat spelen",
+      entries: ryggadList(ryggaCounts, ryggaNames),
+      empty: "Inga ryggade spel ännu.",
+    },
+  ];
 
   const selfIndex = profile
     ? board.findIndex((r) => r.userId === profile.id)
@@ -95,20 +189,22 @@ export default async function TopplistaPage() {
         <p className="text-muted">Alla publika spreadsheets</p>
       </div>
 
-      <div className="mb-4 flex gap-3 lg:hidden">
-        <Link
-          href="/topplista"
-          className="rounded-full border border-win bg-win/10 px-3.5 py-1.5 text-sm font-semibold text-win no-underline"
-        >
-          Topplista
-        </Link>
-        <Link
-          href="/tavlingar"
-          className="rounded-full border border-line bg-panel px-3.5 py-1.5 text-sm font-semibold text-muted no-underline"
-        >
-          Tävlingar
-        </Link>
-      </div>
+      {competitionsEnabled ? (
+        <div className="mb-4 flex gap-3 lg:hidden">
+          <Link
+            href="/topplista"
+            className="rounded-full border border-win bg-win/10 px-3.5 py-1.5 text-sm font-semibold text-win no-underline"
+          >
+            Topplista
+          </Link>
+          <Link
+            href="/tavlingar"
+            className="rounded-full border border-line bg-panel px-3.5 py-1.5 text-sm font-semibold text-muted no-underline"
+          >
+            Tävlingar
+          </Link>
+        </div>
+      ) : null}
 
       <AdSlot
         placement="topplista"
@@ -199,7 +295,7 @@ export default async function TopplistaPage() {
         )}
       </Panel>
 
-      <div className="space-y-2 pb-16 lg:hidden">
+      <div className="space-y-2 lg:hidden">
         {board.length ? (
           board.map((row, i) => {
             const isSelf = profile && row.userId === profile.id;
@@ -239,6 +335,26 @@ export default async function TopplistaPage() {
           <EmptyState>Inga publika spreadsheets ännu.</EmptyState>
         )}
       </div>
+
+      <section className="mt-6 pb-16 lg:mt-8">
+        <h2 className="mb-1 font-display text-[20px] font-semibold lg:text-[24px]">
+          Topplistor
+        </h2>
+        <p className="mb-4 text-[13.5px] text-muted">
+          Baserat på publika spelböcker
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {topLists.map((list) => (
+            <TopListCard
+              key={list.title}
+              title={list.title}
+              subtitle={list.subtitle}
+              entries={list.entries}
+              empty={list.empty}
+            />
+          ))}
+        </div>
+      </section>
 
       {selfRow && selfIndex >= 5 ? (
         <StickySelfRank

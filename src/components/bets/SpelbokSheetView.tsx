@@ -21,7 +21,9 @@ import {
   PERIOD_FILTER_OPTIONS,
   RESULT_FILTER_OPTIONS,
   SPORT_FILTER_OPTIONS,
+  distinctBookmakers,
   distinctLeagues,
+  distinctPicks,
   filterSheetBets,
   parseSheetFilters,
   sheetFiltersToParams,
@@ -40,6 +42,7 @@ import type {
   BetStatsPayload,
   LeagueStatRow,
   PublicSheetLeaderboardRow,
+  SheetBreakdowns,
 } from "@/lib/bet-stats";
 import {
   cn,
@@ -58,6 +61,7 @@ export function SpelbokSheetView({
   username,
   initialStats,
   initialLeagues,
+  initialBreakdowns,
   affiliates,
   publicSheets,
   mode = "owner",
@@ -73,6 +77,7 @@ export function SpelbokSheetView({
   username: string;
   initialStats: BetStatsPayload;
   initialLeagues: LeagueStatRow[];
+  initialBreakdowns: SheetBreakdowns;
   affiliates: AffiliateTopRow[];
   publicSheets: PublicSheetLeaderboardRow[];
   /** owner = egen spelbok; public = read-only delad vy */
@@ -101,6 +106,8 @@ export function SpelbokSheetView({
   );
 
   const leagues = useMemo(() => distinctLeagues(bets), [bets]);
+  const picks = useMemo(() => distinctPicks(bets), [bets]);
+  const bookmakerOptions = useMemo(() => distinctBookmakers(bets), [bets]);
   const filtered = useMemo(
     () => filterSheetBets(bets, filters),
     [bets, filters]
@@ -189,6 +196,40 @@ export function SpelbokSheetView({
         </div>
       </div>
 
+      <SheetFilterBar
+        filters={filters}
+        leagues={leagues}
+        picks={picks}
+        bookmakerOptions={bookmakerOptions}
+        filteredCount={filtered.length}
+        totalCount={bets.length}
+        onChange={patchFilters}
+      />
+
+      {filters.view === "table" ? (
+        <div className="hidden lg:block">
+          <BetsTable
+            bets={filtered}
+            canEdit={isOwner}
+            canRygga
+            onRygga={openRygga}
+          />
+        </div>
+      ) : (
+        <div className="hidden lg:block">
+          <DesktopBetCards bets={filtered} />
+        </div>
+      )}
+
+      <MobileBetCards
+        bets={filtered}
+        sheetId={sheet.id}
+        canEdit={isOwner}
+        canRygga
+        onRygga={openRygga}
+        hideChrome
+      />
+
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
         <Kpi label="SPEL" value={String(filtered.length)} />
         <Kpi
@@ -219,42 +260,11 @@ export function SpelbokSheetView({
         onPeriodChange={(chart: ChartPeriodFilter) => patchFilters({ chart })}
       />
 
-      <SheetFilterBar
-        filters={filters}
-        leagues={leagues}
-        filteredCount={filtered.length}
-        totalCount={bets.length}
-        onChange={patchFilters}
-      />
-
-      {filters.view === "table" ? (
-        <div className="hidden lg:block">
-          <BetsTable
-            bets={filtered}
-            canEdit={isOwner}
-            canRygga
-            onRygga={openRygga}
-          />
-        </div>
-      ) : (
-        <div className="hidden lg:block">
-          <DesktopBetCards bets={filtered} />
-        </div>
-      )}
-
-      <MobileBetCards
-        bets={filtered}
-        sheetId={sheet.id}
-        canEdit={isOwner}
-        canRygga
-        onRygga={openRygga}
-        hideChrome
-      />
-
       <SpelbokStatsBottom
         sheetId={sheet.id}
         initialStats={initialStats}
         initialLeagues={initialLeagues}
+        initialBreakdowns={initialBreakdowns}
         affiliates={affiliates}
         publicSheets={publicSheets}
       />
@@ -265,12 +275,16 @@ export function SpelbokSheetView({
 function SheetFilterBar({
   filters,
   leagues,
+  picks,
+  bookmakerOptions,
   filteredCount,
   totalCount,
   onChange,
 }: {
   filters: SheetFilterState;
   leagues: ReturnType<typeof distinctLeagues>;
+  picks: ReturnType<typeof distinctPicks>;
+  bookmakerOptions: ReturnType<typeof distinctBookmakers>;
   filteredCount: number;
   totalCount: number;
   onChange: (patch: Partial<SheetFilterState>) => void;
@@ -292,11 +306,39 @@ function SheetFilterBar({
         ))}
       </Select>
 
+      <Select
+        label="Spelform"
+        value={filters.pick}
+        onChange={(e) => onChange({ pick: e.target.value })}
+        className="min-w-[170px] py-2.5"
+      >
+        <option value="">Alla spelformer</option>
+        {picks.map((p) => (
+          <option key={p.key} value={p.key}>
+            {p.key} ({p.count})
+          </option>
+        ))}
+      </Select>
+
       <LeagueSelect
         value={filters.league}
         leagues={leagues}
         onChange={(league) => onChange({ league })}
       />
+
+      <Select
+        label="Spelbolag"
+        value={filters.bookmaker}
+        onChange={(e) => onChange({ bookmaker: e.target.value })}
+        className="min-w-[160px] py-2.5"
+      >
+        <option value="">Alla spelbolag</option>
+        {bookmakerOptions.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.name} ({b.count})
+          </option>
+        ))}
+      </Select>
 
       <Select
         label="Rättning"

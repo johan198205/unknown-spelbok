@@ -3,16 +3,30 @@
 import { useMemo, useState } from "react";
 import { formatMoney } from "@/lib/utils";
 
+type Series = {
+  id: string;
+  name: string;
+  color: string;
+  points: Array<{ date: string; value: number }>;
+};
+
 export function NettoChart({
   points,
+  series = [],
   compact = false,
 }: {
   points: Array<{ date: string; value: number }>;
+  series?: Series[];
   compact?: boolean;
 }) {
   const [active, setActive] = useState<number | null>(null);
 
-  const values = points.map((p) => p.value);
+  // Med bara en spelbok är dess linje identisk med totalen.
+  const showSeries = series.length > 1;
+  const values = [
+    ...points.map((p) => p.value),
+    ...(showSeries ? series.flatMap((s) => s.points.map((p) => p.value)) : []),
+  ];
   const min = Math.min(0, ...values);
   const max = Math.max(0, ...values);
   const span = max - min || 1;
@@ -29,6 +43,20 @@ export function NettoChart({
       return { x, y, ...p };
     });
   }, [points, h, min, span, w]);
+
+  const seriesPaths = useMemo(() => {
+    if (!showSeries) return [];
+    return series.map((s) => ({
+      ...s,
+      d: s.points
+        .map((p, i) => {
+          const x = s.points.length === 1 ? w / 2 : (i / (s.points.length - 1)) * w;
+          const y = h - ((p.value - min) / span) * h;
+          return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+        })
+        .join(" "),
+    }));
+  }, [series, showSeries, h, min, span, w]);
 
   if (!points.length) return null;
 
@@ -65,6 +93,24 @@ export function NettoChart({
             <div className="font-mono-num text-sm font-semibold">
               {formatMoney(activePoint.value)}
             </div>
+            {showSeries ? (
+              <div className="mt-1 space-y-0.5 border-t border-line pt-1">
+                {series.map((s) => (
+                  <div key={s.id} className="flex items-center gap-1.5 text-left">
+                    <span
+                      className="h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ background: s.color }}
+                    />
+                    <span className="max-w-[90px] truncate text-[11px] text-muted">
+                      {s.name}
+                    </span>
+                    <span className="ml-auto font-mono-num text-[11px]">
+                      {formatMoney(s.points[active!]?.value ?? 0)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
         <svg
@@ -123,6 +169,18 @@ export function NettoChart({
             fill="rgba(255,92,108,.12)"
             clipPath={`url(#${clipId}-below)`}
           />
+          {seriesPaths.map((s) => (
+            <path
+              key={s.id}
+              d={s.d}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="1.5"
+              strokeOpacity="0.75"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
           <path
             d={line}
             fill="none"
@@ -146,7 +204,7 @@ export function NettoChart({
               cx={activePoint.x}
               cy={activePoint.y}
               r="7"
-              fill="#66E38A"
+              fill={activePoint.value >= 0 ? "#66E38A" : "#FF5C6C"}
               stroke="#0F1420"
               strokeWidth="3"
             />
@@ -170,6 +228,26 @@ export function NettoChart({
             )}
           </span>
         </div>
+        {showSeries ? (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="flex items-center gap-1.5 text-[11px] text-muted">
+              <span className="h-[2px] w-3.5 rounded-full bg-win" />
+              Totalt
+            </span>
+            {series.map((s) => (
+              <span
+                key={s.id}
+                className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted"
+              >
+                <span
+                  className="h-[2px] w-3.5 shrink-0 rounded-full"
+                  style={{ background: s.color }}
+                />
+                <span className="max-w-[120px] truncate">{s.name}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

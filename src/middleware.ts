@@ -103,6 +103,19 @@ export async function middleware(request: NextRequest) {
 
   if (!isMaintenanceExempt(path)) {
     const site = await fetchSiteSettingsCached(supabase);
+
+    // Tävlingar avstängda i inställningarna: sidan finns kvar men når ingen.
+    if (!site.competitions_enabled && path.startsWith("/tavlingar")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/topplista";
+      url.search = "";
+      const redirect = NextResponse.redirect(url);
+      for (const cookie of supabaseResponse.cookies.getAll()) {
+        redirect.cookies.set(cookie);
+      }
+      return redirect;
+    }
+
     if (site.maintenance && (await loadRole()) !== "admin") {
       const url = request.nextUrl.clone();
       url.pathname = MAINTENANCE_PATH;

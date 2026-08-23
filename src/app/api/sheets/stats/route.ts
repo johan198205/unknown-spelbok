@@ -55,5 +55,6 @@ export async function GET(request: NextRequest) {
     period,
     stats: bundle.stats,
     leagues: bundle.leagues,
+    breakdowns: bundle.breakdowns,
   });
 }

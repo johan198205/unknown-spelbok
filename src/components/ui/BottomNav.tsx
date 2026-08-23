@@ -78,7 +78,7 @@ const TABS = [
   {
     href: "/spelbok",
     label: "Böcker",
-    match: (p: string) => p.startsWith("/spelbok") || p.startsWith("/statistik"),
+    match: (p: string) => p.startsWith("/spelbok"),
     Icon: IconBooks,
   },
   {

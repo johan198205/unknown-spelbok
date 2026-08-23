@@ -25,6 +25,7 @@ import {
   applyLiveToBet,
   fixtureFromBet,
   isFinishedStatus,
+  isInPlayStatus,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
 import {
@@ -566,6 +567,23 @@ export function BetForm({
   );
 }
 
+/** Alla rättningar en rad kan sättas till — även för orättade spel. */
+const RESULT_CHOICES: Array<{ value: BetResult; short: string; label: string }> =
+  [
+    { value: "win", short: "W", label: "Vann" },
+    { value: "loss", short: "L", label: "Förlorade" },
+    { value: "void", short: "V", label: "Void" },
+    { value: "open", short: "O", label: "Öppen" },
+  ];
+
+function resultChoiceTone(result: BetResult) {
+  // resultTone("open") är samma grå som inaktivt läge → egen aktiv-ton.
+  if (result === "open") {
+    return { bg: "bg-blue/15", fg: "text-blue", border: "border-blue/45" };
+  }
+  return resultTone(result);
+}
+
 export function BetRow({
   bet,
   canEdit,
@@ -582,6 +600,8 @@ export function BetRow({
   const netto = betNetto(bet);
   const fixture = fixtureFromBet(bet);
   const showActions = canEdit || canRygga;
+  const isLive = isInPlayStatus(fixture?.status);
+  const isPending = bet.result === "open";
 
   async function setResult(result: BetResult) {
     const supabase = createClient();
@@ -608,19 +628,40 @@ export function BetRow({
   }
 
   return (
-    <tr className="group/row border-b border-[#171E2C] hover:bg-[#1A2233]">
-      <td className="whitespace-nowrap px-2.5 py-3 font-mono-num text-[12.5px] text-[#C3CBDB]">
-        {new Date(bet.placed_at).toLocaleDateString("sv-SE")}
+    <tr
+      className={cn(
+        "group/row border-b border-[#171E2C] transition-colors hover:bg-[#1A2233]",
+        isLive
+          ? "bg-live/[0.07] hover:bg-live/[0.11]"
+          : isPending
+            ? "bg-[#151C2B]"
+            : undefined
+      )}
+    >
+      <td className="whitespace-nowrap px-2.5 py-3 align-middle">
+        <div className="font-mono-num text-[12.5px] text-[#C3CBDB]">
+          {new Date(bet.placed_at).toLocaleDateString("sv-SE")}
+        </div>
+        {isLive ? (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-badge bg-live/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-live">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
+            Live
+          </span>
+        ) : isPending ? (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-badge bg-blue/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-blue">
+            Orättat
+          </span>
+        ) : null}
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[#C3CBDB]">
         {bet.league ? (
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-2">
             <LeagueLogo
               src={betLeagueLogo(bet)}
               leagueId={bet.league_id ?? bet.fixtures?.league_id}
               sport={bet.sport ?? bet.fixtures?.sport}
               name={bet.league}
-              size={20}
+              size={26}
             />
             <span>{bet.league}</span>
           </span>
@@ -630,9 +671,9 @@ export function BetRow({
       </td>
       <td className="px-2.5 py-3">
         {fixture ? (
-          <FixtureMatch fixture={fixture} stacked />
+          <FixtureMatch fixture={fixture} stacked logoSize={22} />
         ) : (
-          <ManualMatchLabel match={bet.match} stacked />
+          <ManualMatchLabel match={bet.match} stacked size={22} />
         )}
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 font-bold">
@@ -644,15 +685,13 @@ export function BetRow({
         </span>
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[12.5px] text-muted">
-        <span className="inline-flex items-center gap-1.5">
-          <BookmakerLogo
-            logoPath={bet.bookmakers?.logo_url}
-            name={bet.bookmakers?.name}
-            placeholder={!bet.bookmaker_id}
-            size={16}
-          />
-          {bet.bookmakers?.name || "—"}
-        </span>
+        <BookmakerLogo
+          logoPath={bet.bookmakers?.logo_url}
+          name={bet.bookmakers?.name}
+          placeholder
+          size={22}
+          maxWidth={84}
+        />
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 text-right font-mono-num">
         {Number(bet.stake).toLocaleString("sv-SE")}
@@ -662,43 +701,34 @@ export function BetRow({
       </td>
       <td className="whitespace-nowrap px-2.5 py-3">
         {canEdit ? (
-          bet.result === "open" ? (
-            <div className="inline-flex flex-wrap gap-1">
-              <button
-                type="button"
-                onClick={() => setResult("win")}
-                className="rounded border border-win/40 px-2 py-1 text-[11px] font-semibold text-win hover:bg-win/10"
-              >
-                Vann
-              </button>
-              <button
-                type="button"
-                onClick={() => setResult("loss")}
-                className="rounded border border-loss/40 px-2 py-1 text-[11px] font-semibold text-loss hover:bg-loss/10"
-              >
-                Förlorade
-              </button>
-            </div>
-          ) : (
-            <div className="inline-flex flex-wrap gap-1">
-              {(["win", "loss", "void", "open"] as BetResult[]).map((r) => {
-                const active = bet.result === r;
-                const t = resultTone(r);
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setResult(r)}
-                    className={`rounded border px-1.5 py-1 font-mono-num text-[10px] font-semibold ${
-                      active ? `${t.bg} ${t.fg} ${t.border}` : "border-line text-faint"
-                    }`}
-                  >
-                    {r === "win" ? "W" : r === "loss" ? "L" : r === "void" ? "V" : "O"}
-                  </button>
-                );
-              })}
-            </div>
-          )
+          <div
+            role="group"
+            aria-label="Rättning"
+            className="inline-flex flex-wrap gap-1"
+          >
+            {RESULT_CHOICES.map(({ value, short, label }) => {
+              const active = bet.result === value;
+              const t = resultChoiceTone(value);
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setResult(value)}
+                  title={label}
+                  aria-label={label}
+                  aria-pressed={active}
+                  className={cn(
+                    "h-[26px] w-[26px] rounded-badge border font-mono-num text-[11px] font-bold transition",
+                    active
+                      ? `${t.bg} ${t.fg} ${t.border}`
+                      : "border-line text-faint hover:border-line-strong hover:text-muted"
+                  )}
+                >
+                  {short}
+                </button>
+              );
+            })}
+          </div>
         ) : (
           <span
             className={`rounded px-2 py-1 font-mono-num text-[10px] font-semibold ${tone.bg} ${tone.fg}`}

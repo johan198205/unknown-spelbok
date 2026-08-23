@@ -137,6 +137,7 @@ export default async function PublicSheetPage({
           username={owner.username}
           initialStats={toPlain(statsBundle.stats)}
           initialLeagues={toPlain(statsBundle.leagues)}
+          initialBreakdowns={toPlain(statsBundle.breakdowns)}
           affiliates={toPlain(affiliates)}
           publicSheets={toPlain(publicSheets)}
           mode="public"

@@ -19,6 +19,7 @@ function TeamLine({
   sport,
   score,
   showScore,
+  logoSize,
 }: {
   name: string;
   logo?: string | null;
@@ -26,10 +27,15 @@ function TeamLine({
   sport?: string | null;
   score: number | null;
   showScore: boolean;
+  logoSize: number;
 }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <TeamLogo src={teamLogoUrl(logo, teamId, sport)} size={16} initial={name} />
+      <TeamLogo
+        src={teamLogoUrl(logo, teamId, sport)}
+        size={logoSize}
+        initial={name}
+      />
       <span className="min-w-0 flex-1 truncate text-[13px] text-text">{name}</span>
       {showScore ? (
         <span className="w-5 shrink-0 text-right font-mono-num text-[13px] font-bold text-text">
@@ -43,9 +49,11 @@ function TeamLine({
 export function LiveMatchCard({
   fixture,
   className,
+  logoSize = 16,
 }: {
   fixture: MatchFixture;
   className?: string;
+  logoSize?: number;
 }) {
   const live = isInPlayStatus(fixture.status);
   const finished = isFinishedStatus(fixture.status);
@@ -105,6 +113,7 @@ export function LiveMatchCard({
           sport={fixture.sport}
           score={fixture.home_score ?? null}
           showScore={showScore}
+          logoSize={logoSize}
         />
         <TeamLine
           name={fixture.away_name || ""}
@@ -113,6 +122,7 @@ export function LiveMatchCard({
           sport={fixture.sport}
           score={fixture.away_score ?? null}
           showScore={showScore}
+          logoSize={logoSize}
         />
       </div>
     </div>

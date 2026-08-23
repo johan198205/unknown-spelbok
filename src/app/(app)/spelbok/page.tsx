@@ -7,6 +7,7 @@ import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState } from "@/components/ui/Panel";
 import {
+  emptyStatsBundle,
   fetchPublicSheetsLeaderboard,
   fetchSheetStatsBundle,
   type AffiliateTopRow,
@@ -103,29 +104,7 @@ export default async function SpelbokPage({
   const [statsBundle, publicSheets] = await Promise.all([
     activeSheet
       ? fetchSheetStatsBundle(supabase, activeSheet.id, "all", unitSize)
-      : Promise.resolve({
-          stats: {
-            antal_spel: 0,
-            vinster: 0,
-            forluster: 0,
-            void: 0,
-            oppna_spel: 0,
-            oppen_risk: 0,
-            oppen_potentiell_vinst: 0,
-            insats: 0,
-            vunnet: 0,
-            forlorat: 0,
-            netto: 0,
-            roi: 0,
-            unit_size: unitSize,
-            unitnetto: 0,
-            vinstprocent: 0,
-            medelodds: 0,
-            medelinsats: 0,
-            medelvinst: 0,
-          },
-          leagues: [],
-        }),
+      : Promise.resolve(emptyStatsBundle(unitSize)),
     fetchPublicSheetsLeaderboard(supabase, 5, user.id),
   ]);
 
@@ -182,6 +161,7 @@ export default async function SpelbokPage({
                 username={username}
                 initialStats={toPlain(statsBundle.stats)}
                 initialLeagues={toPlain(statsBundle.leagues)}
+                initialBreakdowns={toPlain(statsBundle.breakdowns)}
                 affiliates={toPlain(affiliates)}
                 publicSheets={toPlain(publicSheets)}
                 unitSize={unitSize}

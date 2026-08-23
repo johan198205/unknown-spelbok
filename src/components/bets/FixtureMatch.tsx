@@ -14,18 +14,26 @@ export function FixtureMatch({
   className,
   showTime = true,
   stacked = false,
+  logoSize,
 }: {
   fixture: MatchFixture;
   className?: string;
   showTime?: boolean;
   stacked?: boolean;
+  logoSize?: number;
 }) {
   if (
     stacked ||
     isInPlayStatus(fixture.status) ||
     isFinishedStatus(fixture.status)
   ) {
-    return <LiveMatchCard fixture={fixture} className={className} />;
+    return (
+      <LiveMatchCard
+        fixture={fixture}
+        className={className}
+        logoSize={logoSize}
+      />
+    );
   }
   return (
     <MatchRow fixture={fixture} className={cn(className)} showTime={showTime} />

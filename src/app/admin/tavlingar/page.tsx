@@ -1,10 +1,14 @@
 import { requireAdmin } from "@/lib/auth";
 import { listCompetitions } from "@/lib/admin/competitions";
+import { getSiteSettings } from "@/lib/admin/settings";
 import { CompetitionsAdmin } from "@/components/admin/CompetitionsAdmin";
 
 export default async function AdminCompetitionsPage() {
   await requireAdmin();
-  const items = await listCompetitions();
+  const [items, site] = await Promise.all([
+    listCompetitions(),
+    getSiteSettings(),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -15,7 +19,10 @@ export default async function AdminCompetitionsPage() {
           klarar kraven.
         </p>
       </div>
-      <CompetitionsAdmin items={items} />
+      <CompetitionsAdmin
+        items={items}
+        competitionsEnabled={site.competitions_enabled}
+      />
     </div>
   );
 }

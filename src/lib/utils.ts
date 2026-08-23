@@ -140,6 +140,59 @@ export function cumulativeNettoByDay(bets: Bet[]) {
   });
 }
 
+export const SHEET_SERIES_COLORS = [
+  "#35d6f5",
+  "#ffb84d",
+  "#a78bfa",
+  "#66e38a",
+  "#ff8fb1",
+  "#7fb4ff",
+  "#f5a97f",
+  "#5eead4",
+];
+
+/**
+ * Ackumulerat netto per speldag för totalen och för varje spelbok, alla
+ * projicerade på samma dagsaxel så linjerna kan ritas i samma graf.
+ */
+export function cumulativeNettoBySheet(
+  bets: Bet[],
+  sheets: Array<{ id: string; name: string }>
+) {
+  const settled = bets.filter((b) => b.result !== "open");
+  const days = [...new Set(settled.map((b) => b.placed_at.slice(0, 10)))].sort();
+
+  const build = (list: Bet[]) => {
+    const byDay = new Map<string, number>();
+    for (const bet of list) {
+      const day = bet.placed_at.slice(0, 10);
+      byDay.set(day, (byDay.get(day) || 0) + betNetto(bet));
+    }
+    let running = 0;
+    return days.map((date) => {
+      running += byDay.get(date) || 0;
+      return { date, value: running };
+    });
+  };
+
+  return {
+    days,
+    total: build(settled),
+    series: sheets
+      .map((sheet, i) => ({
+        id: sheet.id,
+        name: sheet.name,
+        color: SHEET_SERIES_COLORS[i % SHEET_SERIES_COLORS.length],
+        bets: settled.filter((b) => b.sheet_id === sheet.id),
+      }))
+      .filter((s) => s.bets.length > 0)
+      .map(({ bets: sheetBets, ...rest }) => ({
+        ...rest,
+        points: build(sheetBets),
+      })),
+  };
+}
+
 export function initialOf(name: string) {
   return (name?.trim()?.[0] || "?").toUpperCase();
 }

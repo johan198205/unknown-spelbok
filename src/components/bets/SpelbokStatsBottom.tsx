@@ -11,8 +11,10 @@ import {
   type BetStatsPayload,
   type LeagueStatRow,
   type PublicSheetLeaderboardRow,
+  type SheetBreakdowns,
   type StatsPeriod,
 } from "@/lib/bet-stats";
+import { BreakdownCard } from "@/components/bets/BreakdownCard";
 import { cn, formatMoney, formatNumber, nettoColor } from "@/lib/utils";
 
 type Props = {
@@ -20,6 +22,7 @@ type Props = {
   initialPeriod?: StatsPeriod;
   initialStats: BetStatsPayload;
   initialLeagues: LeagueStatRow[];
+  initialBreakdowns: SheetBreakdowns;
   affiliates: AffiliateTopRow[];
   publicSheets: PublicSheetLeaderboardRow[];
 };
@@ -29,19 +32,22 @@ export function SpelbokStatsBottom({
   initialPeriod = "all",
   initialStats,
   initialLeagues,
+  initialBreakdowns,
   affiliates,
   publicSheets,
 }: Props) {
   const [period, setPeriod] = useState<StatsPeriod>(initialPeriod);
   const [stats, setStats] = useState(initialStats);
   const [leagues, setLeagues] = useState(initialLeagues);
+  const [breakdowns, setBreakdowns] = useState(initialBreakdowns);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setPeriod("all");
     setStats(initialStats);
     setLeagues(initialLeagues);
-  }, [initialStats, initialLeagues, sheetId]);
+    setBreakdowns(initialBreakdowns);
+  }, [initialStats, initialLeagues, initialBreakdowns, sheetId]);
 
   async function selectPeriod(next: StatsPeriod) {
     if (next === period || loading) return;
@@ -55,13 +61,20 @@ export function SpelbokStatsBottom({
       const data = (await res.json()) as {
         stats: BetStatsPayload;
         leagues: LeagueStatRow[];
+        breakdowns: SheetBreakdowns;
       };
       setStats(data.stats);
       setLeagues(data.leagues);
+      setBreakdowns(data.breakdowns);
     } finally {
       setLoading(false);
     }
   }
+
+  const emptyText =
+    period === "all"
+      ? "Inga avgjorda spel ännu."
+      : "Inga avgjorda spel i perioden.";
 
   return (
     <div className="space-y-5">
@@ -71,6 +84,26 @@ export function SpelbokStatsBottom({
         stats={stats}
         loading={loading}
       />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <BreakdownCard
+          title="Per spelbolag"
+          rows={breakdowns.bookmakers}
+          loading={loading}
+          empty={emptyText}
+        />
+        <BreakdownCard
+          title="Per spelform"
+          rows={breakdowns.picks}
+          loading={loading}
+          empty={emptyText}
+        />
+        <BreakdownCard
+          title="Per sport"
+          rows={breakdowns.sports}
+          loading={loading}
+          empty={emptyText}
+        />
+      </div>
       <BottomGrid
         affiliates={affiliates}
         leagues={leagues}

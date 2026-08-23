@@ -5,8 +5,9 @@ import {
 
 /**
  * app_settings-nyckeln 'site' styr publika delar av appen: namn, valuta,
- * öppen registrering och underhållsläge. Läses av middleware, registrera-sidan
- * och admin. Håll modulen fri från next/headers så middleware kan importera den.
+ * öppen registrering, underhållsläge och om tävlingar visas. Läses av
+ * middleware, registrera-sidan, tävlingsytorna och admin. Håll modulen fri
+ * från next/headers så middleware kan importera den.
  */
 
 export const SITE_SETTINGS_KEY = "site";
@@ -16,6 +17,8 @@ export type SiteSettings = {
   currency: string;
   registrations_open: boolean;
   maintenance: boolean;
+  /** Av = tävlingar döljs helt i frontend. Admin → Tävlingar fungerar ändå. */
+  competitions_enabled: boolean;
 };
 
 export const SITE_DEFAULTS: SiteSettings = {
@@ -23,6 +26,7 @@ export const SITE_DEFAULTS: SiteSettings = {
   currency: "SEK",
   registrations_open: true,
   maintenance: false,
+  competitions_enabled: true,
 };
 
 function boolOf(value: unknown, fallback: boolean) {
@@ -46,6 +50,10 @@ export function parseSiteSettings(value: unknown): SiteSettings {
       SITE_DEFAULTS.registrations_open
     ),
     maintenance: boolOf(raw.maintenance, SITE_DEFAULTS.maintenance),
+    competitions_enabled: boolOf(
+      raw.competitions_enabled,
+      SITE_DEFAULTS.competitions_enabled
+    ),
   };
 }
 

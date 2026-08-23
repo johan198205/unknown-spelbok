@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, Panel } from "@/components/ui/Panel";
+import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
 import {
   computeStats,
@@ -15,6 +16,7 @@ import type { Bet } from "@/lib/types";
 
 export default async function LandingPage() {
   const supabase = await createClient();
+  const site = await fetchSiteSettings(supabase);
 
   const [
     { count: betsCount },
@@ -83,7 +85,7 @@ export default async function LandingPage() {
     });
 
   const turnover = board.reduce((sum, s) => sum + s.stake, 0);
-  const comp = competitions?.[0];
+  const comp = site.competitions_enabled ? competitions?.[0] : undefined;
 
   const steps = [
     {
@@ -324,24 +326,26 @@ export default async function LandingPage() {
           </Panel>
 
           <div className="flex flex-col gap-4">
-            <Panel className="p-[18px]">
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <div className="font-display text-[19px] font-semibold">
-                  {comp?.name || "Ingen tävling just nu"}
+            {site.competitions_enabled ? (
+              <Panel className="p-[18px]">
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <div className="font-display text-[19px] font-semibold">
+                    {comp?.name || "Ingen tävling just nu"}
+                  </div>
+                  {comp ? <Badge tone="cyan">Pågår</Badge> : null}
                 </div>
-                {comp ? <Badge tone="cyan">Pågår</Badge> : null}
-              </div>
-              <div className="mb-3 text-sm leading-relaxed text-muted">
-                {comp?.description ||
-                  "Admin kan skapa tävlingar under Admin → Tävlingar."}
-              </div>
-              {comp ? (
-                <div className="font-mono-num text-[12.5px] text-faint">
-                  {new Date(comp.starts_at).toLocaleDateString("sv-SE")} –{" "}
-                  {new Date(comp.ends_at).toLocaleDateString("sv-SE")}
+                <div className="mb-3 text-sm leading-relaxed text-muted">
+                  {comp?.description ||
+                    "Admin kan skapa tävlingar under Admin → Tävlingar."}
                 </div>
-              ) : null}
-            </Panel>
+                {comp ? (
+                  <div className="font-mono-num text-[12.5px] text-faint">
+                    {new Date(comp.starts_at).toLocaleDateString("sv-SE")} –{" "}
+                    {new Date(comp.ends_at).toLocaleDateString("sv-SE")}
+                  </div>
+                ) : null}
+              </Panel>
+            ) : null}
             <AdSlot
               placement="home"
               className="h-[250px]"

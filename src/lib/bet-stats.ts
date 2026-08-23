@@ -1,4 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  bookmakerKey,
+  groupBets,
+  pickKey,
+  sportKey,
+  type BreakdownRow,
+} from "@/lib/breakdowns";
 
 export const STATS_PERIODS = [
   { value: "all", label: "Från start" },
@@ -36,6 +43,33 @@ export type LeagueStatRow = {
   bets: number;
   netto: number;
 };
+
+/** Uppdelningar som räknas fram från raderna, inte via RPC. */
+export type SheetBreakdowns = {
+  bookmakers: BreakdownRow[];
+  picks: BreakdownRow[];
+  sports: BreakdownRow[];
+};
+
+export type SheetStatsBundle = {
+  stats: BetStatsPayload;
+  leagues: LeagueStatRow[];
+  breakdowns: SheetBreakdowns;
+};
+
+export const EMPTY_BREAKDOWNS: SheetBreakdowns = {
+  bookmakers: [],
+  picks: [],
+  sports: [],
+};
+
+export function emptyStatsBundle(unitSize = 100): SheetStatsBundle {
+  return {
+    stats: EMPTY_STATS(unitSize),
+    leagues: [],
+    breakdowns: EMPTY_BREAKDOWNS,
+  };
+}
 
 export type PublicSheetLeaderboardRow = {
   sheet_id: string;
@@ -253,8 +287,33 @@ type BetRow = {
   odds: number | string;
   payout: number | string;
   league: string | null;
+  pick: string | null;
+  sport: string | null;
+  bookmakers?: { name: string } | { name: string }[] | null;
   placed_at: string;
 };
+
+const BET_ROW_SELECT =
+  "result, stake, odds, payout, league, pick, sport, placed_at, bookmakers(name)";
+
+/** PostgREST kan ge en inbäddad relation som array — normalisera till objekt. */
+function withOneBookmaker(rows: BetRow[]) {
+  return rows.map((row) => ({
+    ...row,
+    bookmakers: Array.isArray(row.bookmakers)
+      ? (row.bookmakers[0] ?? null)
+      : (row.bookmakers ?? null),
+  }));
+}
+
+export function computeBreakdownsFromRows(rows: BetRow[]): SheetBreakdowns {
+  const bets = withOneBookmaker(rows);
+  return {
+    bookmakers: groupBets(bets, bookmakerKey),
+    picks: groupBets(bets, pickKey),
+    sports: groupBets(bets, sportKey),
+  };
+}
 
 /** Server-side fallback when RPC saknas / misslyckas. */
 export function computeBetStatsFromRows(
@@ -355,10 +414,19 @@ export async function fetchSheetStatsBundle(
   sheetId: string,
   period: StatsPeriod,
   unitSize = 100
-): Promise<{ stats: BetStatsPayload; leagues: LeagueStatRow[] }> {
+): Promise<SheetStatsBundle> {
   const { from, to } = periodDateRange(period);
 
-  const [statsRes, leagueRes] = await Promise.all([
+  // Raderna behövs alltid — uppdelningarna per spelbolag/spelform/sport har
+  // ingen RPC, och samma svar duger som fallback om en RPC fallerar.
+  let rowQuery = supabase
+    .from("bets")
+    .select(BET_ROW_SELECT)
+    .eq("sheet_id", sheetId);
+  if (from) rowQuery = rowQuery.gte("placed_at", from);
+  if (to) rowQuery = rowQuery.lt("placed_at", to);
+
+  const [statsRes, leagueRes, rowRes] = await Promise.all([
     supabase.rpc("get_bet_stats", {
       p_sheet_id: sheetId,
       p_from_date: from,
@@ -371,30 +439,11 @@ export async function fetchSheetStatsBundle(
       p_to_date: to,
       p_limit: 5,
     }),
+    rowQuery,
   ]);
 
-  if (
-    !statsRes.error &&
-    statsRes.data != null &&
-    !leagueRes.error &&
-    leagueRes.data != null
-  ) {
-    return {
-      stats: normalizeBetStats(statsRes.data, unitSize),
-      leagues: normalizeLeagueStats(leagueRes.data),
-    };
-  }
+  const rows = (rowRes.data || []) as unknown as BetRow[];
 
-  // Fallback: filtrera i DB och aggregera server-side
-  let query = supabase
-    .from("bets")
-    .select("result, stake, odds, payout, league, placed_at")
-    .eq("sheet_id", sheetId);
-  if (from) query = query.gte("placed_at", from);
-  if (to) query = query.lt("placed_at", to);
-
-  const { data } = await query;
-  const rows = (data || []) as BetRow[];
   return {
     stats:
       !statsRes.error && statsRes.data != null
@@ -404,6 +453,7 @@ export async function fetchSheetStatsBundle(
       !leagueRes.error && leagueRes.data != null
         ? normalizeLeagueStats(leagueRes.data)
         : computeLeagueStatsFromRows(rows, 5),
+    breakdowns: computeBreakdownsFromRows(rows),
   };
 }
 
