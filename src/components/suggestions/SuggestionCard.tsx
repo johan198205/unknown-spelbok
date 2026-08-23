@@ -94,12 +94,25 @@ export function SuggestionCard({
           ) : null}
         </div>
 
-        {reasons.length ? (
+        {reasons.history.length || reasons.signals.length ? (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {reasons.map((reason) => (
+            {reasons.history.map((reason) => (
               <span
                 key={`${reason.type}-${reason.label}`}
                 className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-1 text-[11px] leading-tight text-muted"
+              >
+                {reason.label}
+              </span>
+            ))}
+            {/*
+              Gul accent: signalskäl beskriver matchbilden, historikskäl
+              beskriver användaren. Två olika sorters påstående ska inte se
+              likadana ut.
+            */}
+            {reasons.signals.map((reason) => (
+              <span
+                key={reason.rule_id ?? reason.label}
+                className="rounded-[var(--radius-badge)] border border-[var(--yellow-border)] bg-yellow/10 px-2 py-1 text-[11px] leading-tight text-yellow"
               >
                 {reason.label}
               </span>

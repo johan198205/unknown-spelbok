@@ -18,12 +18,15 @@
 
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { notifySite } from "../_shared/site-notify.ts";
+import { computeFixtureSignals } from "../_shared/signal-compute.ts";
+import { evaluateRule, type SignalRuleRow } from "../_shared/signals.ts";
 import {
   ambiguousLeagueNames,
   MAX_SUGGESTIONS_PER_SHEET,
   MAX_SUGGESTIONS_PER_USER,
   MIN_SHEET_SETTLED_BETS,
   MIN_TOTAL_SETTLED_BETS,
+  sportSlugOf,
   suggestionsForUser,
   toSuggestionRow,
   type CandidateFixture,
@@ -44,7 +47,7 @@ const MAX_SHEETS = 1500;
 /** Uppskjutet/inställt ska inte föreslås. */
 const HIDDEN_STATUSES = ["PST", "CANC", "ABD", "FT", "AET", "PEN", "AWD", "WO"];
 const FIXTURE_COLUMNS =
-  "fixture_id, kickoff, sport, league_id, league_name, league_logo, " +
+  "fixture_id, kickoff, sport, season, league_id, league_name, league_logo, " +
   "home_team_id, home_name, home_logo, away_team_id, away_name, away_logo";
 
 type CandidateUser = {
@@ -54,6 +57,21 @@ type CandidateUser = {
 };
 
 type CandidateSheet = CandidateUser & { sheet_id: string };
+
+/**
+ * Spelform → spelform-familj i användarprofilen. Speglar SIGNAL_BET_TYPES
+ * i src/lib/signals/fields.ts; familjenamnen kommer från bet_type_family()
+ * i db/daily-suggestions.sql.
+ */
+const BET_TYPE_FAMILY: Record<string, string> = {
+  over_2_5: "Över/under",
+  under_2_5: "Över/under",
+  btts: "Båda lagen mål",
+  "1x2_home": "1X2",
+  "1x2_draw": "1X2",
+  "1x2_away": "1X2",
+  handicap: "Handikapp",
+};
 
 type BetTeamRow = {
   user_id: string;
@@ -179,6 +197,8 @@ export async function handleGenerateDailySuggestions(req: Request) {
     users: 0,
     sheets: 0,
     ambiguousLeagues: 0,
+    activeRules: 0,
+    signals: null as unknown,
     suggestions: 0,
     pushed: 0,
     dryRun,
@@ -248,54 +268,49 @@ export async function handleGenerateDailySuggestions(req: Request) {
     const rows: ReturnType<typeof toSuggestionRow>[] = [];
     const perUser = new Map<string, number>();
 
-    /**
-     * Poängsätter dagen för ett scope och lägger till raderna.
-     * sheetId null = kontots förslag, annars spelbokens egna.
-     */
-    async function collect(
+    /** Ett scope = ett konto eller en spelbok, med sin färdiglästa profil. */
+    type Scope = {
+      userId: string;
+      dominantSport: string;
+      sheetId: string | null;
+      limit: number;
+      segments: ProfileSegment[];
+    };
+    const scopes: Scope[] = [];
+
+    async function loadScope(
       userId: string,
       dominantSport: string,
       sheetId: string | null,
       limit: number
     ) {
-      const { data: segmentRows, error: profileError } = await supabase.rpc(
-        "get_user_betting_profile",
-        { p_user_id: userId, p_sheet_id: sheetId }
-      );
-      if (profileError) {
+      const { data, error } = await supabase.rpc("get_user_betting_profile", {
+        p_user_id: userId,
+        p_sheet_id: sheetId,
+      });
+      if (error) {
         console.warn(
-          `${JOB}: profil för ${userId}/${sheetId ?? "konto"} misslyckades — ${profileError.message}`
+          `${JOB}: profil för ${userId}/${sheetId ?? "konto"} misslyckades — ${error.message}`
         );
-        return 0;
+        return;
       }
-
-      const hits = suggestionsForUser(
-        fixtures,
-        {
-          userId,
-          dominantSport,
-          segments: (segmentRows ?? []) as ProfileSegment[],
-          teamIds: teamHistory.get(userId) ?? new Set<number>(),
-        },
+      scopes.push({
+        userId,
+        dominantSport,
+        sheetId,
         limit,
-        thresholds
-      );
-
-      for (const hit of hits) {
-        rows.push(toSuggestionRow(userId, ymd, hit, sheetId));
-      }
-      return hits.length;
+        segments: (data ?? []) as ProfileSegment[],
+      });
     }
 
     // Kontots förslag — de som visas på Hem.
     for (const user of users) {
-      const n = await collect(
+      await loadScope(
         user.user_id,
         user.dominant_sport,
         null,
         MAX_SUGGESTIONS_PER_USER
       );
-      if (n > 0) perUser.set(user.user_id, n);
     }
 
     // Per spelbok. Profilen räknas bara på den spelbokens egna spel, annars
@@ -314,12 +329,128 @@ export async function handleGenerateDailySuggestions(req: Request) {
     summary.sheets = sheets.length;
 
     for (const sheet of sheets) {
-      await collect(
+      await loadScope(
         sheet.user_id,
         sheet.dominant_sport,
         sheet.sheet_id,
         MAX_SUGGESTIONS_PER_SHEET
       );
+    }
+
+    // Signaler beräknas BARA för ligor där någon har ett etablerat segment.
+    // Att räkna på alla dagens matcher hade kostat tusentals API-anrop för
+    // data ingen tittar på.
+    const relevantLeagueIds = new Set<number>();
+    const relevantLeagueNames = new Set<string>();
+    // Följer samma tröskel som poängsättningen. Utan det hade en dry-run med
+    // minSegment=1 sänkt poängspärren men inte det här filtret, och
+    // signalsteget hade tyst räknat på noll matcher.
+    const effectiveMinSegment = thresholds.minSegmentBets ?? null;
+    for (const scope of scopes) {
+      for (const segment of scope.segments) {
+        const counts =
+          segment.established ||
+          (effectiveMinSegment !== null && segment.bets >= effectiveMinSegment);
+        if (!counts) continue;
+        if (segment.league_id != null) {
+          relevantLeagueIds.add(Number(segment.league_id));
+        } else {
+          relevantLeagueNames.add(segment.league_name.trim().toLowerCase());
+        }
+      }
+    }
+
+    const signalFixtures = fixtures.filter((f) => {
+      if (f.league_id != null && relevantLeagueIds.has(Number(f.league_id))) {
+        return true;
+      }
+      const name = (f.league_name || "").trim().toLowerCase();
+      // Tvetydiga liganamn matchar ingen profil ändå — beräkna inte på dem.
+      if (!name || thresholds.ambiguousLeagueNames?.has(name)) return false;
+      return relevantLeagueNames.has(name);
+    });
+
+    const { signals, summary: signalSummary } = await computeFixtureSignals(
+      supabase,
+      signalFixtures,
+      ymd,
+      dryRun
+    );
+    summary.signals = signalSummary;
+
+    const { data: ruleRows, error: rulesError } = await supabase
+      .from("signal_rules")
+      .select("id, name, bet_type, sport, conditions, weight, label_template, min_matches_played")
+      .eq("active", true)
+      .is("user_id", null);
+    if (rulesError) {
+      // Signalmotorns migration kanske inte är körd. Profilmatchningen
+      // fungerar ändå — signaler förstärker, de gate:ar inte.
+      console.warn(`${JOB}: regler hoppas över — ${rulesError.message}`);
+    }
+    const rules = (ruleRows ?? []) as SignalRuleRow[];
+    summary.activeRules = rules.length;
+
+    for (const scope of scopes) {
+      // En regel för over_2_5 är bara relevant för någon som faktiskt spelar
+      // över/under. Familjerna kommer från bet_type_family() i profilen.
+      // Samma tröskel som ligafiltret och poängsättningen. Med enbart
+      // `established` hade en dry-run med minSegment=1 gett tom mängd, och
+      // då kan ingen regel någonsin appliceras — signalerna beräknas men
+      // används inte, helt tyst.
+      const families = new Set(
+        scope.segments
+          .filter(
+            (s) =>
+              s.established ||
+              (effectiveMinSegment !== null && s.bets >= effectiveMinSegment)
+          )
+          .map((s) => s.bet_type)
+      );
+
+      const hits = suggestionsForUser(
+        fixtures,
+        {
+          userId: scope.userId,
+          dominantSport: scope.dominantSport,
+          segments: scope.segments,
+          teamIds: teamHistory.get(scope.userId) ?? new Set<number>(),
+        },
+        scope.limit,
+        thresholds,
+        (hit) => {
+          const signal = signals.get(hit.fixture.fixture_id);
+          if (!signal) return;
+          const fixtureSport = sportSlugOf(hit.fixture.sport);
+          for (const rule of rules) {
+            if (rule.sport !== fixtureSport) continue;
+            const family = BET_TYPE_FAMILY[rule.bet_type];
+            if (!family || !families.has(family)) continue;
+            const result = evaluateRule(
+              rule,
+              signal.metrics,
+              signal.homeMatchesPlayed,
+              signal.awayMatchesPlayed
+            );
+            if (!result.hit || !result.label) continue;
+            // Taket på 100 står kvar — signaler förstärker inom samma skala.
+            hit.matchScore = Math.min(100, hit.matchScore + rule.weight);
+            hit.reasons.push({
+              type: "signal",
+              label: result.label,
+              weight: rule.weight,
+              rule_id: rule.id,
+            });
+          }
+          hit.reasons.sort((a, b) => b.weight - a.weight);
+        }
+      );
+
+      if (!hits.length) continue;
+      if (scope.sheetId === null) perUser.set(scope.userId, hits.length);
+      for (const hit of hits) {
+        rows.push(toSuggestionRow(scope.userId, ymd, hit, scope.sheetId));
+      }
     }
 
     summary.suggestions = rows.length;

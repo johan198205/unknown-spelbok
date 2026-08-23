@@ -125,6 +125,15 @@ export type ApiSportsClient = {
     path: string,
     params?: Record<string, string | number | boolean | undefined>
   ) => Promise<T[]>;
+  /**
+   * Första sidans `response` som den är. Behövs för endpoints som svarar med
+   * ett objekt i stället för en lista — /teams/statistics är en sådan, och
+   * get() (som pagar och förväntar sig arrayer) förvanskar den.
+   */
+  getResponse: <T>(
+    path: string,
+    params?: Record<string, string | number | boolean | undefined>
+  ) => Promise<T>;
   requestCount: () => number;
 };
 
@@ -336,8 +345,17 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     return items;
   }
 
+  async function getResponse<T>(
+    path: string,
+    params: Record<string, string | number | boolean | undefined> = {}
+  ): Promise<T> {
+    const json = await fetchPage(path, params);
+    return json.response as T;
+  }
+
   return {
     get,
+    getResponse,
     requestCount: () => requests,
   };
 }

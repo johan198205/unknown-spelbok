@@ -12,9 +12,12 @@
 import type { Fixture, Tables } from "@/lib/types";
 
 export type SuggestionReason = {
-  type: "league" | "bet_type" | "sport" | "kickoff" | "team";
+  /** signal = träff på en adminregel i signalmotorn, övriga = spelhistorik. */
+  type: "league" | "bet_type" | "sport" | "kickoff" | "team" | "signal";
   label: string;
   weight: number;
+  /** Bara på signalskäl — pekar ut regeln som träffade. */
+  rule_id?: string;
 };
 
 export type DailySuggestion = Omit<Tables<"daily_suggestions">, "reasons"> & {
@@ -37,6 +40,7 @@ const REASON_TYPES = new Set([
   "sport",
   "kickoff",
   "team",
+  "signal",
 ]);
 
 /** jsonb kommer tillbaka otypat — släpp igenom bara det UI:t kan rita. */
@@ -44,7 +48,10 @@ export function parseReasons(raw: unknown): SuggestionReason[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((item) => {
     if (!item || typeof item !== "object") return [];
-    const { type, label, weight } = item as Record<string, unknown>;
+    const { type, label, weight, rule_id: ruleId } = item as Record<
+      string,
+      unknown
+    >;
     if (typeof type !== "string" || !REASON_TYPES.has(type)) return [];
     if (typeof label !== "string" || !label.trim()) return [];
     return [
@@ -52,6 +59,7 @@ export function parseReasons(raw: unknown): SuggestionReason[] {
         type: type as SuggestionReason["type"],
         label: label.trim(),
         weight: Number(weight) || 0,
+        ...(typeof ruleId === "string" ? { rule_id: ruleId } : {}),
       },
     ];
   });
@@ -65,11 +73,25 @@ export function normalizeSuggestion(row: unknown): DailySuggestion {
   };
 }
 
-/** Skälen kortet visar: tyngst först, max två (resten är brus i ett kort). */
+/**
+ * Skälen kortet visar: tyngst först, max två per sort.
+ *
+ * Signalskäl hålls isär från historikskäl med flit — "din historik" och
+ * "matchbilden" är två olika sorters påstående, och användaren ska kunna se
+ * vilket som är vilket utan att läsa texten noga.
+ */
 export function topReasons(suggestion: DailySuggestion, limit = 2) {
-  return [...suggestion.reasons]
-    .sort((a, b) => b.weight - a.weight)
+  const byWeight = (a: SuggestionReason, b: SuggestionReason) =>
+    b.weight - a.weight;
+  const history = suggestion.reasons
+    .filter((r) => r.type !== "signal")
+    .sort(byWeight)
     .slice(0, limit);
+  const signals = suggestion.reasons
+    .filter((r) => r.type === "signal")
+    .sort(byWeight)
+    .slice(0, limit);
+  return { history, signals };
 }
 
 export function kickoffLabel(iso: string) {

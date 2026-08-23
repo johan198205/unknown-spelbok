@@ -61,6 +61,8 @@ export type CandidateFixture = {
   fixture_id: number;
   kickoff: string;
   sport: string;
+  /** Behövs för /teams/statistics i signalberäkningen. */
+  season?: number | null;
   league_id: number | null;
   league_name: string | null;
   league_logo: string | null;
@@ -73,9 +75,11 @@ export type CandidateFixture = {
 };
 
 export type Reason = {
-  type: "league" | "bet_type" | "sport" | "kickoff" | "team";
+  type: "league" | "bet_type" | "sport" | "kickoff" | "team" | "signal";
   label: string;
   weight: number;
+  /** Bara på signalskäl — pekar ut vilken adminregel som träffade. */
+  rule_id?: string;
 };
 
 export type UserProfile = {
@@ -304,12 +308,20 @@ export function suggestionsForUser(
   fixtures: CandidateFixture[],
   profile: UserProfile,
   limit = MAX_SUGGESTIONS_PER_USER,
-  thresholds: Thresholds = {}
+  thresholds: Thresholds = {},
+  /**
+   * Körs på varje träff FÖRE sortering och kapning. Signalmotorn hakar in
+   * här: en regel som adderar poäng måste kunna påverka rangordningen, inte
+   * bara pynta de fem som redan valts.
+   */
+  augment?: (hit: ScoredSuggestion) => void
 ): ScoredSuggestion[] {
   const scored: ScoredSuggestion[] = [];
   for (const fixture of fixtures) {
     const hit = scoreFixture(fixture, profile, thresholds);
-    if (hit) scored.push(hit);
+    if (!hit) continue;
+    augment?.(hit);
+    scored.push(hit);
   }
   return scored
     .sort(
