@@ -15,7 +15,7 @@ import {
   Trophy,
   Users,
   type LucideIcon,
-} from "lucide-react";
+  SlidersHorizontal,} from "lucide-react";
 import { cn, initialOf } from "@/lib/utils";
 
 const NAV: {
@@ -32,6 +32,7 @@ const NAV: {
   { href: "/admin/statistik", label: "Statistik", icon: BarChart3 },
   { href: "/admin/api-usage", label: "API-förbrukning", icon: Gauge },
   { href: "/admin/sattling", label: "Sättling", icon: CheckCircle2 },
+  { href: "/admin/regler", label: "Signalregler", icon: SlidersHorizontal },
   { href: "/admin/notiser", label: "Notiser", icon: Bell },
   { href: "/admin/installningar", label: "Inställningar", icon: Settings },
 ];

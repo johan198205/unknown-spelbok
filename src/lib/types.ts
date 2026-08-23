@@ -595,6 +595,93 @@ export type Database = {
           },
         ]
       }
+      signal_rules: {
+        Row: {
+          active: boolean
+          bet_type: string
+          conditions: Json
+          created_at: string
+          id: string
+          label_template: string
+          min_matches_played: number
+          name: string
+          sport: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          bet_type: string
+          conditions: Json
+          created_at?: string
+          id?: string
+          label_template: string
+          min_matches_played?: number
+          name: string
+          sport: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          bet_type?: string
+          conditions?: Json
+          created_at?: string
+          id?: string
+          label_template?: string
+          min_matches_played?: number
+          name?: string
+          sport?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          weight?: number
+        }
+        Relationships: []
+      }
+      fixture_signals: {
+        Row: {
+          away_matches_played: number
+          computed_at: string
+          fixture_id: number
+          home_matches_played: number
+          id: string
+          league_id: number
+          metrics: Json
+          season: number
+          signal_date: string
+          sport: string
+        }
+        Insert: {
+          away_matches_played: number
+          computed_at?: string
+          fixture_id: number
+          home_matches_played: number
+          id?: string
+          league_id: number
+          metrics: Json
+          season: number
+          signal_date: string
+          sport: string
+        }
+        Update: {
+          away_matches_played?: number
+          computed_at?: string
+          fixture_id?: number
+          home_matches_played?: number
+          id?: string
+          league_id?: number
+          metrics?: Json
+          season?: number
+          signal_date?: string
+          sport?: string
+        }
+        Relationships: []
+      }
       fixtures: {
         Row: {
           away_logo: string | null
@@ -1267,6 +1354,8 @@ export type SettleQueueItem = Tables<"settle_queue">;
 export type LeaderboardRow = Tables<"leaderboard">;
 export type BannerStats = Tables<"banner_stats">;
 export type AiGenerationLog = Tables<"ai_generation_log">;
+export type SignalRule = Tables<"signal_rules">;
+export type FixtureSignal = Tables<"fixture_signals">;
 
 export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
   result: BetResult;
