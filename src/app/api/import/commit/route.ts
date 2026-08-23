@@ -100,9 +100,10 @@ export async function POST(request: Request) {
         result: settled ? (bet.result as string) : "open",
         settled_at: settled ? now : null,
         settled_by: settled ? "user" : null,
-        // Verified-badgen betyder "loggat före avspark" och kan aldrig
-        // gälla importerad data.
-        logged_before_kickoff: false,
+        // logged_before_kickoff skickas medvetet inte med: triggern i
+        // db/logged-before-kickoff.sql sätter den från fixture.kickoff och
+        // tvingar null när fixture_id saknas — vilket alltid gäller import.
+        // Verified-badgen kan därmed aldrig gälla importerad data.
         import_source: "file",
         import_external_id: bet.external_id,
         import_source_url: body.filename,
