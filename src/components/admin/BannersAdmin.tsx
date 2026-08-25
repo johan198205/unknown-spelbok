@@ -22,34 +22,46 @@ const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
   { value: "spelbolag", label: "Spelbolag" },
 ];
 
-/** Måtten är de faktiska annonsytorna i sidorna — inga andra format renderas. */
+/**
+ * Annonsytorna går i full bredd och beskärs av object-cover. Bilden ska därför
+ * ritas i ytans bredaste läge (width×height) med allt innehåll samlat i de
+ * mittersta `safe` pixlarna — kanterna kapas på smalare skärmar.
+ */
 const FORMATS: {
   value: BannerFormat;
   label: string;
+  short: string;
   width: number;
   height: number;
+  safe: number;
   where: string;
 }[] = [
   {
     value: "970x90",
-    label: "970×90 · Leaderboard",
-    width: 970,
+    label: "Leaderboard · full bredd × 90 px",
+    short: "Leaderboard",
+    width: 1320,
     height: 90,
+    safe: 940,
     where: "Desktop, toppen av sidan",
   },
   {
     value: "320x100",
-    label: "320×100 · Mobil",
-    width: 320,
+    label: "Mobil · full bredd × 100 px",
+    short: "Mobil",
+    width: 1040,
     height: 100,
-    where: "Mobil, toppen av sidan",
+    safe: 300,
+    where: "Mobil och surfplatta, toppen av sidan",
   },
   {
     value: "300x250",
-    label: "300×250 · Rektangel",
-    width: 300,
+    label: "Rektangel · sidokolumn × 250 px",
+    short: "Rektangel",
+    width: 500,
     height: 250,
-    where: "Sidokolumn på startsidan",
+    safe: 300,
+    where: "Sidokolumnen på startsidan",
   },
 ];
 
@@ -311,8 +323,8 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                     <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] text-[11px] text-text-soft">
                       {placementLabel(b.placement)}
                     </span>
-                    <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] font-mono-num text-[11px] text-text-soft">
-                      {formatOf(b.format).value.replace("x", "×")}
+                    <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] text-[11px] text-text-soft">
+                      {formatOf(b.format).short}
                     </span>
                     <span className="font-mono-num text-[11.5px] text-muted">
                       {periodOf(b)}
@@ -381,9 +393,11 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               label="Bild-URL"
               value={draft.image_url}
               onChange={(url) => setDraft({ ...draft, image_url: url })}
-              hint={`Exakt ${formatOf(draft.format).width}×${
+              hint={`${formatOf(draft.format).width}×${
                 formatOf(draft.format).height
-              } px · JPG, PNG eller WebP · max 300 kB`}
+              } px · innehållet i mitten (${
+                formatOf(draft.format).safe
+              } px) · kanterna beskärs på smala skärmar`}
             />
 
             <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
@@ -441,7 +455,7 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               {!FORMATS_BY_PLACEMENT[draft.placement].includes(draft.format) ? (
                 <div className="rounded-[var(--radius-card)] border border-yellow/40 bg-yellow/10 px-3 py-2 text-[12.5px] text-yellow sm:col-span-2">
                   {placementLabel(draft.placement)} har ingen{" "}
-                  {formatOf(draft.format).value.replace("x", "×")}-yta — bannern
+                  {formatOf(draft.format).short.toLowerCase()}-yta — bannern
                   sparas men visas inte någonstans.
                 </div>
               ) : (
@@ -482,10 +496,10 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               <div className="mb-2.5 text-[10.5px] uppercase tracking-[0.12em] text-dim">
                 Förhandsvisning i AdSlot
               </div>
-              {/* Rutan har annonsytans exakta proportioner, så en felaktig
-                  bildstorlek syns direkt som beskärning. */}
+              {/* Rutan har ytans bredaste proportioner och markerar den säkra
+                  zonen — allt utanför strecken kapas på smalare skärmar. */}
               <div
-                className="mx-auto flex w-full items-center justify-center overflow-hidden rounded-[var(--radius-ad)] border border-dashed border-line-strong bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] font-mono-num text-[12px] tracking-[0.13em] text-dim"
+                className="relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-[var(--radius-ad)] border border-dashed border-line-strong bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] font-mono-num text-[12px] tracking-[0.13em] text-dim"
                 style={{
                   maxWidth: formatOf(draft.format).width,
                   aspectRatio: `${formatOf(draft.format).width} / ${
@@ -501,10 +515,32 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  `${formatOf(draft.format).value.replace("x", "×")} · ${
-                    draft.title || "Namnlös banner"
-                  }`
+                  `${formatOf(draft.format).width}×${
+                    formatOf(draft.format).height
+                  } · ${draft.title || "Namnlös banner"}`
                 )}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 border-x border-dashed border-cyan/45"
+                  style={{
+                    left: `${
+                      (50 *
+                        (formatOf(draft.format).width -
+                          formatOf(draft.format).safe)) /
+                      formatOf(draft.format).width
+                    }%`,
+                    right: `${
+                      (50 *
+                        (formatOf(draft.format).width -
+                          formatOf(draft.format).safe)) /
+                      formatOf(draft.format).width
+                    }%`,
+                  }}
+                />
+              </div>
+              <div className="mt-2 text-center text-[11.5px] text-dim">
+                Streckad zon = alltid synlig. Utanför den beskärs bilden på
+                smalare skärmar.
               </div>
             </div>
 

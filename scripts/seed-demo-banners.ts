@@ -31,6 +31,8 @@ const supabase = createClient(url, serviceKey, {
 const BUCKET = "banners";
 /** Titelprefix som gör seedade rader återkörbara — de rensas före insert. */
 const PREFIX = "Demo:";
+/** Höjs när kreativen ritas om: publika Storage-URL:er cachas hårt. */
+const VERSION = "v2";
 
 type Format = "970x90" | "320x100" | "300x250";
 type Placement = "home" | "sheet" | "topplista" | "spelbolag";
@@ -66,7 +68,7 @@ async function ensureBucket() {
 async function upload(brand: string, format: Format) {
   const file = `${brand}-${format}.jpg`;
   const body = readFileSync(resolve("design/demo-banners", file));
-  const path = `demo/${file}`;
+  const path = `demo/${brand}-${format}-${VERSION}.jpg`;
 
   const { error } = await supabase.storage
     .from(BUCKET)
@@ -86,6 +88,16 @@ async function main() {
     }
   }
   console.log(`Laddade upp ${images.size} bilder till ${BUCKET}/demo/`);
+
+  // Kreativ från tidigare versioner ligger kvar på egna paths.
+  const { data: stale } = await supabase.storage.from(BUCKET).list("demo");
+  const drop = (stale ?? [])
+    .filter((f) => !f.name.includes(`-${VERSION}.`))
+    .map((f) => `demo/${f.name}`);
+  if (drop.length) {
+    await supabase.storage.from(BUCKET).remove(drop);
+    console.log(`Rensade ${drop.length} gamla bilder`);
+  }
 
   const rows = PLACEMENTS.flatMap((placement) =>
     placement.formats.flatMap((format) =>

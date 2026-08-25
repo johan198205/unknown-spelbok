@@ -105,7 +105,7 @@ export default async function LandingPage() {
     {
       no: "03",
       title: "Läs av sanningen",
-      body: "Netto, ROI och hitrate räknas om direkt. Jämför dig i topplistan och i tävlingar.",
+      body: "Netto, ROI och hitrate räknas om direkt. Jämför dig i topplistorna.",
       img: "/img/sa-funkar-det/statistik.png",
       alt: "Statistikvyn med netto, ROI, hitrate och grafen över ackumulerat netto.",
     },
@@ -126,7 +126,7 @@ export default async function LandingPage() {
           </h1>
           <p className="mb-7 max-w-[520px] text-lg leading-relaxed text-muted">
             Bokför varje spel, se din riktiga ROI och sluta gissa. Jämför dig med
-            andra i topplistan och möt dem i tävlingar där bara siffrorna talar.
+            andra i topplistorna där bara siffrorna talar.
           </p>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href="/registrera" size="lg">
@@ -346,12 +346,10 @@ export default async function LandingPage() {
                 ) : null}
               </Panel>
             ) : null}
-            {/* Ytan är exakt 300×250 — bredare container skulle beskära
-                kreativens topp och botten med object-cover. */}
             <AdSlot
               format="300x250"
               placement="home"
-              className="mx-auto h-[250px] w-full max-w-[300px]"
+              className="h-[250px]"
             />
           </div>
         </div>

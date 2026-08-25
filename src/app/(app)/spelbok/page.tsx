@@ -130,12 +130,12 @@ export default async function SpelbokPage({
         <AdSlot
           format="970x90"
           placement="sheet"
-          className="mx-auto w-full max-w-[970px] hidden h-[90px] lg:flex"
+          className="hidden h-[90px] lg:flex"
         />
         <AdSlot
           format="320x100"
           placement="sheet"
-          className="mx-auto w-full max-w-[320px] h-[100px] lg:hidden"
+          className="h-[100px] lg:hidden"
         />
       </div>
 

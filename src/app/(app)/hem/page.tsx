@@ -239,13 +239,18 @@ export default async function HemPage() {
         ))}
       </div>
 
+      {/* Grafen ligger utanför grid:en och går i full bredd — kurvan behöver
+          upplösning på x-axeln. Kolumnerna börjar först under den, så "Mina
+          spreadsheets" och "Senaste resultat" toppar på samma höjd. */}
+      <div className="mb-[18px]">
+        <DashboardNettoChart
+          entries={chartEntries}
+          sheets={sheetList.map((s) => ({ id: s.id, name: s.name }))}
+        />
+      </div>
+
       <div className="grid items-start gap-[18px] min-[1080px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-[18px]">
-          <DashboardNettoChart
-            entries={chartEntries}
-            sheets={sheetList.map((s) => ({ id: s.id, name: s.name }))}
-          />
-
           <section>
             <div className="mb-2.5 flex items-baseline justify-between gap-3">
               <h2 className="font-display text-[15px] font-semibold uppercase tracking-[0.09em]">
@@ -377,12 +382,12 @@ export default async function HemPage() {
       <AdSlot
         format="320x100"
         placement="home"
-        className="mx-auto w-full max-w-[320px] mt-[18px] h-[100px] min-[1080px]:hidden"
+        className="mt-[18px] h-[100px] min-[1080px]:hidden"
       />
       <AdSlot
         format="970x90"
         placement="home"
-        className="mx-auto w-full max-w-[970px] mt-[18px] hidden h-[90px] min-[1080px]:flex"
+        className="mt-[18px] hidden h-[90px] min-[1080px]:flex"
       />
     </div>
   );
