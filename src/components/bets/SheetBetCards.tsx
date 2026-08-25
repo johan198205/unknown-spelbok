@@ -39,7 +39,7 @@ export function SheetBetCards({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 min-[1180px]:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sheet:grid-cols-4">
       {bets.map((bet) => {
         const netto = betNetto(bet);
         const placed = new Date(bet.placed_at);

@@ -195,6 +195,21 @@
   --font-mono: var(--font-plex);
 }
 
+/*
+  Spelbokens två brytpunkter måste vara RIKTIGA brytpunkter, inte
+  `min-[1180px]:`. Tailwind lägger alla godtyckliga min-[]-varianter före de
+  namngivna, så `lg:block` skulle vinna över `min-[1180px]:hidden` och både
+  tabell och kort ritades samtidigt. Registrerade brytpunkter sorteras på
+  sitt värde och hamnar rätt mellan lg och xl.
+
+  sheet      = 1180px, där nio kolumner får plats
+  sheet-wide = 1320px, där liganamnet får plats bredvid loggan
+*/
+@theme {
+  --breakpoint-sheet: 73.75rem;
+  --breakpoint-sheet-wide: 82.5rem;
+}
+
 @keyframes sbpulse {
   0% {
     opacity: 1;

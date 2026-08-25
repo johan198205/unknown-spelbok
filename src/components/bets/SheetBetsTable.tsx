@@ -24,8 +24,8 @@ type Column = {
 
 const COLUMNS: Column[] = [
   { key: "date", label: "Datum", width: "w-[7%]" },
-  { key: "league", label: "Liga", width: "w-[13%] max-[1320px]:w-[6%]" },
-  { key: "match", label: "Match", width: "w-[23%] max-[1320px]:w-[30%]" },
+  { key: "league", label: "Liga", width: "w-[13%] max-sheet-wide:w-[6%]" },
+  { key: "match", label: "Match", width: "w-[23%] max-sheet-wide:w-[30%]" },
   { key: "pick", label: "Spel", width: "w-[14%]" },
   { key: "bookmaker", label: "Bolag", width: "w-[8%]" },
   { key: "stake", label: "Insats", width: "w-[7%]", align: "right" },
@@ -65,7 +65,7 @@ export function LeagueCell({ bet }: { bet: Bet }) {
           size={22}
         />
       </span>
-      <span className="min-w-0 truncate text-[15px] max-[1320px]:hidden">
+      <span className="min-w-0 truncate text-[15px] max-sheet-wide:hidden">
         {bet.league}
       </span>
     </span>

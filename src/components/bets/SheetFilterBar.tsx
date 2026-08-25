@@ -270,7 +270,7 @@ export function SheetFilterBar({
           value={filters.view}
           options={VIEW_OPTIONS}
           onChange={(view) => onChange({ view })}
-          className="max-[1179px]:hidden"
+          className="max-sheet:hidden"
         />
       </div>
     </div>

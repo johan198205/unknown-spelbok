@@ -288,7 +288,7 @@ export function SpelbokSheetView({
       </div>
 
       {/* ≥1180px: tabell eller kort, användarens val. */}
-      <div className="hidden min-[1180px]:block">
+      <div className="hidden sheet:block">
         {filters.view === "table" ? (
           <SheetBetsTable
             {...listProps}
@@ -302,7 +302,7 @@ export function SpelbokSheetView({
       </div>
 
       {/* 1024–1179px: tabellen får inte plats, kortvyn tar över. */}
-      <div className="hidden lg:block min-[1180px]:hidden">
+      <div className="hidden lg:block sheet:hidden">
         <SheetBetCards {...listProps} />
       </div>
 
