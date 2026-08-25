@@ -1,17 +1,7 @@
-import Link from "next/link";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState, Panel } from "@/components/ui/Panel";
-import { CompetitionBoard } from "@/components/competitions/CompetitionBoard";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
-import { fetchSiteSettings } from "@/lib/site-settings";
-import {
-  formatCountdown,
-  formatPeriod,
-  rankBoard,
-  rulesSummary,
-  type BoardEntry,
-} from "@/lib/competitions";
 import {
   computeStats,
   formatMoney,
@@ -19,7 +9,7 @@ import {
   initialOf,
   nettoColor,
 } from "@/lib/utils";
-import type { Bet, Competition, LeaderboardRow } from "@/lib/types";
+import type { Bet } from "@/lib/types";
 import { StickySelfRank } from "@/components/pwa/StickySelfRank";
 import { TopListCard } from "@/components/topplista/TopListCard";
 import {
@@ -39,44 +29,20 @@ export default async function TopplistaPage() {
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
 
-  const site = await fetchSiteSettings(supabase);
-  const competitionsEnabled = site.competitions_enabled;
-
-  const [{ data: sheets }, { data: competitions }, { data: ryggade }] =
-    await Promise.all([
+  // Tävlingar är steg 2 och visas inte här — sidan är enbart topplistor.
+  const [{ data: sheets }, { data: ryggade }] = await Promise.all([
     supabase
       .from("sheets")
       .select(
         "id, name, slug, user_id, currency, profiles(username, avatar_url), bets(stake, payout, result, odds, placed_at)"
       )
       .eq("is_public", true),
-    competitionsEnabled
-      ? supabase
-          .from("competitions")
-          .select("*")
-          .eq("active", true)
-          .eq("visibility", "public")
-          .lte("starts_at", nowIso)
-          .gte("ends_at", nowIso)
-          .order("ends_at", { ascending: true })
-          .limit(1)
-      : Promise.resolve({ data: null }),
     supabase
       .from("bets")
       .select("copied_from_user_id")
       .not("copied_from_user_id", "is", null)
       .limit(5000),
   ]);
-
-  const competition = ((competitions || []) as Competition[])[0] ?? null;
-  let compEntries: BoardEntry[] = [];
-  if (competition) {
-    const { data } = await supabase
-      .from("leaderboard")
-      .select("*")
-      .eq("competition_id", competition.id);
-    compEntries = rankBoard((data || []) as LeaderboardRow[], competition);
-  }
 
   const toplistSheets: ToplistSheet[] = (sheets || []).map((sheet) => ({
     id: sheet.id,
@@ -189,65 +155,16 @@ export default async function TopplistaPage() {
         <p className="text-muted">Alla publika spreadsheets</p>
       </div>
 
-      {competitionsEnabled ? (
-        <div className="mb-4 flex gap-3 lg:hidden">
-          <Link
-            href="/topplista"
-            className="rounded-full border border-win bg-win/10 px-3.5 py-1.5 text-sm font-semibold text-win no-underline"
-          >
-            Topplista
-          </Link>
-          <Link
-            href="/tavlingar"
-            className="rounded-full border border-line bg-panel px-3.5 py-1.5 text-sm font-semibold text-muted no-underline"
-          >
-            Tävlingar
-          </Link>
-        </div>
-      ) : null}
-
       <AdSlot
+        format="970x90"
         placement="topplista"
-        className="mb-5 hidden h-[90px] lg:flex"
-        label="ANNONSPLATS 970×90"
+        className="mx-auto w-full max-w-[970px] mb-5 hidden h-[90px] lg:flex"
       />
       <AdSlot
+        format="320x100"
         placement="topplista"
-        className="mb-4 h-[100px] lg:hidden"
-        label="ANNONSPLATS 320×100"
+        className="mx-auto w-full max-w-[320px] mb-4 h-[100px] lg:hidden"
       />
-
-      {competition ? (
-        <Panel className="mb-5 overflow-hidden">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 lg:px-5">
-            <div>
-              <div className="mb-1 text-[10.5px] uppercase tracking-[0.12em] text-dim">
-                Pågående tävling
-              </div>
-              <h2 className="font-display text-xl font-semibold">
-                {competition.name}
-              </h2>
-              <div className="font-mono-num text-[12.5px] text-faint">
-                {formatPeriod(competition.starts_at, competition.ends_at)} ·{" "}
-                {formatCountdown(competition)}
-              </div>
-              {rulesSummary(competition) ? (
-                <div className="mt-1 text-[12.5px] text-muted">
-                  {rulesSummary(competition)}
-                </div>
-              ) : null}
-            </div>
-            <Link href="/tavlingar" className="text-[13.5px]">
-              Alla tävlingar
-            </Link>
-          </div>
-          <CompetitionBoard
-            entries={compEntries}
-            rules={competition}
-            selfId={profile?.id}
-          />
-        </Panel>
-      ) : null}
 
       <Panel className="hidden overflow-hidden lg:block">
         <div className="grid grid-cols-[40px_1fr_80px_100px_100px] gap-3 border-b border-line bg-bg-soft px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted">

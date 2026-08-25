@@ -128,14 +128,14 @@ export default async function SpelbokPage({
     <div className="animate-sbfade">
       <div className="mb-[26px]">
         <AdSlot
+          format="970x90"
           placement="sheet"
-          className="hidden h-[90px] lg:flex"
-          label="ANNONSPLATS 970×90"
+          className="mx-auto w-full max-w-[970px] hidden h-[90px] lg:flex"
         />
         <AdSlot
+          format="320x100"
           placement="sheet"
-          className="h-[100px] lg:hidden"
-          label="ANNONSPLATS 320×100"
+          className="mx-auto w-full max-w-[320px] h-[100px] lg:hidden"
         />
       </div>
 

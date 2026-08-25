@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "import:bookmakers": "tsx scripts/import-bookmakers.ts",
-    "check:signals": "tsx scripts/check-signal-parity.ts"
+    "check:signals": "tsx scripts/check-signal-parity.ts",
+    "seed:banners": "tsx scripts/seed-demo-banners.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

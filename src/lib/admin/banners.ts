@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { logAdmin } from "@/lib/admin/log";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Banner, BannerPlacement } from "@/lib/types";
+import type { Banner, BannerFormat, BannerPlacement } from "@/lib/types";
 
 export type BannerRow = Banner & {
   views: number;
@@ -19,6 +19,7 @@ export type BannerDraft = {
   image_url: string;
   link_url: string;
   placement: BannerPlacement;
+  format: BannerFormat;
   starts_at: string | null;
   ends_at: string | null;
   active: boolean;
@@ -95,6 +96,7 @@ export async function saveBanner(draft: BannerDraft) {
     image_url: draft.image_url.trim(),
     link_url: draft.link_url.trim() || null,
     placement: draft.placement,
+    format: draft.format,
     starts_at: draft.starts_at,
     ends_at: draft.ends_at,
     active: draft.active,

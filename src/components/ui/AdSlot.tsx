@@ -1,18 +1,20 @@
 import { BannerLink } from "./BannerLink";
 import { getBannerForPlacement } from "@/lib/banners";
 import { cn } from "@/lib/utils";
-import type { BannerPlacement } from "@/lib/types";
+import type { BannerFormat, BannerPlacement } from "@/lib/types";
 
 export async function AdSlot({
   placement,
-  label = "ANNONSPLATS 970×90",
+  format,
+  label,
   className,
 }: {
   placement: BannerPlacement;
+  format: BannerFormat;
   label?: string;
   className?: string;
 }) {
-  const banner = await getBannerForPlacement(placement);
+  const banner = await getBannerForPlacement(placement, format);
 
   if (!banner) {
     return (
@@ -22,7 +24,7 @@ export async function AdSlot({
           className
         )}
       >
-        {label}
+        {label ?? `ANNONSPLATS ${format.replace("x", "×")}`}
       </div>
     );
   }

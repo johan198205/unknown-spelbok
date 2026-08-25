@@ -35,9 +35,9 @@ export default async function SpelbolagPage() {
         </a>
       </div>
       <AdSlot
+        format="970x90"
         placement="spelbolag"
-        className="mb-5 h-[90px]"
-        label="ANNONSPLATS 970×90"
+        className="mx-auto w-full max-w-[970px] mb-5 h-[90px]"
       />
       <BookmakersGrid bookmakers={bookmakers} />
     </div>

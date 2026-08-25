@@ -13,7 +13,7 @@ import {
   type BannerRow,
 } from "@/lib/admin/banners";
 import { cn } from "@/lib/utils";
-import type { BannerPlacement } from "@/lib/types";
+import type { BannerFormat, BannerPlacement } from "@/lib/types";
 
 const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
   { value: "home", label: "Startsida" },
@@ -22,8 +22,51 @@ const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
   { value: "spelbolag", label: "Spelbolag" },
 ];
 
+/** Måtten är de faktiska annonsytorna i sidorna — inga andra format renderas. */
+const FORMATS: {
+  value: BannerFormat;
+  label: string;
+  width: number;
+  height: number;
+  where: string;
+}[] = [
+  {
+    value: "970x90",
+    label: "970×90 · Leaderboard",
+    width: 970,
+    height: 90,
+    where: "Desktop, toppen av sidan",
+  },
+  {
+    value: "320x100",
+    label: "320×100 · Mobil",
+    width: 320,
+    height: 100,
+    where: "Mobil, toppen av sidan",
+  },
+  {
+    value: "300x250",
+    label: "300×250 · Rektangel",
+    width: 300,
+    height: 250,
+    where: "Sidokolumn på startsidan",
+  },
+];
+
+/** Vilka format som faktiskt renderas per placering. */
+const FORMATS_BY_PLACEMENT: Record<BannerPlacement, BannerFormat[]> = {
+  home: ["970x90", "320x100", "300x250"],
+  sheet: ["970x90", "320x100"],
+  topplista: ["970x90", "320x100"],
+  spelbolag: ["970x90"],
+};
+
 function placementLabel(placement: string) {
   return PLACEMENTS.find((p) => p.value === placement)?.label ?? placement;
+}
+
+function formatOf(value: string) {
+  return FORMATS.find((f) => f.value === value) ?? FORMATS[0];
 }
 
 function statusOf(b: BannerRow): { label: string; tone: BadgeTone } {
@@ -71,6 +114,7 @@ type Draft = {
   image_url: string;
   link_url: string;
   placement: BannerPlacement;
+  format: BannerFormat;
   start: string;
   end: string;
   active: boolean;
@@ -84,6 +128,7 @@ function draftFrom(b: BannerRow): Draft {
     image_url: b.image_url,
     link_url: b.link_url ?? "",
     placement: b.placement as BannerPlacement,
+    format: formatOf(b.format).value,
     start: toDateInput(b.starts_at),
     end: toDateInput(b.ends_at),
     active: b.active,
@@ -96,6 +141,7 @@ const emptyDraft: Draft = {
   image_url: "",
   link_url: "",
   placement: "home",
+  format: "970x90",
   start: "",
   end: "",
   active: true,
@@ -138,13 +184,17 @@ function Toggle({
 
 export function BannersAdmin({ items }: { items: BannerRow[] }) {
   const [filter, setFilter] = useState<BannerPlacement | "all">("all");
+  const [formatFilter, setFormatFilter] = useState<BannerFormat | "all">("all");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<BannerRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const visible =
-    filter === "all" ? items : items.filter((b) => b.placement === filter);
+  const visible = items.filter(
+    (b) =>
+      (filter === "all" || b.placement === filter) &&
+      (formatFilter === "all" || formatOf(b.format).value === formatFilter)
+  );
 
   function run(fn: () => Promise<unknown>, onDone?: () => void) {
     setError(null);
@@ -166,6 +216,7 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
       image_url: draft.image_url,
       link_url: draft.link_url,
       placement: draft.placement,
+      format: draft.format,
       starts_at: fromDateInput(draft.start, false),
       ends_at: fromDateInput(draft.end, true),
       active: draft.active,
@@ -189,6 +240,21 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
           {PLACEMENTS.map((p) => (
             <option key={p.value} value={p.value}>
               {p.label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          label="Format"
+          value={formatFilter}
+          onChange={(e) =>
+            setFormatFilter(e.target.value as BannerFormat | "all")
+          }
+          className="min-w-[200px] py-2.5"
+        >
+          <option value="all">Alla format</option>
+          {FORMATS.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
             </option>
           ))}
         </Select>
@@ -219,12 +285,14 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   !b.active && "opacity-60"
                 )}
               >
-                <div className="flex h-[90px] items-center justify-center border-b border-line-soft bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)]">
+                <div className="flex h-[110px] items-center justify-center border-b border-line-soft bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] p-2">
+                  {/* Hela kreativen ska synas i listan — 300×250 får inte
+                      beskäras till en remsa. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={b.image_url}
                     alt={b.title}
-                    className="h-full w-full object-cover"
+                    className="max-h-full max-w-full object-contain"
                   />
                 </div>
 
@@ -242,6 +310,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   <div className="mb-2.5 flex flex-wrap items-center gap-2">
                     <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] text-[11px] text-text-soft">
                       {placementLabel(b.placement)}
+                    </span>
+                    <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] font-mono-num text-[11px] text-text-soft">
+                      {formatOf(b.format).value.replace("x", "×")}
                     </span>
                     <span className="font-mono-num text-[11.5px] text-muted">
                       {periodOf(b)}
@@ -310,7 +381,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               label="Bild-URL"
               value={draft.image_url}
               onChange={(url) => setDraft({ ...draft, image_url: url })}
-              hint="Rekommenderat: 970×90 px · JPG, PNG eller WebP · max 300 kB"
+              hint={`Exakt ${formatOf(draft.format).width}×${
+                formatOf(draft.format).height
+              } px · JPG, PNG eller WebP · max 300 kB`}
             />
 
             <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
@@ -349,6 +422,34 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   </option>
                 ))}
               </Select>
+              <Select
+                label="Format"
+                value={draft.format}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    format: e.target.value as BannerFormat,
+                  })
+                }
+              >
+                {FORMATS.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </Select>
+              {!FORMATS_BY_PLACEMENT[draft.placement].includes(draft.format) ? (
+                <div className="rounded-[var(--radius-card)] border border-yellow/40 bg-yellow/10 px-3 py-2 text-[12.5px] text-yellow sm:col-span-2">
+                  {placementLabel(draft.placement)} har ingen{" "}
+                  {formatOf(draft.format).value.replace("x", "×")}-yta — bannern
+                  sparas men visas inte någonstans.
+                </div>
+              ) : (
+                <div className="text-[12.5px] text-muted sm:col-span-2">
+                  Visas på {placementLabel(draft.placement).toLowerCase()} ·{" "}
+                  {formatOf(draft.format).where.toLowerCase()}.
+                </div>
+              )}
               <div>
                 <span className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-muted">
                   Aktiv
@@ -381,7 +482,17 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               <div className="mb-2.5 text-[10.5px] uppercase tracking-[0.12em] text-dim">
                 Förhandsvisning i AdSlot
               </div>
-              <div className="flex h-[90px] items-center justify-center overflow-hidden rounded-[var(--radius-ad)] border border-dashed border-line-strong bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] font-mono-num text-[12px] tracking-[0.13em] text-dim">
+              {/* Rutan har annonsytans exakta proportioner, så en felaktig
+                  bildstorlek syns direkt som beskärning. */}
+              <div
+                className="mx-auto flex w-full items-center justify-center overflow-hidden rounded-[var(--radius-ad)] border border-dashed border-line-strong bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] font-mono-num text-[12px] tracking-[0.13em] text-dim"
+                style={{
+                  maxWidth: formatOf(draft.format).width,
+                  aspectRatio: `${formatOf(draft.format).width} / ${
+                    formatOf(draft.format).height
+                  }`,
+                }}
+              >
                 {draft.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -390,7 +501,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  `970×90 · ${draft.title || "Namnlös banner"}`
+                  `${formatOf(draft.format).value.replace("x", "×")} · ${
+                    draft.title || "Namnlös banner"
+                  }`
                 )}
               </div>
             </div>

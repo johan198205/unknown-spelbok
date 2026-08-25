@@ -346,10 +346,12 @@ export default async function LandingPage() {
                 ) : null}
               </Panel>
             ) : null}
+            {/* Ytan är exakt 300×250 — bredare container skulle beskära
+                kreativens topp och botten med object-cover. */}
             <AdSlot
+              format="300x250"
               placement="home"
-              className="h-[250px]"
-              label="ANNONSPLATS 300×250"
+              className="mx-auto h-[250px] w-full max-w-[300px]"
             />
           </div>
         </div>

@@ -186,6 +186,7 @@ export type Database = {
           active: boolean
           created_at: string
           ends_at: string | null
+          format: string
           id: string
           image_url: string
           link_url: string | null
@@ -198,6 +199,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           ends_at?: string | null
+          format?: string
           id?: string
           image_url: string
           link_url?: string | null
@@ -210,6 +212,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           ends_at?: string | null
+          format?: string
           id?: string
           image_url?: string
           link_url?: string | null
@@ -1353,6 +1356,13 @@ export type BetResult =
   | "halfwin"
   | "halfloss";
 export type BannerPlacement = "home" | "sheet" | "topplista" | "spelbolag";
+
+/**
+ * Annonsytorna har olika mått per sida och brytpunkt. Formatet är en egen
+ * dimension bredvid placeringen: en 970×90-banner får aldrig hamna i en
+ * 300×250-ruta, där skulle object-cover beskära bort både erbjudande och CTA.
+ */
+export type BannerFormat = "970x90" | "320x100" | "300x250";
 
 export type Profile = Tables<"profiles">;
 export type Sheet = Tables<"sheets">;

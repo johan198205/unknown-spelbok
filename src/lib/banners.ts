@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Banner, BannerPlacement } from "@/lib/types";
+import type { Banner, BannerFormat, BannerPlacement } from "@/lib/types";
 
 /**
  * Rotation is keyed on the day of year so every render inside the same day
@@ -17,7 +17,10 @@ function dayOfYear(now = new Date()) {
  * responsive variants, and only one of them is ever visible.
  */
 export const getBannerForPlacement = cache(
-  async (placement: BannerPlacement): Promise<Banner | null> => {
+  async (
+    placement: BannerPlacement,
+    format: BannerFormat
+  ): Promise<Banner | null> => {
     const supabase = await createClient();
     const nowIso = new Date().toISOString();
 
@@ -36,7 +39,12 @@ export const getBannerForPlacement = cache(
       return null;
     }
 
-    const banners = (data ?? []) as Banner[];
+    // Formatet filtreras i JS, inte i frågan: en banner utan format (raden är
+    // äldre än db/banner-format.sql) får fortsätta visas i alla ytor i stället
+    // för att försvinna.
+    const banners = ((data ?? []) as Banner[]).filter(
+      (b) => (b.format ?? format) === format
+    );
     if (!banners.length) return null;
 
     return banners[dayOfYear() % banners.length];

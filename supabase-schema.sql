@@ -204,6 +204,8 @@ create table public.banners (
   link_url   text,
   placement  text not null default 'home'
              check (placement in ('home','sheet','topplista','spelbolag')),
+  format     text not null default '970x90'   -- se db/banner-format.sql
+             check (format in ('970x90','320x100','300x250')),
   sort       int not null default 0,
   active     boolean not null default true,
   starts_at  timestamptz,
