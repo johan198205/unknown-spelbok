@@ -12,6 +12,14 @@ import {
 
 export const SITE_SETTINGS_KEY = "site";
 
+/**
+ * Tävlingar är steg 2 och ska inte synas för besökare eller inloggade ännu.
+ * Flaggan slår av tävlingsytorna i frontend oavsett vad som står i databasen —
+ * admin (/admin/tavlingar) läser inställningarna direkt och påverkas inte.
+ * Sätt till true när tävlingar lanseras.
+ */
+export const COMPETITIONS_LAUNCHED = false;
+
 export type SiteSettings = {
   name: string;
   currency: string;
@@ -74,6 +82,15 @@ async function readRow(client: AnyClient) {
  * annars faller vi tillbaka på service role när nyckeln finns i miljön.
  */
 export async function fetchSiteSettings(
+  client: SupabaseClient
+): Promise<SiteSettings> {
+  const settings = await readSiteSettings(client);
+  return COMPETITIONS_LAUNCHED
+    ? settings
+    : { ...settings, competitions_enabled: false };
+}
+
+async function readSiteSettings(
   client: SupabaseClient
 ): Promise<SiteSettings> {
   try {

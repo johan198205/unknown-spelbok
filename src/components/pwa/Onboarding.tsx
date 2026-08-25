@@ -18,7 +18,7 @@ const SLIDES = [
   },
   {
     title: "Tävla mot andra",
-    body: "Jämför dig i topplistan och gå med i tävlingar.",
+    body: "Jämför dig i topplistorna mot andra publika spelböcker.",
     visual: "board",
   },
 ];
