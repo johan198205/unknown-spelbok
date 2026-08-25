@@ -18,9 +18,9 @@ export const PICK_GROUPS: Record<string, PickGroup[]> = {
     {
       label: "Matchresultat",
       options: [
-        "1 (hemma)",
-        "X (oavgjort)",
-        "2 (borta)",
+        "1",
+        "X",
+        "2",
         "1X",
         "X2",
         "12",
@@ -109,9 +109,9 @@ export const PICK_GROUPS: Record<string, PickGroup[]> = {
     {
       label: "Matchresultat",
       options: [
-        "1 (hemma)",
-        "X (oavgjort)",
-        "2 (borta)",
+        "1",
+        "X",
+        "2",
         "Hemma DNB",
         "Borta DNB",
         "Hemma inkl. övertid",
@@ -198,6 +198,14 @@ export const PICKS: Record<string, string[]> = Object.fromEntries(
     groups.flatMap((g) => g.options),
   ])
 );
+
+/**
+ * Visningsform för ett spelval. Äldre spel ligger sparade som "1 (hemma)" i
+ * databasen — 1X2 säger sig självt, så parentesen bort i alla vyer.
+ */
+export function formatPick(pick: string | null | undefined): string {
+  return (pick ?? "").replace(/^([12X])\s*\((?:hemma|borta|oavgjort)\)$/i, "$1");
+}
 
 export const STAKE_PRESETS = [50, 100, 250, 500];
 

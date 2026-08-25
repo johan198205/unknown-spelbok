@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { settleOutcome, track } from "@/lib/analytics";
@@ -62,10 +63,29 @@ export function SheetSettleControls({
 }) {
   const router = useRouter();
   const fixture = fixtureFromBet(bet);
-  const live = bet.result === "open" && isInPlayStatus(fixture?.status);
+
+  /*
+    Rättningen skriver till databasen och laddar sedan om sidan. Fram tills
+    dess sitter raden kvar på sitt gamla resultat, vilket ser ut som att
+    klicket försvann — så man klickar igen, på en annan knapp, och skriver
+    över sig själv. Valet markeras därför direkt och knapparna låses medan
+    skrivningen pågår. Faller den, backar markeringen tillbaka.
+  */
+  const [picked, setPicked] = useState<BetResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [seen, setSeen] = useState(bet.result);
+  if (seen !== bet.result) {
+    setSeen(bet.result);
+    setPicked(null);
+  }
+
+  const shown = picked ?? bet.result;
+  const live = shown === "open" && isInPlayStatus(fixture?.status);
 
   async function setResult(result: BetResult) {
-    if (result === bet.result) return;
+    if (saving || result === shown) return;
+    setPicked(result);
+    setSaving(true);
     const supabase = createClient();
     const { error } = await supabase
       .from("bets")
@@ -75,7 +95,9 @@ export function SheetSettleControls({
         settled_by: result === "open" ? null : "user",
       })
       .eq("id", bet.id);
+    setSaving(false);
     if (error) {
+      setPicked(null);
       alert(error.message || "Kunde inte sätta resultat");
       return;
     }
@@ -97,24 +119,28 @@ export function SheetSettleControls({
       {canEdit ? (
         <span role="group" aria-label="Rättning" className="flex gap-1">
           {CHOICES.map(({ value, short, label }) => {
-            const active = bet.result === value;
+            const active = shown === value;
+            const waiting = active && saving;
             const tone = choiceTone(value);
             return (
               <button
                 key={value}
                 type="button"
                 onClick={() => void setResult(value)}
+                disabled={saving && !active}
                 title={label}
                 aria-label={label}
                 aria-pressed={active}
+                aria-busy={waiting || undefined}
                 className={cn(
-                  "cursor-pointer rounded-[6px] border font-mono-num font-semibold transition",
+                  "cursor-pointer rounded-[6px] border font-mono-num font-semibold transition disabled:cursor-wait",
                   size === "card"
                     ? "px-2.5 py-2 text-[11px]"
                     : "px-2 py-[5px] text-[11.5px]",
                   active
                     ? `${tone.bg} ${tone.fg} ${tone.border}`
-                    : "border-transparent text-faint hover:text-text"
+                    : "border-transparent text-faint hover:text-text",
+                  waiting && "animate-sbshimmer"
                 )}
               >
                 {short}

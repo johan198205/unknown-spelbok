@@ -18,6 +18,7 @@ import {
   isInPlayStatus,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
+import { formatPick } from "@/lib/picks";
 import { canRyggaBet } from "@/lib/rygga";
 import type { Bet, BetResult } from "@/lib/types";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
@@ -40,6 +41,7 @@ import {
   formatOdds,
   formatRoi,
   nettoColor,
+  payoutForResult,
   resultLabel,
   resultTone,
   computeStats,
@@ -197,10 +199,44 @@ export function MobileBetCards({
     };
   }, [online, sheetId, router]);
 
+  /*
+    Rättningen tar en tur till servern och tillbaka. Fram tills dess står
+    kortet kvar på sitt gamla resultat och tryckningen ser bortglömd ut, så
+    man trycker igen. Valet visas därför direkt och släpps först när servern
+    hunnit ikapp. Låset hindrar dubbeltryck på samma spel.
+  */
+  const [settling, setSettling] = useState<Record<string, BetResult>>({});
+  const savingRef = useRef<Set<string>>(new Set());
+
+  // Nya rader från servern = släpp de val som hunnit landa.
+  const [seenBets, setSeenBets] = useState(bets);
+  if (seenBets !== bets) {
+    setSeenBets(bets);
+    const landed = Object.keys(settling).filter((id) =>
+      bets.some((b) => b.id === id && b.result === settling[id])
+    );
+    if (landed.length) {
+      const next = { ...settling };
+      for (const id of landed) delete next[id];
+      setSettling(next);
+    }
+  }
+
   const displayBets: DisplayBet[] = useMemo(() => {
     const pendingDisplay = pending.map(pendingToDisplayBet);
-    return [...pendingDisplay, ...bets];
-  }, [pending, bets]);
+    // Utbetalningen räknas fram i databasen, så den lokala siffran använder
+    // samma formel — annars visar kortet fel netto i en sekund.
+    const settled = bets.map((bet) => {
+      const result = settling[bet.id];
+      if (!result) return bet;
+      return {
+        ...bet,
+        result,
+        payout: payoutForResult(result, Number(bet.stake), Number(bet.odds)),
+      };
+    });
+    return [...pendingDisplay, ...settled];
+  }, [pending, bets, settling]);
 
   const filtered = useMemo(() => {
     if (hideChrome || filter === "all") return displayBets;
@@ -221,6 +257,9 @@ export function MobileBetCards({
 
   async function setResult(bet: DisplayBet, result: BetResult) {
     if (bet._pending || !online) return;
+    if (savingRef.current.has(bet.id)) return;
+    savingRef.current.add(bet.id);
+    setSettling((current) => ({ ...current, [bet.id]: result }));
     vibrate(18);
     const supabase = createClient();
     const { error } = await supabase
@@ -231,7 +270,13 @@ export function MobileBetCards({
         settled_by: result === "open" ? null : "user",
       })
       .eq("id", bet.id);
+    savingRef.current.delete(bet.id);
     if (error) {
+      setSettling((current) => {
+        const next = { ...current };
+        delete next[bet.id];
+        return next;
+      });
       alert(error.message || "Kunde inte sätta resultat");
       return;
     }
@@ -567,7 +612,7 @@ function SwipeBetCard({
           <span className="inline-flex w-3.5 shrink-0 justify-center">
             <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
           </span>
-          {bet.pick}
+          {formatPick(bet.pick)}
         </div>
         <div className="mt-2 flex items-center gap-2 font-mono-num text-[12.5px] text-muted">
           <BookmakerLogo

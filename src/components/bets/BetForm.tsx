@@ -13,6 +13,7 @@ import {
   LEAGUES,
   PICK_GROUPS,
   SPORTS,
+  formatPick,
   leaguesForSport,
 } from "@/lib/picks";
 import { FixturePicker, DayStrip } from "@/components/bets/FixturePicker";
@@ -729,7 +730,7 @@ export function BetRow({
           <span className="inline-flex w-3.5 shrink-0 justify-center">
             <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
           </span>
-          {bet.pick}
+          {formatPick(bet.pick)}
         </span>
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 text-[12.5px] text-muted">

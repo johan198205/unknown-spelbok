@@ -99,11 +99,12 @@ export function DailySuggestions({
         ))}
       </div>
 
-      <p className="mt-2 px-1 text-[11.5px] leading-snug text-faint">
-        {isSheet
-          ? "Matcherna är valda utifrån den här spelbokens egen historik och är värda att kolla upp. Ingen prognos av utfallet."
-          : "Matcherna är valda utifrån din egen spelhistorik och är värda att kolla upp. Ingen prognos av utfallet."}
-      </p>
+      {!isSheet && (
+        <p className="mt-2 px-1 text-[11.5px] leading-snug text-faint">
+          Matcherna är valda utifrån din egen spelhistorik och är värda att kolla
+          upp. Ingen prognos av utfallet.
+        </p>
+      )}
     </section>
   );
 }

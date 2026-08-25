@@ -17,6 +17,7 @@ import {
   MatchesForYou,
   type MatchForYou,
 } from "@/components/suggestions/MatchesForYou";
+import { formatPick } from "@/lib/picks";
 import { stockholmYmd } from "@/lib/stockholm";
 import { SUGGESTION_COLUMNS, normalizeSuggestion } from "@/lib/suggestions";
 import {
@@ -350,7 +351,7 @@ export default async function HemPage() {
                         </span>
                       </div>
                       <div className="mt-[5px] truncate text-[12px] text-[#A9B4C7]">
-                        {bet.pick}{" "}
+                        {formatPick(bet.pick)}{" "}
                         <span className="font-mono-num text-muted">
                           @ {Number(bet.odds).toFixed(2)}
                         </span>

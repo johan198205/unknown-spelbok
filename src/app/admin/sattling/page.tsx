@@ -3,6 +3,7 @@ import {
   SyncFixturesButton,
 } from "@/components/admin/SettleAdmin";
 import { getSettleData } from "@/lib/admin/settle";
+import { formatPick } from "@/lib/picks";
 import { cn, formatMoney } from "@/lib/utils";
 
 export const metadata = { title: "Sättling" };
@@ -176,7 +177,7 @@ export default async function AdminSettlePage() {
                   {row.match}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
-                  {row.pick}
+                  {formatPick(row.pick)}
                 </span>
                 <span className="font-mono-num w-[130px] shrink-0 text-[12.5px] text-muted">
                   {kickoffLabel(row.kickoff)}

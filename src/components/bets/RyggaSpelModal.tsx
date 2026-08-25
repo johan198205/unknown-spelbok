@@ -8,6 +8,7 @@ import { Input, Select } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
 import { track } from "@/lib/analytics";
+import { formatPick } from "@/lib/picks";
 import { ryggaBet } from "@/lib/rygga-bet";
 import type { Bet, Sheet } from "@/lib/types";
 import { formatOdds } from "@/lib/utils";
@@ -130,7 +131,7 @@ export function RyggaSpelModal({
         <div className="mt-4 rounded-[10px] border border-line bg-bg-soft px-3.5 py-3 text-[13.5px]">
           <div className="font-semibold text-text">{bet.match}</div>
           <div className="mt-1 text-muted">
-            {[bet.league, bet.pick].filter(Boolean).join(" · ")}
+            {[bet.league, formatPick(bet.pick)].filter(Boolean).join(" · ")}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono-num text-[13px] text-[#C3CBDB]">
             <span>Odds {formatOdds(Number(bet.odds))}</span>

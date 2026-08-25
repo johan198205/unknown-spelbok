@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Barlow, IBM_Plex_Mono, Oswald } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
+import { RouteProgress } from "@/components/ui/RouteProgress";
 import { ToastProvider } from "@/components/ui/Toast";
 import { getGtmContainerId } from "@/lib/tracking-settings";
 import "./globals.css";
@@ -81,6 +83,10 @@ export default async function RootLayout({
     >
       {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
       <body className="min-h-full flex flex-col bg-bg text-text antialiased">
+        {/* useSearchParams får inte dra hela trädet ur prerendering. */}
+        <Suspense fallback={null}>
+          <RouteProgress />
+        </Suspense>
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

@@ -10,6 +10,7 @@ import {
 } from "@/components/bets/SheetSettleControls";
 import { fixtureFromBet, isInPlayStatus } from "@/lib/live-fixture";
 import { betLeagueLogo } from "@/lib/logos";
+import { formatPick } from "@/lib/picks";
 import type { SheetDensity } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
 import { betNetto, cn, formatMoney, formatOdds, nettoColor } from "@/lib/utils";
@@ -100,7 +101,9 @@ export function SheetBetCards({
             </div>
 
             <div className="flex flex-1 items-baseline gap-2 px-3.5 py-2.5">
-              <span className="min-w-0 text-[15px] font-bold">{bet.pick}</span>
+              <span className="min-w-0 text-[15px] font-bold">
+                {formatPick(bet.pick)}
+              </span>
               <span className="shrink-0 font-mono-num text-[13px] text-muted">
                 @ {formatOdds(Number(bet.odds))}
               </span>

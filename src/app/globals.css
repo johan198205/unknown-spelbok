@@ -22,7 +22,7 @@
   --hover2: #1f293c;
   --dropdown-hover: #1f293c;
   --bar-bg: rgba(15, 20, 32, 0.94);
-  --dim: #5d6883;
+  --dim: #8e99b0;
 
   /* Borders */
   --line: #232b3e;
@@ -33,9 +33,9 @@
 
   /* Text */
   --text: #e6eaf2;
-  --text-soft: #c3cbdb;
-  --muted: #8a94ab;
-  --faint: #5d6883;
+  --text-soft: #d5dbe8;
+  --muted: #aab4c9;
+  --faint: #8e99b0;
 
   /* Accents — App.dc.html constants */
   --win: #66e38a;
@@ -272,6 +272,19 @@
   }
 }
 
+/* Navigeringsstapeln: kryper framåt utan att nå fram förrän sidan är här. */
+@keyframes sbprogress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(-28%);
+  }
+  100% {
+    transform: translateX(-8%);
+  }
+}
+
 /*
   Base styles MUST live in @layer base so Tailwind utilities
   (text-text, text-muted, …) on <Link>/<a> win over defaults.
@@ -313,6 +326,35 @@
   textarea::placeholder {
     color: var(--faint);
   }
+
+  /*
+    Klickkvittens. Nästan varje knapp här väntar på ett svar från servern —
+    utan ett omedelbart svar på själva trycket tror man att klicket missade
+    och trycker igen. Allt klickbart sjunker därför in direkt vid nedtryck,
+    innan någon data hunnit fram.
+
+    touch-action: manipulation tar bort webbläsarens 300 ms dubbeltrycks-
+    väntan på mobil, vilket är en del av samma upplevda tröghet.
+  */
+  button,
+  [role="button"],
+  a,
+  label,
+  summary,
+  select {
+    touch-action: manipulation;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    button:not(:disabled):active,
+    [role="button"]:not([aria-disabled="true"]):active,
+    a:active,
+    summary:active {
+      transform: scale(0.97);
+      /* Trycket ska kännas direkt — utrullningen får ta den vanliga tiden. */
+      transition-duration: 60ms;
+    }
+  }
 }
 
 .font-display {
@@ -337,6 +379,15 @@
 
 .animate-sbpulse {
   animation: sbpulse 1.6s infinite;
+}
+
+/* Väntar på servern: markerad, men syns på att den inte är klar. */
+.animate-sbshimmer {
+  animation: sbshimmer 1.1s ease-in-out infinite;
+}
+
+.animate-sbprogress {
+  animation: sbprogress 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .sb-scroll::-webkit-scrollbar {

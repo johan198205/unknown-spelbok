@@ -15,10 +15,12 @@ export function slugify(value: string) {
 
 export function formatMoney(value: number, currency = "kr") {
   const sign = value > 0 ? "+" : "";
+  // Hårt mellanslag före valutan — summan får aldrig brytas så "kr" hamnar
+  // på egen rad i en trång kolumn.
   return `${sign}${value.toLocaleString("sv-SE", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  })} ${currency}`;
+  })}\u00A0${currency}`;
 }
 
 export function formatNumber(value: number, digits = 1) {

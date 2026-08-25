@@ -5,6 +5,7 @@ import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
+import { formatPick } from "@/lib/picks";
 import {
   computeStats,
   formatMoney,
@@ -184,7 +185,7 @@ export default async function LandingPage() {
                 className="flex items-center gap-2.5 border-t border-line-soft py-2.5 text-[13px]"
               >
                 <span className="flex-1 truncate text-[#C3CBDB]">{r.match}</span>
-                <span className="font-bold">{r.pick}</span>
+                <span className="font-bold">{formatPick(r.pick)}</span>
                 <span className="font-mono-num text-muted">{r.odds}</span>
                 <span
                   className="min-w-[74px] text-right font-mono-num font-semibold"

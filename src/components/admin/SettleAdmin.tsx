@@ -7,6 +7,7 @@ import {
   settleQueuedBet,
   type ManualRow,
 } from "@/lib/admin/settle";
+import { formatPick } from "@/lib/picks";
 import { cn } from "@/lib/utils";
 
 const ACTIONS: {
@@ -55,7 +56,7 @@ export function ManualSettleRows({ rows }: { rows: ManualRow[] }) {
             {row.match}
           </span>
           <span className="min-w-0 flex-1 truncate text-[13.5px] font-bold">
-            {row.pick}
+            {formatPick(row.pick)}
           </span>
           <span className="font-mono-num w-[70px] shrink-0 text-right text-[13px]">
             {row.odds.toFixed(2)}

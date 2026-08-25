@@ -6,6 +6,7 @@ import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
 import { betLeagueLogo } from "@/lib/logos";
+import { formatPick } from "@/lib/picks";
 import type {
   SheetDensity,
   SheetSortDir,
@@ -25,13 +26,14 @@ type Column = {
 const COLUMNS: Column[] = [
   { key: "date", label: "Datum", width: "w-[7%]" },
   { key: "league", label: "Liga", width: "w-[13%] max-sheet-wide:w-[6%]" },
-  { key: "match", label: "Match", width: "w-[23%] max-sheet-wide:w-[30%]" },
-  { key: "pick", label: "Spel", width: "w-[14%]" },
+  { key: "match", label: "Match", width: "w-[20%] max-sheet-wide:w-[27%]" },
+  { key: "pick", label: "Spel", width: "w-[13%]" },
   { key: "bookmaker", label: "Bolag", width: "w-[8%]" },
   { key: "stake", label: "Insats", width: "w-[7%]", align: "right" },
   { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
-  { key: "result", label: "Rättning", width: "w-[16%]" },
-  { key: "netto", label: "Netto", width: "w-[7%]", align: "right" },
+  { key: "result", label: "Rättning", width: "w-[15%]" },
+  /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
+  { key: "netto", label: "Netto", width: "w-[12%]", align: "right" },
 ];
 
 /** Datum på egen rad, tiden dämpad under. */
@@ -189,7 +191,7 @@ export function SheetBetsTable({
                   <SheetMatchCell bet={bet} density={density} />
                 </td>
                 <td className="px-2.5 py-3 align-middle font-bold">
-                  {bet.pick}
+                  {formatPick(bet.pick)}
                 </td>
                 <td className="px-2.5 py-3 align-middle">
                   <BookmakerPlate bet={bet} />
@@ -214,7 +216,7 @@ export function SheetBetsTable({
                 </td>
                 <td
                   className={cn(
-                    "px-2.5 py-3 text-right align-middle font-mono-num font-semibold",
+                    "whitespace-nowrap px-2.5 py-3 text-right align-middle font-mono-num font-semibold",
                     bet.result === "open" ? "text-muted" : nettoColor(netto)
                   )}
                 >

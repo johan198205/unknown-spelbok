@@ -24,7 +24,14 @@ import {
 import type { BetCategory } from "@/lib/bet-category";
 import { cn } from "@/lib/utils";
 
-/** Pill-grupp: mörk track med en markerad knapp. Används på flera ställen. */
+/**
+ * Pill-grupp: mörk track med en markerad knapp. Används på flera ställen.
+ *
+ * Valet ligger i URL:en och hinner inte uppdateras förrän navigeringen är
+ * klar. Utan ett eget val däremellan står pillret kvar på det gamla värdet
+ * hela vägen, och klicket ser ut att ha missat. Det egna valet markeras
+ * direkt och släpps så fort propen kommer ikapp.
+ */
 export function PillGroup<T extends string>({
   value,
   options,
@@ -36,6 +43,15 @@ export function PillGroup<T extends string>({
   onChange: (value: T) => void;
   className?: string;
 }) {
+  const [picked, setPicked] = useState<T | null>(null);
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    setPicked(null);
+  }
+
+  const shown = picked ?? value;
+
   return (
     <div
       className={cn(
@@ -43,22 +59,32 @@ export function PillGroup<T extends string>({
         className
       )}
     >
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          aria-pressed={value === opt.value}
-          className={cn(
-            "cursor-pointer rounded-[7px] px-3.5 py-2 text-[14px] font-semibold transition",
-            value === opt.value
-              ? "bg-panel-2 text-text"
-              : "bg-transparent text-muted hover:text-text"
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
+      {options.map((opt) => {
+        const active = shown === opt.value;
+        const waiting = active && picked !== null && picked !== value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => {
+              if (opt.value === shown) return;
+              setPicked(opt.value);
+              onChange(opt.value);
+            }}
+            aria-pressed={active}
+            aria-busy={waiting || undefined}
+            className={cn(
+              "cursor-pointer rounded-[7px] px-3.5 py-2 text-[14px] font-semibold transition",
+              active
+                ? "bg-panel-2 text-text"
+                : "bg-transparent text-muted hover:text-text",
+              waiting && "animate-sbshimmer"
+            )}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -89,7 +115,17 @@ export function SheetFilterBar({
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const count = activeFilterCount(filters);
-  const chips = activeFilterChips(filters, bookmakers);
+  const allChips = activeFilterChips(filters, bookmakers);
+
+  // Chipet ska försvinna på klicket, inte när servern svarat. Listan nollställs
+  // så fort filtren faktiskt ändrats, så inget chip göms i onödan.
+  const [removing, setRemoving] = useState<string[]>([]);
+  const [seenFilters, setSeenFilters] = useState(filters);
+  if (seenFilters !== filters) {
+    setSeenFilters(filters);
+    setRemoving([]);
+  }
+  const chips = allChips.filter((chip) => !removing.includes(chip.key));
 
   useEffect(() => {
     if (!open) return;
@@ -229,15 +265,16 @@ export function SheetFilterBar({
         <button
           key={chip.key}
           type="button"
-          onClick={() =>
+          onClick={() => {
+            setRemoving((current) => [...current, chip.key]);
             onChange(
               chip.key === "sport"
                 ? { sport: "all" }
                 : chip.key === "result"
                   ? { result: "all" }
                   : { [chip.key]: "" }
-            )
-          }
+            );
+          }}
           className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[var(--win-border)] bg-[var(--win-fill)] px-[13px] py-2 text-[13.5px] font-semibold text-win transition hover:brightness-110"
         >
           {chip.key === "league" ? (

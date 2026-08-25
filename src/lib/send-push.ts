@@ -1,4 +1,5 @@
 import { sendNotification, setVapidDetails, WebPushError } from "web-push";
+import { formatPick } from "@/lib/picks";
 import { chunkArray } from "@/lib/push";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatMoney, resultLabel } from "@/lib/utils";
@@ -227,9 +228,9 @@ function settleBody(bet: SettledBet) {
   const result = bet.result as BetResult;
   const netto = Number(bet.payout ?? 0) - Number(bet.stake);
   if (result === "void") {
-    return `${bet.match} · ${bet.pick} · insatsen återbetalas`;
+    return `${bet.match} · ${formatPick(bet.pick)} · insatsen återbetalas`;
   }
-  return `${bet.match} · ${bet.pick} · ${formatMoney(netto)}`;
+  return `${bet.match} · ${formatPick(bet.pick)} · ${formatMoney(netto)}`;
 }
 
 export async function notifySettledBets(betIds: string[]) {

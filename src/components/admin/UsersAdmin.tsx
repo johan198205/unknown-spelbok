@@ -9,6 +9,7 @@ import {
   getUserDetail,
   type AdminUserRow,
 } from "@/lib/admin/users";
+import { formatPick } from "@/lib/picks";
 import { cn, formatMoney, initialOf } from "@/lib/utils";
 
 function fmtDate(iso: string) {
@@ -547,7 +548,7 @@ function UserSlideOver({
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[13.5px]">{b.match}</div>
                       <div className="text-[12px] text-dim">
-                        {b.pick} @ {Number(b.odds).toFixed(2)}
+                        {formatPick(b.pick)} @ {Number(b.odds).toFixed(2)}
                       </div>
                     </div>
                     <span
