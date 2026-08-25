@@ -41,9 +41,11 @@ export default async function PublicSheetPage({
 
   const sheet = sheetRow as Sheet;
 
+  // Bara namnet — unit-storleken nedan kommer från betraktarens egen profil,
+  // inte ägarens. Ett extra fält här räcker för att hela sidan ska 404:a.
   const { data: owner } = await supabase
     .from("profiles")
-    .select("username, unit_size")
+    .select("username")
     .eq("id", sheet.user_id)
     .maybeSingle();
 
