@@ -72,7 +72,13 @@ export function LeagueCell({ bet }: { bet: Bet }) {
   );
 }
 
-/** Spelbolagets logotyp på en ljus platta, textchip när logga saknas. */
+/**
+ * Spelbolagets logotyp, textchip när logga saknas.
+ *
+ * Ingen platta bakom loggan — den ljusa rutan blev en vit fyrkant i en mörk
+ * tabell. Rutans mått finns kvar så kolumnen håller samma linje oavsett hur
+ * bred wordmarken är.
+ */
 export function BookmakerPlate({
   bet,
   width = 68,
@@ -96,7 +102,7 @@ export function BookmakerPlate({
   return (
     <span
       title={name}
-      className="inline-flex shrink-0 items-center justify-center rounded-[7px] bg-[#F4F6FA]"
+      className="inline-flex shrink-0 items-center justify-center"
       style={{ width, height }}
     >
       <BookmakerLogo

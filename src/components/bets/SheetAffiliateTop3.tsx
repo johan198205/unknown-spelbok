@@ -42,7 +42,7 @@ export function SheetAffiliateTop3({
               className="flex items-center gap-2.5 rounded-[11px] border border-line bg-bg-soft px-[11px] py-[9px] text-text no-underline transition-colors hover:border-line-hover hover:no-underline"
             >
               <span
-                className="inline-flex h-[26px] w-[44px] shrink-0 items-center justify-center rounded-[5px] bg-[#F4F6FA]"
+                className="inline-flex h-[26px] w-[44px] shrink-0 items-center justify-center"
                 title={bm.name}
               >
                 {bm.logo_url ? (
@@ -53,7 +53,7 @@ export function SheetAffiliateTop3({
                     maxWidth={36}
                   />
                 ) : (
-                  <span className="font-mono-num text-[11px] font-bold text-[#12171F]">
+                  <span className="font-mono-num text-[11px] font-bold text-text-soft">
                     {bm.name.slice(0, 3).toUpperCase()}
                   </span>
                 )}

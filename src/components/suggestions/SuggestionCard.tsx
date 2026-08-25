@@ -99,7 +99,7 @@ export function SuggestionCard({
             {reasons.history.map((reason) => (
               <span
                 key={`${reason.type}-${reason.label}`}
-                className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-1 text-[11px] leading-tight text-muted"
+                className="rounded-[var(--radius-badge)] border border-line-strong bg-panel-2 px-2 py-1 text-[11.5px] leading-tight text-text-soft"
               >
                 {reason.label}
               </span>
@@ -112,7 +112,7 @@ export function SuggestionCard({
             {reasons.signals.map((reason) => (
               <span
                 key={reason.rule_id ?? reason.label}
-                className="rounded-[var(--radius-badge)] border border-[var(--yellow-border)] bg-yellow/10 px-2 py-1 text-[11px] leading-tight text-yellow"
+                className="rounded-[var(--radius-badge)] border border-[var(--yellow-border)] bg-yellow/10 px-2 py-1 text-[11.5px] leading-tight text-yellow"
               >
                 {reason.label}
               </span>
