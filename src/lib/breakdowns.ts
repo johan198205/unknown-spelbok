@@ -6,6 +6,8 @@
  * sport-normaliseringen i stället för `sportLabel` från apisports.
  */
 
+import { betCategory } from "./bet-category";
+
 export type BreakdownRow = {
   name: string;
   bets: number;
@@ -29,10 +31,10 @@ export type GroupableBet = {
 
 /** Oddsintervallen i stigande ordning — används för att sortera den gruppen. */
 export const ODDS_BUCKETS = [
-  "< 1.50",
+  "Under 1.50",
   "1.50–1.99",
   "2.00–2.99",
-  "3.00+",
+  "3.00 och över",
 ] as const;
 
 function normalizeSport(raw: string): string {
@@ -53,6 +55,11 @@ export function bookmakerKey(bet: GroupableBet): string {
 /** Spelform = det valda spelet, t.ex. "1X" eller "Ö2.5". */
 export function pickKey(bet: GroupableBet): string {
   return (bet.pick || "").trim() || "Okänt";
+}
+
+/** Kategori = spelformen grovsorterad (Hörnor, Totaler, Handikapp …). */
+export function categoryKey(bet: GroupableBet): string {
+  return betCategory(bet.pick);
 }
 
 /** Äldre spel saknar sport på raden — fall tillbaka på matchens sport. */

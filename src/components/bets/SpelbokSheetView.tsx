@@ -1,61 +1,63 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AccumulatedNettoChart } from "@/components/bets/AccumulatedNettoChart";
-import { BetForm, BetsTable } from "@/components/bets/BetForm";
+import { BetForm } from "@/components/bets/BetForm";
+import {
+  DistributionCard,
+  type DistributionGroups,
+} from "@/components/bets/DistributionCard";
 import { ImportBetsButton } from "@/components/bets/ImportBetsModal";
-import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { useRyggaFlow } from "@/components/bets/RyggaSpelModal";
 import {
   FollowSheetButtonStub,
   ShareSheetButton,
-  SheetPublicToggle,
+  SheetVisibilityBadge,
 } from "@/components/bets/ShareSheetControls";
+import { SheetAffiliateTop3 } from "@/components/bets/SheetAffiliateTop3";
+import { SheetBetCards } from "@/components/bets/SheetBetCards";
+import { SheetBetsTable } from "@/components/bets/SheetBetsTable";
 import { SheetDescriptionEdit } from "@/components/bets/SheetDescriptionEdit";
+import { SheetFilterBar } from "@/components/bets/SheetFilterBar";
+import { SheetKpiStrip } from "@/components/bets/SheetKpiStrip";
+import { SheetNettoChart } from "@/components/bets/SheetNettoChart";
+import { SheetPagination } from "@/components/bets/SheetPagination";
+import { SheetStatsPanel } from "@/components/bets/SheetStatsPanel";
 import { DailySuggestions } from "@/components/suggestions/DailySuggestions";
-import type { DailySuggestion } from "@/lib/suggestions";
 import { MobileBetCards } from "@/components/pwa/MobileBetCards";
-import { Badge } from "@/components/ui/Badge";
-import { Select } from "@/components/ui/Input";
-import { Kpi } from "@/components/ui/Panel";
+import { useLiveFixtures } from "@/hooks/useLiveFixtures";
+import { track } from "@/lib/analytics";
+import type { AffiliateTopRow, BetStatsPayload } from "@/lib/bet-stats";
 import {
-  PERIOD_FILTER_OPTIONS,
-  RESULT_FILTER_OPTIONS,
-  SPORT_FILTER_OPTIONS,
+  bookmakerKey,
+  categoryKey,
+  groupBets,
+  leagueKey,
+  oddsKey,
+  pickKey,
+  sportKey,
+} from "@/lib/breakdowns";
+import { applyLiveToBet, needsLiveRefresh } from "@/lib/live-fixture";
+import {
+  DEFAULT_SHEET_SORT,
   distinctBookmakers,
+  distinctCategories,
   distinctLeagues,
-  distinctPicks,
   filterSheetBets,
   parseSheetFilters,
+  periodLabel,
   sheetFiltersToParams,
-  type ChartPeriodFilter,
+  sortSheetBets,
   type SheetFilterState,
-  type SheetPeriodFilter,
-  type SheetResultFilter,
-  type SheetSportFilter,
-  type SheetViewMode,
+  type SheetSortKey,
 } from "@/lib/sheet-filters";
-import { track } from "@/lib/analytics";
-import { betLeagueLogo } from "@/lib/logos";
+import { createClient } from "@/lib/supabase/client";
+import type { DailySuggestion } from "@/lib/suggestions";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
-import { SpelbokStatsBottom } from "@/components/bets/SpelbokStatsBottom";
-import type {
-  AffiliateTopRow,
-  BetStatsPayload,
-  LeagueStatRow,
-  PublicSheetLeaderboardRow,
-  SheetBreakdowns,
-} from "@/lib/bet-stats";
-import {
-  cn,
-  computeStats,
-  formatMoney,
-  formatNumber,
-  formatRoi,
-  nettoColor,
-} from "@/lib/utils";
+import { computeStats } from "@/lib/utils";
+
+const PAGE_SIZE = 25;
 
 export function SpelbokSheetView({
   sheet,
@@ -64,16 +66,12 @@ export function SpelbokSheetView({
   bookmakers,
   username,
   initialStats,
-  initialLeagues,
-  initialBreakdowns,
   affiliates,
-  publicSheets,
   mode = "owner",
   viewerSheets,
   unitSize = 100,
   isAuthenticated = true,
   suggestions,
-  ads,
 }: {
   sheet: Sheet;
   bets: Bet[];
@@ -81,10 +79,7 @@ export function SpelbokSheetView({
   bookmakers: Bookmaker[];
   username: string;
   initialStats: BetStatsPayload;
-  initialLeagues: LeagueStatRow[];
-  initialBreakdowns: SheetBreakdowns;
   affiliates: AffiliateTopRow[];
-  publicSheets: PublicSheetLeaderboardRow[];
   /** owner = egen spelbok; public = read-only delad vy */
   mode?: "owner" | "public";
   /** Visarens egna sheets (för Rygga) — särskilt på publika sidor */
@@ -96,8 +91,6 @@ export function SpelbokSheetView({
    * vyn ska inte avslöja vad någon annans historik matchar mot.
    */
   suggestions?: DailySuggestion[];
-  /** Server-rendered AdSlots passed as children of the client boundary */
-  ads?: ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -126,7 +119,7 @@ export function SpelbokSheetView({
   }, [sheet.slug, sheet.id, isOwner]);
 
   const leagues = useMemo(() => distinctLeagues(bets), [bets]);
-  const picks = useMemo(() => distinctPicks(bets), [bets]);
+  const categories = useMemo(() => distinctCategories(bets), [bets]);
   const bookmakerOptions = useMemo(() => distinctBookmakers(bets), [bets]);
   const filtered = useMemo(
     () => filterSheetBets(bets, filters),
@@ -134,38 +127,100 @@ export function SpelbokSheetView({
   );
   const stats = useMemo(() => computeStats(filtered), [filtered]);
 
+  const [sort, setSort] = useState(DEFAULT_SHEET_SORT);
+
+  // Filterbyte får aldrig lämna kvar sida 7 av 3 — sidan hör ihop med det
+  // urval den bläddrar i, så den nollställs när urvalet byts.
+  const filterKey = `${sheet.id}|${filters.sport}|${filters.league}|${filters.category}|${filters.bookmaker}|${filters.result}|${filters.period}`;
+  const [pageState, setPageState] = useState({ key: filterKey, page: 1 });
+  const page = pageState.key === filterKey ? pageState.page : 1;
+  const setPage = (next: number) => setPageState({ key: filterKey, page: next });
+
+  const sorted = useMemo(
+    () => sortSheetBets(filtered, sort.key, sort.dir),
+    [filtered, sort]
+  );
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageBets = useMemo(
+    () => sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [sorted, currentPage]
+  );
+
+  const live = useLiveFixtures(
+    pageBets.map((b) => b.fixture_id).filter((id): id is number => id != null),
+    {
+      hasLive: pageBets.some((b) =>
+        needsLiveRefresh(b.fixtures?.status, b.fixtures?.kickoff)
+      ),
+      onSettled: () => router.refresh(),
+    }
+  );
+  const rows = useMemo(
+    () => pageBets.map((bet) => applyLiveToBet(bet, live)),
+    [pageBets, live]
+  );
+
+  const groups: DistributionGroups = useMemo(() => {
+    const settled = filtered.filter((b) => b.result !== "open");
+    return {
+      liga: groupBets(settled, leagueKey),
+      kategori: groupBets(settled, categoryKey),
+      spelform: groupBets(settled, pickKey),
+      spelbolag: groupBets(settled, bookmakerKey),
+      sport: groupBets(settled, sportKey),
+      odds: groupBets(settled, oddsKey),
+    };
+  }, [filtered]);
+
   function patchFilters(patch: Partial<SheetFilterState>) {
-    const next = sheetFiltersToParams(
-      { ...filters, ...patch },
-      searchParams
-    );
+    const next = sheetFiltersToParams({ ...filters, ...patch }, searchParams);
     const sheetId = searchParams.get("sheet");
     if (sheetId) next.set("sheet", sheetId);
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
-  return (
-    <div className="space-y-5">
-      {ryggaModal}
-      {ads}
+  function toggleSort(key: SheetSortKey) {
+    setSort((current) =>
+      current.key === key
+        ? { key, dir: current.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: key === "date" ? "desc" : "asc" }
+    );
+  }
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
+  async function removeBet(bet: Bet) {
+    if (!confirm("Ta bort spelet?")) return;
+    const supabase = createClient();
+    await supabase.from("bets").delete().eq("id", bet.id);
+    router.refresh();
+  }
+
+  const listProps = {
+    bets: rows,
+    canEdit: isOwner,
+    canRygga: true,
+    onRygga: openRygga,
+    onRemove: isOwner ? removeBet : undefined,
+    density: filters.density,
+  };
+
+  return (
+    <div>
+      {ryggaModal}
+
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="font-display text-[28px] font-semibold lg:text-[32px]">
+            <h1 className="font-display text-[28px] font-semibold lg:text-[32px]">
               {sheet.name}
-            </h2>
-            <Badge
-              tone={sheet.is_public ? "public" : "private"}
-              className={
-                sheet.is_public
-                  ? "border border-win/45 bg-transparent"
-                  : undefined
-              }
-            >
-              {sheet.is_public ? "PUBLIK" : "PRIVAT"}
-            </Badge>
+            </h1>
+            <SheetVisibilityBadge
+              sheetId={sheet.id}
+              isPublic={sheet.is_public}
+              slug={sheet.slug}
+              canEdit={isOwner}
+            />
           </div>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-1 text-[14px]">
             <span className="text-muted">av</span>
@@ -182,72 +237,78 @@ export function SpelbokSheetView({
               canEdit={isOwner}
             />
           </div>
-          {isOwner ? (
-            <div className="mt-3 max-w-md space-y-2">
-              <SheetPublicToggle
-                sheetId={sheet.id}
-                isPublic={sheet.is_public}
-                slug={sheet.slug}
-              />
-              {sheet.is_public && sheet.slug ? (
-                <div className="lg:hidden">
-                  <ShareSheetButton slug={sheet.slug} />
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <FollowSheetButtonStub />
-              {sheet.slug ? <ShareSheetButton slug={sheet.slug} /> : null}
-            </div>
-          )}
         </div>
-        <div className="hidden shrink-0 items-start gap-2 lg:flex">
-          {isOwner && sheet.is_public && sheet.slug ? (
+
+        <div className="flex shrink-0 flex-wrap items-start gap-2">
+          {sheet.is_public && sheet.slug ? (
             <ShareSheetButton slug={sheet.slug} />
           ) : null}
-          {isOwner ? <ImportBetsButton sheetId={sheet.id} /> : null}
           {isOwner ? (
-            <BetForm
-              sheets={sheets}
-              bookmakers={bookmakers}
-              defaultSheetId={sheet.id}
-            />
-          ) : null}
+            <>
+              <ImportBetsButton sheetId={sheet.id} />
+              <BetForm
+                sheets={sheets}
+                bookmakers={bookmakers}
+                defaultSheetId={sheet.id}
+              />
+            </>
+          ) : (
+            <FollowSheetButtonStub />
+          )}
         </div>
       </div>
 
       {isOwner && suggestions?.length ? (
-        <DailySuggestions initial={suggestions} scope="sheet" />
+        <div className="mb-[26px]">
+          <DailySuggestions initial={suggestions} scope="sheet" />
+        </div>
       ) : null}
 
-      <SheetFilterBar
-        filters={filters}
-        leagues={leagues}
-        picks={picks}
-        bookmakerOptions={bookmakerOptions}
-        filteredCount={filtered.length}
-        totalCount={bets.length}
-        onChange={patchFilters}
-      />
+      <div className="mb-[26px]">
+        <SheetKpiStrip stats={stats} betCount={filtered.length} />
+      </div>
 
-      {filters.view === "table" ? (
-        <div className="hidden lg:block">
-          <BetsTable
-            bets={filtered}
-            canEdit={isOwner}
-            canRygga
-            onRygga={openRygga}
+      <div className="mb-[26px]">
+        <SheetNettoChart
+          bets={filtered}
+          periodLabel={periodLabel(filters.period)}
+        />
+      </div>
+
+      <div className="mb-4">
+        <SheetFilterBar
+          filters={filters}
+          leagues={leagues}
+          categories={categories}
+          bookmakers={bookmakerOptions}
+          filteredCount={filtered.length}
+          totalCount={bets.length}
+          onChange={patchFilters}
+        />
+      </div>
+
+      {/* ≥1180px: tabell eller kort, användarens val. */}
+      <div className="hidden min-[1180px]:block">
+        {filters.view === "table" ? (
+          <SheetBetsTable
+            {...listProps}
+            sortKey={sort.key}
+            sortDir={sort.dir}
+            onSort={toggleSort}
           />
-        </div>
-      ) : (
-        <div className="hidden lg:block">
-          <DesktopBetCards bets={filtered} />
-        </div>
-      )}
+        ) : (
+          <SheetBetCards {...listProps} />
+        )}
+      </div>
 
+      {/* 1024–1179px: tabellen får inte plats, kortvyn tar över. */}
+      <div className="hidden lg:block min-[1180px]:hidden">
+        <SheetBetCards {...listProps} />
+      </div>
+
+      {/* Under 1024px: PWA-korten med swipe och offline-kö. */}
       <MobileBetCards
-        bets={filtered}
+        bets={rows}
         sheetId={sheet.id}
         canEdit={isOwner}
         canRygga
@@ -255,329 +316,26 @@ export function SpelbokSheetView({
         hideChrome
       />
 
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-        <Kpi label="SPEL" value={String(filtered.length)} />
-        <Kpi
-          label="OMSÄTTNING"
-          value={formatMoney(stats.stake).replace("+", "")}
-        />
-        <Kpi
-          label="NETTO"
-          value={formatMoney(stats.netto)}
-          color={nettoColor(stats.netto)}
-        />
-        <Kpi
-          label="ROI"
-          value={formatRoi(stats.roi)}
-          color={nettoColor(stats.roi)}
-        />
-        <Kpi label="HITRATE" value={`${formatNumber(stats.hitrate, 1)}%`} />
-        <Kpi label="SNITTODDS" value={formatNumber(stats.avgOdds, 2)} />
-        <Kpi
-          label="SNITTINSATS"
-          value={formatMoney(Math.round(stats.avgStake)).replace("+", "")}
-        />
-      </div>
-
-      <AccumulatedNettoChart
-        bets={filtered}
-        period={filters.chart}
-        onPeriodChange={(chart: ChartPeriodFilter) => patchFilters({ chart })}
-      />
-
-      <SpelbokStatsBottom
-        sheetId={sheet.id}
-        initialStats={initialStats}
-        initialLeagues={initialLeagues}
-        initialBreakdowns={initialBreakdowns}
-        affiliates={affiliates}
-        publicSheets={publicSheets}
-      />
-    </div>
-  );
-}
-
-function SheetFilterBar({
-  filters,
-  leagues,
-  picks,
-  bookmakerOptions,
-  filteredCount,
-  totalCount,
-  onChange,
-}: {
-  filters: SheetFilterState;
-  leagues: ReturnType<typeof distinctLeagues>;
-  picks: ReturnType<typeof distinctPicks>;
-  bookmakerOptions: ReturnType<typeof distinctBookmakers>;
-  filteredCount: number;
-  totalCount: number;
-  onChange: (patch: Partial<SheetFilterState>) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-end gap-3">
-      <Select
-        label="Sport"
-        value={filters.sport}
-        onChange={(e) =>
-          onChange({ sport: e.target.value as SheetSportFilter })
-        }
-        className="min-w-[150px] py-2.5"
-      >
-        {SPORT_FILTER_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        label="Spelform"
-        value={filters.pick}
-        onChange={(e) => onChange({ pick: e.target.value })}
-        className="min-w-[170px] py-2.5"
-      >
-        <option value="">Alla spelformer</option>
-        {picks.map((p) => (
-          <option key={p.key} value={p.key}>
-            {p.key} ({p.count})
-          </option>
-        ))}
-      </Select>
-
-      <LeagueSelect
-        value={filters.league}
-        leagues={leagues}
-        onChange={(league) => onChange({ league })}
-      />
-
-      <Select
-        label="Spelbolag"
-        value={filters.bookmaker}
-        onChange={(e) => onChange({ bookmaker: e.target.value })}
-        className="min-w-[160px] py-2.5"
-      >
-        <option value="">Alla spelbolag</option>
-        {bookmakerOptions.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.name} ({b.count})
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        label="Rättning"
-        value={filters.result}
-        onChange={(e) =>
-          onChange({ result: e.target.value as SheetResultFilter })
-        }
-        className="min-w-[150px] py-2.5"
-      >
-        {RESULT_FILTER_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        label="Period"
-        value={filters.period}
-        onChange={(e) =>
-          onChange({ period: e.target.value as SheetPeriodFilter })
-        }
-        className="min-w-[150px] py-2.5"
-      >
-        {PERIOD_FILTER_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
-
-      <div className="ml-auto flex flex-wrap items-end gap-3 pb-0.5">
-        <span className="pb-2.5 font-mono-num text-[13px] text-muted">
-          {filteredCount} av {totalCount} spel
-        </span>
-        <div className="hidden flex-col gap-1 lg:flex">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-muted">
-            Vy
-          </div>
-          <div className="flex gap-[3px] rounded-[9px] border border-[#1C2333] bg-bg p-[3px]">
-            {(
-              [
-                { value: "table" as const, label: "Tabell" },
-                { value: "cards" as const, label: "Kort" },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onChange({ view: opt.value as SheetViewMode })}
-                className={cn(
-                  "rounded-[7px] px-3 py-1.5 text-[13px] font-semibold transition",
-                  filters.view === opt.value
-                    ? "bg-[#1B2436] text-text"
-                    : "bg-transparent text-muted hover:text-text"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LeagueSelect({
-  value,
-  leagues,
-  onChange,
-}: {
-  value: string;
-  leagues: ReturnType<typeof distinctLeagues>;
-  onChange: (league: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const selected = leagues.find((l) => l.name === value);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
-  return (
-    <div ref={rootRef} className="relative min-w-[170px]">
-      <div className="mb-1.5 text-[11px] uppercase tracking-[0.12em] text-muted">
-        Liga
-      </div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full min-w-[170px] items-center gap-2 rounded-[9px] border border-line bg-bg-soft px-3 py-2.5 text-left text-[15px] text-text"
-      >
-        {selected ? (
-          <LeagueLogo
-            src={selected.logo}
-            leagueId={selected.leagueId}
-            sport={selected.sport}
-            name={selected.name}
-            size={18}
+      {pageCount > 1 ? (
+        <div className="mb-[26px] mt-[22px]">
+          <SheetPagination
+            page={currentPage}
+            pageCount={pageCount}
+            onPage={setPage}
           />
-        ) : null}
-        <span className="flex-1 truncate">
-          {selected?.name || "Alla ligor"}
-        </span>
-        <span className="text-[11px] text-faint">▾</span>
-      </button>
-      {open ? (
-        <div className="absolute left-0 top-full z-30 mt-1.5 max-h-[300px] min-w-full overflow-auto rounded-[11px] border border-line-strong bg-panel-elevated p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.6)]">
-          <button
-            type="button"
-            onClick={() => {
-              onChange("");
-              setOpen(false);
-            }}
-            className={cn(
-              "flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[13.5px]",
-              !value
-                ? "bg-[#1F293C] text-text"
-                : "text-[#C3CBDB] hover:bg-[#1F293C]"
-            )}
-          >
-            Alla ligor
-          </button>
-          {leagues.map((l) => (
-            <button
-              key={l.name}
-              type="button"
-              onClick={() => {
-                onChange(l.name);
-                setOpen(false);
-              }}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-[7px] px-2.5 py-2 text-left text-[13.5px]",
-                value === l.name
-                  ? "bg-[#1F293C] text-text"
-                  : "text-[#C3CBDB] hover:bg-[#1F293C]"
-              )}
-            >
-              <LeagueLogo
-                src={l.logo}
-                leagueId={l.leagueId}
-                sport={l.sport}
-                name={l.name}
-                size={18}
-              />
-              <span className="truncate">{l.name}</span>
-            </button>
-          ))}
         </div>
-      ) : null}
-    </div>
-  );
-}
+      ) : (
+        <div className="mb-[26px]" />
+      )}
 
-function DesktopBetCards({ bets }: { bets: Bet[] }) {
-  return (
-    <div className="grid gap-2.5 sm:grid-cols-2">
-      {bets.map((bet) => {
-        const netto =
-          bet.result === "open"
-            ? null
-            : Number(bet.payout) - Number(bet.stake);
-        return (
-          <div
-            key={bet.id}
-            className="rounded-[12px] border border-line bg-panel px-3.5 py-3"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="truncate font-semibold">{bet.match}</div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted">
-                  {bet.league ? (
-                    <LeagueLogo
-                      src={betLeagueLogo(bet)}
-                      leagueId={bet.league_id ?? bet.fixtures?.league_id}
-                      sport={bet.sport ?? bet.fixtures?.sport}
-                      name={bet.league}
-                      size={14}
-                    />
-                  ) : null}
-                  <span>
-                    {bet.league || "—"} · {bet.pick} ·{" "}
-                    {Number(bet.odds).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <div className="font-mono-num text-[13px] text-muted">
-                  {formatMoney(Number(bet.stake)).replace("+", "")}
-                </div>
-                <div
-                  className={`font-mono-num text-sm font-semibold ${
-                    netto == null ? "text-muted" : nettoColor(netto)
-                  }`}
-                >
-                  {netto == null ? "—" : formatMoney(netto)}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-      {!bets.length ? (
-        <div className="col-span-full rounded-[12px] border border-line bg-panel px-4 py-10 text-center text-muted">
-          Inga spel ännu.
-        </div>
-      ) : null}
+      <div className="mb-[26px]">
+        <SheetStatsPanel sheetId={sheet.id} initialStats={initialStats} />
+      </div>
+
+      <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_320px]">
+        <DistributionCard groups={groups} size="regular" />
+        <SheetAffiliateTop3 affiliates={affiliates} />
+      </div>
     </div>
   );
 }

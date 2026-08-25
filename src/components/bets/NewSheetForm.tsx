@@ -11,8 +11,11 @@ import { randomSheetSlug } from "@/lib/sheet-slug";
 
 export function NewSheetForm({
   onCreated,
+  buttonLabel = "+ Nytt spreadsheet",
 }: {
   onCreated?: (sheetId: string) => void;
+  /** Flikraden i spelboken har ont om plats — där heter knappen "+ Ny". */
+  buttonLabel?: string;
 } = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -58,7 +61,7 @@ export function NewSheetForm({
   if (!open) {
     return (
       <Button variant="secondary" onClick={() => setOpen(true)}>
-        + Nytt spreadsheet
+        {buttonLabel}
       </Button>
     );
   }

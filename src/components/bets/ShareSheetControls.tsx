@@ -68,6 +68,95 @@ export function FollowSheetButtonStub({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Publik/privat som en klickbar badge direkt efter spelbokens namn.
+ *
+ * Ersätter det egna kortet "Publik spelbok" — ett helt kort för en kryssruta
+ * var mest tom yta, och statusen hör hemma vid namnet.
+ */
+export function SheetVisibilityBadge({
+  sheetId,
+  isPublic,
+  slug,
+  canEdit,
+}: {
+  sheetId: string;
+  isPublic: boolean;
+  slug: string | null;
+  canEdit: boolean;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [optimistic, setOptimistic] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const value = optimistic ?? isPublic;
+
+  const body = (
+    <>
+      <span
+        aria-hidden
+        className={cn(
+          "size-1.5 shrink-0 rounded-full",
+          value ? "bg-win" : "bg-faint"
+        )}
+      />
+      {value ? "Publik" : "Privat"}
+    </>
+  );
+
+  const className = cn(
+    "inline-flex items-center gap-1.5 rounded-[var(--radius-badge)] px-[7px] py-[3px] text-[9.5px] font-semibold uppercase tracking-[0.1em]",
+    value
+      ? "bg-[var(--badge-pub-bg)] text-win"
+      : "bg-[var(--badge-priv-bg)] text-muted"
+  );
+
+  if (!canEdit) {
+    return <span className={className}>{body}</span>;
+  }
+
+  async function toggle() {
+    const next = !value;
+    setBusy(true);
+    setOptimistic(next);
+    const supabase = createClient();
+
+    const patch: { is_public: boolean; slug?: string } = { is_public: next };
+    if (next && !slug) patch.slug = randomSheetSlug();
+
+    const { error } = await supabase
+      .from("sheets")
+      .update(patch)
+      .eq("id", sheetId);
+
+    setBusy(false);
+    if (error) {
+      setOptimistic(!next);
+      toast(error.message || "Kunde inte uppdatera");
+      return;
+    }
+    setOptimistic(null);
+    toast(next ? "Spelboken är publik" : "Spelboken är privat");
+    router.refresh();
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => void toggle()}
+      title={
+        value
+          ? "Synlig för alla med länken. Klicka för att göra privat."
+          : "Endast du kan se spelboken. Klicka för att göra publik."
+      }
+      className={cn(className, "cursor-pointer transition hover:brightness-125")}
+    >
+      {body}
+    </button>
+  );
+}
+
 export function SheetPublicToggle({
   sheetId,
   isPublic,

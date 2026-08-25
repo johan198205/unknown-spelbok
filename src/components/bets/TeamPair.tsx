@@ -51,6 +51,82 @@ export function TeamLogo({
   );
 }
 
+/**
+ * Rund logotypbricka: loggan i en svag platta med luft runt om.
+ *
+ * Används i dashboardens täta listor ("Senaste resultat", "Matcher för dig")
+ * där en naken logga på mörk bakgrund tappar kontur vid 18px.
+ */
+export function TeamCrest({
+  logo,
+  teamId,
+  sport,
+  name,
+  size = 18,
+}: {
+  logo?: string | null;
+  teamId?: number | null;
+  sport?: string | null;
+  name: string;
+  size?: number;
+}) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-[rgba(230,234,242,0.07)] p-[2px]"
+      style={{ width: size, height: size }}
+    >
+      <TeamLogo
+        src={teamLogoUrl(logo, teamId, sport)}
+        size={size - 4}
+        initial={name}
+      />
+    </span>
+  );
+}
+
+/** En rad: [logga] Lag A – [logga] Lag B. En logga per lag, inte ett par. */
+export function MatchLine({
+  homeName,
+  awayName,
+  homeLogo,
+  awayLogo,
+  homeTeamId,
+  awayTeamId,
+  sport,
+  size = 18,
+}: {
+  homeName: string;
+  awayName: string;
+  homeLogo?: string | null;
+  awayLogo?: string | null;
+  homeTeamId?: number | null;
+  awayTeamId?: number | null;
+  sport?: string | null;
+  size?: number;
+}) {
+  return (
+    <>
+      <TeamCrest
+        logo={homeLogo}
+        teamId={homeTeamId}
+        sport={sport}
+        name={homeName}
+        size={size}
+      />
+      <span className="min-w-0 truncate">{homeName}</span>
+      <span className="shrink-0 text-[11.5px] text-faint">–</span>
+      <TeamCrest
+        logo={awayLogo}
+        teamId={awayTeamId}
+        sport={sport}
+        name={awayName}
+        size={size}
+      />
+      <span className="min-w-0 truncate">{awayName}</span>
+    </>
+  );
+}
+
 function TeamLine({
   name,
   logo,

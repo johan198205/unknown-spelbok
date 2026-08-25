@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
 import { AdSlot } from "@/components/ui/AdSlot";
 import {
-  fetchPublicSheetsLeaderboard,
   fetchSheetStatsBundle,
   type AffiliateTopRow,
 } from "@/lib/bet-stats";
@@ -107,6 +106,7 @@ export default async function PublicSheetPage({
       id: b.id,
       name: b.name,
       slug: b.slug,
+      logo_url: b.logo_url,
       rank: b.rank,
       rating: b.rating,
       bonus_value: b.bonus_value,
@@ -115,17 +115,31 @@ export default async function PublicSheetPage({
       terms: b.terms,
     }));
 
-  const [statsBundle, publicSheets] = await Promise.all([
-    fetchSheetStatsBundle(supabase, sheet.id, "all", unitSize),
-    fetchPublicSheetsLeaderboard(supabase, 5, sheet.user_id),
-  ]);
+  const statsBundle = await fetchSheetStatsBundle(
+    supabase,
+    sheet.id,
+    "all",
+    unitSize
+  );
 
   const viewerSheets = toPlain(
     ((viewerSheetsResult.data || []) as Sheet[]) ?? []
   );
 
   return (
-    <div className="mx-auto w-full max-w-[1360px] animate-sbfade space-y-5 px-4 py-6 lg:px-5">
+    <div className="mx-auto w-full max-w-[1360px] animate-sbfade px-4 py-6 lg:px-5">
+      <div className="mb-[26px]">
+        <AdSlot
+          placement="sheet"
+          className="hidden h-[90px] lg:flex"
+          label="ANNONSPLATS 970×90"
+        />
+        <AdSlot
+          placement="sheet"
+          className="h-[100px] lg:hidden"
+          label="ANNONSPLATS 320×100"
+        />
+      </div>
       <Suspense
         fallback={<div className="py-10 text-center text-muted">Laddar…</div>}
       >
@@ -136,28 +150,11 @@ export default async function PublicSheetPage({
           bookmakers={toPlain((bookmakers || []) as Bookmaker[])}
           username={owner.username}
           initialStats={toPlain(statsBundle.stats)}
-          initialLeagues={toPlain(statsBundle.leagues)}
-          initialBreakdowns={toPlain(statsBundle.breakdowns)}
           affiliates={toPlain(affiliates)}
-          publicSheets={toPlain(publicSheets)}
           mode="public"
           viewerSheets={viewerSheets}
           unitSize={unitSize}
           isAuthenticated={!!user}
-          ads={
-            <>
-              <AdSlot
-                placement="sheet"
-                className="hidden h-[90px] lg:flex"
-                label="ANNONSPLATS 970×90"
-              />
-              <AdSlot
-                placement="sheet"
-                className="h-[100px] lg:hidden"
-                label="ANNONSPLATS 320×100"
-              />
-            </>
-          }
         />
       </Suspense>
     </div>

@@ -1,18 +1,21 @@
 import type { Bet, BetResult } from "@/lib/types";
 import { betLeagueLogo, leagueInitials } from "@/lib/logos";
-import { pickKey } from "@/lib/breakdowns";
+import { betCategory, distinctCategories } from "@/lib/bet-category";
+
+export { distinctCategories };
 
 export type SheetSportFilter = "all" | "football" | "hockey";
 export type SheetResultFilter = "all" | BetResult;
-export type SheetPeriodFilter =
-  | "all"
-  | "today"
-  | "7d"
-  | "30d"
-  | "3m"
-  | "ytd";
+/**
+ * Spelbokens period. Samma väljare styr både grafen och tabellen — grafen
+ * har ingen egen periodrad längre.
+ */
+export type SheetPeriodFilter = "30d" | "3m" | "ytd" | "all";
+/** Dashboardens graf har fortfarande en egen period med 1 år. */
 export type ChartPeriodFilter = "30d" | "3m" | "1y" | "all";
 export type SheetViewMode = "table" | "cards";
+/** Matchcellens täthet: inramat resultatblock eller en enda rad. */
+export type SheetDensity = "result" | "slim";
 
 export const SPORT_FILTER_OPTIONS: Array<{
   value: SheetSportFilter;
@@ -40,12 +43,10 @@ export const PERIOD_FILTER_OPTIONS: Array<{
   value: SheetPeriodFilter;
   label: string;
 }> = [
-  { value: "all", label: "Allt" },
-  { value: "today", label: "Idag" },
-  { value: "7d", label: "7 dagar" },
   { value: "30d", label: "30 dagar" },
   { value: "3m", label: "3 månader" },
   { value: "ytd", label: "I år" },
+  { value: "all", label: "Allt" },
 ];
 
 export const CHART_PERIOD_OPTIONS: Array<{
@@ -58,27 +59,46 @@ export const CHART_PERIOD_OPTIONS: Array<{
   { value: "all", label: "Allt" },
 ];
 
+export const DENSITY_OPTIONS: Array<{ value: SheetDensity; label: string }> = [
+  { value: "result", label: "Resultat" },
+  { value: "slim", label: "Slimmad" },
+];
+
+export const VIEW_OPTIONS: Array<{ value: SheetViewMode; label: string }> = [
+  { value: "table", label: "Tabell" },
+  { value: "cards", label: "Kort" },
+];
+
 export interface SheetFilterState {
   sport: SheetSportFilter;
   league: string; // "" = alla
-  pick: string; // "" = alla spelformer
+  category: string; // "" = alla kategorier
   bookmaker: string; // bookmaker_id, "" = alla spelbolag
   result: SheetResultFilter;
   period: SheetPeriodFilter;
   view: SheetViewMode;
-  chart: ChartPeriodFilter;
+  density: SheetDensity;
 }
 
 export const DEFAULT_SHEET_FILTERS: SheetFilterState = {
   sport: "all",
   league: "",
-  pick: "",
+  category: "",
   bookmaker: "",
   result: "all",
   period: "all",
   view: "table",
-  chart: "all",
+  density: "result",
 };
+
+/** De fem fälten i filterpanelen — perioden och vyerna räknas inte som filter. */
+const PANEL_KEYS = [
+  "sport",
+  "league",
+  "category",
+  "bookmaker",
+  "result",
+] as const;
 
 function isHockeySport(sport: string | null | undefined) {
   return (sport || "").toLowerCase().includes("hockey");
@@ -94,17 +114,17 @@ export function periodCutoff(
   now = new Date()
 ): number | null {
   if (period === "all") return null;
-  if (period === "today") {
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-    return start.getTime();
-  }
-  if (period === "7d") return now.getTime() - 7 * 86400000;
   if (period === "30d") return now.getTime() - 30 * 86400000;
   if (period === "3m") return now.getTime() - 92 * 86400000;
   if (period === "1y") return now.getTime() - 365 * 86400000;
   if (period === "ytd") return new Date(now.getFullYear(), 0, 1).getTime();
   return null;
+}
+
+export function periodLabel(period: SheetPeriodFilter): string {
+  return (
+    PERIOD_FILTER_OPTIONS.find((o) => o.value === period)?.label || "Allt"
+  );
 }
 
 export function matchesSportFilter(
@@ -125,7 +145,7 @@ export function filterSheetBets(
   bets: Bet[],
   filters: Pick<
     SheetFilterState,
-    "sport" | "league" | "pick" | "bookmaker" | "result" | "period"
+    "sport" | "league" | "category" | "bookmaker" | "result" | "period"
   >,
   now = new Date()
 ): Bet[] {
@@ -133,7 +153,9 @@ export function filterSheetBets(
   return bets.filter((bet) => {
     if (!matchesSportFilter(bet, filters.sport)) return false;
     if (filters.league && (bet.league || "") !== filters.league) return false;
-    if (filters.pick && pickKey(bet) !== filters.pick) return false;
+    if (filters.category && betCategory(bet.pick) !== filters.category) {
+      return false;
+    }
     if (filters.bookmaker && (bet.bookmaker_id || "") !== filters.bookmaker) {
       return false;
     }
@@ -143,14 +165,71 @@ export function filterSheetBets(
   });
 }
 
-export function filterChartBets(
+export type SheetSortKey =
+  | "date"
+  | "league"
+  | "match"
+  | "pick"
+  | "bookmaker"
+  | "stake"
+  | "odds"
+  | "result"
+  | "netto";
+
+export type SheetSortDir = "asc" | "desc";
+
+export const DEFAULT_SHEET_SORT: {
+  key: SheetSortKey;
+  dir: SheetSortDir;
+} = { key: "date", dir: "desc" };
+
+/** Rättningarna i den ordning kolumnsorteringen ska ge. */
+const RESULT_ORDER: BetResult[] = [
+  "win",
+  "halfwin",
+  "void",
+  "halfloss",
+  "loss",
+  "open",
+];
+
+function sortValue(bet: Bet, key: SheetSortKey): number | string {
+  switch (key) {
+    case "date":
+      return +new Date(bet.placed_at);
+    case "league":
+      return (bet.league || "").toLowerCase();
+    case "match":
+      return bet.match.toLowerCase();
+    case "pick":
+      return (bet.pick || "").toLowerCase();
+    case "bookmaker":
+      return (bet.bookmakers?.name || "").toLowerCase();
+    case "stake":
+      return Number(bet.stake);
+    case "odds":
+      return Number(bet.odds);
+    case "result":
+      return RESULT_ORDER.indexOf(bet.result);
+    case "netto":
+      return bet.result === "open" ? 0 : Number(bet.payout) - Number(bet.stake);
+  }
+}
+
+export function sortSheetBets(
   bets: Bet[],
-  chartPeriod: ChartPeriodFilter,
-  now = new Date()
+  key: SheetSortKey,
+  dir: SheetSortDir
 ): Bet[] {
-  const cut = periodCutoff(chartPeriod, now);
-  if (cut == null) return bets;
-  return bets.filter((bet) => +new Date(bet.placed_at) >= cut);
+  const factor = dir === "asc" ? 1 : -1;
+  return [...bets].sort((a, b) => {
+    const av = sortValue(a, key);
+    const bv = sortValue(b, key);
+    if (typeof av === "string" || typeof bv === "string") {
+      return String(av).localeCompare(String(bv), "sv") * factor;
+    }
+    return (av - bv) * factor;
+  });
 }
 
 export interface LeagueOption {
@@ -189,25 +268,6 @@ export function distinctLeagues(bets: Bet[]): LeagueOption[] {
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
 
-export interface PickOption {
-  /** Samma nyckel som breakdown-raderna under "Per spelform". */
-  key: string;
-  count: number;
-}
-
-export function distinctPicks(bets: Bet[]): PickOption[] {
-  const map = new Map<string, PickOption>();
-  for (const bet of bets) {
-    const key = pickKey(bet);
-    const existing = map.get(key);
-    if (existing) existing.count += 1;
-    else map.set(key, { key, count: 1 });
-  }
-  return [...map.values()].sort(
-    (a, b) => b.count - a.count || a.key.localeCompare(b.key, "sv")
-  );
-}
-
 export interface BookmakerOption {
   id: string;
   name: string;
@@ -232,6 +292,68 @@ export function distinctBookmakers(bets: Bet[]): BookmakerOption[] {
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, "sv"));
 }
 
+export type ActiveFilterChip = {
+  key: (typeof PANEL_KEYS)[number];
+  label: string;
+};
+
+/** Antal aktiva filter — perioden räknas inte, den syns redan i pill-raden. */
+export function activeFilterCount(filters: SheetFilterState): number {
+  return PANEL_KEYS.filter(
+    (key) => filters[key] !== DEFAULT_SHEET_FILTERS[key]
+  ).length;
+}
+
+export function clearPanelFilters(
+  filters: SheetFilterState
+): SheetFilterState {
+  return {
+    ...filters,
+    sport: DEFAULT_SHEET_FILTERS.sport,
+    league: DEFAULT_SHEET_FILTERS.league,
+    category: DEFAULT_SHEET_FILTERS.category,
+    bookmaker: DEFAULT_SHEET_FILTERS.bookmaker,
+    result: DEFAULT_SHEET_FILTERS.result,
+  };
+}
+
+/** Aktiva filter som borttagbara chips, i panelens ordning. */
+export function activeFilterChips(
+  filters: SheetFilterState,
+  bookmakers: BookmakerOption[]
+): ActiveFilterChip[] {
+  const chips: ActiveFilterChip[] = [];
+  if (filters.sport !== "all") {
+    chips.push({
+      key: "sport",
+      label:
+        SPORT_FILTER_OPTIONS.find((o) => o.value === filters.sport)?.label ||
+        filters.sport,
+    });
+  }
+  if (filters.league) chips.push({ key: "league", label: filters.league });
+  if (filters.category) {
+    chips.push({ key: "category", label: filters.category });
+  }
+  if (filters.bookmaker) {
+    chips.push({
+      key: "bookmaker",
+      label:
+        bookmakers.find((b) => b.id === filters.bookmaker)?.name ||
+        "Spelbolag",
+    });
+  }
+  if (filters.result !== "all") {
+    chips.push({
+      key: "result",
+      label:
+        RESULT_FILTER_OPTIONS.find((o) => o.value === filters.result)?.label ||
+        filters.result,
+    });
+  }
+  return chips;
+}
+
 export function parseSheetFilters(
   params: URLSearchParams
 ): SheetFilterState {
@@ -254,36 +376,26 @@ export function parseSheetFilters(
     : "all";
 
   const periodRaw = params.get("period") || "all";
-  const validPeriods: SheetPeriodFilter[] = [
-    "all",
-    "today",
-    "7d",
-    "30d",
-    "3m",
-    "ytd",
-  ];
+  const validPeriods: SheetPeriodFilter[] = ["30d", "3m", "ytd", "all"];
   const period = validPeriods.includes(periodRaw as SheetPeriodFilter)
     ? (periodRaw as SheetPeriodFilter)
-    : "all";
-
-  const chartRaw = params.get("chart") || "all";
-  const validCharts: ChartPeriodFilter[] = ["30d", "3m", "1y", "all"];
-  const chart = validCharts.includes(chartRaw as ChartPeriodFilter)
-    ? (chartRaw as ChartPeriodFilter)
     : "all";
 
   const viewRaw = params.get("view") || "table";
   const view: SheetViewMode = viewRaw === "cards" ? "cards" : "table";
 
+  const densityRaw = params.get("dens") || "result";
+  const density: SheetDensity = densityRaw === "slim" ? "slim" : "result";
+
   return {
     sport,
     league: params.get("league") || "",
-    pick: (params.get("pick") || "").trim(),
+    category: (params.get("cat") || "").trim(),
     bookmaker: params.get("book") || "",
     result,
     period,
     view,
-    chart,
+    density,
   };
 }
 
@@ -299,12 +411,15 @@ export function sheetFiltersToParams(
 
   setOrDelete("sport", filters.sport, "all");
   setOrDelete("league", filters.league, "");
-  setOrDelete("pick", filters.pick, "");
+  setOrDelete("cat", filters.category, "");
   setOrDelete("book", filters.bookmaker, "");
   setOrDelete("result", filters.result, "all");
   setOrDelete("period", filters.period, "all");
-  setOrDelete("chart", filters.chart, "all");
   setOrDelete("view", filters.view, "table");
+  setOrDelete("dens", filters.density, "result");
+  // Spelformsfiltret är borta ur filterraden — städa bort gamla länkar.
+  next.delete("pick");
+  next.delete("chart");
   return next;
 }
 
@@ -315,9 +430,4 @@ export function compactAxisValue(value: number): string {
     return `${rounded.toLocaleString("sv-SE")}k`;
   }
   return Math.round(value).toLocaleString("sv-SE");
-}
-
-export function formatChartDate(isoDay: string): string {
-  // YY-MM-DD
-  return isoDay.length >= 10 ? isoDay.slice(2, 10) : isoDay;
 }

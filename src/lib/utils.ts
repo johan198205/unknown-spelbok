@@ -28,9 +28,29 @@ export function formatNumber(value: number, digits = 1) {
   });
 }
 
+/**
+ * Alla procenttal i appen går genom den här: svenskt decimalkomma, en
+ * decimal. Skriv aldrig `${x.toFixed(1)}%` — det ger 51.9% i en vy där
+ * allt annat står 51,9%.
+ */
+export function formatPercent(value: number, digits = 1) {
+  return `${formatNumber(value, digits)}%`;
+}
+
 export function formatRoi(value: number) {
   const sign = value > 0 ? "+" : "";
-  return `${sign}${formatNumber(value, 1)}%`;
+  return `${sign}${formatPercent(value)}`;
+}
+
+/**
+ * Minsta antal rättade spel innan ROI betyder något. Under gränsen visas
+ * "—": procent på ett enskilt spel säger ingenting om träffsäkerhet.
+ */
+export const MIN_ROI_BETS = 5;
+
+/** ROI, eller "—" när underlaget är för litet. */
+export function formatRoiOrDash(roi: number, settledBets: number) {
+  return settledBets >= MIN_ROI_BETS ? formatRoi(roi) : "—";
 }
 
 export function formatOdds(value: number) {

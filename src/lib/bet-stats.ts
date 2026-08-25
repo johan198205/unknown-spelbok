@@ -36,6 +36,11 @@ export type BetStatsPayload = {
   medelodds: number;
   medelinsats: number;
   medelvinst: number;
+  /** Bästa och sämsta enskilda netto bland rättade spel. */
+  basta_spel: number;
+  samsta_spel: number;
+  /** Snittinsats bland de spel som fortfarande är öppna. */
+  snittinsats_oppna: number;
 };
 
 export type LeagueStatRow = {
@@ -84,6 +89,7 @@ export type AffiliateTopRow = {
   id: string;
   name: string;
   slug: string;
+  logo_url: string | null;
   rank: number;
   rating: number | null;
   bonus_value: number | null;
@@ -111,6 +117,9 @@ const EMPTY_STATS = (unitSize = 100): BetStatsPayload => ({
   medelodds: 0,
   medelinsats: 0,
   medelvinst: 0,
+  basta_spel: 0,
+  samsta_spel: 0,
+  snittinsats_oppna: 0,
 });
 
 export function isStatsPeriod(value: string | null | undefined): value is StatsPeriod {
@@ -251,6 +260,9 @@ export function normalizeBetStats(
     medelodds: num(r.medelodds),
     medelinsats: num(r.medelinsats),
     medelvinst: num(r.medelvinst),
+    basta_spel: num(r.basta_spel),
+    samsta_spel: num(r.samsta_spel),
+    snittinsats_oppna: num(r.snittinsats_oppna),
   };
 }
 
@@ -331,6 +343,8 @@ export function computeBetStatsFromRows(
   let forlorat = 0;
   let oddsSum = 0;
   let settledCount = 0;
+  let basta: number | null = null;
+  let samsta: number | null = null;
 
   for (const b of bets) {
     const stake = Number(b.stake);
@@ -343,6 +357,9 @@ export function computeBetStatsFromRows(
       oppenPot += stake * (odds - 1);
       continue;
     }
+
+    if (basta == null || netto > basta) basta = netto;
+    if (samsta == null || netto < samsta) samsta = netto;
 
     settledCount += 1;
     insats += stake;
@@ -382,7 +399,25 @@ export function computeBetStatsFromRows(
       settledCount > 0 ? Math.round((insats / settledCount) * 100) / 100 : 0,
     medelvinst:
       vinster > 0 ? Math.round((netto / vinster) * 100) / 100 : 0,
+    basta_spel: Math.round((basta ?? 0) * 100) / 100,
+    samsta_spel: Math.round((samsta ?? 0) * 100) / 100,
+    snittinsats_oppna:
+      oppna > 0 ? Math.round((oppenRisk / oppna) * 100) / 100 : 0,
   };
+}
+
+/**
+ * Bästa/sämsta spel och snittinsats bland öppna spel finns inte i RPC:n
+ * `get_bet_stats`. De räknas alltid ur raderna och läggs ovanpå RPC-svaret —
+ * annars hade de tre raderna i statistikpanelen stått på noll.
+ */
+function extraStatsFromRows(rows: BetRow[]) {
+  const {
+    basta_spel,
+    samsta_spel,
+    snittinsats_oppna,
+  } = computeBetStatsFromRows(rows);
+  return { basta_spel, samsta_spel, snittinsats_oppna };
 }
 
 export function computeLeagueStatsFromRows(
@@ -447,7 +482,10 @@ export async function fetchSheetStatsBundle(
   return {
     stats:
       !statsRes.error && statsRes.data != null
-        ? normalizeBetStats(statsRes.data, unitSize)
+        ? {
+            ...normalizeBetStats(statsRes.data, unitSize),
+            ...extraStatsFromRows(rows),
+          }
         : computeBetStatsFromRows(rows, unitSize),
     leagues:
       !leagueRes.error && leagueRes.data != null
