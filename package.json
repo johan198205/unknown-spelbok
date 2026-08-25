@@ -9,6 +9,8 @@
     "lint": "eslint",
     "import:bookmakers": "tsx scripts/import-bookmakers.ts",
     "check:signals": "tsx scripts/check-signal-parity.ts",
+    "push:doctor": "tsx scripts/push-doctor.ts",
+    "push:auth-check": "tsx scripts/notify-auth-check.ts",
     "seed:banners": "tsx scripts/seed-demo-banners.ts"
   },
   "dependencies": {
