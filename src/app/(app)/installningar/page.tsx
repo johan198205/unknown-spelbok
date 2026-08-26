@@ -2,17 +2,16 @@ import Link from "next/link";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/bets/SettingsForm";
+import { DisplayPrefsForm } from "@/components/bets/DisplayPrefsForm";
 import { PushToggle } from "@/components/PushToggle";
 import { NotifySettleToggle } from "@/components/bets/NotifySettleToggle";
+import { NotificationSettingsCard } from "@/components/notifications/NotificationSettingsCard";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { SignOutButton } from "@/components/layout/SignOutButton";
-import {
-  computeStats,
-  formatMoney,
-  formatRoi,
-  initialOf,
-  nettoColor,
-} from "@/lib/utils";
+import { formatAmount } from "@/lib/display";
+import { getDisplayPrefs } from "@/lib/display-prefs";
+import { getNotificationSettings } from "@/lib/notifications-server";
+import { computeStats, formatRoi, initialOf, nettoColor } from "@/lib/utils";
 import type { Bet, Sheet } from "@/lib/types";
 
 export default async function InstallningarPage() {
@@ -20,6 +19,8 @@ export default async function InstallningarPage() {
   const profile = await getProfile();
   if (!profile) return null;
 
+  const prefs = await getDisplayPrefs();
+  const notificationSettings = await getNotificationSettings();
   const supabase = await createClient();
   const [{ data: sheets }, { data: betsData }] = await Promise.all([
     supabase
@@ -54,7 +55,7 @@ export default async function InstallningarPage() {
           {[
             {
               label: "Netto",
-              value: formatMoney(stats.netto),
+              value: formatAmount(stats.netto, prefs),
               color: nettoColor(stats.netto),
             },
             {
@@ -106,7 +107,7 @@ export default async function InstallningarPage() {
                     <div className="text-[12px] text-muted">{st.bets} spel</div>
                   </div>
                   <span className={`font-mono-num font-semibold ${nettoColor(st.netto)}`}>
-                    {formatMoney(st.netto)}
+                    {formatAmount(st.netto, prefs)}
                   </span>
                 </Link>
               );
@@ -155,9 +156,32 @@ export default async function InstallningarPage() {
       </div>
 
       <Panel className="p-[18px]">
-        <h2 className="mb-1.5 font-display text-lg font-semibold">Notiser</h2>
+        <h2 className="mb-1.5 font-display text-lg font-semibold">
+          Enheter och valuta
+        </h2>
         <p className="mb-4 text-[14px] text-muted">
-          Få ett meddelande när det händer något i Spelbok.
+          Gäller alla dina spelböcker. Växla mellan units och valuta direkt i
+          headern.
+        </p>
+        <DisplayPrefsForm prefs={prefs} />
+      </Panel>
+
+      {/* Notispanelens fotknapp länkar hit. */}
+      <div id="notiser" className="scroll-mt-24">
+        <NotificationSettingsCard settings={notificationSettings} />
+      </div>
+
+      <Panel className="p-[18px]">
+        {/*
+          Egen rubrik: push till enheten är en tredje kanal vid sidan av
+          "I appen" och "Mejl" i kortet ovanför, och två rutor som båda
+          heter Notiser på samma sida går inte att skilja åt.
+        */}
+        <h2 className="mb-1.5 font-display text-lg font-semibold">
+          Push till enheten
+        </h2>
+        <p className="mb-4 text-[14px] text-muted">
+          Meddelanden på låsskärmen, även när Spelbok är stängt.
         </p>
         <PushToggle />
         <div className="mt-4 border-t border-line-soft pt-4">

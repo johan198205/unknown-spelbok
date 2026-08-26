@@ -10,12 +10,16 @@ export { StatCard } from "./StatCard";
 export function Panel({
   children,
   className,
+  id,
 }: {
   children: React.ReactNode;
   className?: string;
+  /** Ankarmål, t.ex. #tavling-{id} från en notis. */
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={cn(
         "rounded-[var(--radius-panel)] border border-line bg-panel",
         className

@@ -6,6 +6,7 @@ import { NewSheetForm } from "@/components/bets/NewSheetForm";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState } from "@/components/ui/Panel";
+import { getDisplayPrefs } from "@/lib/display-prefs";
 import { stockholmYmd } from "@/lib/stockholm";
 import { SUGGESTION_COLUMNS, normalizeSuggestion } from "@/lib/suggestions";
 import {
@@ -27,11 +28,11 @@ function asOne<T>(value: T | T[] | null | undefined): T | null {
 export default async function SpelbokPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sheet?: string }>;
+  searchParams: Promise<{ sheet?: string; bet?: string }>;
 }) {
   const user = await requireUser();
   const profile = await getProfile();
-  const { sheet: sheetParam } = await searchParams;
+  const { sheet: sheetParam, bet: betParam } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: sheets }, { data: bookmakers }] = await Promise.all([
@@ -49,8 +50,27 @@ export default async function SpelbokPage({
   ]);
 
   const sheetList = (sheets || []) as Sheet[];
+
+  /*
+    En notis om ett enskilt spel länkar hit med bara ?bet=… — spelets id
+    är det enda notisen bär. Vilken spelbok raden ligger i slår vi upp
+    här, så användaren landar i rätt flik direkt.
+  */
+  let betSheetId: string | null = null;
+  if (betParam && !sheetParam) {
+    const { data: betRow } = await supabase
+      .from("bets")
+      .select("sheet_id")
+      .eq("id", betParam)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    betSheetId = betRow?.sheet_id ?? null;
+  }
+
   const activeSheet =
-    sheetList.find((s) => s.id === sheetParam) || sheetList[0] || null;
+    sheetList.find((s) => s.id === (sheetParam ?? betSheetId)) ||
+    sheetList[0] ||
+    null;
 
   let bets: Bet[] = [];
   if (activeSheet) {
@@ -83,8 +103,8 @@ export default async function SpelbokPage({
   }));
 
   const username = profile?.username || "användare";
-  const unitSize =
-    profile?.unit_size && profile.unit_size > 0 ? Number(profile.unit_size) : 100;
+  // Statistik-RPC:n räknar unitnetto och behöver storleken i klartext.
+  const unitSize = (await getDisplayPrefs()).unitSize;
 
   const affiliates: AffiliateTopRow[] = ((bookmakers || []) as Bookmaker[])
     .slice()
@@ -180,7 +200,6 @@ export default async function SpelbokPage({
                 initialStats={toPlain(statsBundle.stats)}
                 suggestions={toPlain(suggestions)}
                 affiliates={toPlain(affiliates)}
-                unitSize={unitSize}
                 isAuthenticated
               />
             </Suspense>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
-import { Input, Select } from "@/components/ui/Input";
+import { Input, Select, Textarea } from "@/components/ui/Input";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import {
   deleteBanner,
@@ -12,14 +12,24 @@ import {
   type BannerDraft,
   type BannerRow,
 } from "@/lib/admin/banners";
+import {
+  BANNER_HTML_SANDBOX,
+  bannerHtmlDocument,
+  describeBannerHtml,
+} from "@/lib/banner-html";
 import { cn } from "@/lib/utils";
-import type { BannerFormat, BannerPlacement } from "@/lib/types";
+import type {
+  BannerCreativeType,
+  BannerFormat,
+  BannerPlacement,
+} from "@/lib/types";
 
 const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
   { value: "home", label: "Startsida" },
   { value: "sheet", label: "Spelboken" },
   { value: "topplista", label: "Topplista" },
   { value: "spelbolag", label: "Spelbolag" },
+  { value: "kuponger", label: "Kuponger" },
 ];
 
 /**
@@ -65,12 +75,30 @@ const FORMATS: {
   },
 ];
 
+const CREATIVE_TYPES: {
+  value: BannerCreativeType;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: "image",
+    label: "Bild",
+    hint: "Egen kreativ: ladda upp en bild och peka den mot din spårningslänk.",
+  },
+  {
+    value: "html",
+    label: "HTML-kod",
+    hint: "Kodsnutt från affiliatenätverket — klistras in som den är och kör annonsörens egen spårning.",
+  },
+];
+
 /** Vilka format som faktiskt renderas per placering. */
 const FORMATS_BY_PLACEMENT: Record<BannerPlacement, BannerFormat[]> = {
   home: ["970x90", "320x100", "300x250"],
   sheet: ["970x90", "320x100"],
   topplista: ["970x90", "320x100"],
   spelbolag: ["970x90"],
+  kuponger: ["970x90"],
 };
 
 function placementLabel(placement: string) {
@@ -123,7 +151,9 @@ function fromDateInput(value: string, endOfDay: boolean) {
 type Draft = {
   id?: string;
   title: string;
+  creative_type: BannerCreativeType;
   image_url: string;
+  html_code: string;
   link_url: string;
   placement: BannerPlacement;
   format: BannerFormat;
@@ -137,7 +167,9 @@ function draftFrom(b: BannerRow): Draft {
   return {
     id: b.id,
     title: b.title,
-    image_url: b.image_url,
+    creative_type: b.creative_type === "html" ? "html" : "image",
+    image_url: b.image_url ?? "",
+    html_code: b.html_code ?? "",
     link_url: b.link_url ?? "",
     placement: b.placement as BannerPlacement,
     format: formatOf(b.format).value,
@@ -150,7 +182,9 @@ function draftFrom(b: BannerRow): Draft {
 
 const emptyDraft: Draft = {
   title: "",
+  creative_type: "image",
   image_url: "",
+  html_code: "",
   link_url: "",
   placement: "home",
   format: "970x90",
@@ -225,7 +259,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
     const payload: BannerDraft = {
       id: draft.id,
       title: draft.title,
+      creative_type: draft.creative_type,
       image_url: draft.image_url,
+      html_code: draft.html_code,
       link_url: draft.link_url,
       placement: draft.placement,
       format: draft.format,
@@ -297,15 +333,24 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   !b.active && "opacity-60"
                 )}
               >
-                <div className="flex h-[110px] items-center justify-center border-b border-line-soft bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] p-2">
-                  {/* Hela kreativen ska synas i listan — 300×250 får inte
-                      beskäras till en remsa. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={b.image_url}
-                    alt={b.title}
-                    className="max-h-full max-w-full object-contain"
-                  />
+                <div className="flex h-[110px] items-center justify-center overflow-hidden border-b border-line-soft bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] p-2">
+                  {b.creative_type === "html" ? (
+                    // Snutten körs medvetet INTE i listan: många nätverk räknar
+                    // en visning redan vid inladdning, och adminsidan ska inte
+                    // blåsa upp annonsörens siffror. Koden visas i stället.
+                    <pre className="max-h-full w-full overflow-hidden whitespace-pre-wrap break-all rounded-[7px] bg-bg/70 px-2 py-1.5 font-mono-num text-[10.5px] leading-[1.45] text-dim">
+                      {(b.html_code ?? "").slice(0, 220)}
+                    </pre>
+                  ) : (
+                    // Hela kreativen ska synas i listan — 300×250 får inte
+                    // beskäras till en remsa.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={b.image_url ?? ""}
+                      alt={b.title}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  )}
                 </div>
 
                 <div className="p-3.5">
@@ -313,7 +358,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-semibold">{b.title}</div>
                       <div className="truncate font-mono-num text-[11.5px] text-dim">
-                        {b.link_url || "Ingen länk"}
+                        {b.creative_type === "html"
+                          ? `${describeBannerHtml(b.html_code ?? "") ?? "HTML"} · annonsörens egen länk`
+                          : b.link_url || "Ingen länk"}
                       </div>
                     </div>
                     <Badge tone={status.tone}>{status.label}</Badge>
@@ -326,6 +373,11 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                     <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] text-[11px] text-text-soft">
                       {formatOf(b.format).short}
                     </span>
+                    {b.creative_type === "html" ? (
+                      <span className="rounded-[var(--radius-badge)] bg-cyan/15 px-2 py-[3px] text-[11px] text-cyan">
+                        HTML
+                      </span>
+                    ) : null}
                     <span className="font-mono-num text-[11.5px] text-muted">
                       {periodOf(b)}
                     </span>
@@ -388,17 +440,71 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               </button>
             </div>
 
-            <ImageUpload
-              bucket="banners"
-              label="Bild-URL"
-              value={draft.image_url}
-              onChange={(url) => setDraft({ ...draft, image_url: url })}
-              hint={`${formatOf(draft.format).width}×${
-                formatOf(draft.format).height
-              } px · innehållet i mitten (${
-                formatOf(draft.format).safe
-              } px) · kanterna beskärs på smala skärmar`}
-            />
+            <div className="mb-3.5">
+              <span className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-muted">
+                Kreativ
+              </span>
+              <div className="flex gap-1.5 rounded-[10px] border border-line bg-bg-soft p-1">
+                {CREATIVE_TYPES.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    aria-pressed={draft.creative_type === t.value}
+                    onClick={() =>
+                      setDraft({ ...draft, creative_type: t.value })
+                    }
+                    className={cn(
+                      "flex-1 rounded-[7px] px-3 py-2 text-[13.5px] transition",
+                      draft.creative_type === t.value
+                        ? "bg-panel-2 font-semibold text-text"
+                        : "text-muted hover:text-text-soft"
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[12.5px] text-muted">
+                {
+                  CREATIVE_TYPES.find((t) => t.value === draft.creative_type)
+                    ?.hint
+                }
+              </p>
+            </div>
+
+            {draft.creative_type === "html" ? (
+              <>
+                <Textarea
+                  label="HTML-kod från annonsören"
+                  value={draft.html_code}
+                  onChange={(e) =>
+                    setDraft({ ...draft, html_code: e.target.value })
+                  }
+                  rows={7}
+                  spellCheck={false}
+                  placeholder={'<a href="https://record.affiliate.se/…" target="_blank">\n  <img src="https://media.affiliate.se/970x90.jpg" width="970" height="90">\n</a>'}
+                  className="font-mono-num text-[12.5px] leading-[1.5] text-text-soft"
+                />
+                <p className="mt-1.5 text-[12.5px] text-muted">
+                  Klistra in snutten precis som du fick den — {"<script>"},{" "}
+                  {"<iframe>"} och länkad bild fungerar alla. Koden körs i en
+                  sandlåda utan åtkomst till sajtens inloggning, och länkar
+                  öppnas automatiskt i ny flik.
+                </p>
+              </>
+            ) : (
+              <ImageUpload
+                bucket="banners"
+                label="Bild-URL"
+                value={draft.image_url}
+                onChange={(url) => setDraft({ ...draft, image_url: url })}
+                hint={`${formatOf(draft.format).width}×${
+                  formatOf(draft.format).height
+                } px · innehållet i mitten (${
+                  formatOf(draft.format).safe
+                } px) · kanterna beskärs på smala skärmar`}
+              />
+            )}
 
             <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
@@ -409,17 +515,24 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   placeholder="Unibet höstkampanj"
                 />
               </div>
-              <div className="sm:col-span-2">
-                <Input
-                  label="Mål-URL"
-                  value={draft.link_url}
-                  onChange={(e) =>
-                    setDraft({ ...draft, link_url: e.target.value })
-                  }
-                  placeholder="https://track.spelbok.se/…"
-                  className="font-mono-num text-[12.5px] text-text-soft"
-                />
-              </div>
+              {draft.creative_type === "html" ? (
+                <div className="rounded-[var(--radius-card)] border border-line-soft bg-bg px-3 py-2 text-[12.5px] text-muted sm:col-span-2">
+                  Mål-URL används inte för HTML-kreativ — snutten bär
+                  annonsörens egen länk och spårning. Titeln syns bara i admin.
+                </div>
+              ) : (
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Mål-URL"
+                    value={draft.link_url}
+                    onChange={(e) =>
+                      setDraft({ ...draft, link_url: e.target.value })
+                    }
+                    placeholder="https://track.spelbok.se/…"
+                    className="font-mono-num text-[12.5px] text-text-soft"
+                  />
+                </div>
+              )}
               <Select
                 label="Placering"
                 value={draft.placement}
@@ -507,7 +620,18 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   }`,
                 }}
               >
-                {draft.image_url ? (
+                {draft.creative_type === "html" && draft.html_code.trim() ? (
+                  // Samma sandlåda som skarpt läge — en snutt som inte
+                  // fungerar här fungerar inte på sajten heller.
+                  <iframe
+                    key={draft.html_code}
+                    title="Förhandsvisning"
+                    srcDoc={bannerHtmlDocument(draft.html_code)}
+                    sandbox={BANNER_HTML_SANDBOX}
+                    scrolling="no"
+                    className="h-full w-full border-0"
+                  />
+                ) : draft.creative_type === "image" && draft.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={draft.image_url}
@@ -521,6 +645,7 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                 )}
                 <span
                   aria-hidden
+                  hidden={draft.creative_type === "html"}
                   className="pointer-events-none absolute inset-y-0 border-x border-dashed border-cyan/45"
                   style={{
                     left: `${
@@ -539,8 +664,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                 />
               </div>
               <div className="mt-2 text-center text-[11.5px] text-dim">
-                Streckad zon = alltid synlig. Utanför den beskärs bilden på
-                smalare skärmar.
+                {draft.creative_type === "html"
+                  ? "Snutten körs på riktigt här — annonsören kan räkna en visning redan av förhandsvisningen."
+                  : "Streckad zon = alltid synlig. Utanför den beskärs bilden på smalare skärmar."}
               </div>
             </div>
 

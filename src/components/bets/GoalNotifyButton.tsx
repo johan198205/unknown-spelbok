@@ -21,10 +21,13 @@ export function GoalNotifyButton({
   betId,
   enabled,
   disabled,
+  size = "md",
 }: {
   betId: string;
   enabled: boolean;
   disabled?: boolean;
+  /** sm = tabellens täta åtgärdskolumn, md = kort och mobil. */
+  size?: "sm" | "md";
 }) {
   const [on, setOn] = useState(enabled);
   const [busy, setBusy] = useState(false);
@@ -63,7 +66,8 @@ export function GoalNotifyButton({
         aria-label={on ? "Stäng av målnotiser" : "Aktivera målnotiser"}
         aria-pressed={on}
         className={cn(
-          "inline-flex size-9 items-center justify-center rounded-[8px] border transition",
+          "inline-flex items-center justify-center rounded-[8px] border transition",
+          size === "sm" ? "size-7" : "size-9",
           on
             ? "border-win/40 bg-win/10 text-win"
             : "border-line bg-transparent text-faint hover:text-text",

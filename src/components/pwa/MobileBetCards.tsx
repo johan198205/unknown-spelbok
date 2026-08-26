@@ -33,11 +33,11 @@ import {
   syncPendingBets,
   type PendingBet,
 } from "@/lib/offline-queue";
+import { useAmount } from "@/components/DisplayPrefsProvider";
 import { betLeagueLogo } from "@/lib/logos";
 import {
   betNetto,
   cn,
-  formatMoney,
   formatOdds,
   formatRoi,
   nettoColor,
@@ -144,6 +144,7 @@ export function MobileBetCards({
   canRygga = false,
   onRygga,
   hideChrome = false,
+  highlightBetId,
 }: {
   bets: Bet[];
   sheetId: string;
@@ -152,7 +153,10 @@ export function MobileBetCards({
   onRygga?: (bet: Bet) => void;
   /** Dölj KPI-rad + statuschips (när parent hanterar filter/metrics). */
   hideChrome?: boolean;
+  /** Kortet en notis pekade ut. Pulsar i två sekunder, sedan null. */
+  highlightBetId?: string | null;
 }) {
+  const amount = useAmount();
   const router = useRouter();
   const online = useOnlineStatus();
   const [filter, setFilter] = useState("all");
@@ -326,7 +330,7 @@ export function MobileBetCards({
         <>
           <div className="mb-3 flex gap-2 overflow-x-auto sb-scroll snap-x snap-mandatory pb-1">
             {[
-              { label: "Netto", value: formatMoney(stats.netto), color: nettoColor(stats.netto) },
+              { label: "Netto", value: amount(stats.netto), color: nettoColor(stats.netto) },
               { label: "ROI", value: formatRoi(stats.roi), color: nettoColor(stats.roi) },
               { label: "Hitrate", value: `${stats.hitrate.toFixed(0)}%`, color: "text-text" },
               { label: "Spel", value: String(stats.bets), color: "text-text" },
@@ -374,6 +378,7 @@ export function MobileBetCards({
           <SwipeBetCard
             key={bet.id}
             bet={applyLiveToBet(bet, live)}
+            highlight={bet.id === highlightBetId}
             canEdit={canEdit && !bet._pending}
             canRygga={canRygga && !bet._pending}
             online={online}
@@ -470,8 +475,10 @@ function SwipeBetCard({
   onRetry,
   onRygga,
   onRemove,
+  highlight = false,
 }: {
   bet: DisplayBet;
+  highlight?: boolean;
   canEdit: boolean;
   canRygga: boolean;
   online: boolean;
@@ -481,6 +488,7 @@ function SwipeBetCard({
   onRygga?: () => void;
   onRemove?: () => void;
 }) {
+  const amount = useAmount();
   const x = useMotionValue(0);
   const winOpacity = useTransform(x, [0, 120], [0, 1]);
   const lossOpacity = useTransform(x, [0, -120], [0, 1]);
@@ -548,7 +556,8 @@ function SwipeBetCard({
             ? "border-live/45 bg-live/[0.06]"
             : bet.result === "open"
               ? "border-blue/30"
-              : "border-line"
+              : "border-line",
+          highlight && "animate-sbrowpulse"
         )}
       >
         <div className="mb-2 flex items-start justify-between gap-2">
@@ -660,7 +669,7 @@ function SwipeBetCard({
 
         {bet.result !== "open" ? (
           <div className={`mt-2 font-mono-num text-[22px] font-semibold ${nettoColor(netto)}`}>
-            {formatMoney(netto)}
+            {amount(netto)}
           </div>
         ) : null}
 

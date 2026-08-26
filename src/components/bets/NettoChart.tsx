@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAmount } from "@/components/DisplayPrefsProvider";
 import { compactAxisValue } from "@/lib/sheet-filters";
-import { formatMoney } from "@/lib/utils";
 
 // Närmaste "snygga" steg (1, 2, 2,5, 5, 10 × 10^n) för y-axelns etiketter.
 function niceStep(rough: number) {
@@ -29,6 +29,7 @@ export function NettoChart({
   series?: Series[];
   compact?: boolean;
 }) {
+  const amount = useAmount();
   const [active, setActive] = useState<number | null>(null);
 
   // Med bara en spelbok är dess linje identisk med totalen.
@@ -122,7 +123,7 @@ export function NettoChart({
               {new Date(activePoint.date).toLocaleDateString("sv-SE")}
             </div>
             <div className="font-mono-num text-sm font-semibold">
-              {formatMoney(activePoint.value)}
+              {amount(activePoint.value)}
             </div>
             {showSeries ? (
               <div className="mt-1 space-y-0.5 border-t border-line pt-1">
@@ -136,7 +137,7 @@ export function NettoChart({
                       {s.name}
                     </span>
                     <span className="ml-auto font-mono-num text-[11px]">
-                      {formatMoney(s.points[active!]?.value ?? 0)}
+                      {amount(s.points[active!]?.value ?? 0)}
                     </span>
                   </div>
                 ))}

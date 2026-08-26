@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import {
+  recordCompetitionNotifications,
+  recordGoalNotifications,
+  recordKickoffNotifications,
+  recordSettledNotifications,
+} from "@/lib/notify-events";
+import {
   notifyDailySuggestions,
   notifyFulltime,
   notifyGoals,
@@ -11,7 +17,13 @@ import {
 export const runtime = "nodejs";
 
 /**
- * Anropas av Edge Functions (poll-live / settle-results) via site-notify.ts.
+ * Anropas av Edge Functions (poll-live / settle-results) via site-notify.ts,
+ * och av pg_cron för de jobb som inte behöver API-Football alls
+ * (kind: "kickoff" respektive "competition", se db/notifications.sql).
+ *
+ * Rutten gör två saker per händelse: skickar pushen och skriver notisen i
+ * appen. Push är ett utskick, notisen är historik — den ena får inte tysta
+ * den andra, så de körs oberoende av varandra.
  *
  * Godtar INTERNAL_NOTIFY_SECRET i första hand. Service role-nyckeln finns
  * kvar som fallback, men duger inte ensam: Supabase injicerar sin egen
@@ -78,16 +90,24 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Cron-jobben: inga argument, all data finns i databasen.
+    if (body.kind === "kickoff") {
+      const created = await recordKickoffNotifications();
+      return NextResponse.json({ ok: true, created });
+    }
+
+    if (body.kind === "competition") {
+      const created = await recordCompetitionNotifications();
+      return NextResponse.json({ ok: true, created });
+    }
+
     if (body.kind === "goal") {
       const fixtureId = Number(body.fixtureId);
       if (!Number.isFinite(fixtureId) || fixtureId <= 0) {
         return NextResponse.json({ error: "Ogiltig match" }, { status: 400 });
       }
-      await notifyGoals({
+      const goal = {
         fixtureId,
-        teamId: Number.isFinite(Number(body.teamId))
-          ? Number(body.teamId)
-          : null,
         elapsed: Number.isFinite(Number(body.elapsed))
           ? Number(body.elapsed)
           : null,
@@ -95,7 +115,16 @@ export async function POST(request: Request) {
         awayName: typeof body.awayName === "string" ? body.awayName : "Borta",
         homeScore: Number(body.homeScore) || 0,
         awayScore: Number(body.awayScore) || 0,
-      });
+      };
+      await Promise.all([
+        notifyGoals({
+          ...goal,
+          teamId: Number.isFinite(Number(body.teamId))
+            ? Number(body.teamId)
+            : null,
+        }),
+        recordGoalNotifications(goal),
+      ]);
       return NextResponse.json({ ok: true });
     }
 
@@ -137,7 +166,10 @@ export async function POST(request: Request) {
     if (!betIds.length) {
       return NextResponse.json({ ok: true, skipped: true });
     }
-    await notifySettledBets(betIds);
+    await Promise.all([
+      notifySettledBets(betIds),
+      recordSettledNotifications(betIds),
+    ]);
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Kunde inte skicka";

@@ -69,7 +69,6 @@ export function SpelbokSheetView({
   affiliates,
   mode = "owner",
   viewerSheets,
-  unitSize = 100,
   isAuthenticated = true,
   suggestions,
 }: {
@@ -84,7 +83,6 @@ export function SpelbokSheetView({
   mode?: "owner" | "public";
   /** Visarens egna sheets (för Rygga) — särskilt på publika sidor */
   viewerSheets?: Sheet[];
-  unitSize?: number;
   isAuthenticated?: boolean;
   /**
    * Spelbokens egna dagsförslag. Skickas bara för ägaren — den publika
@@ -99,7 +97,6 @@ export function SpelbokSheetView({
   const ryggaSheets = viewerSheets ?? sheets;
   const { openRygga, modal: ryggaModal } = useRyggaFlow({
     sheets: ryggaSheets,
-    unitSize,
     isAuthenticated,
   });
 
@@ -146,6 +143,32 @@ export function SpelbokSheetView({
     () => sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
     [sorted, currentPage]
   );
+
+  /*
+    En notis med target_type 'bet' länkar hit med ?bet=…. Raden ska
+    markeras i två sekunder — ligger den på en annan sida bläddrar vi dit
+    först. Ingen scrollIntoView: sidan får inte rycka till av sig själv.
+  */
+  const highlightParam = searchParams.get("bet");
+  const [highlightBetId, setHighlightBetId] = useState<string | null>(null);
+  const [seenHighlight, setSeenHighlight] = useState<string | null>(null);
+
+  // Under render, inte i en effekt: sidbytet ska ske i samma omgång som
+  // markeringen, annars blinkar fel sida förbi först.
+  if (highlightParam && highlightParam !== seenHighlight) {
+    setSeenHighlight(highlightParam);
+    const index = sorted.findIndex((b) => b.id === highlightParam);
+    if (index >= 0) {
+      setPageState({ key: filterKey, page: Math.floor(index / PAGE_SIZE) + 1 });
+      setHighlightBetId(highlightParam);
+    }
+  }
+
+  useEffect(() => {
+    if (!highlightBetId) return;
+    const timer = setTimeout(() => setHighlightBetId(null), 2000);
+    return () => clearTimeout(timer);
+  }, [highlightBetId]);
 
   const live = useLiveFixtures(
     pageBets.map((b) => b.fixture_id).filter((id): id is number => id != null),
@@ -203,6 +226,7 @@ export function SpelbokSheetView({
     onRygga: openRygga,
     onRemove: isOwner ? removeBet : undefined,
     density: filters.density,
+    highlightBetId,
   };
 
   return (
@@ -314,6 +338,7 @@ export function SpelbokSheetView({
         canRygga
         onRygga={openRygga}
         hideChrome
+        highlightBetId={highlightBetId}
       />
 
       {pageCount > 1 ? (

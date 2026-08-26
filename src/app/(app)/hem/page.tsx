@@ -29,13 +29,14 @@ import {
   pickKey,
   sportKey,
 } from "@/lib/breakdowns";
+import { formatAmount } from "@/lib/display";
+import { getDisplayPrefs } from "@/lib/display-prefs";
 import { parseMatchSides } from "@/lib/logos";
 import {
   MIN_ROI_BETS,
   betNetto,
   cn,
   computeStats,
-  formatMoney,
   formatPercent,
   formatRoiOrDash,
   nettoColor,
@@ -69,6 +70,7 @@ function BetMatchLine({ bet }: { bet: Bet }) {
 export default async function HemPage() {
   const user = await requireUser();
   const profile = await getProfile();
+  const prefs = await getDisplayPrefs();
   const supabase = await createClient();
 
   const [{ data: sheets }, { data: betsData }, { data: suggestionRows }] =
@@ -156,7 +158,7 @@ export default async function HemPage() {
       return {
         suggestion,
         note: history
-          ? `${history.bets} tidigare spel i ${league} · netto ${formatMoney(history.netto)}`
+          ? `${history.bets} tidigare spel i ${league} · netto ${formatAmount(history.netto, prefs)}`
           : `Ny liga för dig · ${league}`,
       };
     });
@@ -164,7 +166,7 @@ export default async function HemPage() {
   const kpis = [
     {
       label: "Netto",
-      value: formatMoney(stats.netto),
+      value: formatAmount(stats.netto, prefs),
       color: nettoColor(stats.netto),
     },
     {
@@ -181,7 +183,7 @@ export default async function HemPage() {
     },
     {
       label: "Omsättning",
-      value: formatMoney(stats.stake).replace("+", ""),
+      value: formatAmount(stats.stake, prefs, { sign: false }),
       color: "text-text",
     },
     // Alla spel, inte bara rättade: annars kan "Levande" visa fler spel än
@@ -207,7 +209,7 @@ export default async function HemPage() {
               nettoColor(stats.netto)
             )}
           >
-            {formatMoney(stats.netto)}
+            {formatAmount(stats.netto, prefs)}
           </div>
           <div className="font-mono-num text-[13px] text-faint">
             totalt netto · {sheetList.length} spreadsheets · {bets.length} spel
@@ -310,7 +312,7 @@ export default async function HemPage() {
                         nettoColor(st.netto)
                       )}
                     >
-                      {formatMoney(st.netto)}
+                      {formatAmount(st.netto, prefs)}
                     </span>
                   </SheetStat>
                 </Link>
@@ -363,7 +365,7 @@ export default async function HemPage() {
                         nettoColor(netto)
                       )}
                     >
-                      {formatMoney(netto)}
+                      {formatAmount(netto, prefs)}
                     </span>
                   </div>
                 );

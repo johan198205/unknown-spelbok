@@ -1,8 +1,10 @@
+"use client";
+
+import { useAmount } from "@/components/DisplayPrefsProvider";
 import type { BetStats } from "@/lib/types";
 import {
   MIN_ROI_BETS,
   cn,
-  formatMoney,
   formatNumber,
   formatPercent,
   formatRoiOrDash,
@@ -22,6 +24,8 @@ export function SheetKpiStrip({
   stats: BetStats;
   betCount: number;
 }) {
+  const amount = useAmount();
+
   const cells: Array<{
     label: string;
     value: string;
@@ -31,7 +35,7 @@ export function SheetKpiStrip({
   }> = [
     {
       label: "Netto",
-      value: formatMoney(stats.netto),
+      value: amount(stats.netto),
       basis: 200,
       big: true,
       color: nettoColor(stats.netto),
@@ -47,13 +51,13 @@ export function SheetKpiStrip({
     { label: "Spel", value: String(betCount), basis: 96 },
     {
       label: "Omsättning",
-      value: formatMoney(stats.stake).replace("+", ""),
+      value: amount(stats.stake, { sign: false }),
       basis: 158,
     },
     { label: "Snittodds", value: formatNumber(stats.avgOdds, 2), basis: 126 },
     {
       label: "Snittinsats",
-      value: formatMoney(Math.round(stats.avgStake)).replace("+", ""),
+      value: amount(Math.round(stats.avgStake), { sign: false }),
       basis: 148,
     },
   ];

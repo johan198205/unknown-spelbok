@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolvePick, type Settlement } from "@/lib/settle-pick";
+import { recordSettledNotifications } from "@/lib/notify-events";
 import { notifySettledBets } from "@/lib/send-push";
 
 type BetRow = {
@@ -145,9 +146,16 @@ export async function settleOpenBets(
     ...byResult.void,
   ];
   if (settledIds.length && !args.dryRun) {
-    await notifySettledBets(settledIds).catch((err) =>
-      console.error("push vid rättning", err)
-    );
+    // Notisen i appen är historik och får inte falla bort för att pushen
+    // gör det — och tvärtom. Därför två oberoende anrop.
+    await Promise.all([
+      notifySettledBets(settledIds).catch((err) =>
+        console.error("push vid rättning", err)
+      ),
+      recordSettledNotifications(settledIds).catch((err) =>
+        console.error("notis vid rättning", err)
+      ),
+    ]);
   }
 
   if (queueRows.length) {

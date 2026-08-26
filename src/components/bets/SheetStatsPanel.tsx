@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { formatAmount } from "@/lib/display";
 import {
   STATS_PERIODS,
   type BetStatsPayload,
@@ -8,7 +10,6 @@ import {
 } from "@/lib/bet-stats";
 import {
   cn,
-  formatMoney,
   formatNumber,
   formatPercent,
   formatRoiOrDash,
@@ -30,6 +31,9 @@ export function SheetStatsPanel({
   sheetId: string;
   initialStats: BetStatsPayload;
 }) {
+  const amount = useAmount();
+  const prefs = useDisplayPrefs();
+
   // Hämtad period knyts till exakt det initialStats den bygger på. Kommer en
   // ny serverrendering (byte av spelbok, eller en rättning som refreshar)
   // faller panelen tillbaka till "Från start" i stället för att visa siffror
@@ -64,7 +68,7 @@ export function SheetStatsPanel({
   }
 
   const settled = Math.max(0, stats.antal_spel - stats.oppna_spel);
-  const plain = (value: number) => formatMoney(value).replace("+", "");
+  const plain = (value: number) => amount(value, { sign: false });
 
   const columns: Row[][] = [
     [
@@ -87,17 +91,17 @@ export function SheetStatsPanel({
       { label: "Insats", value: plain(stats.insats) },
       {
         label: "Vunnet",
-        value: formatMoney(stats.vunnet),
+        value: amount(stats.vunnet),
         color: "text-win",
       },
       {
         label: "Förlorat",
-        value: formatMoney(stats.forlorat),
+        value: amount(stats.forlorat),
         color: "text-loss",
       },
       {
         label: "Netto",
-        value: formatMoney(stats.netto),
+        value: amount(stats.netto),
         color: nettoColor(stats.netto),
       },
       {
@@ -105,7 +109,12 @@ export function SheetStatsPanel({
         value: formatRoiOrDash(stats.roi, settled),
         color: settled >= 5 ? nettoColor(stats.roi) : "text-faint",
       },
-      { label: "1 unit", value: plain(stats.unit_size) },
+      {
+        label: "1 unit",
+        value: formatAmount(stats.unit_size, { ...prefs, mode: "money" }, {
+          sign: false,
+        }),
+      },
       {
         label: "Unitnetto",
         value:
@@ -119,17 +128,17 @@ export function SheetStatsPanel({
       { label: "Medelinsats", value: plain(Math.round(stats.medelinsats)) },
       {
         label: "Medelvinst",
-        value: formatMoney(stats.medelvinst),
+        value: amount(stats.medelvinst),
         color: nettoColor(stats.medelvinst),
       },
       {
         label: "Bästa spel",
-        value: formatMoney(stats.basta_spel),
+        value: amount(stats.basta_spel),
         color: "text-win",
       },
       {
         label: "Sämsta spel",
-        value: formatMoney(stats.samsta_spel),
+        value: amount(stats.samsta_spel),
         color: "text-loss",
       },
       {

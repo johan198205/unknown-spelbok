@@ -11,7 +11,9 @@ import { enqueuePendingBet } from "@/lib/offline-queue";
 import { FixturePicker, DayStrip, type PickerFixture } from "@/components/bets/FixturePicker";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { ManualMatchLabel, MatchStack } from "@/components/bets/TeamPair";
-import { cn, formatMoney, formatOdds } from "@/lib/utils";
+import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { amountUnitLabel, fromUnits, stakeError } from "@/lib/display";
+import { cn, formatOdds } from "@/lib/utils";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import {
   placedAtForPastBet,
@@ -34,6 +36,8 @@ export function MobileAddBetFlow({
   /** Matchen är redan vald (förslagskort) — guiden startar på steg 2. */
   prefillFixture?: PickerFixture | null;
 }) {
+  const amount = useAmount();
+  const prefs = useDisplayPrefs();
   const router = useRouter();
   const online = useOnlineStatus();
   // Guiden monteras om varje gång den öppnas, så förifyllningen hör hemma
@@ -58,7 +62,9 @@ export function MobileAddBetFlow({
   );
   const [sport, setSport] = useState(prefillFixture?.sport || "Fotboll");
   const [odds, setOdds] = useState("1.90");
-  const [stake, setStake] = useState("100");
+  const [stake, setStake] = useState(() =>
+    prefs.mode === "units" ? "1" : String(prefs.unitSize)
+  );
   const [bookmakerId, setBookmakerId] = useState(bookmakers[0]?.id || "");
   const [fixtureId, setFixtureId] = useState<number | null>(
     prefillFixture?.fixture_id ?? null
@@ -76,14 +82,25 @@ export function MobileAddBetFlow({
     };
   }, []);
 
-  const potential =
-    Number(stake || 0) * Number(odds || 0) - Number(stake || 0);
+  // Insatsen skrivs i det läge användaren står i; allt nedanför räknar i
+  // valuta så payout och validering blir jämförbara med lagrade spel.
+  const typedStake = Number(String(stake).replace(",", ".")) || 0;
+  const stakeValue =
+    prefs.mode === "units" ? fromUnits(typedStake, prefs) : typedStake;
+  const potential = stakeValue * (Number(odds || 0) - 1);
+  const stakePresets =
+    prefs.mode === "units" ? [0.5, 1, 2, 5] : STAKE_PRESETS;
   const pickOptions = PICKS[sport] || PICKS.Fotboll;
 
   async function save() {
+    const stakeProblem = stakeError(stakeValue, prefs);
+    if (stakeProblem) {
+      setError(stakeProblem);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    const stakeValue = Number(stake);
     const oddsValue = Number(odds);
     const settled = settlementForFinishedPick({
       pick: pick.trim(),
@@ -406,7 +423,7 @@ export function MobileAddBetFlow({
           <div className="space-y-5">
             <div>
               <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Insats
+                Insats ({amountUnitLabel(prefs)})
               </label>
               <input
                 inputMode="decimal"
@@ -415,7 +432,7 @@ export function MobileAddBetFlow({
                 className="w-full rounded-[12px] border border-line bg-panel px-4 py-4 font-mono-num text-[28px] font-semibold outline-none focus:border-blue"
               />
               <div className="mt-2 flex gap-2">
-                {STAKE_PRESETS.map((n) => (
+                {stakePresets.map((n) => (
                   <button
                     key={n}
                     type="button"
@@ -441,7 +458,7 @@ export function MobileAddBetFlow({
             <div className="rounded-[12px] border border-line bg-panel px-4 py-3">
               <div className="text-[12px] text-muted">Möjlig vinst</div>
               <div className="font-mono-num text-[22px] font-semibold text-win">
-                {formatMoney(potential)}{" "}
+                {amount(potential)}{" "}
                 <span className="text-sm text-faint">
                   @ {formatOdds(Number(odds) || 0)}
                 </span>

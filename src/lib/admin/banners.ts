@@ -5,7 +5,12 @@ import { requireAdmin } from "@/lib/auth";
 import { logAdmin } from "@/lib/admin/log";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Banner, BannerFormat, BannerPlacement } from "@/lib/types";
+import type {
+  Banner,
+  BannerCreativeType,
+  BannerFormat,
+  BannerPlacement,
+} from "@/lib/types";
 
 export type BannerRow = Banner & {
   views: number;
@@ -16,7 +21,9 @@ export type BannerRow = Banner & {
 export type BannerDraft = {
   id?: string;
   title: string;
+  creative_type: BannerCreativeType;
   image_url: string;
+  html_code: string;
   link_url: string;
   placement: BannerPlacement;
   format: BannerFormat;
@@ -89,12 +96,24 @@ export async function saveBanner(draft: BannerDraft) {
 
   const title = draft.title.trim();
   if (!title) throw new Error("Titel krävs");
-  if (!draft.image_url.trim()) throw new Error("Bild krävs");
 
+  const isHtml = draft.creative_type === "html";
+  const htmlCode = draft.html_code.trim();
+  const imageUrl = draft.image_url.trim();
+
+  if (isHtml && !htmlCode) throw new Error("HTML-kod krävs");
+  if (!isHtml && !imageUrl) throw new Error("Bild krävs");
+
+  // Bild och kod nollställs korsvis: byter man typ ska den gamla kreativen inte
+  // ligga kvar och råka renderas om typen ändras tillbaka. Mål-URL:en sparas
+  // aldrig för html — snutten bär annonsörens egen länk och spårning, en extra
+  // wrapper-länk hade dubbelräknat klicket hos nätverket.
   const payload = {
     title,
-    image_url: draft.image_url.trim(),
-    link_url: draft.link_url.trim() || null,
+    creative_type: draft.creative_type,
+    image_url: isHtml ? null : imageUrl,
+    html_code: isHtml ? htmlCode : null,
+    link_url: isHtml ? null : draft.link_url.trim() || null,
     placement: draft.placement,
     format: draft.format,
     starts_at: draft.starts_at,

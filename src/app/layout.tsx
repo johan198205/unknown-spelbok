@@ -2,8 +2,11 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Barlow, IBM_Plex_Mono, Oswald } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
+import { AuthEventTracker } from "@/components/layout/AuthEventTracker";
+import { DisplayPrefsProvider } from "@/components/DisplayPrefsProvider";
 import { RouteProgress } from "@/components/ui/RouteProgress";
 import { ToastProvider } from "@/components/ui/Toast";
+import { getDisplayPrefs } from "@/lib/display-prefs";
 import { getGtmContainerId } from "@/lib/tracking-settings";
 import "./globals.css";
 
@@ -75,6 +78,9 @@ export default async function RootLayout({
 }>) {
   // Tomt container-id i /admin/installningar → ingen GTM alls på sidan.
   const gtmId = await getGtmContainerId();
+  // Visningsläge, valuta och unit-storlek för hela trädet. Vyer som visar
+  // någon annans spelbok lägger en egen provider närmare innehållet.
+  const displayPrefs = await getDisplayPrefs();
 
   return (
     <html
@@ -86,8 +92,11 @@ export default async function RootLayout({
         {/* useSearchParams får inte dra hela trädet ur prerendering. */}
         <Suspense fallback={null}>
           <RouteProgress />
+          <AuthEventTracker />
         </Suspense>
-        <ToastProvider>{children}</ToastProvider>
+        <DisplayPrefsProvider value={displayPrefs}>
+          <ToastProvider>{children}</ToastProvider>
+        </DisplayPrefsProvider>
       </body>
     </html>
   );

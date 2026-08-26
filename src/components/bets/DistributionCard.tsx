@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useAmount } from "@/components/DisplayPrefsProvider";
 import type { BreakdownRow } from "@/lib/breakdowns";
 import {
   MIN_ROI_BETS,
   cn,
-  formatMoney,
   formatRoiOrDash,
   nettoColor,
 } from "@/lib/utils";
@@ -45,6 +45,7 @@ export function DistributionCard({
   groups: DistributionGroups;
   size?: "compact" | "regular";
 }) {
+  const amount = useAmount();
   const [tab, setTab] = useState<DistributionTab>("liga");
   const rows = groups[tab] ?? [];
   const shown = rows.slice(0, MAX_ROWS);
@@ -137,7 +138,7 @@ export function DistributionCard({
                   nettoColor(row.netto)
                 )}
               >
-                {formatMoney(row.netto)}
+                {amount(row.netto)}
               </span>
             </div>
           ))}

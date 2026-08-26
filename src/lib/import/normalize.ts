@@ -8,6 +8,7 @@ import {
   type ImportedBet,
   type PreviewRow,
 } from "@/lib/import/types";
+import { MAX_UNITS_PER_BET } from "@/lib/display";
 import { stockholmIso } from "@/lib/stockholm";
 
 /**
@@ -408,6 +409,13 @@ export function normalizeRows({
     else if (stake == null) reason = "Saknar insats";
     else if (stake <= 0) reason = "Ogiltig insats";
 
+    // Taket gäller nya spel, inte historik. En importerad 15u-satsning är
+    // ett faktum som redan hänt — flagga den, kasta den inte.
+    const overCap =
+      stake != null &&
+      unitValue > 0 &&
+      stake / unitValue > MAX_UNITS_PER_BET + 1e-9;
+
     const netto = rawNetto == null ? null : round2(rawNetto * unit);
     let payout: number | null = null;
     if (stake != null && odds != null) {
@@ -438,7 +446,11 @@ export function normalizeRows({
       reason,
       stake_units: unitDetected && rawStake != null ? rawStake : null,
       bookmaker_id: bookmakerId,
-      warning: unknown ? "Okänt resultatvärde — tolkas som orättat" : null,
+      warning: unknown
+        ? "Okänt resultatvärde — tolkas som orättat"
+        : overCap
+          ? `Över ${MAX_UNITS_PER_BET} units — importeras ändå`
+          : null,
     });
   });
 

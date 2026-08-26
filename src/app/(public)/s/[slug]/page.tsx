@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getProfile, getSessionUser } from "@/lib/auth";
+import { getDisplayPrefs } from "@/lib/display-prefs";
 import { createClient } from "@/lib/supabase/server";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
 import { AdSlot } from "@/components/ui/AdSlot";
@@ -95,10 +96,9 @@ export default async function PublicSheetPage({
     fixtures: asOne(bet.fixtures),
   }));
 
-  const unitSize =
-    profile?.unit_size && profile.unit_size > 0
-      ? Number(profile.unit_size)
-      : 100;
+  // Unit-storleken är betraktarens, inte ägarens — se kommentaren vid
+  // owner-hämtningen ovan. Statistik-RPC:n behöver den i klartext.
+  const unitSize = (await getDisplayPrefs()).unitSize;
 
   const affiliates: AffiliateTopRow[] = ((bookmakers || []) as Bookmaker[])
     .slice()
@@ -155,7 +155,6 @@ export default async function PublicSheetPage({
           affiliates={toPlain(affiliates)}
           mode="public"
           viewerSheets={viewerSheets}
-          unitSize={unitSize}
           isAuthenticated={!!user}
         />
       </Suspense>

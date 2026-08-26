@@ -185,10 +185,12 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          creative_type: string
           ends_at: string | null
           format: string
+          html_code: string | null
           id: string
-          image_url: string
+          image_url: string | null
           link_url: string | null
           placement: string
           sort: number
@@ -198,10 +200,12 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          creative_type?: string
           ends_at?: string | null
           format?: string
+          html_code?: string | null
           id?: string
-          image_url: string
+          image_url?: string | null
           link_url?: string | null
           placement?: string
           sort?: number
@@ -211,10 +215,12 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          creative_type?: string
           ends_at?: string | null
           format?: string
+          html_code?: string | null
           id?: string
-          image_url?: string
+          image_url?: string | null
           link_url?: string | null
           placement?: string
           sort?: number
@@ -250,6 +256,7 @@ export type Database = {
           import_source: string | null
           import_external_id: string | null
           import_source_url: string | null
+          source_coupon_id: string | null
         }
         Insert: {
           bookmaker_id?: string | null
@@ -277,6 +284,7 @@ export type Database = {
           import_source?: string | null
           import_external_id?: string | null
           import_source_url?: string | null
+          source_coupon_id?: string | null
         }
         Update: {
           bookmaker_id?: string | null
@@ -304,8 +312,16 @@ export type Database = {
           import_source?: string | null
           import_external_id?: string | null
           import_source_url?: string | null
+          source_coupon_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bets_source_coupon_id_fkey"
+            columns: ["source_coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bets_bookmaker_id_fkey"
             columns: ["bookmaker_id"]
@@ -485,6 +501,144 @@ export type Database = {
           prize?: string | null
           starts_at?: string
           visibility?: string
+        }
+        Relationships: []
+      }
+      coupons: {
+        Row: {
+          author_id: string | null
+          bookmaker_id: string | null
+          bookmaker_reason: string
+          body: string
+          created_at: string
+          id: string
+          kicker: string
+          proof_url: string | null
+          published_at: string
+          settled_at: string | null
+          slug: string
+          stake: number
+          status: string
+          title: string
+          total_odds: number
+          type: string
+        }
+        Insert: {
+          author_id?: string | null
+          bookmaker_id?: string | null
+          bookmaker_reason?: string
+          body?: string
+          created_at?: string
+          id?: string
+          kicker?: string
+          proof_url?: string | null
+          published_at?: string
+          settled_at?: string | null
+          slug: string
+          stake?: number
+          status?: string
+          title: string
+          total_odds?: number
+          type?: string
+        }
+        Update: {
+          author_id?: string | null
+          bookmaker_id?: string | null
+          bookmaker_reason?: string
+          body?: string
+          created_at?: string
+          id?: string
+          kicker?: string
+          proof_url?: string | null
+          published_at?: string
+          settled_at?: string | null
+          slug?: string
+          stake?: number
+          status?: string
+          title?: string
+          total_odds?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_bookmaker_id_fkey"
+            columns: ["bookmaker_id"]
+            isOneToOne: false
+            referencedRelation: "bookmakers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupons_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_legs: {
+        Row: {
+          coupon_id: string
+          fixture_id: number | null
+          id: string
+          odds: number
+          pick: string
+          result: string | null
+          sort_order: number
+        }
+        Insert: {
+          coupon_id: string
+          fixture_id?: number | null
+          id?: string
+          odds: number
+          pick: string
+          result?: string | null
+          sort_order?: number
+        }
+        Update: {
+          coupon_id?: string
+          fixture_id?: number | null
+          id?: string
+          odds?: number
+          pick?: string
+          result?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_legs_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_legs_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["fixture_id"]
+          },
+        ]
+      }
+      coupon_subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          unsubscribed_at?: string | null
         }
         Relationships: []
       }
@@ -981,6 +1135,8 @@ export type Database = {
           avatar_url: string | null
           banned: boolean
           created_at: string
+          currency: string
+          display_mode: string
           id: string
           last_seen_at: string | null
           notify_settle: boolean
@@ -992,6 +1148,8 @@ export type Database = {
           avatar_url?: string | null
           banned?: boolean
           created_at?: string
+          currency?: string
+          display_mode?: string
           id: string
           last_seen_at?: string | null
           notify_settle?: boolean
@@ -1003,6 +1161,8 @@ export type Database = {
           avatar_url?: string | null
           banned?: boolean
           created_at?: string
+          currency?: string
+          display_mode?: string
           id?: string
           last_seen_at?: string | null
           notify_settle?: boolean
@@ -1210,6 +1370,8 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
+      is_editor: { Args: never; Returns: boolean }
+      coupon_netto: { Args: { p_coupon_id: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never
@@ -1355,7 +1517,12 @@ export type BetResult =
   | "void"
   | "halfwin"
   | "halfloss";
-export type BannerPlacement = "home" | "sheet" | "topplista" | "spelbolag";
+export type BannerPlacement =
+  | "home"
+  | "sheet"
+  | "topplista"
+  | "spelbolag"
+  | "kuponger";
 
 /**
  * Annonsytorna har olika mått per sida och brytpunkt. Formatet är en egen
@@ -1363,6 +1530,13 @@ export type BannerPlacement = "home" | "sheet" | "topplista" | "spelbolag";
  * 300×250-ruta, där skulle object-cover beskära bort både erbjudande och CTA.
  */
 export type BannerFormat = "970x90" | "320x100" | "300x250";
+
+/**
+ * Kreativens ursprung. Affiliatenätverk levererar oftast en färdig kodsnutt
+ * (iframe/script/länkad bild med egen spårning) i stället för en bildfil —
+ * den måste köras som den är för att annonsören ska räkna sin impression.
+ */
+export type BannerCreativeType = "image" | "html";
 
 export type Profile = Tables<"profiles">;
 export type Sheet = Tables<"sheets">;
@@ -1388,6 +1562,29 @@ export type BannerStats = Tables<"banner_stats">;
 export type AiGenerationLog = Tables<"ai_generation_log">;
 export type SignalRule = Tables<"signal_rules">;
 export type FixtureSignal = Tables<"fixture_signals">;
+
+/** Kupongens typ — singel eller kombination. */
+export type CouponType = "single" | "combo";
+
+/**
+ * Härledd ur benen av triggern i db/coupons.sql och skriven av servern.
+ * Räkna den aldrig i klienten.
+ */
+export type CouponStatus = "open" | "won" | "lost" | "void";
+
+/** Ett bens utfall. Null tills benet är rättat. */
+export type CouponLegResult = "WIN" | "LOSS" | "PUSH" | "VOID";
+
+export type CouponRow = Omit<Tables<"coupons">, "type" | "status"> & {
+  type: CouponType;
+  status: CouponStatus;
+};
+
+export type CouponLegRow = Omit<Tables<"coupon_legs">, "result"> & {
+  result: CouponLegResult | null;
+};
+
+export type CouponSubscriber = Tables<"coupon_subscribers">;
 
 export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
   result: BetResult;

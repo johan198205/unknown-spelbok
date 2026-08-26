@@ -109,7 +109,8 @@ export default async function TavlingarPage() {
             : undefined;
 
           return (
-            <Panel key={c.id} className="overflow-hidden">
+            /* id:t är målet för notiser om tävlingsplacering. */
+            <Panel key={c.id} id={`tavling-${c.id}`} className="overflow-hidden">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-4 lg:px-5">
                 <div className="w-full lg:w-auto">
                   <div className="mb-1 flex items-center gap-2">

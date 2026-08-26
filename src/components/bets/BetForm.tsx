@@ -34,10 +34,16 @@ import {
   placedAtForPastBet,
   settlementForFinishedPick,
 } from "@/lib/bet-settlement";
+import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import {
+  amountUnitLabel,
+  fromUnits,
+  MAX_UNITS_PER_BET,
+  stakeError,
+} from "@/lib/display";
 import { betLeagueLogo } from "@/lib/logos";
 import { stockholmYmd } from "@/lib/stockholm";
 import {
-  formatMoney,
   formatOdds,
   nettoColor,
   resultLabel,
@@ -87,6 +93,7 @@ export function BetForm({
   hideTrigger?: boolean;
   onClose?: () => void;
 }) {
+  const prefs = useDisplayPrefs();
   const router = useRouter();
   const [open, setOpen] = useState(!!hideTrigger);
   const [loading, setLoading] = useState(false);
@@ -113,7 +120,11 @@ export function BetForm({
   );
   const [sport, setSport] = useState(prefillFixture?.sport || "");
   const [odds, setOdds] = useState("1.85");
-  const [stake, setStake] = useState("100");
+  // Insatsen skrivs i det läge användaren står i. I unit-läge är 1 unit
+  // startvärdet, i valutaläge är det unit-storleken — samma insats, olika enhet.
+  const [stake, setStake] = useState(() =>
+    prefs.mode === "units" ? "1" : String(prefs.unitSize)
+  );
   const [bookmakerId, setBookmakerId] = useState("");
   const [fixtureId, setFixtureId] = useState<number | null>(
     prefillFixture?.fixture_id ?? null
@@ -282,7 +293,17 @@ export function BetForm({
       return;
     }
 
-    const stakeValue = Number(stake);
+    const typed = Number(stake.replace(",", "."));
+    const stakeValue =
+      prefs.mode === "units" ? fromUnits(typed, prefs) : typed;
+
+    const stakeProblem = stakeError(stakeValue, prefs);
+    if (stakeProblem) {
+      setError(stakeProblem);
+      setLoading(false);
+      return;
+    }
+
     const oddsValue = Number(odds);
     const settled = settlementForFinishedPick({
       pick: pick.trim(),
@@ -570,10 +591,15 @@ export function BetForm({
               />
 
               <Input
-                label="Insats"
+                label={`Insats (${amountUnitLabel(prefs)})`}
                 type="number"
-                step="1"
-                min="1"
+                step={prefs.mode === "units" ? "0.25" : "1"}
+                min="0"
+                max={
+                  prefs.mode === "units"
+                    ? MAX_UNITS_PER_BET
+                    : prefs.unitSize * MAX_UNITS_PER_BET
+                }
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
                 className="font-mono-num"
@@ -642,6 +668,7 @@ export function BetRow({
   canRygga?: boolean;
   onRygga?: (bet: Bet) => void;
 }) {
+  const amount = useAmount();
   const router = useRouter();
   const tone = resultTone(bet.result);
   const netto = betNetto(bet);
@@ -791,7 +818,7 @@ export function BetRow({
           bet.result === "open" ? "text-muted" : nettoColor(netto)
         }`}
       >
-        {bet.result === "open" ? "—" : formatMoney(netto)}
+        {bet.result === "open" ? "—" : amount(netto)}
       </td>
       {showActions ? (
         <td className="w-[128px] min-w-[128px] px-2.5 py-3">

@@ -3,6 +3,7 @@
 import { BetRowActions } from "@/components/bets/BetRowActions";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
+import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
 import { betLeagueLogo } from "@/lib/logos";
@@ -13,35 +14,51 @@ import type {
   SheetSortKey,
 } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
-import { betNetto, cn, formatMoney, formatOdds, nettoColor } from "@/lib/utils";
+import { useAmount } from "@/components/DisplayPrefsProvider";
+import { betNetto, cn, formatOdds, nettoColor } from "@/lib/utils";
 
 type Column = {
-  key: SheetSortKey;
+  key: SheetSortKey | "actions";
   label: string;
   /** Kolumnbredder i procent — tabellen får aldrig bli bredare än sin ruta. */
   width: string;
   align?: "right";
+  /** Åtgärdskolumnen är ikoner, inget att sortera på. */
+  sortable?: boolean;
 };
 
+/*
+  Bredderna är räknade mot den SMALASTE tabellen (sheet-brytpunkten, ~1140px)
+  så att inget innehåll behöver brytas till en andra rad där: datumet ska stå
+  på en rad, rättningens W/L/P/V ska ligga i linje med ⚡, och ikonerna ska
+  rymmas bredvid varandra i sin egen kolumn.
+*/
 const COLUMNS: Column[] = [
-  { key: "date", label: "Datum", width: "w-[7%]" },
-  { key: "league", label: "Liga", width: "w-[13%] max-sheet-wide:w-[6%]" },
-  { key: "match", label: "Match", width: "w-[20%] max-sheet-wide:w-[27%]" },
-  { key: "pick", label: "Spel", width: "w-[13%]" },
+  { key: "date", label: "Datum", width: "w-[10%]" },
+  { key: "league", label: "Liga", width: "w-[10%] max-sheet-wide:w-[5%]" },
+  { key: "match", label: "Match", width: "w-[14%] max-sheet-wide:w-[19%]" },
+  { key: "pick", label: "Spel", width: "w-[12%]" },
   { key: "bookmaker", label: "Bolag", width: "w-[8%]" },
   { key: "stake", label: "Insats", width: "w-[7%]", align: "right" },
   { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
-  { key: "result", label: "Rättning", width: "w-[15%]" },
+  { key: "result", label: "Rättning", width: "w-[14%]" },
   /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
-  { key: "netto", label: "Netto", width: "w-[12%]", align: "right" },
+  { key: "netto", label: "Netto", width: "w-[10%]", align: "right" },
+  {
+    key: "actions",
+    label: "Åtgärder",
+    width: "w-[10%]",
+    align: "right",
+    sortable: false,
+  },
 ];
 
-/** Datum på egen rad, tiden dämpad under. */
+/** Datum på egen rad, tiden dämpad under. Datumet bryts aldrig mitt itu. */
 function DateCell({ iso }: { iso: string }) {
   const date = new Date(iso);
   return (
     <>
-      <div className="font-mono-num text-[14px] text-text-soft">
+      <div className="whitespace-nowrap font-mono-num text-[14px] text-text-soft">
         {date.toLocaleDateString("sv-SE")}
       </div>
       <div className="font-mono-num text-[12.5px] text-faint">
@@ -128,6 +145,7 @@ export function SheetBetsTable({
   sortKey,
   sortDir,
   onSort,
+  highlightBetId,
 }: {
   bets: Bet[];
   canEdit: boolean;
@@ -138,7 +156,11 @@ export function SheetBetsTable({
   sortKey: SheetSortKey;
   sortDir: SheetSortDir;
   onSort: (key: SheetSortKey) => void;
+  /** Raden en notis pekade ut. Pulsar i två sekunder, sedan null. */
+  highlightBetId?: string | null;
 }) {
+  const amount = useAmount();
+
   return (
     <div className="overflow-x-hidden rounded-[12px] border border-line bg-panel">
       <table className="w-full table-fixed border-collapse text-[15px]">
@@ -157,18 +179,22 @@ export function SheetBetsTable({
                   col.align === "right" ? "text-right" : "text-left"
                 )}
               >
-                <button
-                  type="button"
-                  onClick={() => onSort(col.key)}
-                  className="inline-flex cursor-pointer items-center gap-1 uppercase tracking-[0.11em] transition hover:text-text"
-                >
-                  {col.label}
-                  {sortKey === col.key ? (
-                    <span aria-hidden className="text-[9px] text-win">
-                      {sortDir === "asc" ? "▲" : "▼"}
-                    </span>
-                  ) : null}
-                </button>
+                {col.sortable === false || col.key === "actions" ? (
+                  <span className="sr-only">{col.label}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onSort(col.key as SheetSortKey)}
+                    className="inline-flex cursor-pointer items-center gap-1 uppercase tracking-[0.11em] transition hover:text-text"
+                  >
+                    {col.label}
+                    {sortKey === col.key ? (
+                      <span aria-hidden className="text-[9px] text-win">
+                        {sortDir === "asc" ? "▲" : "▼"}
+                      </span>
+                    ) : null}
+                  </button>
+                )}
               </th>
             ))}
           </tr>
@@ -179,7 +205,10 @@ export function SheetBetsTable({
             return (
               <tr
                 key={bet.id}
-                className="group/row border-b border-rowline transition-colors even:bg-row-alt hover:bg-[#1A2233]"
+                className={cn(
+                  "group/row border-b border-rowline transition-colors even:bg-row-alt hover:bg-[#1A2233]",
+                  bet.id === highlightBetId && "animate-sbrowpulse"
+                )}
               >
                 <td className="px-2.5 py-3 align-middle">
                   <DateCell iso={bet.placed_at} />
@@ -191,7 +220,14 @@ export function SheetBetsTable({
                   <SheetMatchCell bet={bet} density={density} />
                 </td>
                 <td className="px-2.5 py-3 align-middle font-bold">
-                  {formatPick(bet.pick)}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {/* Fast bredd: låset får inte knuffa spelnamnet i sidled
+                        mellan rader som saknar verifiering. */}
+                    <span className="inline-flex w-3.5 shrink-0 justify-center">
+                      <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
+                    </span>
+                    <span className="min-w-0">{formatPick(bet.pick)}</span>
+                  </span>
                 </td>
                 <td className="px-2.5 py-3 align-middle">
                   <BookmakerPlate bet={bet} />
@@ -203,16 +239,7 @@ export function SheetBetsTable({
                   {formatOdds(Number(bet.odds))}
                 </td>
                 <td className="px-2.5 py-3 align-middle">
-                  <div className="flex flex-col items-start gap-1.5">
-                    <SheetSettleControls bet={bet} canEdit={canEdit} />
-                    <BetRowActions
-                      bet={bet}
-                      canEdit={canEdit}
-                      canRygga={canRygga}
-                      onRygga={onRygga ? () => onRygga(bet) : undefined}
-                      onRemove={onRemove ? () => onRemove(bet) : undefined}
-                    />
-                  </div>
+                  <SheetSettleControls bet={bet} canEdit={canEdit} />
                 </td>
                 <td
                   className={cn(
@@ -220,7 +247,17 @@ export function SheetBetsTable({
                     bet.result === "open" ? "text-muted" : nettoColor(netto)
                   )}
                 >
-                  {bet.result === "open" ? "—" : formatMoney(netto)}
+                  {bet.result === "open" ? "—" : amount(netto)}
+                </td>
+                <td className="px-2 py-3 align-middle">
+                  <BetRowActions
+                    bet={bet}
+                    canEdit={canEdit}
+                    canRygga={canRygga}
+                    size="sm"
+                    onRygga={onRygga ? () => onRygga(bet) : undefined}
+                    onRemove={onRemove ? () => onRemove(bet) : undefined}
+                  />
                 </td>
               </tr>
             );

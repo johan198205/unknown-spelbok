@@ -7,18 +7,21 @@ import { canNotifyBet, canRyggaBet } from "@/lib/rygga";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** Enhetlig ikonknapp: 36×36, tunn border, tooltip. */
+/** Enhetlig ikonknapp: 36×36 (28×28 i tabellen), tunn border, tooltip. */
 export function BetActionIconButton({
   label,
   onClick,
   children,
   tone = "default",
+  size = "md",
   className,
 }: {
   label: string;
   onClick: () => void;
   children: ReactNode;
   tone?: "default" | "danger" | "active";
+  /** sm = tabellens täta åtgärdskolumn, md = kort och mobil. */
+  size?: "sm" | "md";
   className?: string;
 }) {
   return (
@@ -33,7 +36,8 @@ export function BetActionIconButton({
         aria-label={label}
         title={label}
         className={cn(
-          "inline-flex size-9 items-center justify-center rounded-[8px] border transition",
+          "inline-flex items-center justify-center rounded-[8px] border transition",
+          size === "sm" ? "size-7" : "size-9",
           tone === "active"
             ? "border-win/40 bg-win/10 text-win"
             : tone === "danger"
@@ -65,6 +69,7 @@ export function BetRowActions({
   onRygga,
   onRemove,
   className,
+  size = "md",
   /** Desktop: fade in vid radhover. Mobil: alltid synlig. */
   hoverReveal = true,
 }: {
@@ -74,6 +79,8 @@ export function BetRowActions({
   onRygga?: () => void;
   onRemove?: () => void;
   className?: string;
+  /** sm = tabellens täta åtgärdskolumn, md = kort och mobil. */
+  size?: "sm" | "md";
   hoverReveal?: boolean;
 }) {
   const showNotify = canEdit && canNotifyBet(bet);
@@ -85,7 +92,10 @@ export function BetRowActions({
   return (
     <div
       className={cn(
-        "flex items-center justify-end gap-1.5",
+        // Ikonerna står alltid på EN rad — wrap här knuffar ner papperskorgen
+        // under rättningen och raden växer i höjd.
+        "flex flex-nowrap items-center justify-end",
+        size === "sm" ? "gap-1" : "gap-1.5",
         hoverReveal &&
           "opacity-100 transition-opacity duration-[120ms] lg:opacity-0 lg:group-hover/row:opacity-100 lg:focus-within:opacity-100",
         className
@@ -95,10 +105,11 @@ export function BetRowActions({
         <GoalNotifyButton
           betId={bet.id}
           enabled={bet.notify_goals === true}
+          size={size}
         />
       ) : null}
       {showRygga && onRygga ? (
-        <BetActionIconButton label="Rygga spel" onClick={onRygga}>
+        <BetActionIconButton label="Rygga spel" onClick={onRygga} size={size}>
           <Copy className="size-3.5" strokeWidth={2.25} />
         </BetActionIconButton>
       ) : null}
@@ -106,6 +117,7 @@ export function BetRowActions({
         <BetActionIconButton
           label="Ta bort"
           tone="danger"
+          size={size}
           onClick={onRemove}
         >
           <Trash2 className="size-3.5" strokeWidth={2.25} />

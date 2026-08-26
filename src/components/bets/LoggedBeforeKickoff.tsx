@@ -1,11 +1,11 @@
-import { Clock, ShieldCheck } from "lucide-react";
+import { Lock, LockOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COPY = {
-  before: "Loggat före avspark",
-  after: "Loggat efter matchstart",
-  badgeBefore: "Verifierat – loggat före avspark",
-  badgeAfter: "Efterregistrerat",
+  before: "Låst – loggat före avspark",
+  after: "Öppet – loggat efter matchstart",
+  badgeBefore: "Låst – loggat före avspark",
+  badgeAfter: "Öppet – efterregistrerat",
 } as const;
 
 /** Diskret ikon för spellistan (14–16px). null = ingen ikon. */
@@ -23,7 +23,7 @@ export function LoggedBeforeKickoffIcon({
         aria-label={COPY.before}
         className={cn("inline-flex shrink-0 text-win", className)}
       >
-        <ShieldCheck className="size-3.5" strokeWidth={2.25} aria-hidden />
+        <Lock className="size-3.5" strokeWidth={2.25} aria-hidden />
       </span>
     );
   }
@@ -35,7 +35,7 @@ export function LoggedBeforeKickoffIcon({
         aria-label={COPY.after}
         className={cn("inline-flex shrink-0 text-yellow", className)}
       >
-        <Clock className="size-3.5" strokeWidth={2.25} aria-hidden />
+        <LockOpen className="size-3.5" strokeWidth={2.25} aria-hidden />
       </span>
     );
   }
@@ -59,7 +59,7 @@ export function LoggedBeforeKickoffBadge({
           className
         )}
       >
-        <ShieldCheck className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+        <Lock className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
         {COPY.badgeBefore}
       </span>
     );
@@ -73,7 +73,7 @@ export function LoggedBeforeKickoffBadge({
           className
         )}
       >
-        <Clock className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+        <LockOpen className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
         {COPY.badgeAfter}
       </span>
     );

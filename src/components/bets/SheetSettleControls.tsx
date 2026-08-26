@@ -107,7 +107,7 @@ export function SheetSettleControls({
   }
 
   return (
-    <span className="flex flex-wrap items-center gap-1.5">
+    <span className="flex flex-wrap items-center gap-1">
       <SettleSourceIcon bet={bet} />
       {live ? (
         <span
@@ -136,7 +136,9 @@ export function SheetSettleControls({
                   "cursor-pointer rounded-[6px] border font-mono-num font-semibold transition disabled:cursor-wait",
                   size === "card"
                     ? "px-2.5 py-2 text-[11px]"
-                    : "px-2 py-[5px] text-[11.5px]",
+                    // Tabellens rättningskolumn är smal: chipsen måste rymmas
+                    // på samma rad som ⚡ även vid sheet-brytpunkten.
+                    : "px-[7px] py-[5px] text-[11.5px]",
                   active
                     ? `${tone.bg} ${tone.fg} ${tone.border}`
                     : "border-transparent text-faint hover:text-text",

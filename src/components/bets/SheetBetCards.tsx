@@ -2,6 +2,7 @@
 
 import { BetRowActions } from "@/components/bets/BetRowActions";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
+import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import {
@@ -13,7 +14,8 @@ import { betLeagueLogo } from "@/lib/logos";
 import { formatPick } from "@/lib/picks";
 import type { SheetDensity } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
-import { betNetto, cn, formatMoney, formatOdds, nettoColor } from "@/lib/utils";
+import { useAmount } from "@/components/DisplayPrefsProvider";
+import { betNetto, cn, formatOdds, nettoColor } from "@/lib/utils";
 
 /** Samma information som tabellen, staplad — inte en nedbantad variant. */
 export function SheetBetCards({
@@ -23,6 +25,7 @@ export function SheetBetCards({
   onRygga,
   onRemove,
   density,
+  highlightBetId,
 }: {
   bets: Bet[];
   canEdit: boolean;
@@ -30,7 +33,11 @@ export function SheetBetCards({
   onRygga?: (bet: Bet) => void;
   onRemove?: (bet: Bet) => void;
   density: SheetDensity;
+  /** Kortet en notis pekade ut. Pulsar i två sekunder, sedan null. */
+  highlightBetId?: string | null;
 }) {
+  const amount = useAmount();
+
   if (!bets.length) {
     return (
       <div className="rounded-[14px] border border-line bg-panel px-4 py-12 text-center text-muted">
@@ -50,7 +57,10 @@ export function SheetBetCards({
         return (
           <article
             key={bet.id}
-            className="group/row flex flex-col rounded-[14px] border border-line bg-panel"
+            className={cn(
+              "group/row flex flex-col rounded-[14px] border border-line bg-panel",
+              bet.id === highlightBetId && "animate-sbrowpulse"
+            )}
           >
             <div className="flex items-start gap-2 p-3.5 pb-2.5">
               <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -88,7 +98,7 @@ export function SheetBetCards({
                     bet.result === "open" ? "text-muted" : nettoColor(netto)
                   )}
                 >
-                  {bet.result === "open" ? "—" : formatMoney(netto)}
+                  {bet.result === "open" ? "—" : amount(netto)}
                 </div>
                 <div className="mt-1 font-mono-num text-[12px] text-muted">
                   {Number(bet.stake).toLocaleString("sv-SE")} kr
@@ -101,6 +111,9 @@ export function SheetBetCards({
             </div>
 
             <div className="flex flex-1 items-baseline gap-2 px-3.5 py-2.5">
+              <span className="inline-flex w-3.5 shrink-0 translate-y-[2px] justify-center">
+                <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
+              </span>
               <span className="min-w-0 text-[15px] font-bold">
                 {formatPick(bet.pick)}
               </span>

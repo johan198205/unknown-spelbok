@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { formatAmount } from "@/lib/display";
+import { getDisplayPrefs } from "@/lib/display-prefs";
 import { createClient } from "@/lib/supabase/server";
-import { computeStats, formatMoney, formatRoi, initialOf } from "@/lib/utils";
+import { computeStats, formatRoi, initialOf } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
 
 export default async function PublicProfilePage({
@@ -11,6 +13,8 @@ export default async function PublicProfilePage({
 }) {
   const { username } = await params;
   const supabase = await createClient();
+  // Betraktarens läge och unit-storlek — samma val som på publika spelböcker.
+  const prefs = await getDisplayPrefs();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -56,7 +60,7 @@ export default async function PublicProfilePage({
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Spel", value: String(stats.bets) },
-          { label: "Netto", value: formatMoney(stats.netto) },
+          { label: "Netto", value: formatAmount(stats.netto, prefs) },
           { label: "ROI", value: formatRoi(stats.roi) },
           { label: "Hitrate", value: `${stats.hitrate.toFixed(0)}%` },
         ].map((k) => (

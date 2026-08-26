@@ -141,6 +141,10 @@ export function pendingToDisplayBet(pending: PendingBet): Bet & {
     import_source: null,
     import_external_id: null,
     import_source_url: null,
+    // Offlinekön är bara spelformuläret. Kuponger kopieras via en
+    // serveråtgärd som kräver nät, så ett väntande spel kan aldrig komma
+    // från en kupong.
+    source_coupon_id: null,
     bookmakers: null,
     _pending: true,
     _pendingStatus: pending.status,

@@ -101,6 +101,26 @@ Schemaläggningen (var 15:e minut via `pg_cron` + `pg_net`) står färdig och ko
 4. `db/cron.sql` — schemalägg `settle-bets` (kommenterad, kräver dina nycklar)
 5. `db/api-usage-migration.sql` — förbrukningslogg mot API-Sports + `get_api_usage` (krävs för `/admin/api-usage`)
 6. `db/import-migration.sql` — `import_source`/`import_external_id`/`import_source_url` på `bets` + dubblettindex (krävs för Importera-knappen i Spelboken)
+7. `db/google-oauth.sql` — användarnamn och avatar från Google-profilen vid OAuth-registrering (krävs för Google-inlogg)
+8. `db/notifications.sql` — notiser i appen (klockan i headern + sidopanelen)
+9. `db/coupons.sql` — kuponger, ben, mejllista, `bets.source_coupon_id`, bucket `coupon-proofs` (krävs för `/kuponger` och `/admin/kuponger`)
+
+## Google-inlogg
+
+Knappen "Fortsätt med Google" finns på `/login` och `/registrera`, men den fungerar först när providern är påslagen i Supabase.
+
+1. **Google Cloud Console** > APIs & Services > Credentials > Create OAuth client ID > Web application.
+   - Authorized redirect URI: `https://<projekt-ref>.supabase.co/auth/v1/callback` (den enda som behövs — Google pratar bara med Supabase, aldrig med appen).
+   - Fyll i OAuth consent screen: appnamn, supportmejl, logga, länk till integritetspolicy och villkor. Utan detta går appen inte att publicera och bara testanvändare kan logga in.
+2. **Supabase** > Authentication > Providers > Google: slå på, klistra in Client ID och Client Secret.
+3. **Supabase** > Authentication > URL Configuration:
+   - Site URL: produktionsdomänen.
+   - Redirect URLs: `https://<domän>/auth/callback` och `http://localhost:3000/auth/callback`.
+4. Kör `db/google-oauth.sql`. Utan den får varje Google-konto ett användarnamn som `user_a3f19c02` i topplistan.
+
+Appen använder PKCE-flödet, så inget behövs på Vercel utöver de miljövariabler som redan finns.
+
+Loggar någon in med Google på en e-post som redan har ett lösenordskonto länkar Supabase ihop dem automatiskt (Google-adresser är verifierade) — det blir alltså inte två profiler.
 
 ## Import av spelbolagen
 

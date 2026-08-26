@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
+import { useAmount } from "@/components/DisplayPrefsProvider";
 import { compactAxisValue } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
-import { cn, cumulativeNettoByDay, formatMoney } from "@/lib/utils";
+import { cn, cumulativeNettoByDay } from "@/lib/utils";
 
 const W = 1000;
 const H = 230;
@@ -31,6 +32,7 @@ export function SheetNettoChart({
   bets: Bet[];
   periodLabel: string;
 }) {
+  const amount = useAmount();
   const uid = useId().replace(/:/g, "");
   const boxRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -269,7 +271,7 @@ export function SheetNettoChart({
                           : "text-text"
                     )}
                   >
-                    {formatMoney(active.value)}
+                    {amount(active.value)}
                   </span>
                   <span className="block font-mono-num text-[11px] text-muted">
                     {active.date}

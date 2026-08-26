@@ -204,8 +204,10 @@
 
   sheet      = 1180px, där nio kolumner får plats
   sheet-wide = 1320px, där liganamnet får plats bredvid loggan
+  notif      = 520px, under den tar notispanelen full bredd
 */
 @theme {
+  --breakpoint-notif: 32.5rem;
   --breakpoint-sheet: 73.75rem;
   --breakpoint-sheet-wide: 82.5rem;
 }
@@ -259,6 +261,41 @@
 @keyframes sbspin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Notispanelen glider in från höger över backdropen. */
+@keyframes sbslide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/*
+  Raden en notis pekar ut. Två sekunder, sedan tillbaka till vanligt —
+  subtil puls, ingen scrollIntoView som rycker sidan under fingret.
+
+  Pulsen ligger i background-image, inte background-color: raden har redan
+  en egen färg (even:bg-row-alt, kortens bg-panel) och den ska inte
+  slockna under animationen.
+*/
+@keyframes sbrowpulse {
+  0%,
+  100% {
+    background-image: linear-gradient(
+      rgba(53, 214, 245, 0),
+      rgba(53, 214, 245, 0)
+    );
+  }
+  25%,
+  60% {
+    background-image: linear-gradient(
+      rgba(53, 214, 245, 0.14),
+      rgba(53, 214, 245, 0.14)
+    );
   }
 }
 
@@ -390,7 +427,82 @@
   animation: sbprogress 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.animate-sbslide {
+  animation: sbslide 0.22s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.animate-sbrowpulse {
+  animation: sbrowpulse 2s ease-in-out;
+}
+
 .sb-scroll::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/*
+  KUPONGSIDAN — kolumnantalet styr kortets mått, inte tvärtom.
+
+  Måtten ligger i CSS-variabler bakom en media query i stället för i
+  JavaScript av två skäl:
+
+  1. Under 1080px gäller listläget oavsett vad vyväxlaren står på. Räknade
+     vi måtten i JS skulle servern rendera fel mått i första passet och
+     kortet hoppa till rätt storlek vid hydrering.
+  2. CTA-loggan MÅSTE följa kolumnantalet. I 3-läget är kortet ~280px brett
+     och en 124px logga bredvid texten lämnade textkolumnen 73px — den
+     spillde över kortkanten. I 3-läget går loggan därför på egen rad.
+
+  data-view sätts av vyväxlaren och är enda kopplingen till JS.
+*/
+.kupong-layout,
+.kupong-grid {
+  --kupong-cols: 1;
+  --kupong-proof-w: 186px;
+  --kupong-proof-h: 248px;
+  --kupong-cta-dir: row;
+  --kupong-cta-align: center;
+  --kupong-cta-gap: 14px;
+  --kupong-cta-logo-w: 124px;
+  --kupong-cta-logo-h: 56px;
+}
+
+.kupong-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.kupong-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--kupong-cols), minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 1080px) {
+  /* Lista: en kupong per rad med sidopanelen intill. */
+  .kupong-layout[data-view="Lista"] {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .kupong-grid[data-view="2"] {
+    --kupong-cols: 2;
+    --kupong-proof-w: 100%;
+    --kupong-proof-h: 220px;
+    --kupong-cta-logo-w: 104px;
+    --kupong-cta-logo-h: 48px;
+  }
+
+  .kupong-grid[data-view="3"] {
+    --kupong-cols: 3;
+    --kupong-proof-w: 100%;
+    --kupong-proof-h: 190px;
+    --kupong-cta-dir: column;
+    --kupong-cta-align: stretch;
+    --kupong-cta-gap: 11px;
+    --kupong-cta-logo-w: 100%;
+    --kupong-cta-logo-h: 52px;
+  }
 }

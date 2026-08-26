@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
+import { useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { amountUnitLabel, fromUnits, stakeError } from "@/lib/display";
 import { track } from "@/lib/analytics";
 import { formatPick } from "@/lib/picks";
 import { ryggaBet } from "@/lib/rygga-bet";
@@ -51,20 +53,22 @@ function pickDefaultSheetId(sheets: Sheet[]) {
 export function RyggaSpelModal({
   bet,
   sheets,
-  unitSize = 100,
   onClose,
   onCreatedSheetRequest,
 }: {
   bet: Bet;
   sheets: Sheet[];
-  unitSize?: number;
   onClose: () => void;
   onCreatedSheetRequest?: () => void;
 }) {
+  const prefs = useDisplayPrefs();
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
-  const defaultStake = unitSize > 0 ? String(Math.round(unitSize)) : "100";
+  // Insatsen skrivs i betraktarens eget läge — det är hens spelbok spelet
+  // hamnar i, inte originalbokens.
+  const defaultStake =
+    prefs.mode === "units" ? "1" : String(Math.round(prefs.unitSize));
 
   const [sheetId, setSheetId] = useState(() => pickDefaultSheetId(sheets));
   const [stake, setStake] = useState(defaultStake);
@@ -88,13 +92,21 @@ export function RyggaSpelModal({
       setError("Välj en spelbok.");
       return;
     }
+    const typed = Number(stake.replace(",", "."));
+    const stakeValue = prefs.mode === "units" ? fromUnits(typed, prefs) : typed;
+    const stakeProblem = stakeError(stakeValue, prefs);
+    if (stakeProblem) {
+      setError(stakeProblem);
+      return;
+    }
+
     setBusy(true);
     setError(null);
 
     const result = await ryggaBet({
       sourceBetId: bet.id,
       targetSheetId: targetId,
-      stake: Number(stake.replace(",", ".")),
+      stake: stakeValue,
       odds: Number(odds.replace(",", ".")),
     });
 
@@ -179,7 +191,7 @@ export function RyggaSpelModal({
           </div>
 
           <Input
-            label="Insats"
+            label={`Insats (${amountUnitLabel(prefs)})`}
             inputMode="decimal"
             value={stake}
             onChange={(e) => setStake(e.target.value)}
@@ -219,11 +231,9 @@ export function RyggaSpelModal({
 /** Öppnar Rygga-modal eller skickar till login med return-URL. */
 export function useRyggaFlow({
   sheets,
-  unitSize,
   isAuthenticated,
 }: {
   sheets: Sheet[];
-  unitSize?: number;
   isAuthenticated: boolean;
 }) {
   const pathname = usePathname();
@@ -243,7 +253,6 @@ export function useRyggaFlow({
       <RyggaSpelModal
         bet={bet}
         sheets={sheets}
-        unitSize={unitSize}
         onClose={() => setBet(null)}
       />
     ) : null;

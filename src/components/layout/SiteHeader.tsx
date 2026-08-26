@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { AppNav } from "@/components/layout/AppNav";
+import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
 import { SignOutButton } from "@/components/layout/SignOutButton";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getProfile } from "@/lib/auth";
+import { getDisplayPrefs } from "@/lib/display-prefs";
+import { getUnreadNotificationCount } from "@/lib/notifications-server";
+import { formatAmount } from "@/lib/display";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
-import { formatMoney, initialOf } from "@/lib/utils";
+import { initialOf } from "@/lib/utils";
 
 export async function SiteHeader({
   variant = "public",
@@ -28,10 +33,13 @@ export async function SiteHeader({
   }
 
   const site = await fetchSiteSettings(supabase);
+  const prefs = await getDisplayPrefs();
+  const unread = profile ? await getUnreadNotificationCount() : 0;
 
   const appNav = [
     { href: "/hem", label: "Hem" },
     { href: "/spelbok", label: "Spelbok" },
+    { href: "/kuponger", label: "Kuponger" },
     ...(site.competitions_enabled
       ? [{ href: "/tavlingar", label: "Tävlingar" }]
       : []),
@@ -55,6 +63,12 @@ export async function SiteHeader({
         ) : (
           <div className="flex flex-1 items-center gap-0.5 overflow-x-auto sb-scroll">
             <Link
+              href="/kuponger"
+              className="whitespace-nowrap rounded-[var(--radius-btn-sm)] px-3.5 py-2 text-[14px] font-semibold text-muted no-underline hover:bg-panel-2 hover:text-text hover:no-underline"
+            >
+              Kuponger
+            </Link>
+            <Link
               href="/topplista"
               className="whitespace-nowrap rounded-[var(--radius-btn-sm)] px-3.5 py-2 text-[14px] font-semibold text-muted no-underline hover:bg-panel-2 hover:text-text hover:no-underline"
             >
@@ -72,18 +86,20 @@ export async function SiteHeader({
         <div className="ml-auto flex items-center gap-2.5">
           {profile ? (
             <>
+              <DisplayModeToggle className="hidden sm:flex" />
               <div className="hidden text-right sm:block">
                 <div className="text-sm font-semibold text-text">
                   {profile.username}
                 </div>
                 {/* Mockup: netto i header är muted mono, inte grön/röd */}
                 <div className="font-mono-num text-xs text-muted">
-                  {formatMoney(netto)}
+                  {formatAmount(netto, prefs)}
                 </div>
               </div>
               <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text">
                 {initialOf(profile.username)}
               </div>
+              <NotificationBell userId={profile.id} initialUnread={unread} />
               {profile.role === "admin" ? (
                 <Link
                   href="/admin/anvandare"
