@@ -89,11 +89,11 @@ export function AdminTopbar({
 
   return (
     <header className="sticky top-0 z-40 flex items-center gap-5 border-b border-line bg-bar-bg px-7 py-3.5 backdrop-blur-[12px]">
-      <div className="min-w-0">
-        <h1 className="font-display whitespace-nowrap text-[22px] font-semibold uppercase tracking-[0.05em]">
-          {titleFor(pathname)}
-        </h1>
-      </div>
+      {/* Rubriken bryts aldrig — det är söktfältet som ska krympa när
+          fönstret blir smalt, inte tvärtom. */}
+      <h1 className="font-display shrink-0 whitespace-nowrap text-[22px] font-semibold uppercase tracking-[0.05em]">
+        {titleFor(pathname)}
+      </h1>
 
       <div ref={rootRef} className="relative max-w-[440px] flex-1">
         <SearchIcon

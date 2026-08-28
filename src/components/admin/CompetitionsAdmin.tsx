@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
+import { Switch } from "@/components/ui/Switch";
 import {
   endCompetitionEarly,
   saveCompetition,
@@ -138,25 +139,12 @@ function EnabledSwitch({ enabled }: { enabled: boolean }) {
           <div className="mt-1 text-[12.5px] text-loss">{error}</div>
         ) : null}
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        aria-label="Tävlingar i frontend"
+      <Switch
+        checked={on}
         disabled={pending}
-        onClick={toggle}
-        className={cn(
-          "relative h-[26px] w-[46px] shrink-0 cursor-pointer rounded-full border transition-colors disabled:opacity-50",
-          on ? "border-win/40 bg-win/25" : "border-line-strong bg-panel-2"
-        )}
-      >
-        <span
-          className={cn(
-            "absolute top-[2px] size-[18px] rounded-full transition-[left]",
-            on ? "left-[24px] bg-win" : "left-[2px] bg-muted"
-          )}
-        />
-      </button>
+        label="Tävlingar i frontend"
+        onChange={toggle}
+      />
     </div>
   );
 }
@@ -272,24 +260,24 @@ export function CompetitionsAdmin({
                 key={competition.id}
                 className="flex flex-wrap items-center gap-3 border-b border-rowline px-[18px] py-3.5 transition-colors hover:bg-hover"
               >
-                <span className="flex-[1.4] font-semibold">
+                <span className="min-w-0 flex-[1.4] truncate font-semibold">
                   {competition.name}
                 </span>
-                <span className="w-[190px] font-mono-num text-[12.5px] text-muted">
+                <span className="w-[190px] shrink-0 font-mono-num text-[12.5px] text-muted">
                   {competition.period}
                 </span>
-                <span className="flex flex-1 items-center gap-2">
+                <span className="flex min-w-0 flex-1 items-center gap-2">
                   {winner ? (
                     <>
-                      <span className="font-display flex size-[22px] items-center justify-center rounded-[var(--radius-pill)] bg-yellow/15 text-[11px] font-bold text-yellow">
+                      <span className="font-display flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-pill)] bg-yellow/15 text-[11px] font-bold text-yellow">
                         1
                       </span>
-                      <span className="text-[13.5px] font-semibold text-yellow">
+                      <span className="truncate text-[13.5px] font-semibold text-yellow">
                         {winner.username}
                       </span>
                       <span
                         className={cn(
-                          "font-mono-num text-[12.5px]",
+                          "font-mono-num shrink-0 text-[12.5px]",
                           nettoColor(winner.netto)
                         )}
                       >
@@ -302,7 +290,7 @@ export function CompetitionsAdmin({
                     </span>
                   )}
                 </span>
-                <span className="flex w-[130px] justify-end gap-3 text-[13.5px]">
+                <span className="flex w-[130px] shrink-0 justify-end gap-3 text-[13.5px]">
                   <button
                     type="button"
                     onClick={() => setDraft(draftFrom(competition))}
@@ -324,7 +312,7 @@ export function CompetitionsAdmin({
               className="rounded-[var(--radius-card-lg)] border border-line bg-panel p-[18px]"
             >
               <div className="mb-1.5 flex items-start gap-2.5">
-                <h2 className="font-display flex-1 text-[19px] font-semibold">
+                <h2 className="font-display min-w-0 flex-1 break-words text-[19px] font-semibold">
                   {competition.name}
                 </h2>
                 <span className="shrink-0 rounded-[var(--radius-badge)] bg-amber/15 px-2 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-amber">
@@ -344,7 +332,7 @@ export function CompetitionsAdmin({
                 </span>
               </div>
 
-              <div className="mb-3.5 flex gap-[18px]">
+              <div className="mb-3.5 flex flex-wrap gap-x-[18px] gap-y-2.5">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.12em] text-dim">
                     Deltagare

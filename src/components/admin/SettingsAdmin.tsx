@@ -9,6 +9,7 @@ import {
   type NotifyChannel,
   type NotifySettings,
 } from "@/lib/admin/settings";
+import { Switch } from "@/components/ui/Switch";
 import type { SiteSettings } from "@/lib/site-settings";
 import {
   GTM_ID_PATTERN,
@@ -16,37 +17,6 @@ import {
   type TrackingSettings,
 } from "@/lib/tracking-settings";
 import { cn } from "@/lib/utils";
-
-function Toggle({
-  on,
-  onClick,
-  label,
-}: {
-  on: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={onClick}
-      className={cn(
-        "relative h-[26px] w-[46px] shrink-0 rounded-full border transition-colors",
-        on ? "border-win/40 bg-win/25" : "border-line-strong bg-panel-2"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] size-[18px] rounded-full transition-[left]",
-          on ? "left-[24px] bg-win" : "left-[2px] bg-muted"
-        )}
-      />
-    </button>
-  );
-}
 
 function SaveBar({
   dirty,
@@ -138,10 +108,10 @@ export function GeneralSettingsForm({ site }: { site: SiteSettings }) {
                 : "Registreringen är stängd — formuläret byts mot ett meddelande."}
             </div>
           </div>
-          <Toggle
-            on={draft.registrations_open}
+          <Switch
+            checked={draft.registrations_open}
             label="Öppen registrering"
-            onClick={() => patch({ registrations_open: !draft.registrations_open })}
+            onChange={(next) => patch({ registrations_open: next })}
           />
         </div>
 
@@ -159,10 +129,10 @@ export function GeneralSettingsForm({ site }: { site: SiteSettings }) {
                 : "Appen är öppen för alla inloggade."}
             </div>
           </div>
-          <Toggle
-            on={draft.maintenance}
+          <Switch
+            checked={draft.maintenance}
             label="Underhållsläge"
-            onClick={() => patch({ maintenance: !draft.maintenance })}
+            onChange={(next) => patch({ maintenance: next })}
           />
         </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Switch } from "@/components/ui/Switch";
 import { deletePage, publishPage, savePage, type PageDraft } from "@/lib/admin/pages";
 import { cn, slugify } from "@/lib/utils";
 import type { Page } from "@/lib/types";
@@ -29,36 +30,6 @@ function fmtTime(iso: string | null) {
   });
 }
 
-function Toggle({
-  on,
-  onChange,
-  label,
-}: {
-  on: boolean;
-  onChange: (next: boolean) => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={() => onChange(!on)}
-      className={cn(
-        "relative h-6 w-[42px] shrink-0 rounded-full border p-0 transition-colors",
-        on ? "border-win/45 bg-win/25" : "border-line-strong bg-panel-2"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] size-4 rounded-full transition-[left] duration-150",
-          on ? "left-[22px] bg-win" : "left-[2px] bg-muted"
-        )}
-      />
-    </button>
-  );
-}
 
 export function PageEditor({ page }: { page: Page }) {
   const router = useRouter();
@@ -296,8 +267,8 @@ export function PageEditor({ page }: { page: Page }) {
             <span className="flex-1 text-[13.5px] text-text-soft">
               Publicerad
             </span>
-            <Toggle
-              on={published}
+            <Switch
+              checked={published}
               label="Publicerad"
               onChange={(next) =>
                 startTransition(async () => {
@@ -437,8 +408,8 @@ export function PageEditor({ page }: { page: Page }) {
             <span className="flex-1 text-[13.5px] text-text-soft">
               Visa i footer
             </span>
-            <Toggle
-              on={draft.show_in_footer}
+            <Switch
+              checked={draft.show_in_footer}
               label="Visa i footer"
               onChange={(next) => patch({ show_in_footer: next })}
             />

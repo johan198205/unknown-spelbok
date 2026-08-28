@@ -10,9 +10,9 @@ comment on column public.profiles.notify_settle is
   'Push när ett spel rättas automatiskt (kräver aktiv push-prenumeration).';
 
 alter table public.bets
-  add column if not exists notify_goals boolean not null default false;
+  add column if not exists notify_goals boolean not null default true;
 
 comment on column public.bets.notify_goals is
-  'Push vid mål i den här matchen.';
+  'Push vid mål i den här matchen. På som standard — klockan i raden stänger av.';
 
 notify pgrst, 'reload schema';

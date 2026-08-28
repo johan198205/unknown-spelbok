@@ -100,7 +100,18 @@ function TeamRow({
   return (
     <span className="flex min-w-0 items-center gap-2">
       <TeamLogo src={side.logo} size={logoSize} initial={side.name} />
-      <span className={cn("min-w-0 flex-1 truncate", nameSize, tone)}>
+      {/*
+        Lagnamnet får ALDRIG kapas här — det är kolumnens hela poäng. Ryms det
+        inte på en rad bryts det till nästa i stället för att sluta i "...".
+      */}
+      <span
+        title={side.name}
+        className={cn(
+          "min-w-0 flex-1 break-words leading-[1.2]",
+          nameSize,
+          tone
+        )}
+      >
         {side.name}
       </span>
       {showScore ? (
@@ -136,15 +147,26 @@ export function SheetMatchCell({
   const showScore = sides.hasScore;
 
   if (density === "slim") {
+    /*
+      Här ryms båda lagen på EN rad i samma kolumn — namnen måste därför få
+      kortas. Titeln bär hela namnet så inget är oåtkomligt; vill man se dem
+      i klartext är resultatläget rätt läge.
+    */
     return (
       <span className="flex min-w-0 items-center gap-1.5 text-[14.5px]">
         <TeamLogo src={sides.home.logo} size={22} initial={sides.home.name} />
-        <span className="min-w-[24px] flex-[0_1_auto] truncate">
+        <span
+          title={sides.home.name}
+          className="min-w-[24px] flex-[0_1_auto] truncate"
+        >
           {sides.home.name}
         </span>
         <span className="shrink-0 text-faint">–</span>
         <TeamLogo src={sides.away.logo} size={22} initial={sides.away.name} />
-        <span className="min-w-[24px] flex-[0_1_auto] truncate">
+        <span
+          title={sides.away.name}
+          className="min-w-[24px] flex-[0_1_auto] truncate"
+        >
           {sides.away.name}
         </span>
         <span className="shrink-0 rounded-[6px] bg-panel-2 px-1.5 py-0.5 font-mono-num text-[12.5px] font-semibold">
@@ -162,18 +184,21 @@ export function SheetMatchCell({
         "flex min-w-0 items-center border border-line-soft bg-bg-soft",
         variant === "card"
           ? "rounded-[11px] px-[13px] py-2.5"
-          : "rounded-[10px] px-3 py-2"
+          : "rounded-[10px] px-2.5 py-2"
       )}
     >
+      {/* Statusblocket hålls smalt — varje pixel här är en pixel mindre lagnamn. */}
       <span
         className={cn(
-          "mr-3 shrink-0 border-r border-line-soft pr-3 font-mono-num text-[12px] font-semibold",
+          "shrink-0 whitespace-nowrap border-r border-line-soft font-mono-num text-[12px] font-semibold",
+          variant === "card" ? "mr-3 pr-3" : "mr-2 pr-2",
           sides.live ? "text-cyan" : "text-faint"
         )}
       >
         {sides.status}
       </span>
-      <span className="flex min-w-0 max-w-[250px] flex-1 flex-col gap-1">
+      {/* Inget max-w här: namnen ska få hela kolumnen, inte ett tak på 250px. */}
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
         <TeamRow
           side={sides.home}
           other={sides.away}

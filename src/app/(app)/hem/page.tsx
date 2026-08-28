@@ -278,7 +278,7 @@ export default async function HemPage() {
                         {sheet.name}
                       </span>
                       <Badge tone={sheet.is_public ? "public" : "private"}>
-                        {sheet.is_public ? "Publik" : "Låst"}
+                        {sheet.is_public ? "Publik" : "Privat"}
                       </Badge>
                     </span>
                     {sheet.description ? (

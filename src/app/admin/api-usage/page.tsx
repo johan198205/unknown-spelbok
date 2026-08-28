@@ -256,8 +256,8 @@ export default async function AdminApiUsagePage({
               Mest anropade endpoints
             </div>
             {data.endpoints.length ? (
-              <div>
-                <div className="flex items-center gap-3 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted">
+              <div className="overflow-x-auto">
+                <div className="flex min-w-[720px] items-center gap-3 pb-2 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-muted">
                   <span className="flex-1">Endpoint</span>
                   <span className="w-[70px] text-right">Antal</span>
                   <span className="w-[70px] text-right">Externa</span>
@@ -269,7 +269,7 @@ export default async function AdminApiUsagePage({
                 {data.endpoints.map((row) => (
                   <div
                     key={row.endpoint}
-                    className="flex items-center gap-3 border-t border-line-soft py-2"
+                    className="flex min-w-[720px] items-center gap-3 border-t border-line-soft py-2"
                   >
                     <span className="font-mono-num min-w-0 flex-1 truncate text-[13px] text-text-soft">
                       {row.endpoint}

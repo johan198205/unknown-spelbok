@@ -331,39 +331,39 @@ export function matchesTab(coupon: Coupon, tab: CouponTab) {
 }
 
 export const COUPON_VIEWS = [
-  { key: "Lista", label: "Lista", help: "En kupong per rad med sidopanel" },
+  { key: "Lista", label: "Lista", help: "En kupong per rad" },
   { key: "2", label: "2", help: "Två kuponger per rad" },
-  { key: "3", label: "3", help: "Tre kuponger per rad" },
 ] as const;
 
 export type CouponView = (typeof COUPON_VIEWS)[number]["key"];
 
-/** Standardläget är 3. Under 1080px finns växlaren inte alls. */
-export const DEFAULT_COUPON_VIEW: CouponView = "3";
+/** Standardläget är 2. Under 1240px finns växlaren inte alls. */
+export const DEFAULT_COUPON_VIEW: CouponView = "2";
 
-/** Brytpunkten där rutnätet får plats. Under den gäller listläget. */
-export const COUPON_GRID_MIN_WIDTH = 1080;
+/**
+ * Brytpunkten där två kuponger per rad får plats bredvid sidopanelen.
+ * Under den gäller listläget — men panelen ligger kvar intill från 1080px
+ * (se .kupong-layout i globals.css).
+ */
+export const COUPON_GRID_MIN_WIDTH = 1240;
 
 export function columnsFor(view: CouponView) {
-  return view === "3" ? 3 : view === "2" ? 2 : 1;
+  return view === "2" ? 2 : 1;
 }
 
 /**
  * Måtten som måste följa kolumnantalet. Utan dem spränger CTA-loggan
- * kortet i 3-läget: textkolumnen fick bara 73px och spillde över kanten.
+ * kortet i 2-läget, där kortet är hälften så brett som i listläget.
  */
 export function layoutFor(view: CouponView) {
   const columns = columnsFor(view);
   return {
     columns,
-    /** Sidopanelen ligger intill i Lista, under rutnätet i 2 och 3. */
-    asideBeside: columns === 1,
     proofWidth: columns > 1 ? "100%" : "186px",
-    proofHeight: columns === 3 ? 190 : columns === 2 ? 220 : 248,
-    ctaStacked: columns === 3,
-    ctaGap: columns === 3 ? "11px" : "14px",
-    ctaLogoWidth: columns === 3 ? "100%" : columns === 2 ? "104px" : "124px",
-    ctaLogoHeight: columns === 3 ? 52 : columns === 2 ? 48 : 56,
+    proofHeight: columns === 2 ? 220 : 248,
+    ctaGap: "14px",
+    ctaLogoWidth: columns === 2 ? "104px" : "124px",
+    ctaLogoHeight: columns === 2 ? 48 : 56,
   };
 }
 

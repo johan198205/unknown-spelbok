@@ -449,9 +449,13 @@
   1. Under 1080px gäller listläget oavsett vad vyväxlaren står på. Räknade
      vi måtten i JS skulle servern rendera fel mått i första passet och
      kortet hoppa till rätt storlek vid hydrering.
-  2. CTA-loggan MÅSTE följa kolumnantalet. I 3-läget är kortet ~280px brett
-     och en 124px logga bredvid texten lämnade textkolumnen 73px — den
-     spillde över kortkanten. I 3-läget går loggan därför på egen rad.
+  2. CTA-loggan MÅSTE följa kolumnantalet. I 2-läget delar kortet bredden
+     med ett grannkort OCH sidopanelen, så en 124px logga bredvid texten
+     lämnar för lite kvar åt textkolumnen.
+
+  Sidopanelen ligger alltid intill kupongerna över 1080px — i båda vyerna.
+  Rutnätet med två kuponger per rad kräver mer plats och slår därför till
+  först vid 1240px; däremellan är korten en per rad med panelen kvar.
 
   data-view sätts av vyväxlaren och är enda kopplingen till JS.
 */
@@ -482,27 +486,18 @@
 }
 
 @media (min-width: 1080px) {
-  /* Lista: en kupong per rad med sidopanelen intill. */
-  .kupong-layout[data-view="Lista"] {
+  /* Sidopanelen ligger intill kupongerna i båda vyerna. */
+  .kupong-layout {
     grid-template-columns: minmax(0, 1fr) 320px;
   }
+}
 
+@media (min-width: 1240px) {
   .kupong-grid[data-view="2"] {
     --kupong-cols: 2;
     --kupong-proof-w: 100%;
     --kupong-proof-h: 220px;
     --kupong-cta-logo-w: 104px;
     --kupong-cta-logo-h: 48px;
-  }
-
-  .kupong-grid[data-view="3"] {
-    --kupong-cols: 3;
-    --kupong-proof-w: 100%;
-    --kupong-proof-h: 190px;
-    --kupong-cta-dir: column;
-    --kupong-cta-align: stretch;
-    --kupong-cta-gap: 11px;
-    --kupong-cta-logo-w: 100%;
-    --kupong-cta-logo-h: 52px;
   }
 }

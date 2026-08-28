@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ActiveUsersChart } from "@/components/admin/ActiveUsersChart";
+import { switchClasses } from "@/components/ui/Switch";
 import {
   getStatsData,
   parsePeriod,
@@ -66,20 +67,12 @@ export default async function AdminStatsPage({
           </span>
           <Link
             href={href({ cmp: compare ? "0" : "1" })}
+            role="switch"
+            aria-checked={compare}
             aria-label="Växla jämförelse med föregående period"
-            className={cn(
-              "relative block h-6 w-[42px] rounded-full border transition-colors",
-              compare
-                ? "border-win/40 bg-win/25"
-                : "border-line-strong bg-panel-2"
-            )}
+            className={switchClasses(compare).track}
           >
-            <span
-              className={cn(
-                "absolute top-[2px] size-4 rounded-full transition-[left]",
-                compare ? "left-[22px] bg-win" : "left-[2px] bg-muted"
-              )}
-            />
+            <span aria-hidden className={switchClasses(compare).knob} />
           </Link>
         </div>
 

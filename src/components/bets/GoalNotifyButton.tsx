@@ -2,6 +2,7 @@
 
 import { useState, type MouseEvent } from "react";
 import { Bell, BellRing } from "lucide-react";
+import { ACTION_ICON_SIZE, type BetActionSize } from "@/lib/bet-actions-ui";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +27,8 @@ export function GoalNotifyButton({
   betId: string;
   enabled: boolean;
   disabled?: boolean;
-  /** sm = tabellens täta åtgärdskolumn, md = kort och mobil. */
-  size?: "sm" | "md";
+  /** sm = tabellens täta åtgärdskolumn, card = spelbokskort, md = mobil. */
+  size?: BetActionSize;
 }) {
   const [on, setOn] = useState(enabled);
   const [busy, setBusy] = useState(false);
@@ -67,7 +68,7 @@ export function GoalNotifyButton({
         aria-pressed={on}
         className={cn(
           "inline-flex items-center justify-center rounded-[8px] border transition",
-          size === "sm" ? "size-7" : "size-9",
+          ACTION_ICON_SIZE[size],
           on
             ? "border-win/40 bg-win/10 text-win"
             : "border-line bg-transparent text-faint hover:text-text",

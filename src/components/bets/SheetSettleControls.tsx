@@ -81,6 +81,7 @@ export function SheetSettleControls({
 
   const shown = picked ?? bet.result;
   const live = shown === "open" && isInPlayStatus(fixture?.status);
+  const card = size === "card";
 
   async function setResult(result: BetResult) {
     if (saving || result === shown) return;
@@ -107,17 +108,42 @@ export function SheetSettleControls({
   }
 
   return (
-    <span className="flex flex-wrap items-center gap-1">
-      <SettleSourceIcon bet={bet} />
-      {live ? (
-        <span
-          className="size-1.5 shrink-0 animate-sbpulse rounded-full bg-cyan"
-          title="Matchen pågår"
-          aria-hidden
-        />
+    <span
+      className={cn(
+        "flex items-center",
+        card ? "min-w-0 flex-1" : "flex-wrap gap-1"
+      )}
+    >
+      {/*
+        Kortet visar redan ⚡ och live-pricken i sitt sidhuvud. Upprepades de
+        här knuffade de dessutom ner rättningen på en egen rad i den smala
+        fyrkolumnsvyn — ⚡ hamnade ensam ovanför W/L/P/V.
+      */}
+      {!card ? (
+        <>
+          <SettleSourceIcon bet={bet} />
+          {live ? (
+            <span
+              className="size-1.5 shrink-0 animate-sbpulse rounded-full bg-cyan"
+              title="Matchen pågår"
+              aria-hidden
+            />
+          ) : null}
+        </>
       ) : null}
       {canEdit ? (
-        <span role="group" aria-label="Rättning" className="flex gap-1">
+        <span
+          role="group"
+          aria-label="Rättning"
+          className={cn(
+            "flex",
+            card
+              ? // Ett sammanhållet segmentreglage i stället för fyra lösa
+                // bokstäver: samma höjd (32px) som ikonknapparna bredvid.
+                "min-w-0 flex-1 items-center gap-px rounded-[9px] border border-line bg-panel-2 p-[3px]"
+              : "gap-1"
+          )}
+        >
           {CHOICES.map(({ value, short, label }) => {
             const active = shown === value;
             const waiting = active && saving;
@@ -133,15 +159,18 @@ export function SheetSettleControls({
                 aria-pressed={active}
                 aria-busy={waiting || undefined}
                 className={cn(
-                  "cursor-pointer rounded-[6px] border font-mono-num font-semibold transition disabled:cursor-wait",
-                  size === "card"
-                    ? "px-2.5 py-2 text-[11px]"
+                  "cursor-pointer border font-mono-num font-semibold transition disabled:cursor-wait",
+                  card
+                    ? "flex h-6 min-w-0 flex-1 items-center justify-center rounded-[6px] text-[11.5px]"
                     // Tabellens rättningskolumn är smal: chipsen måste rymmas
                     // på samma rad som ⚡ även vid sheet-brytpunkten.
-                    : "px-[7px] py-[5px] text-[11.5px]",
+                    : "rounded-[6px] px-[7px] py-[5px] text-[11.5px]",
                   active
                     ? `${tone.bg} ${tone.fg} ${tone.border}`
-                    : "border-transparent text-faint hover:text-text",
+                    : cn(
+                        "border-transparent text-faint hover:text-text",
+                        card && "hover:bg-[rgba(230,234,242,0.06)]"
+                      ),
                   waiting && "animate-sbshimmer"
                 )}
               >

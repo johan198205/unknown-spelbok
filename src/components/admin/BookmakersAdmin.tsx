@@ -27,6 +27,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Switch } from "@/components/ui/Switch";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { BookmakerCard } from "@/components/bets/BookmakerCard";
 import {
@@ -418,14 +419,15 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
             </div>
           </div>
 
-          <label className="mt-3 flex cursor-pointer items-center gap-2.5 text-[13.5px] text-text-soft">
-            <Toggle
-              on={draft.fast_payout}
-              onClick={() => patch({ fast_payout: !draft.fast_payout })}
+          <div className="mt-3 flex items-center gap-2.5 text-[13.5px] text-text-soft">
+            <Switch
+              size="sm"
+              checked={draft.fast_payout}
+              onChange={(next) => patch({ fast_payout: next })}
               label="Snabba uttag"
             />
             Snabba uttag
-          </label>
+          </div>
         </Section>
 
         <Section title="Erbjudande">
@@ -706,50 +708,21 @@ function SortableBookmakerRow({
         </div>
       </div>
 
-      <span className="font-mono-num shrink-0 whitespace-nowrap text-[12.5px] text-text-soft">
+      {/* Klicksiffran är sekundär — den viker undan först när raden blir
+          trång, så namn och toggle aldrig kapas. */}
+      <span className="font-mono-num hidden shrink-0 whitespace-nowrap text-[12.5px] text-text-soft sm:inline">
         {bookmaker.clicks30.toLocaleString("sv-SE")} klick
       </span>
 
       <div onClick={(e) => e.stopPropagation()}>
-        <Toggle
-          on={bookmaker.active}
-          onClick={onToggleActive}
+        <Switch
+          size="sm"
+          checked={bookmaker.active}
+          onChange={onToggleActive}
           label={`${bookmaker.active ? "Avpublicera" : "Publicera"} ${bookmaker.name}`}
         />
       </div>
     </div>
-  );
-}
-
-function Toggle({
-  on,
-  onClick,
-  label,
-}: {
-  on: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      aria-pressed={on}
-      className={cn(
-        "relative h-6 w-[42px] shrink-0 cursor-pointer rounded-full border p-0 transition",
-        on
-          ? "border-[rgba(102,227,138,.45)] bg-win/15"
-          : "border-line-strong bg-bg-soft"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] size-4 rounded-full transition-all duration-150",
-          on ? "left-[calc(100%-18px)] bg-win" : "left-[2px] bg-dim"
-        )}
-      />
-    </button>
   );
 }
 

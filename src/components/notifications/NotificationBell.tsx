@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   NotificationPanel,
@@ -302,21 +303,31 @@ export function NotificationBell({
         ) : null}
       </button>
 
-      {open ? (
-        <NotificationPanel
-          items={items}
-          unread={unread}
-          tab={tab}
-          loading={loading}
-          hasMore={hasMore}
-          onTab={setTab}
-          onClose={() => setOpen(false)}
-          onReadAll={() => void readAll()}
-          onOpen={openItem}
-          onLoadMore={() => void loadPage(items.length)}
-          onSettings={openSettings}
-        />
-      ) : null}
+      {/*
+        Portal till <body>: headern har backdrop-blur, och ett element med
+        backdrop-filter blir containing block för position:fixed-barn. Utan
+        portalen mäter panelen mot headerns ~57px höga box i stället för mot
+        viewporten — backdropen dimmar ingenting, bakgrunden målar bara
+        översta remsan och listan kollapsar så inga notiser syns.
+      */}
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <NotificationPanel
+              items={items}
+              unread={unread}
+              tab={tab}
+              loading={loading}
+              hasMore={hasMore}
+              onTab={setTab}
+              onClose={() => setOpen(false)}
+              onReadAll={() => void readAll()}
+              onOpen={openItem}
+              onLoadMore={() => void loadPage(items.length)}
+              onSettings={openSettings}
+            />,
+            document.body
+          )
+        : null}
     </>
   );
 }

@@ -122,19 +122,24 @@ export function SheetBetCards({
               </span>
             </div>
 
-            <div className="flex items-center justify-between gap-2 border-t border-line-soft px-3.5 py-2.5">
+            {/*
+              Allt på EN rad, i tre block med samma höjd (32px): rättningen
+              tar plats som blir över, ikonerna och bolagsloggan står fast.
+            */}
+            <div className="flex items-center gap-2 border-t border-line-soft px-3.5 py-2.5">
               <SheetSettleControls bet={bet} canEdit={canEdit} size="card" />
-              <div className="flex shrink-0 items-center gap-2">
-                <BetRowActions
-                  bet={bet}
-                  canEdit={canEdit}
-                  canRygga={canRygga}
-                  onRygga={onRygga ? () => onRygga(bet) : undefined}
-                  onRemove={onRemove ? () => onRemove(bet) : undefined}
-                  hoverReveal={false}
-                />
-                <BookmakerPlate bet={bet} width={62} height={28} />
-              </div>
+              <BetRowActions
+                bet={bet}
+                canEdit={canEdit}
+                canRygga={canRygga}
+                size="card"
+                onRygga={onRygga ? () => onRygga(bet) : undefined}
+                onRemove={onRemove ? () => onRemove(bet) : undefined}
+                hoverReveal={false}
+              />
+              <span className="shrink-0">
+                <BookmakerPlate bet={bet} width={54} height={26} />
+              </span>
             </div>
           </article>
         );

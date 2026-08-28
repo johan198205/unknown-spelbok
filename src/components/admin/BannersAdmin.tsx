@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Input, Select, Textarea } from "@/components/ui/Input";
+import { Switch } from "@/components/ui/Switch";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import {
   deleteBanner,
@@ -194,40 +195,6 @@ const emptyDraft: Draft = {
   sort: 0,
 };
 
-function Toggle({
-  checked,
-  onChange,
-  disabled,
-  label,
-}: {
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  disabled?: boolean;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={cn(
-        "relative h-[22px] w-[38px] shrink-0 rounded-[var(--radius-pill)] border transition disabled:opacity-50",
-        checked ? "border-win/40 bg-win/25" : "border-line bg-panel-2"
-      )}
-    >
-      <span
-        className={cn(
-          "absolute top-[2px] size-[14px] rounded-[var(--radius-pill)] transition-[left]",
-          checked ? "left-[20px] bg-win" : "left-[2px] bg-faint"
-        )}
-      />
-    </button>
-  );
-}
-
 export function BannersAdmin({ items }: { items: BannerRow[] }) {
   const [filter, setFilter] = useState<BannerPlacement | "all">("all");
   const [formatFilter, setFormatFilter] = useState<BannerFormat | "all">("all");
@@ -329,11 +296,11 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               <div
                 key={b.id}
                 className={cn(
-                  "overflow-hidden rounded-[var(--radius-card-lg)] border border-line bg-panel transition-colors hover:border-line-hover",
+                  "flex flex-col overflow-hidden rounded-[var(--radius-card-lg)] border border-line bg-panel transition-colors hover:border-line-hover",
                   !b.active && "opacity-60"
                 )}
               >
-                <div className="flex h-[110px] items-center justify-center overflow-hidden border-b border-line-soft bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] p-2">
+                <div className="flex h-[110px] shrink-0 items-center justify-center overflow-hidden border-b border-line-soft bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] p-2">
                   {b.creative_type === "html" ? (
                     // Snutten körs medvetet INTE i listan: många nätverk räknar
                     // en visning redan vid inladdning, och adminsidan ska inte
@@ -353,7 +320,7 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   )}
                 </div>
 
-                <div className="p-3.5">
+                <div className="flex min-w-0 flex-1 flex-col p-3.5">
                   <div className="mb-2 flex items-start gap-2.5">
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-semibold">{b.title}</div>
@@ -363,10 +330,12 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                           : b.link_url || "Ingen länk"}
                       </div>
                     </div>
-                    <Badge tone={status.tone}>{status.label}</Badge>
+                    <Badge tone={status.tone} className="shrink-0">
+                      {status.label}
+                    </Badge>
                   </div>
 
-                  <div className="mb-2.5 flex flex-wrap items-center gap-2">
+                  <div className="mb-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
                     <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] text-[11px] text-text-soft">
                       {placementLabel(b.placement)}
                     </span>
@@ -378,35 +347,43 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                         HTML
                       </span>
                     ) : null}
-                    <span className="font-mono-num text-[11.5px] text-muted">
+                    <span className="whitespace-nowrap font-mono-num text-[11.5px] text-muted">
                       {periodOf(b)}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3.5 border-t border-line-soft pt-2.5 font-mono-num text-[12.5px]">
-                    <span className="text-text-soft">
-                      {b.views} <span className="text-dim">visn.</span>
-                    </span>
-                    <span className="text-text-soft">
-                      {b.clicks} <span className="text-dim">klick</span>
-                    </span>
-                    <span className="text-win">{b.ctr.toFixed(2)}%</span>
-                    <span className="ml-auto flex items-center gap-1.5">
+                  {/* Siffror och knappar på var sin rad: allt ryms i den
+                      smalaste kolumnen (340 px) utan att kapas av kortet. */}
+                  <div className="mt-auto border-t border-line-soft pt-2.5">
+                    <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1 font-mono-num text-[12.5px]">
+                      <span className="whitespace-nowrap text-text-soft">
+                        {b.views} <span className="text-dim">visn.</span>
+                      </span>
+                      <span className="whitespace-nowrap text-text-soft">
+                        {b.clicks} <span className="text-dim">klick</span>
+                      </span>
+                      <span className="whitespace-nowrap text-win">
+                        {b.ctr.toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="mt-2.5 flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setDraft(draftFrom(b))}
-                        className="rounded-[7px] border border-line px-2 py-1 text-[11.5px] text-text-soft transition hover:border-line-hover"
+                        className="rounded-[7px] border border-line px-2.5 py-1 text-[11.5px] text-text-soft transition hover:border-line-hover"
                       >
                         Redigera
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDelete(b)}
-                        className="rounded-[7px] border border-line px-2 py-1 text-[11.5px] text-loss transition hover:border-loss/40"
+                        className="rounded-[7px] border border-line px-2.5 py-1 text-[11.5px] text-loss transition hover:border-loss/40"
                       >
                         Radera
                       </button>
-                      <Toggle
+                      <Switch
+                        size="sm"
+                        className="ml-auto"
                         checked={b.active}
                         disabled={pending}
                         label={`Aktivera ${b.title}`}
@@ -414,7 +391,7 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                           run(() => setBannerActive(b.id, next))
                         }
                       />
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -577,18 +554,6 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   {formatOf(draft.format).where.toLowerCase()}.
                 </div>
               )}
-              <div>
-                <span className="mb-1.5 block text-[11px] uppercase tracking-[0.12em] text-muted">
-                  Aktiv
-                </span>
-                <div className="flex h-[50px] items-center">
-                  <Toggle
-                    checked={draft.active}
-                    label="Aktiv"
-                    onChange={(next) => setDraft({ ...draft, active: next })}
-                  />
-                </div>
-              </div>
               <Input
                 label="Startdatum"
                 type="date"
@@ -603,6 +568,21 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                 onChange={(e) => setDraft({ ...draft, end: e.target.value })}
                 className="font-mono-num text-[13.5px]"
               />
+              <div className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line-soft bg-bg px-3 py-2.5 sm:col-span-2">
+                <span className="min-w-0">
+                  <span className="block text-[13.5px] font-semibold">
+                    Aktiv
+                  </span>
+                  <span className="block text-[12.5px] text-muted">
+                    Pausade banners sparas men visas inte på sajten.
+                  </span>
+                </span>
+                <Switch
+                  checked={draft.active}
+                  label="Aktiv"
+                  onChange={(next) => setDraft({ ...draft, active: next })}
+                />
+              </div>
             </div>
 
             <div className="mt-4 rounded-[var(--radius-card)] border border-line-soft bg-bg p-3.5">

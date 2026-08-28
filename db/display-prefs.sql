@@ -11,6 +11,13 @@ alter table public.profiles
 alter table public.profiles
   add column if not exists currency text not null default 'SEK';
 
+-- unit_size kommer egentligen från bet-stats.sql. Den läggs även här så att
+-- den här filen går att köra fristående — hela skriptet körs i en transaktion
+-- och comment-satsen längst ner fäller annars allt om kolumnen saknas.
+alter table public.profiles
+  add column if not exists unit_size numeric(12,2) not null default 100
+    check (unit_size > 0);
+
 -- Konstrainten läggs separat: add column ... check hoppas över av
 -- "if not exists" om kolumnen redan finns från ett tidigare försök.
 do $$

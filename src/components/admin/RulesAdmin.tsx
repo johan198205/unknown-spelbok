@@ -4,11 +4,11 @@ import { useCallback, useState } from "react";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
 import { RuleEditor } from "@/components/admin/RuleEditor";
 import { SIGNAL_BET_TYPES, SIGNAL_SPORTS } from "@/lib/signals/fields";
 import type { SignalConditions } from "@/lib/signals/evaluate";
 import type { SignalRule } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 function conditionCount(conditions: SignalRule["conditions"]) {
   const all = (conditions as SignalConditions | null)?.all;
@@ -106,8 +106,8 @@ export function RulesAdmin({ initialRules }: { initialRules: SignalRule[] }) {
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-[var(--radius-panel)] border border-line bg-panel">
-        <table className="w-full text-left text-[13.5px]">
+      <div className="overflow-x-auto rounded-[var(--radius-panel)] border border-line bg-panel">
+        <table className="w-full min-w-[760px] text-left text-[13.5px]">
           <thead className="border-b border-line text-[11px] uppercase tracking-[0.1em] text-muted">
             <tr>
               <th className="px-4 py-3 font-semibold">Namn</th>
@@ -150,29 +150,13 @@ export function RulesAdmin({ initialRules }: { initialRules: SignalRule[] }) {
                   {updatedLabel(rule.updated_at)}
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={rule.active}
-                    aria-label={`${rule.active ? "Inaktivera" : "Aktivera"} ${rule.name}`}
+                  <Switch
+                    size="sm"
+                    checked={rule.active}
                     disabled={busy === rule.id}
-                    onClick={() => toggleActive(rule)}
-                    className={cn(
-                      "relative h-[22px] w-[38px] rounded-full border transition-colors disabled:opacity-50",
-                      rule.active
-                        ? "border-win bg-win/25"
-                        : "border-line-strong bg-panel-2"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute top-[2px] h-[16px] w-[16px] rounded-full transition-all",
-                        rule.active
-                          ? "left-[18px] bg-win"
-                          : "left-[2px] bg-faint"
-                      )}
-                    />
-                  </button>
+                    label={`${rule.active ? "Inaktivera" : "Aktivera"} ${rule.name}`}
+                    onChange={() => toggleActive(rule)}
+                  />
                 </td>
               </tr>
             ))}

@@ -18,7 +18,7 @@ import { useAmount } from "@/components/DisplayPrefsProvider";
 import { betNetto, cn, formatOdds, nettoColor } from "@/lib/utils";
 
 type Column = {
-  key: SheetSortKey | "actions";
+  key: SheetSortKey | "actions" | "locked";
   label: string;
   /** Kolumnbredder i procent — tabellen får aldrig bli bredare än sin ruta. */
   width: string;
@@ -32,16 +32,24 @@ type Column = {
   så att inget innehåll behöver brytas till en andra rad där: datumet ska stå
   på en rad, rättningens W/L/P/V ska ligga i linje med ⚡, och ikonerna ska
   rymmas bredvid varandra i sin egen kolumn.
+
+  Matchkolumnen är den enda som bär långa lagnamn och får därför allt som blir
+  över. Kolumner med känt kort innehåll (datum, spelnamn, låsikonen) är
+  nedskurna till vad de faktiskt behöver i stället för att sitta på marginal.
 */
 const COLUMNS: Column[] = [
-  { key: "date", label: "Datum", width: "w-[10%]" },
-  { key: "league", label: "Liga", width: "w-[10%] max-sheet-wide:w-[5%]" },
-  { key: "match", label: "Match", width: "w-[14%] max-sheet-wide:w-[19%]" },
-  { key: "pick", label: "Spel", width: "w-[12%]" },
+  { key: "date", label: "Datum", width: "w-[9%]" },
+  { key: "league", label: "Liga", width: "w-[8%] max-sheet-wide:w-[5%]" },
+  { key: "match", label: "Match", width: "w-[17%] max-sheet-wide:w-[20%]" },
+  { key: "pick", label: "Spel", width: "w-[8%]" },
+  /* Låset bor i egen kolumn så spelnamnet alltid börjar på samma linje.
+     Bredden styrs av rubriken, inte ikonen: "LÅST SPEL" ska rymmas på en rad
+     ända ner till sheet-brytpunkten, annars växer hela huvudraden. */
+  { key: "locked", label: "Låst spel", width: "w-[8%]", sortable: false },
   { key: "bookmaker", label: "Bolag", width: "w-[8%]" },
-  { key: "stake", label: "Insats", width: "w-[7%]", align: "right" },
+  { key: "stake", label: "Insats", width: "w-[6%]", align: "right" },
   { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
-  { key: "result", label: "Rättning", width: "w-[14%]" },
+  { key: "result", label: "Rättning", width: "w-[13%]" },
   /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
   { key: "netto", label: "Netto", width: "w-[10%]", align: "right" },
   {
@@ -52,6 +60,9 @@ const COLUMNS: Column[] = [
     sortable: false,
   },
 ];
+
+/** Kolumner utan sortering som ändå ska visa sin rubrik. */
+const UNSORTABLE_WITH_LABEL = new Set<Column["key"]>(["locked"]);
 
 /** Datum på egen rad, tiden dämpad under. Datumet bryts aldrig mitt itu. */
 function DateCell({ iso }: { iso: string }) {
@@ -180,7 +191,11 @@ export function SheetBetsTable({
                 )}
               >
                 {col.sortable === false || col.key === "actions" ? (
-                  <span className="sr-only">{col.label}</span>
+                  UNSORTABLE_WITH_LABEL.has(col.key) ? (
+                    <span>{col.label}</span>
+                  ) : (
+                    <span className="sr-only">{col.label}</span>
+                  )
                 ) : (
                   <button
                     type="button"
@@ -220,14 +235,15 @@ export function SheetBetsTable({
                   <SheetMatchCell bet={bet} density={density} />
                 </td>
                 <td className="px-2.5 py-3 align-middle font-bold">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    {/* Fast bredd: låset får inte knuffa spelnamnet i sidled
-                        mellan rader som saknar verifiering. */}
-                    <span className="inline-flex w-3.5 shrink-0 justify-center">
-                      <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
-                    </span>
-                    <span className="min-w-0">{formatPick(bet.pick)}</span>
-                  </span>
+                  <span className="block min-w-0">{formatPick(bet.pick)}</span>
+                </td>
+                <td className="px-2.5 py-3 align-middle">
+                  {bet.logged_before_kickoff === null ||
+                  bet.logged_before_kickoff === undefined ? (
+                    <span className="text-faint">—</span>
+                  ) : (
+                    <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
+                  )}
                 </td>
                 <td className="px-2.5 py-3 align-middle">
                   <BookmakerPlate bet={bet} />

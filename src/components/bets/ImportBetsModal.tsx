@@ -66,11 +66,10 @@ export function ImportBetsButton({ sheetId }: { sheetId: string }) {
       <Button
         type="button"
         variant="secondary"
-        size="sm"
-        className="gap-1.5"
+        className="shrink-0 gap-1.5"
         onClick={() => setOpen(true)}
       >
-        <Upload className="size-3.5" strokeWidth={2.25} />
+        <Upload className="size-4" strokeWidth={2.25} />
         Importera
       </Button>
       {open ? (

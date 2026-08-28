@@ -3,11 +3,12 @@
 import type { ReactNode } from "react";
 import { Copy, Trash2 } from "lucide-react";
 import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
+import { ACTION_ICON_SIZE, type BetActionSize } from "@/lib/bet-actions-ui";
 import { canNotifyBet, canRyggaBet } from "@/lib/rygga";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** Enhetlig ikonknapp: 36×36 (28×28 i tabellen), tunn border, tooltip. */
+/** Enhetlig ikonknapp: mått enligt ACTION_ICON_SIZE, tunn border, tooltip. */
 export function BetActionIconButton({
   label,
   onClick,
@@ -20,8 +21,8 @@ export function BetActionIconButton({
   onClick: () => void;
   children: ReactNode;
   tone?: "default" | "danger" | "active";
-  /** sm = tabellens täta åtgärdskolumn, md = kort och mobil. */
-  size?: "sm" | "md";
+  /** sm = tabellens täta åtgärdskolumn, card = spelbokskort, md = mobil. */
+  size?: BetActionSize;
   className?: string;
 }) {
   return (
@@ -37,7 +38,7 @@ export function BetActionIconButton({
         title={label}
         className={cn(
           "inline-flex items-center justify-center rounded-[8px] border transition",
-          size === "sm" ? "size-7" : "size-9",
+          ACTION_ICON_SIZE[size],
           tone === "active"
             ? "border-win/40 bg-win/10 text-win"
             : tone === "danger"
@@ -79,8 +80,8 @@ export function BetRowActions({
   onRygga?: () => void;
   onRemove?: () => void;
   className?: string;
-  /** sm = tabellens täta åtgärdskolumn, md = kort och mobil. */
-  size?: "sm" | "md";
+  /** sm = tabellens täta åtgärdskolumn, card = spelbokskort, md = mobil. */
+  size?: BetActionSize;
   hoverReveal?: boolean;
 }) {
   const showNotify = canEdit && canNotifyBet(bet);
@@ -94,8 +95,8 @@ export function BetRowActions({
       className={cn(
         // Ikonerna står alltid på EN rad — wrap här knuffar ner papperskorgen
         // under rättningen och raden växer i höjd.
-        "flex flex-nowrap items-center justify-end",
-        size === "sm" ? "gap-1" : "gap-1.5",
+        "flex shrink-0 flex-nowrap items-center justify-end",
+        size === "md" ? "gap-1.5" : "gap-1",
         hoverReveal &&
           "opacity-100 transition-opacity duration-[120ms] lg:opacity-0 lg:group-hover/row:opacity-100 lg:focus-within:opacity-100",
         className
