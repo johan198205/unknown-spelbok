@@ -134,6 +134,7 @@ export function fixtureFromSuggestion(suggestion: DailySuggestion): Fixture {
     home_score: null,
     away_score: null,
     elapsed: null,
+    extra: null,
     season: null,
     raw: null,
     updated_at: suggestion.kickoff,

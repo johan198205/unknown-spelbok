@@ -45,6 +45,8 @@ export type NotificationDraft = {
   amount_kind?: NotificationAmountKind | null;
   target_type?: NotificationTargetType | null;
   target_id?: string | null;
+  /** Fri länk som vinner över target_type. Används av popup-notiser. */
+  href?: string | null;
 };
 
 /**
@@ -78,6 +80,7 @@ export async function insertNotifications(drafts: NotificationDraft[]) {
           amount_kind: d.amount_kind ?? null,
           target_type: d.target_type ?? null,
           target_id: d.target_id ?? null,
+          href: d.href ?? null,
         })),
         { onConflict: "user_id,dedupe_key", ignoreDuplicates: true }
       )
@@ -396,6 +399,46 @@ export async function recordCouponNotifications(coupon: {
 
   // Mottagarna är redan filtrade i frågan ovan — inget andra varv behövs.
   return insertNotifications(drafts);
+}
+
+// -------------------------------------------------------------
+// POPUP
+//
+// Anropas från /api/popup-events när en inloggad besökare FAKTISKT fått
+// rutan på skärmen — inte när redaktionen publicerar. Det är skillnaden
+// mot kupongnotisen: en popup med trigger "efter 20 sekunder på
+// /kuponger" har ingen mottagarlista i förväg, den har en publik som
+// råkar uppfylla villkoret.
+//
+// dedupe_key popup:{id} är unik per användare, så en ruta som visas i
+// flera flikar eller efter en omladdning ger fortfarande en enda rad.
+// Notisen är kvittot: rutan går att stänga, historiken ligger kvar.
+// -------------------------------------------------------------
+export async function recordPopupNotification(args: {
+  userId: string;
+  popupId: string;
+  title: string;
+  body: string;
+  href: string | null;
+}) {
+  const title = args.title.trim();
+  const body = args.body.trim();
+  if (!title && !body) return 0;
+
+  const drafts: NotificationDraft[] = [
+    {
+      user_id: args.userId,
+      type: "popup",
+      // En bildpopup saknar rubrik. Notisen måste ändå ha en — annars
+      // står det en tom rad i panelen.
+      title: title || "Nytt erbjudande",
+      body,
+      dedupe_key: `popup:${args.popupId}`,
+      href: args.href,
+    },
+  ];
+
+  return insertNotifications(await allowedInApp(drafts));
 }
 
 // -------------------------------------------------------------

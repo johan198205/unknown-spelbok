@@ -20,6 +20,7 @@ function patchFromRow(row: {
   fixture_id?: unknown;
   status?: unknown;
   elapsed?: unknown;
+  extra?: unknown;
   home_score?: unknown;
   away_score?: unknown;
 }): { id: number; patch: LiveFixturePatch } | null {
@@ -30,6 +31,7 @@ function patchFromRow(row: {
     patch: {
       status: typeof row.status === "string" ? row.status : "NS",
       elapsed: typeof row.elapsed === "number" ? row.elapsed : null,
+      extra: typeof row.extra === "number" ? row.extra : null,
       home_score: typeof row.home_score === "number" ? row.home_score : null,
       away_score: typeof row.away_score === "number" ? row.away_score : null,
       receivedAt: Date.now(),

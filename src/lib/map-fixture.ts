@@ -16,6 +16,7 @@ export function mapFixtureRow(
     kickoff: item.fixture.date,
     status: item.fixture.status.short,
     elapsed: item.fixture.status.elapsed ?? null,
+    extra: item.fixture.status.extra ?? null,
     sport: sportLabel(sport),
     league_id: item.league.id,
     league_name: item.league.name,

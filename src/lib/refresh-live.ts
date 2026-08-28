@@ -50,9 +50,15 @@ async function upsertRows(
     const { error } = await admin.from("fixtures").upsert(group, {
       onConflict: "fixture_id",
     });
-    if (error && /season|raw|elapsed/i.test(error.message)) {
+    if (error && /season|raw|elapsed|extra/i.test(error.message)) {
       const slim = group.map(
-        ({ raw: _raw, season: _season, elapsed: _elapsed, ...rest }) => rest
+        ({
+          raw: _raw,
+          season: _season,
+          elapsed: _elapsed,
+          extra: _extra,
+          ...rest
+        }) => rest
       );
       const retry = await admin.from("fixtures").upsert(slim, {
         onConflict: "fixture_id",
@@ -70,10 +76,10 @@ async function loadCached(
 ): Promise<LiveFixtureRow[]> {
   const full = await admin
     .from("fixtures")
-    .select("fixture_id, status, elapsed, home_score, away_score")
+    .select("fixture_id, status, elapsed, extra, home_score, away_score")
     .in("fixture_id", ids);
   const data =
-    full.error && /elapsed/i.test(full.error.message)
+    full.error && /elapsed|extra/i.test(full.error.message)
       ? (
           await admin
             .from("fixtures")
@@ -86,6 +92,7 @@ async function loadCached(
     status: (row.status as string) || "NS",
     elapsed:
       "elapsed" in row && typeof row.elapsed === "number" ? row.elapsed : null,
+    extra: "extra" in row && typeof row.extra === "number" ? row.extra : null,
     home_score: typeof row.home_score === "number" ? row.home_score : null,
     away_score: typeof row.away_score === "number" ? row.away_score : null,
   }));
@@ -100,6 +107,7 @@ function patchFromApi(
     fixture_id: id,
     status: hit.item.fixture.status.short,
     elapsed: hit.item.fixture.status.elapsed ?? null,
+    extra: hit.item.fixture.status.extra ?? null,
     home_score: score.home,
     away_score: score.away,
   };
@@ -110,11 +118,11 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
   const cachedSelect = await admin
     .from("fixtures")
     .select(
-      "fixture_id, sport, status, elapsed, home_score, away_score, updated_at"
+      "fixture_id, sport, status, elapsed, extra, home_score, away_score, updated_at"
     )
     .in("fixture_id", ids);
   const rows =
-    cachedSelect.error && /elapsed/i.test(cachedSelect.error.message)
+    cachedSelect.error && /elapsed|extra/i.test(cachedSelect.error.message)
       ? (
           await admin
             .from("fixtures")

@@ -24,7 +24,7 @@ export function ImageUpload({
   storePath,
   required,
 }: {
-  bucket: "logos" | "banners" | "avatars" | "bookmaker-logos";
+  bucket: "logos" | "banners" | "avatars" | "bookmaker-logos" | "popups";
   label: string;
   value: string;
   onChange: (url: string) => void;

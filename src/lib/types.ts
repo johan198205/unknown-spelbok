@@ -846,6 +846,7 @@ export type Database = {
           away_score: number | null
           away_team_id: number | null
           elapsed: number | null
+          extra: number | null
           fixture_id: number
           home_logo: string | null
           home_name: string | null
@@ -867,6 +868,7 @@ export type Database = {
           away_score?: number | null
           away_team_id?: number | null
           elapsed?: number | null
+          extra?: number | null
           fixture_id: number
           home_logo?: string | null
           home_name?: string | null
@@ -888,6 +890,7 @@ export type Database = {
           away_score?: number | null
           away_team_id?: number | null
           elapsed?: number | null
+          extra?: number | null
           fixture_id?: number
           home_logo?: string | null
           home_name?: string | null
@@ -1597,6 +1600,7 @@ export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
     | "kickoff"
     | "status"
     | "elapsed"
+    | "extra"
     | "home_score"
     | "away_score"
     | "home_logo"

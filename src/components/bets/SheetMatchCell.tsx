@@ -1,10 +1,14 @@
 "use client";
 
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { useClockTick } from "@/hooks/useClockTick";
 import {
+  fixtureClock,
   fixtureFromBet,
   formatKickoffTime,
+  isFinishedStatus,
   isInPlayStatus,
+  isTickingStatus,
 } from "@/lib/live-fixture";
 import { parseMatchSides, teamLogoUrl } from "@/lib/logos";
 import type { Bet } from "@/lib/types";
@@ -20,7 +24,7 @@ type Side = {
 type Sides = {
   home: Side;
   away: Side;
-  /** FT / LIVE / starttid. */
+  /** Spelminut ("67'", "45+2'"), HT, FT eller starttid. */
   status: string;
   live: boolean;
   hasScore: boolean;
@@ -31,16 +35,22 @@ type Sides = {
  *
  * Kopplade spel läser lag och resultat ur fixtures-cachen; manuella spel
  * delar upp `match`-strängen och får inga siffror.
+ *
+ * `now` skickas in i stället för att läsas här inne så klockan kan tickas
+ * av komponenten — funktionen ska förbli ren och testbar.
  */
-export function betMatchSides(bet: Bet): Sides {
+export function betMatchSides(bet: Bet, now = Date.now()): Sides {
   const fixture = fixtureFromBet(bet);
   const live = isInPlayStatus(fixture?.status);
   const settled = bet.result !== "open";
-  const status = settled
-    ? "FT"
-    : live
-      ? "LIVE"
-      : formatKickoffTime(fixture?.kickoff || bet.placed_at) || "—";
+  // Fixturens egen status går före rättningen: en avgjord match visar FT via
+  // klockan ändå, medan ett rättat spel utan fixture inte har någon minut alls.
+  const status =
+    fixture && (live || isFinishedStatus(fixture.status))
+      ? fixtureClock(fixture, now)
+      : settled
+        ? "FT"
+        : formatKickoffTime(fixture?.kickoff || bet.placed_at) || "—";
 
   if (fixture) {
     const sport = fixture.sport;
@@ -143,7 +153,9 @@ export function SheetMatchCell({
   density: SheetDensity;
   variant?: "table" | "card";
 }) {
-  const sides = betMatchSides(bet);
+  // Bara pågående matcher behöver en timer — resten renderas en gång.
+  const now = useClockTick(isTickingStatus(bet.fixtures?.status));
+  const sides = betMatchSides(bet, now);
   const showScore = sides.hasScore;
 
   if (density === "slim") {

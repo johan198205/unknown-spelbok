@@ -80,6 +80,7 @@ create table public.fixtures (
   home_score    int,
   away_score    int,
   elapsed       int,                          -- spelminut, null före avspark
+  extra         int,                          -- tilläggstid: 45+extra / 90+extra
   updated_at    timestamptz not null default now()
 );
 

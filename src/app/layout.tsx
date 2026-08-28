@@ -4,6 +4,7 @@ import { Barlow, IBM_Plex_Mono, Oswald } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
 import { AuthEventTracker } from "@/components/layout/AuthEventTracker";
 import { DisplayPrefsProvider } from "@/components/DisplayPrefsProvider";
+import { PopupHost } from "@/components/popups/PopupHost";
 import { RouteProgress } from "@/components/ui/RouteProgress";
 import { ToastProvider } from "@/components/ui/Toast";
 import { getDisplayPrefs } from "@/lib/display-prefs";
@@ -97,6 +98,14 @@ export default async function RootLayout({
         <DisplayPrefsProvider value={displayPrefs}>
           <ToastProvider>{children}</ToastProvider>
         </DisplayPrefsProvider>
+        {/*
+          Ligger utanför ToastProvider och sist i trädet: rutan ska rendera
+          över allt annat, och den ska aldrig kunna hindra sidan från att
+          målas om läsningen är långsam.
+        */}
+        <Suspense fallback={null}>
+          <PopupHost />
+        </Suspense>
       </body>
     </html>
   );

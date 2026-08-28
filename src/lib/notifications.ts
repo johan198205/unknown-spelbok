@@ -15,6 +15,7 @@ export const NOTIFICATION_TYPES = [
   "coupon",
   "competition",
   "kickoff",
+  "popup",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -34,12 +35,18 @@ export type AppNotification = {
   amount_kind: NotificationAmountKind | null;
   target_type: NotificationTargetType | null;
   target_id: string | null;
+  /**
+   * Färdig länk som vinner över target_type. Popup-notiser pekar på en fri
+   * URL (kampanjsida, spelbolag, extern landningssida) som varken target_id
+   * eller de fyra måltyperna kan uttrycka.
+   */
+  href: string | null;
   dedupe_key: string;
 };
 
 /** Kolumnlistan panelen och räknaren läser. Håll den i synk med select(). */
 export const NOTIFICATION_COLUMNS =
-  "id, user_id, type, title, body, created_at, read_at, amount, amount_kind, target_type, target_id, dedupe_key";
+  "id, user_id, type, title, body, created_at, read_at, amount, amount_kind, target_type, target_id, href, dedupe_key";
 
 /** Panelen hämtar en sida i taget och laddar fler vid scroll till botten. */
 export const NOTIFICATION_PAGE_SIZE = 30;
@@ -63,6 +70,7 @@ export const NOTIFICATION_CATEGORIES = [
   "settled",
   "coupon",
   "competition",
+  "popup",
 ] as const;
 
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
@@ -73,6 +81,7 @@ export const CATEGORY_LABELS: Record<NotificationCategory, string> = {
   settled: "Spel rättat",
   coupon: "Ny kupong",
   competition: "Tävlingsplacering",
+  popup: "Kampanjer och erbjudanden",
 };
 
 export function categoryOf(type: NotificationType): NotificationCategory {
@@ -100,6 +109,9 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   coupon_email: true,
   competition_in_app: true,
   competition_email: false,
+  // En kampanjruta besökaren redan sett på sajten är inte värd ett mejl.
+  popup_in_app: true,
+  popup_email: false,
 };
 
 export const NOTIFICATION_SETTINGS_COLUMNS = [
@@ -147,6 +159,9 @@ const PATHS = {
     '<path d="M12 14v3M8.5 20h7l-.8-3h-5.4z"/>',
   clock:
     '<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.4 2"/>',
+  megaphone:
+    '<path d="M4 10.5v3a1.5 1.5 0 0 0 1.5 1.5H8l6.5 4V5L8 9H5.5A1.5 1.5 0 0 0 4 10.5z"/>' +
+    '<path d="M18 9.5a3.5 3.5 0 0 1 0 5M8 15v3.5a1.5 1.5 0 0 0 3 0V17"/>',
 } as const;
 
 type TypeMeta = {
@@ -162,6 +177,7 @@ export const NOTIFICATION_META: Record<NotificationType, TypeMeta> = {
   coupon: { accent: "#66E38A", icon: svgUrl(PATHS.ticket, "#66E38A") },
   competition: { accent: "#FFD166", icon: svgUrl(PATHS.trophy, "#FFD166") },
   kickoff: { accent: "#35D6F5", icon: svgUrl(PATHS.clock, "#35D6F5") },
+  popup: { accent: "#FFD166", icon: svgUrl(PATHS.megaphone, "#FFD166") },
 };
 
 /** 34px-plattan bakom ikonen: accentfärgen på 14 % opacitet. */
@@ -195,7 +211,13 @@ export const COUPON_PATH = "/kuponger";
 export function notificationHref(n: {
   target_type: NotificationTargetType | null;
   target_id: string | null;
+  href?: string | null;
 }): string | null {
+  // href vinner: popup-notiser bär en fri URL som varken target_id (uuid)
+  // eller de fyra måltyperna kan uttrycka.
+  const explicit = n.href?.trim();
+  if (explicit) return explicit;
+
   if (!n.target_type) return null;
   switch (n.target_type) {
     case "sheet":

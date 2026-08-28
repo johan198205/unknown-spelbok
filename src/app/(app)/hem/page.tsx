@@ -73,7 +73,7 @@ export default async function HemPage() {
   const prefs = await getDisplayPrefs();
   const supabase = await createClient();
 
-  const [{ data: sheets }, { data: betsData }, { data: suggestionRows }] =
+  const [{ data: sheets }, betsQuery, { data: suggestionRows }] =
     await Promise.all([
       supabase
         .from("sheets")
@@ -83,7 +83,7 @@ export default async function HemPage() {
       supabase
         .from("bets")
         .select(
-          "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
+          "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, extra, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
         )
         .eq("user_id", user.id)
         .order("placed_at", { ascending: false }),
@@ -102,6 +102,20 @@ export default async function HemPage() {
         .order("match_score", { ascending: false })
         .order("kickoff", { ascending: true }),
     ]);
+
+  // Livekolumnerna är migreringar som kan sakna körning i en given databas.
+  // Hellre spelbok utan spelminut än en tom sida.
+  const betsData = betsQuery.error
+    ? (
+        await supabase
+          .from("bets")
+          .select(
+            "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
+          )
+          .eq("user_id", user.id)
+          .order("placed_at", { ascending: false })
+      ).data
+    : betsQuery.data;
 
   const sheetList = (sheets || []) as Sheet[];
   const bets = (betsData || []) as Bet[];

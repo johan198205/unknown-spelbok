@@ -209,9 +209,15 @@ async function upsertFixtureRows(
     const { error } = await admin.from("fixtures").upsert(group, {
       onConflict: "fixture_id",
     });
-    if (error && /season|raw|elapsed/i.test(error.message)) {
+    if (error && /season|raw|elapsed|extra/i.test(error.message)) {
       const slim = group.map(
-        ({ raw: _raw, season: _season, elapsed: _elapsed, ...rest }) => rest
+        ({
+          raw: _raw,
+          season: _season,
+          elapsed: _elapsed,
+          extra: _extra,
+          ...rest
+        }) => rest
       );
       const retry = await admin.from("fixtures").upsert(slim, {
         onConflict: "fixture_id",

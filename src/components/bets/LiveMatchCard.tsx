@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { useClockTick } from "@/hooks/useClockTick";
 import {
-  displayElapsed,
-  formatMatchClock,
+  fixtureClock,
   isFinishedStatus,
   isInPlayStatus,
+  isTickingStatus,
   type MatchFixture,
 } from "@/lib/live-fixture";
 import { teamLogoUrl } from "@/lib/logos";
@@ -58,27 +58,8 @@ export function LiveMatchCard({
   const live = isInPlayStatus(fixture.status);
   const finished = isFinishedStatus(fixture.status);
   const showScore = live || finished;
-  const tick =
-    live &&
-    fixture.status !== "HT" &&
-    fixture.status !== "BT" &&
-    fixture.status !== "P";
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!tick) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [tick]);
-
-  const elapsed = displayElapsed(
-    fixture.status,
-    fixture.elapsed ?? null,
-    fixture.receivedAt,
-    now,
-    fixture.kickoff
-  );
-  const clock = formatMatchClock(fixture.status, elapsed, fixture.kickoff);
+  const now = useClockTick(isTickingStatus(fixture.status));
+  const clock = fixtureClock(fixture, now);
   const clockColor = finished
     ? "text-faint"
     : live
@@ -97,7 +78,8 @@ export function LiveMatchCard({
       ) : null}
       <span
         className={cn(
-          "flex w-11 shrink-0 items-center justify-center font-mono-num text-[12px] font-medium",
+          // Bredden måste rymma tilläggstid ("90+3'"), inte bara "67'".
+          "flex w-12 shrink-0 items-center justify-center whitespace-nowrap font-mono-num text-[12px] font-medium",
           live || finished ? "pl-1" : "",
           clockColor
         )}

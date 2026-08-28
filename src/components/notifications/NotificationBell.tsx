@@ -44,6 +44,7 @@ function rowToNotification(row: Record<string, unknown>): AppNotification | null
         ? row.target_type
         : null,
     target_id: typeof row.target_id === "string" ? row.target_id : null,
+    href: typeof row.href === "string" ? row.href : null,
     dedupe_key: typeof row.dedupe_key === "string" ? row.dedupe_key : "",
   };
 }
@@ -254,7 +255,14 @@ export function NotificationBell({
       void markRead(item);
       setOpen(false);
       const href = notificationHref(item);
-      if (href) router.push(href);
+      if (!href) return;
+      // Popup-notiser kan peka på en extern landningssida. router.push()
+      // skulle försöka rendera den som en route i appen och fastna.
+      if (/^https?:\/\//i.test(href)) {
+        window.open(href, "_blank", "noopener,noreferrer");
+        return;
+      }
+      router.push(href);
     },
     [markRead, router]
   );

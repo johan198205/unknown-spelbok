@@ -20,6 +20,8 @@ export const FINISHED_STATUSES = ["FT", "AET", "PEN"] as const;
 export type LiveFixturePatch = {
   status: string;
   elapsed: number | null;
+  /** Tilläggstid. API stannar elapsed på 45/90 och räknar upp den här. */
+  extra?: number | null;
   home_score: number | null;
   away_score: number | null;
   receivedAt?: number;
@@ -30,6 +32,7 @@ export type MatchFixture = {
   kickoff: string;
   status: string;
   elapsed?: number | null;
+  extra?: number | null;
   home_name?: string | null;
   away_name?: string | null;
   home_logo?: string | null;
@@ -67,47 +70,79 @@ export function needsLiveRefresh(
   return false;
 }
 
+/** Sista ordinarie minut per halvlek — därefter är vi i tilläggstid. */
+const REGULATION_END: Record<string, number> = {
+  "1H": 45,
+  "2H": 90,
+  LIVE: 90,
+  ET: 120,
+};
+
+/** Taket för lokalt påtickad tilläggstid. Ingen halvlek får 20 minuter. */
+const MAX_EXTRA = 20;
+
+export type MatchClock = {
+  /** Ordinarie minut: 45 respektive 90 så snart tilläggstiden börjat. */
+  minute: number | null;
+  /** Minuter utöver ordinarie tid, eller null när matchen ligger inom den. */
+  extra: number | null;
+};
+
+/** Klockan står still i paus, vid straffar och när matchen är avbruten. */
+export function isTickingStatus(status: string | null | undefined) {
+  if (!status || !isInPlayStatus(status)) return false;
+  return !["HT", "BT", "P", "INT", "SUSP"].includes(status);
+}
+
 /**
- * Tickar spelminuten lokalt mellan API-uppdateringar.
- * HT/paus står still. 1H/2H räknas upp max till tilläggstid.
+ * Spelminuten mellan API-uppdateringar: senast kända minut plus minuterna
+ * som gått sedan svaret kom in.
+ *
+ * API-Football stannar `elapsed` på 45 respektive 90 under tilläggstid och
+ * räknar i stället upp `extra` — 45+9 kommer alltså som (45, 9), inte som 54.
+ * Tickandet läggs därför på `extra` så fort tilläggstiden börjat, och rullar
+ * över dit av sig självt om vi hinner passera 45/90 innan API:t svarat igen.
  */
-export function displayElapsed(
+export function liveClock(
   status: string,
   elapsed: number | null | undefined,
+  extra: number | null | undefined,
   receivedAt?: number | null,
   now = Date.now(),
   kickoff?: string
-) {
+): MatchClock {
   let minute = elapsed ?? null;
   if (minute == null && kickoff && isInPlayStatus(status)) {
     const start = new Date(kickoff).getTime();
     const mins = Math.floor((now - start) / 60_000);
     if (Number.isFinite(mins) && mins >= 0 && mins <= 130) {
-      if (status === "1H") minute = Math.min(mins, 59);
-      else if (status === "2H" || status === "LIVE") {
-        minute = Math.min(Math.max(mins - 15, 46), 105);
-      } else if (status === "ET") minute = Math.min(Math.max(mins - 15, 91), 125);
+      if (status === "1H") minute = Math.min(mins, 45);
+      else if (status === "2H") minute = Math.min(Math.max(mins - 15, 46), 90);
+      else if (status === "LIVE") {
+        // Generisk livestatus: halvleken är okänd, så paus dras bort först
+        // när klockan hunnit förbi den.
+        minute = mins <= 45 ? mins : Math.min(Math.max(mins - 15, 46), 90);
+      } else if (status === "ET") minute = Math.min(Math.max(mins - 15, 91), 120);
     }
   }
-  if (minute == null) return null;
-  if (
-    !isInPlayStatus(status) ||
-    status === "HT" ||
-    status === "BT" ||
-    status === "P" ||
-    status === "INT" ||
-    status === "SUSP"
-  ) {
-    return minute;
+  if (minute == null) return { minute: null, extra: null };
+
+  const known: MatchClock = { minute, extra: extra ?? null };
+  if (!isTickingStatus(status) || !receivedAt) return known;
+
+  const ticked = Math.floor((now - receivedAt) / 60_000);
+  if (ticked <= 0) return known;
+
+  // Redan i tilläggstid: API:ts minut är rätt boundary, bara extra växer.
+  if (known.extra != null && known.extra > 0) {
+    return { minute, extra: Math.min(known.extra + ticked, MAX_EXTRA) };
   }
-  if (!receivedAt) return minute;
-  const extra = Math.floor((now - receivedAt) / 60_000);
-  if (extra <= 0) return minute;
-  const next = minute + extra;
-  if (status === "1H") return Math.min(next, 59);
-  if (status === "2H" || status === "LIVE") return Math.min(next, 105);
-  if (status === "ET") return Math.min(next, 125);
-  return next;
+
+  const end = REGULATION_END[status];
+  if (end == null) return { minute: minute + ticked, extra: null };
+  const total = minute + ticked;
+  if (total <= end) return { minute: total, extra: null };
+  return { minute: end, extra: Math.min(total - end, MAX_EXTRA) };
 }
 
 export function formatKickoffTime(iso: string) {
@@ -169,32 +204,57 @@ export function formatFinishedPickerLine(
 }
 
 /**
- * Spelminut för livekortet.
- * HT → HT, FT/AET/PEN → FT, förlängning → 90+X' eller ET.
+ * Klocktexten: löpande minut under spel, HT i paus, FT när matchen är slut
+ * och 45+2 / 90+1 i tilläggstid. Före avspark visas starttiden.
  */
 export function formatMatchClock(
   status: string,
   elapsed: number | null | undefined,
-  kickoff: string
+  kickoff: string,
+  extra?: number | null
 ) {
   if (isFinishedStatus(status)) return "FT";
   if (status === "HT") return "HT";
   if (status === "BT") return "ET";
   if (status === "P") return "PEN";
-  if (status === "ET") {
-    if (elapsed != null && elapsed > 90) return `90+${elapsed - 90}'`;
-    return "ET";
-  }
   if (status === "NS" || status === "TBD" || status === "PST") {
     return formatKickoffTime(kickoff);
   }
   if (elapsed != null) {
-    if (status === "2H" && elapsed > 90) return `90+${elapsed - 90}'`;
-    if (status === "1H" && elapsed > 45) return `45+${elapsed - 45}'`;
+    if (extra != null && extra > 0) return `${elapsed}+${extra}'`;
+    // Skydd för minuter som aldrig gått genom liveClock: räkna om en minut
+    // bortom halvlekens slut till tilläggstid i stället för att visa "92'".
+    const end = REGULATION_END[status];
+    if (end != null && elapsed > end) return `${end}+${elapsed - end}'`;
     return `${elapsed}'`;
   }
+  if (status === "ET") return "ET";
   if (isInPlayStatus(status)) return status;
   return formatKickoffTime(kickoff);
+}
+
+/** Klocktexten för en match, med lokal tickning sedan senaste API-svaret. */
+export function fixtureClock(
+  fixture: Pick<
+    MatchFixture,
+    "status" | "elapsed" | "extra" | "kickoff" | "receivedAt"
+  >,
+  now = Date.now()
+) {
+  const clock = liveClock(
+    fixture.status,
+    fixture.elapsed,
+    fixture.extra,
+    fixture.receivedAt,
+    now,
+    fixture.kickoff
+  );
+  return formatMatchClock(
+    fixture.status,
+    clock.minute,
+    fixture.kickoff,
+    clock.extra
+  );
 }
 
 export function mergeLivePatch<T extends LiveFixturePatch>(
@@ -219,6 +279,9 @@ export function fixtureFromBet(bet: {
     kickoff: f.kickoff || bet.placed_at,
     status: f.status || "NS",
     elapsed: f.elapsed ?? null,
+    extra: f.extra ?? null,
+    // Utan stämpeln står klockan stilla mellan pollningarna.
+    receivedAt: f.receivedAt,
     home_name: f.home_name || bet.match,
     away_name: f.away_name || "",
     home_logo: f.home_logo,
