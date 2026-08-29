@@ -39,6 +39,7 @@ export async function SiteHeader({
   const appNav = [
     { href: "/hem", label: "Hem" },
     { href: "/spelbok", label: "Spelbok" },
+    { href: "/planket", label: "Planket" },
     { href: "/kuponger", label: "Kuponger" },
     ...(site.competitions_enabled
       ? [{ href: "/tavlingar", label: "Tävlingar" }]

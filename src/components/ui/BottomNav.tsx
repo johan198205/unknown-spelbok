@@ -51,6 +51,20 @@ function IconBoard({ filled }: { filled?: boolean }) {
   );
 }
 
+function IconPlanket({ filled }: { filled?: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-5 4V5.5Z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function IconProfile({ filled }: { filled?: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -80,6 +94,12 @@ const TABS = [
     label: "Böcker",
     match: (p: string) => p.startsWith("/spelbok"),
     Icon: IconBooks,
+  },
+  {
+    href: "/planket",
+    label: "Planket",
+    match: (p: string) => p.startsWith("/planket"),
+    Icon: IconPlanket,
   },
   {
     href: "/topplista",
@@ -143,7 +163,11 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(15,20,32,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
       aria-label="Huvudnavigering"
     >
-      <div className="grid grid-cols-5 items-end px-1">
+      {/*
+        Sex kolumner sedan Planket kom till: Hem, Böcker, [+], Planket,
+        Topplista, Profil. Etiketterna är 10.5px och får plats på 390 px.
+      */}
+      <div className="grid grid-cols-6 items-end px-1">
         {TABS.slice(0, 2).map((tab) => (
           <NavTab key={tab.href} tab={tab} pathname={pathname} />
         ))}

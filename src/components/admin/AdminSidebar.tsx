@@ -12,6 +12,7 @@ import {
   Image as ImageIcon,
   LayoutDashboard,
   MessageSquare,
+  MessagesSquare,
   Settings,
   Ticket,
   Trophy,
@@ -27,6 +28,7 @@ const NAV: {
 }[] = [
   { href: "/admin", label: "Översikt", icon: LayoutDashboard },
   { href: "/admin/anvandare", label: "Användare", icon: Users },
+  { href: "/admin/planket", label: "Planket", icon: MessagesSquare },
   { href: "/admin/kuponger", label: "Kuponger", icon: Ticket },
   { href: "/admin/spelbolag", label: "Spelbolag", icon: Building2 },
   { href: "/admin/banners", label: "Banners", icon: ImageIcon },

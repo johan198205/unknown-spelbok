@@ -105,6 +105,7 @@ Schemaläggningen (var 15:e minut via `pg_cron` + `pg_net`) står färdig och ko
 8. `db/notifications.sql` — notiser i appen (klockan i headern + sidopanelen)
 9. `db/coupons.sql` — kuponger, ben, mejllista, `bets.source_coupon_id`, bucket `coupon-proofs` (krävs för `/kuponger` och `/admin/kuponger`)
 10. `db/popups.sql` — popups, `popup_events`, bucket `popups` samt notistypen `popup` och kolumnen `notifications.href` (krävs för `/admin/popups`). Kör efter `db/notifications.sql`.
+11. `db/planket.sql` — Planket: `posts`, `post_reactions`, `post_backs`, `post_reports`, vyerna `planket_posts`/`planket_top_backed`/`planket_active_users`, rate limit, `bets.source_post_id` samt notistyperna `back`, `reaction` och `post_report` (krävs för `/planket` och `/admin/planket`). Kör efter `db/notifications.sql`, `db/coupons.sql` och `db/logged-before-kickoff.sql`.
 
 ## Google-inlogg
 

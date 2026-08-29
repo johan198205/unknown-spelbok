@@ -16,11 +16,21 @@ export const NOTIFICATION_TYPES = [
   "competition",
   "kickoff",
   "popup",
+  // Planket: någon ryggade ditt spel, respektive samlade reaktioner på
+  // ett inlägg. post_report går till redaktionen vid fem anmälningar.
+  "back",
+  "reaction",
+  "post_report",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
-export type NotificationTargetType = "sheet" | "comp" | "coupon" | "bet";
+export type NotificationTargetType =
+  | "sheet"
+  | "comp"
+  | "coupon"
+  | "bet"
+  | "post";
 export type NotificationAmountKind = "netto" | "roi";
 
 export type AppNotification = {
@@ -71,6 +81,7 @@ export const NOTIFICATION_CATEGORIES = [
   "coupon",
   "competition",
   "popup",
+  "planket",
 ] as const;
 
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
@@ -82,11 +93,16 @@ export const CATEGORY_LABELS: Record<NotificationCategory, string> = {
   coupon: "Ny kupong",
   competition: "Tävlingsplacering",
   popup: "Kampanjer och erbjudanden",
+  planket: "Planket",
 };
 
 export function categoryOf(type: NotificationType): NotificationCategory {
   if (type === "settled_win" || type === "settled_loss") return "settled";
-  return type;
+  // Ryggningar, reaktioner och modereringsvarningar är en sak att slå av.
+  if (type === "back" || type === "reaction" || type === "post_report") {
+    return "planket";
+  }
+  return type as NotificationCategory;
 }
 
 export type NotificationSettings = {
@@ -112,6 +128,9 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   // En kampanjruta besökaren redan sett på sajten är inte värd ett mejl.
   popup_in_app: true,
   popup_email: false,
+  // Planket är ett flöde man besöker. Ett mejl per reaktion vore brus.
+  planket_in_app: true,
+  planket_email: false,
 };
 
 export const NOTIFICATION_SETTINGS_COLUMNS = [
@@ -162,6 +181,13 @@ const PATHS = {
   megaphone:
     '<path d="M4 10.5v3a1.5 1.5 0 0 0 1.5 1.5H8l6.5 4V5L8 9H5.5A1.5 1.5 0 0 0 4 10.5z"/>' +
     '<path d="M18 9.5a3.5 3.5 0 0 1 0 5M8 15v3.5a1.5 1.5 0 0 0 3 0V17"/>',
+  // Planket: två pilar som följer varandra — någon la ditt spel i sin bok.
+  back:
+    '<path d="M4 8h11a4 4 0 0 1 0 8h-3"/><path d="m7.5 4.5-3.5 3.5 3.5 3.5"/>' +
+    '<path d="m15.5 12.5 3.5 3.5-3.5 3.5"/>',
+  heart:
+    '<path d="M12 19.5 4.8 12.4a4.3 4.3 0 0 1 6.1-6.1l1.1 1.1 1.1-1.1a4.3 4.3 0 0 1 6.1 6.1z"/>',
+  flag: '<path d="M5 21V4.5M5 5h11l-2 3.5L16 12H5"/>',
 } as const;
 
 type TypeMeta = {
@@ -178,6 +204,11 @@ export const NOTIFICATION_META: Record<NotificationType, TypeMeta> = {
   competition: { accent: "#FFD166", icon: svgUrl(PATHS.trophy, "#FFD166") },
   kickoff: { accent: "#35D6F5", icon: svgUrl(PATHS.clock, "#35D6F5") },
   popup: { accent: "#FFD166", icon: svgUrl(PATHS.megaphone, "#FFD166") },
+  // En ryggning är ingen vinst — cyan, inte grönt. Grönt är reserverat
+  // för utfall.
+  back: { accent: "#35D6F5", icon: svgUrl(PATHS.back, "#35D6F5") },
+  reaction: { accent: "#FFD166", icon: svgUrl(PATHS.heart, "#FFD166") },
+  post_report: { accent: "#FF5C6C", icon: svgUrl(PATHS.flag, "#FF5C6C") },
 };
 
 /** 34px-plattan bakom ikonen: accentfärgen på 14 % opacitet. */
@@ -232,6 +263,11 @@ export function notificationHref(n: {
       return n.target_id
         ? `${COUPON_PATH}#kupong-${n.target_id}`
         : COUPON_PATH;
+    case "post":
+      // Planket sorterar på created_at desc och sidbläddrar. Ankaret
+      // träffar inlägget så länge det ligger på första sidan; ligger det
+      // längre ner landar klicket ändå rätt sida.
+      return n.target_id ? `/planket#inlagg-${n.target_id}` : "/planket";
     default:
       return null;
   }
