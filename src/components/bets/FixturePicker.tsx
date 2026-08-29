@@ -26,7 +26,10 @@ import { cn } from "@/lib/utils";
 
 type Coverage = { from: string; to: string };
 
-export type PickerFixture = Fixture & { venue?: string | null };
+export type PickerFixture = Fixture & {
+  venue?: string | null;
+  league_country?: string | null;
+};
 
 const PICKER_SPORTS = ["Fotboll", "Ishockey"] as const;
 /** Sentinel — liga är valfritt filter, inte ett obligatoriskt steg */
@@ -38,6 +41,8 @@ type LeagueGroup = {
   logo: string | null;
   leagueId: number | null;
   sport: string | null;
+  /** Land från API:t — särskiljer ligor med samma namn (t.ex. Premier League) */
+  country: string | null;
   rows: PickerFixture[];
 };
 
@@ -204,7 +209,8 @@ function MatchDropdown({
           (f) =>
             (f.home_name || "").toLowerCase().includes(needle) ||
             (f.away_name || "").toLowerCase().includes(needle) ||
-            (f.league_name || "").toLowerCase().includes(needle)
+            (f.league_name || "").toLowerCase().includes(needle) ||
+            (f.league_country || "").toLowerCase().includes(needle)
         ),
       }))
       .filter((g) => g.rows.length > 0);
@@ -305,8 +311,9 @@ function MatchDropdown({
                         name={group.name}
                         size={14}
                       />
-                      <span className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-faint">
+                      <span className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-faint">
                         {group.name}
+                        {group.country ? ` · ${group.country}` : ""}
                       </span>
                       <span className="shrink-0 font-mono-num text-[11px] text-faint">
                         {group.rows.length}
@@ -471,6 +478,9 @@ export function FixturePicker({
           existing.leagueId = f.league_id;
         }
         if (!existing.sport && f.sport) existing.sport = f.sport;
+        if (!existing.country && f.league_country) {
+          existing.country = f.league_country;
+        }
       } else {
         map.set(key, {
           key,
@@ -478,12 +488,15 @@ export function FixturePicker({
           logo: f.league_logo ?? null,
           leagueId: f.league_id ?? null,
           sport: f.sport ?? null,
+          country: f.league_country ?? null,
           rows: [f],
         });
       }
     }
-    return [...map.values()].sort((a, b) =>
-      a.name.localeCompare(b.name, "sv")
+    return [...map.values()].sort(
+      (a, b) =>
+        a.name.localeCompare(b.name, "sv") ||
+        (a.country || "").localeCompare(b.country || "", "sv")
     );
   }, [items]);
 
@@ -506,6 +519,7 @@ export function FixturePicker({
       ...byLeague.map((g) => ({
         value: g.key,
         label: g.name,
+        meta: g.country,
         icon: (
           <LeagueLogo
             src={g.logo}

@@ -34,6 +34,22 @@ function venueFromRaw(raw: unknown) {
   return trimmed || null;
 }
 
+/** Landet är en sträng i api-football och ett objekt i api-hockey */
+function countryName(value: unknown) {
+  if (typeof value === "string") return value.trim() || null;
+  if (value && typeof value === "object") {
+    const name = (value as { name?: string | null }).name;
+    return name?.trim() || null;
+  }
+  return null;
+}
+
+function leagueCountryFromRaw(raw: unknown) {
+  if (!raw || typeof raw !== "object") return null;
+  const item = raw as { league?: { country?: unknown }; country?: unknown };
+  return countryName(item.league?.country) ?? countryName(item.country);
+}
+
 function withLogos<
   T extends Pick<
     Fixture,
@@ -52,6 +68,7 @@ function withLogos<
     home_logo: teamLogoUrl(row.home_logo, row.home_team_id, row.sport),
     away_logo: teamLogoUrl(row.away_logo, row.away_team_id, row.sport),
     league_logo: leagueLogoUrl(row.league_logo, row.league_id, row.sport),
+    league_country: leagueCountryFromRaw(raw),
     venue: venueFromRaw(raw),
   };
 }

@@ -17,6 +17,8 @@ export type DropdownOption = {
   iconUrl?: string | null;
   /** Custom ikon (t.ex. LeagueLogo med fallback) — prioriteras framför iconUrl */
   icon?: ReactNode;
+  /** Dämpad text längst till höger (t.ex. land) — söks igenom som labeln */
+  meta?: string | null;
 };
 
 export type DropdownGroup = {
@@ -76,7 +78,8 @@ export function SearchDropdown({
         options: g.options.filter(
           (o) =>
             o.label.toLowerCase().includes(needle) ||
-            o.value.toLowerCase().includes(needle)
+            o.value.toLowerCase().includes(needle) ||
+            (o.meta || "").toLowerCase().includes(needle)
         ),
       }))
       .filter((g) => g.options.length > 0);
@@ -169,6 +172,11 @@ export function SearchDropdown({
           )
         ) : null}
         <span className="min-w-0 flex-1 truncate">{display}</span>
+        {!isPlaceholder && selected?.meta ? (
+          <span className="max-w-[45%] shrink-0 truncate text-[11.5px] font-medium text-faint">
+            {selected.meta}
+          </span>
+        ) : null}
         <span className="text-[11px] font-normal text-faint">▾</span>
       </button>
 
@@ -226,7 +234,12 @@ export function SearchDropdown({
                           className="h-[18px] w-[18px] shrink-0 object-contain"
                         />
                       ) : null}
-                      <span className="min-w-0 truncate">{o.label}</span>
+                      <span className="min-w-0 flex-1 truncate">{o.label}</span>
+                      {o.meta ? (
+                        <span className="max-w-[45%] shrink-0 truncate text-[11.5px] font-medium text-faint">
+                          {o.meta}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
