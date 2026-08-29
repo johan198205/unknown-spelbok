@@ -34,6 +34,10 @@ export type PickerFixture = Fixture & {
 const PICKER_SPORTS = ["Fotboll", "Ishockey"] as const;
 /** Sentinel — liga är valfritt filter, inte ett obligatoriskt steg */
 const ALL_LEAGUES = "__all__";
+/** Sidstorlek mot /api/fixtures — en dag rymmer långt fler matcher än så */
+const PAGE_SIZE = 500;
+/** Spärr mot ändlös bläddring om servern skulle svara oväntat */
+const MAX_PAGES = 12;
 
 type LeagueGroup = {
   key: string;
@@ -45,6 +49,9 @@ type LeagueGroup = {
   country: string | null;
   rows: PickerFixture[];
 };
+
+/** Vald liga lever kvar över datumbyten, även dagar utan matcher i ligan */
+type LeagueSelection = Omit<LeagueGroup, "rows">;
 
 function formatRange(from: string, to: string) {
   const fmt = (ymd: string) => {
@@ -385,7 +392,7 @@ export function FixturePicker({
   const selectedYmd = ymd ?? internalYmd;
   const setSelectedYmd = onYmdChange ?? setInternalYmd;
   const [sport, setSport] = useState<string | null>(null);
-  const [leagueKey, setLeagueKey] = useState(ALL_LEAGUES);
+  const [league, setLeague] = useState<LeagueSelection | null>(null);
   const [items, setItems] = useState<PickerFixture[]>([]);
   const [loading, setLoading] = useState(false);
   const [filling, setFilling] = useState(false);
@@ -393,7 +400,7 @@ export function FixturePicker({
 
   function pickSport(next: string) {
     setSport(next);
-    setLeagueKey(ALL_LEAGUES);
+    setLeague(null);
     onMetaChange?.({
       sport: next,
       league: null,
@@ -402,13 +409,8 @@ export function FixturePicker({
     });
   }
 
-  function changeYmd(next: string) {
-    setSelectedYmd(next);
-    setLeagueKey(ALL_LEAGUES);
-  }
-
   function clearLeagueFilter() {
-    setLeagueKey(ALL_LEAGUES);
+    setLeague(null);
     onMetaChange?.({
       sport,
       league: null,
@@ -428,29 +430,55 @@ export function FixturePicker({
     let cancelled = false;
     let poll: ReturnType<typeof setTimeout> | undefined;
 
+    // Hämtar dagen sida för sida. Tidigare hämtades bara första 500 raderna,
+    // och eftersom API:t sorterar på avspark föll kvällsmatcherna bort tyst.
     async function load(initial: boolean) {
       if (initial) setLoading(true);
+      const all: PickerFixture[] = [];
       try {
-        const params = new URLSearchParams({
-          date: selectedYmd,
-          sport: sportParam,
-          limit: "500",
-        });
-        const res = await fetch(`/api/fixtures?${params}`, { cache: "no-store" });
-        const json = await res.json();
-        if (cancelled) return;
-        if (json.coverage?.from && json.coverage?.to) {
-          setCoverage(json.coverage);
+        let stillFilling = false;
+
+        for (let page = 0; page < MAX_PAGES; page++) {
+          const params = new URLSearchParams({
+            date: selectedYmd,
+            sport: sportParam,
+            limit: String(PAGE_SIZE),
+            // Offset = antal rader vi redan har, inte sidnummer × sidstorlek.
+            // Håller bläddringen rätt även om servern kortar av en sida.
+            offset: String(all.length),
+          });
+          const res = await fetch(`/api/fixtures?${params}`, {
+            cache: "no-store",
+          });
+          const json = await res.json();
+          if (cancelled) return;
+
+          if (json.coverage?.from && json.coverage?.to) {
+            setCoverage(json.coverage);
+          }
+          if (page === 0) {
+            setPlanLimited(json.reason === "plan");
+            if (initial) setLoading(false);
+          }
+
+          all.push(...(json.fixtures || []));
+          setItems([...all]);
+          stillFilling = !!json.filling;
+
+          if (!json.hasMore) break;
+          // Fler sidor kvar — återanvänd "Hämtar fler matcher…" i listan
+          setFilling(true);
         }
-        setPlanLimited(json.reason === "plan");
-        setItems(json.fixtures || []);
-        const more = !!json.filling;
-        setFilling(more);
-        if (more) poll = setTimeout(() => load(false), 2500);
+
+        setFilling(stillFilling);
+        if (stillFilling) poll = setTimeout(() => load(false), 2500);
       } catch {
         if (cancelled) return;
-        setItems([]);
-        setPlanLimited(false);
+        // Faller en senare sida bort behåller vi de matcher vi hann hämta
+        if (!all.length) {
+          setItems([]);
+          setPlanLimited(false);
+        }
         setFilling(false);
       } finally {
         if (initial && !cancelled) setLoading(false);
@@ -500,43 +528,43 @@ export function FixturePicker({
     );
   }, [items]);
 
-  // Om vald liga försvinner (nytt datum) → tillbaka till alla
-  useEffect(() => {
-    if (leagueKey === ALL_LEAGUES) return;
-    if (!byLeague.some((g) => g.key === leagueKey)) {
-      setLeagueKey(ALL_LEAGUES);
-    }
-  }, [byLeague, leagueKey]);
-
+  // Vald liga ligger kvar över datumbyten — matchar dagens data när den finns
   const selectedLeague = useMemo(
-    () => byLeague.find((g) => g.key === leagueKey) ?? null,
-    [byLeague, leagueKey]
+    () => (league ? (byLeague.find((g) => g.key === league.key) ?? null) : null),
+    [byLeague, league]
   );
 
   const leagueOptions = useMemo((): DropdownOption[] => {
+    const toOption = (g: LeagueSelection): DropdownOption => ({
+      value: g.key,
+      label: g.name,
+      meta: g.country,
+      icon: (
+        <LeagueLogo
+          src={g.logo}
+          leagueId={g.leagueId}
+          sport={g.sport || sport}
+          name={g.name}
+          size={16}
+        />
+      ),
+    });
+    // Ligan utan matcher idag måste ändå finnas som val, annars tappar
+    // dropdownen sin etikett och användaren kan inte bläddra vidare i datum
+    const sticky = league && !byLeague.some((g) => g.key === league.key)
+      ? [toOption(league)]
+      : [];
     return [
       { value: ALL_LEAGUES, label: "Alla ligor" },
-      ...byLeague.map((g) => ({
-        value: g.key,
-        label: g.name,
-        meta: g.country,
-        icon: (
-          <LeagueLogo
-            src={g.logo}
-            leagueId={g.leagueId}
-            sport={g.sport || sport}
-            name={g.name}
-            size={16}
-          />
-        ),
-      })),
+      ...sticky,
+      ...byLeague.map(toOption),
     ];
-  }, [byLeague, sport]);
+  }, [byLeague, league, sport]);
 
   const visibleGroups = useMemo((): LeagueGroup[] => {
-    if (selectedLeague) return [selectedLeague];
+    if (league) return selectedLeague ? [selectedLeague] : [];
     return byLeague;
-  }, [byLeague, selectedLeague]);
+  }, [byLeague, league, selectedLeague]);
 
   const flatMatchRows = useMemo(
     () => visibleGroups.flatMap((g) => g.rows),
@@ -545,7 +573,7 @@ export function FixturePicker({
 
   const emptyMessage = planLimited && coverage
     ? `API-planen visar bara matcher ${formatRange(coverage.from, coverage.to)}. Välj ett av de datumen, eller ange matchen manuellt.`
-    : selectedLeague
+    : league
       ? "Inga matcher i den här ligan den här dagen."
       : "Inga matcher den här dagen. Välj ett annat datum.";
 
@@ -559,14 +587,14 @@ export function FixturePicker({
     }
   );
 
-  const showGrouped = !selectedLeague && visibleGroups.length > 1;
+  const showGrouped = !league && visibleGroups.length > 1;
 
   return (
     <div>
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
         Datum
       </div>
-      <DayStrip ymd={selectedYmd} onChange={changeYmd} />
+      <DayStrip ymd={selectedYmd} onChange={setSelectedYmd} />
       {coverage ? (
         <p className="mb-3 text-[12px] leading-snug text-faint">
           Matchlistan täcker {formatRange(coverage.from, coverage.to)} med
@@ -599,7 +627,7 @@ export function FixturePicker({
         <div className="space-y-3">
           <SearchDropdown
             label="Liga"
-            value={leagueKey}
+            value={league?.key ?? ALL_LEAGUES}
             placeholder="Filtrera liga…"
             searchPlaceholder="Sök liga…"
             options={leagueOptions}
@@ -610,15 +638,21 @@ export function FixturePicker({
                 return;
               }
               const group = byLeague.find((g) => g.key === next);
-              setLeagueKey(next);
-              if (group) {
-                onMetaChange?.({
-                  sport: group.sport || sport,
-                  league: group.name,
-                  leagueId: group.leagueId,
-                  leagueLogo: group.logo,
-                });
-              }
+              if (!group) return;
+              setLeague({
+                key: group.key,
+                name: group.name,
+                logo: group.logo,
+                leagueId: group.leagueId,
+                sport: group.sport,
+                country: group.country,
+              });
+              onMetaChange?.({
+                sport: group.sport || sport,
+                league: group.name,
+                leagueId: group.leagueId,
+                leagueLogo: group.logo,
+              });
             }}
           />
 

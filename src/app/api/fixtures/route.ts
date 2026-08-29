@@ -14,7 +14,7 @@ import type { Fixture } from "@/lib/types";
 export const maxDuration = 180;
 
 const CACHE = { "Cache-Control": "private, max-age=30" };
-const MAX_LIMIT = 800;
+const MAX_LIMIT = 1000;
 const DEFAULT_LIMIT = 500;
 const WINDOW_DAYS = 14;
 const UPCOMING = ["NS", "TBD", "1H", "HT", "2H", "ET", "BT", "P", "LIVE"];
@@ -108,6 +108,10 @@ export async function GET(request: NextRequest) {
     Number(params.get("limit") || DEFAULT_LIMIT) || DEFAULT_LIMIT,
     MAX_LIMIT
   );
+  // En vanlig lördag har ~1300 matcher globalt — utan offset kapades allt
+  // efter limit bort, och eftersom sorteringen är på avspark försvann de
+  // sena matcherna tyst. Klienten bläddrar i stället tills hasMore är false.
+  const offset = Math.max(0, Number(params.get("offset") || 0) || 0);
 
   const ids = idsRaw
     .split(/[,-]/)
@@ -136,7 +140,10 @@ export async function GET(request: NextRequest) {
       .from("fixtures")
       .select(FIXTURE_COLUMNS)
       .order("kickoff", { ascending: true })
-      .limit(limit);
+      // Sekundär sortering krävs för att sidorna inte ska överlappa
+      // eller hoppa över rader när flera matcher delar avsparkstid
+      .order("fixture_id", { ascending: true })
+      .range(offset, offset + limit - 1);
 
     if (ids.length) {
       query = query.in("fixture_id", ids);
@@ -207,13 +214,15 @@ export async function GET(request: NextRequest) {
     const filling =
       !!(date && !planLimited && !ids.length) &&
       !(await isFixtureDayReady(date));
-    const fixtures = (data ?? []).map(withLogos);
+    const rows = data ?? [];
+    const fixtures = rows.map(withLogos);
     return NextResponse.json(
       {
         fixtures,
         source,
         coverage: latestCoverage,
         filling: filling || undefined,
+        hasMore: rows.length === limit,
         reason: planLimited ? "plan" : undefined,
       },
       { headers: filling ? { "Cache-Control": "no-store" } : CACHE }
