@@ -5,8 +5,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { LandingSectionsEditor } from "@/components/admin/LandingSectionsEditor";
 import { Switch } from "@/components/ui/Switch";
 import { deletePage, publishPage, savePage, type PageDraft } from "@/lib/admin/pages";
+import {
+  landingFromPageContent,
+  serializeLandingContent,
+  type LandingContent,
+} from "@/lib/landing-content";
 import { cn, slugify } from "@/lib/utils";
 import type { Page } from "@/lib/types";
 
@@ -34,15 +40,27 @@ function fmtTime(iso: string | null) {
 export function PageEditor({ page }: { page: Page }) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isLanding = page.slug === "startsida";
 
-  const [draft, setDraft] = useState<PageDraft>({
-    title: page.title,
-    slug: page.slug,
-    content: page.content,
-    seo_title: page.seo_title ?? "",
-    seo_description: page.seo_description ?? "",
-    show_in_footer: page.show_in_footer,
+  const [draft, setDraft] = useState<PageDraft>(() => {
+    const initial: PageDraft = {
+      title: page.title,
+      slug: page.slug,
+      content: page.content,
+      seo_title: page.seo_title ?? "",
+      seo_description: page.seo_description ?? "",
+      show_in_footer: page.show_in_footer,
+    };
+    if (page.slug === "startsida") {
+      initial.content = serializeLandingContent(
+        landingFromPageContent(page.content)
+      );
+    }
+    return initial;
   });
+  const [landing, setLanding] = useState<LandingContent>(() =>
+    landingFromPageContent(page.content)
+  );
   const [published, setPublished] = useState(page.published);
   const [slugTouched, setSlugTouched] = useState(false);
   const [tab, setTab] = useState<"write" | "preview">("write");
@@ -52,6 +70,11 @@ export function PageEditor({ page }: { page: Page }) {
   const [pending, startTransition] = useTransition();
 
   const savedRef = useRef(JSON.stringify(draft));
+
+  function patchLanding(next: LandingContent) {
+    setLanding(next);
+    setDraft((d) => ({ ...d, content: serializeLandingContent(next) }));
+  }
 
   const persist = useCallback(async () => {
     const snapshot = draft;
@@ -86,7 +109,7 @@ export function PageEditor({ page }: { page: Page }) {
     setDraft((d) => ({
       ...d,
       title: value,
-      slug: slugTouched ? d.slug : slugify(value),
+      slug: isLanding || slugTouched ? d.slug : slugify(value),
     }));
   }
 
@@ -190,11 +213,10 @@ export function PageEditor({ page }: { page: Page }) {
           className="font-display mb-3.5 w-full rounded-[12px] border border-line bg-panel p-4 text-[24px] font-semibold text-text outline-none"
         />
 
-        {draft.slug === "startsida" ? (
+        {isLanding ? (
           <p className="mb-3 rounded-[10px] border border-cyan/30 bg-cyan/10 px-3.5 py-2.5 text-[13px] text-text-soft">
-            Den här sidan driver hero på <strong>/</strong> (startsidan). Rubrik =
-            titel, brödtext = första stycket i innehållet. Layout och mockup-bild
-            styrs fortfarande i koden.
+            Den här sidan driver <strong>/</strong> (startsidan). Titel = hero-rubrik.
+            Övriga sektioner redigeras i formulären nedan. SEO sparas till höger.
           </p>
         ) : null}
         {draft.slug === "om-oss" || draft.slug === "kontakt" ? (
@@ -204,59 +226,63 @@ export function PageEditor({ page }: { page: Page }) {
           </p>
         ) : null}
 
-        <div className="overflow-hidden rounded-[14px] border border-line bg-panel">
-          <div className="flex flex-wrap items-center gap-1 border-b border-line-soft px-3 py-2.5">
-            {TOOLS.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => applyTool(t.key)}
-                className="h-[30px] min-w-8 rounded-[7px] border border-line bg-transparent px-2.5 text-[12.5px] font-semibold text-text-soft hover:bg-hover2"
-              >
-                {t.label}
-              </button>
-            ))}
-            <div className="ml-auto flex gap-[3px] rounded-[9px] border border-line-soft bg-bg-soft p-[3px]">
-              {(
-                [
-                  { key: "write", label: "Redigera" },
-                  { key: "preview", label: "Förhandsgranska" },
-                ] as const
-              ).map((t) => (
+        {isLanding ? (
+          <LandingSectionsEditor value={landing} onChange={patchLanding} />
+        ) : (
+          <div className="overflow-hidden rounded-[14px] border border-line bg-panel">
+            <div className="flex flex-wrap items-center gap-1 border-b border-line-soft px-3 py-2.5">
+              {TOOLS.map((t) => (
                 <button
                   key={t.key}
                   type="button"
-                  onClick={() => setTab(t.key)}
-                  className={cn(
-                    "rounded-[7px] px-3.5 py-1.5 text-[12.5px] font-semibold",
-                    tab === t.key
-                      ? "bg-panel-2 text-text"
-                      : "bg-transparent text-muted"
-                  )}
+                  onClick={() => applyTool(t.key)}
+                  className="h-[30px] min-w-8 rounded-[7px] border border-line bg-transparent px-2.5 text-[12.5px] font-semibold text-text-soft hover:bg-hover2"
                 >
                   {t.label}
                 </button>
               ))}
+              <div className="ml-auto flex gap-[3px] rounded-[9px] border border-line-soft bg-bg-soft p-[3px]">
+                {(
+                  [
+                    { key: "write", label: "Redigera" },
+                    { key: "preview", label: "Förhandsgranska" },
+                  ] as const
+                ).map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setTab(t.key)}
+                    className={cn(
+                      "rounded-[7px] px-3.5 py-1.5 text-[12.5px] font-semibold",
+                      tab === t.key
+                        ? "bg-panel-2 text-text"
+                        : "bg-transparent text-muted"
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {tab === "write" ? (
-            <textarea
-              ref={textareaRef}
-              value={draft.content}
-              onChange={(e) => patch({ content: e.target.value })}
-              rows={22}
-              placeholder="Skriv innehållet i markdown …"
-              className="font-mono-num w-full resize-y border-0 bg-transparent p-[18px] text-[13.5px] leading-[1.75] text-text-soft outline-none"
-            />
-          ) : (
-            <div className="prose prose-invert max-w-none px-[26px] py-[22px] text-[#C3CBDB] [&_h2]:font-display [&_h2]:text-2xl [&_h2]:text-text [&_a]:text-blue [&_code]:font-mono-num">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {draft.content || "_Inget innehåll ännu._"}
-              </ReactMarkdown>
-            </div>
-          )}
-        </div>
+            {tab === "write" ? (
+              <textarea
+                ref={textareaRef}
+                value={draft.content}
+                onChange={(e) => patch({ content: e.target.value })}
+                rows={22}
+                placeholder="Skriv innehållet i markdown …"
+                className="font-mono-num w-full resize-y border-0 bg-transparent p-[18px] text-[13.5px] leading-[1.75] text-text-soft outline-none"
+              />
+            ) : (
+              <div className="prose prose-invert max-w-none px-[26px] py-[22px] text-[#C3CBDB] [&_h2]:font-display [&_h2]:text-2xl [&_h2]:text-text [&_a]:text-blue [&_code]:font-mono-num">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {draft.content || "_Inget innehåll ännu._"}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-3.5 lg:sticky lg:top-[88px]">
@@ -390,12 +416,18 @@ export function PageEditor({ page }: { page: Page }) {
             </div>
             <input
               value={draft.slug}
+              disabled={isLanding}
               onChange={(e) => {
                 setSlugTouched(true);
                 patch({ slug: slugify(e.target.value) });
               }}
-              className="font-mono-num w-full rounded-[9px] border border-line bg-bg-soft px-[11px] py-2.5 text-[12.5px] text-text-soft outline-none"
+              className="font-mono-num w-full rounded-[9px] border border-line bg-bg-soft px-[11px] py-2.5 text-[12.5px] text-text-soft outline-none disabled:opacity-60"
             />
+            {isLanding ? (
+              <p className="mt-1.5 text-[12px] text-dim">
+                Låst — startsidan måste ha sluggen <code>startsida</code>.
+              </p>
+            ) : null}
           </div>
 
           <div className="rounded-[10px] border border-line-soft bg-bg-soft p-3">

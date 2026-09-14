@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   createPage,
@@ -15,22 +16,59 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("sv-SE");
 }
 
+type OpenMenu = {
+  id: string;
+  top: number;
+  left: number;
+};
+
 export function PagesAdmin({ rows, q }: { rows: PageListRow[]; q: string }) {
   const router = useRouter();
-  const [menuId, setMenuId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<OpenMenu | null>(null);
   const [confirmRow, setConfirmRow] = useState<PageListRow | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const menuRow = menu ? rows.find((r) => r.id === menu.id) ?? null : null;
+
   useEffect(() => {
-    function onDoc() {
-      setMenuId(null);
+    if (!menu) return;
+    function close() {
+      setMenu(null);
     }
-    document.addEventListener("click", onDoc);
-    return () => document.removeEventListener("click", onDoc);
-  }, []);
+    // Defer so the opening click does not immediately close the menu.
+    const t = window.setTimeout(() => {
+      document.addEventListener("click", close);
+      window.addEventListener("scroll", close, true);
+      window.addEventListener("resize", close);
+    }, 0);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [menu]);
 
   function open(id: string) {
+    setMenu(null);
     router.push(`/admin/sidor/${id}`);
+  }
+
+  function toggleMenu(id: string, el: HTMLElement) {
+    const rect = el.getBoundingClientRect();
+    const width = 190;
+    setMenu((prev) =>
+      prev?.id === id
+        ? null
+        : {
+            id,
+            top: rect.bottom + 4,
+            left: Math.min(
+              Math.max(8, rect.right - width),
+              window.innerWidth - width - 8
+            ),
+          }
+    );
   }
 
   return (
@@ -107,67 +145,16 @@ export function PagesAdmin({ rows, q }: { rows: PageListRow[]; q: string }) {
             </span>
             <button
               type="button"
+              aria-expanded={menu?.id === p.id}
+              aria-haspopup="menu"
               onClick={(e) => {
                 e.stopPropagation();
-                setMenuId(menuId === p.id ? null : p.id);
+                toggleMenu(p.id, e.currentTarget);
               }}
               className="h-[30px] w-[34px] shrink-0 rounded-lg border border-line bg-transparent text-[14px] leading-none text-muted"
             >
               ⋯
             </button>
-
-            {menuId === p.id ? (
-              <div
-                className="absolute right-[18px] top-11 z-30 min-w-[190px] rounded-[11px] border border-line-strong bg-panel-elevated p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.55)]"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  type="button"
-                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
-                  onClick={() => open(p.id)}
-                >
-                  Redigera
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
-                  onClick={() => {
-                    setMenuId(null);
-                    startTransition(async () => {
-                      const copy = await duplicatePage(p.id);
-                      router.push(`/admin/sidor/${copy.id}`);
-                    });
-                  }}
-                >
-                  Duplicera
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
-                  onClick={() => {
-                    setMenuId(null);
-                    startTransition(async () => {
-                      await publishPage(p.id, !p.published);
-                      router.refresh();
-                    });
-                  }}
-                >
-                  {p.published ? "Avpublicera" : "Publicera"}
-                </button>
-                <button
-                  type="button"
-                  className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold text-loss hover:bg-hover2"
-                  onClick={() => {
-                    setMenuId(null);
-                    setConfirmRow(p);
-                  }}
-                >
-                  Radera
-                </button>
-              </div>
-            ) : null}
           </div>
         ))}
 
@@ -177,6 +164,68 @@ export function PagesAdmin({ rows, q }: { rows: PageListRow[]; q: string }) {
           </div>
         ) : null}
       </div>
+
+      {menu && menuRow
+        ? createPortal(
+            <div
+              role="menu"
+              style={{ top: menu.top, left: menu.left }}
+              className="fixed z-[100] min-w-[190px] rounded-[11px] border border-line-strong bg-panel-elevated p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.55)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
+                onClick={() => open(menuRow.id)}
+              >
+                Redigera
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={pending}
+                className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
+                onClick={() => {
+                  setMenu(null);
+                  startTransition(async () => {
+                    const copy = await duplicatePage(menuRow.id);
+                    router.push(`/admin/sidor/${copy.id}`);
+                  });
+                }}
+              >
+                Duplicera
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={pending}
+                className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
+                onClick={() => {
+                  setMenu(null);
+                  startTransition(async () => {
+                    await publishPage(menuRow.id, !menuRow.published);
+                    router.refresh();
+                  });
+                }}
+              >
+                {menuRow.published ? "Avpublicera" : "Publicera"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold text-loss hover:bg-hover2"
+                onClick={() => {
+                  setMenu(null);
+                  setConfirmRow(menuRow);
+                }}
+              >
+                Radera
+              </button>
+            </div>,
+            document.body
+          )
+        : null}
 
       {confirmRow ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(5,7,12,.7)] p-4">

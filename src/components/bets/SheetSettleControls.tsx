@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { SheetLockIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { createClient } from "@/lib/supabase/client";
 import { settleOutcome, track } from "@/lib/analytics";
-import { fixtureFromBet, isInPlayStatus } from "@/lib/live-fixture";
 import type { Bet, BetResult } from "@/lib/types";
 import { cn, resultLabel, resultTone } from "@/lib/utils";
 
@@ -33,13 +33,15 @@ export function SheetSettleControls({
   bet,
   canEdit,
   size = "table",
+  /** Låsikonen hör hemma i tabellens Rättning-kolumn, inte i kortets resultatbox. */
+  showLock = size === "table",
 }: {
   bet: Bet;
   canEdit: boolean;
   size?: "table" | "card";
+  showLock?: boolean;
 }) {
   const router = useRouter();
-  const fixture = fixtureFromBet(bet);
 
   /*
     Rättningen skriver till databasen och laddar sedan om sidan. Fram tills
@@ -57,7 +59,6 @@ export function SheetSettleControls({
   }
 
   const shown = picked ?? bet.result;
-  const live = shown === "open" && isInPlayStatus(fixture?.status);
   const card = size === "card";
 
   async function setResult(result: BetResult) {
@@ -88,16 +89,10 @@ export function SheetSettleControls({
     <span
       className={cn(
         "flex items-center",
-        card ? "min-w-0 flex-1" : "flex-wrap gap-1"
+        card ? "min-w-0 flex-1" : "whitespace-nowrap"
       )}
     >
-      {!card && live ? (
-        <span
-          className="size-1.5 shrink-0 animate-sbpulse rounded-full bg-cyan"
-          title="Matchen pågår"
-          aria-hidden
-        />
-      ) : null}
+      {showLock ? <SheetLockIcon value={bet.logged_before_kickoff} /> : null}
       {canEdit ? (
         <span
           role="group"

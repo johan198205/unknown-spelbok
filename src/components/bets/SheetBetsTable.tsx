@@ -3,7 +3,6 @@
 import { BetRowActions } from "@/components/bets/BetRowActions";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
-import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
 import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
@@ -18,7 +17,7 @@ import { useAmount } from "@/components/DisplayPrefsProvider";
 import { betNetto, cn, formatOdds, nettoColor } from "@/lib/utils";
 
 type Column = {
-  key: SheetSortKey | "actions" | "locked";
+  key: SheetSortKey | "actions";
   label: string;
   /** Kolumnbredder i procent — tabellen får aldrig bli bredare än sin ruta. */
   width: string;
@@ -30,55 +29,40 @@ type Column = {
 /*
   Bredderna är räknade mot den SMALASTE tabellen (sheet-brytpunkten, ~1140px)
   så att inget innehåll behöver brytas till en andra rad där: datumet ska stå
-  på en rad, rättningens W/L/P/V ska rymmas, och ikonerna ska
+  på en rad, rättningens lås + W/L/P/V ska rymmas, och ikonerna ska
   rymmas bredvid varandra i sin egen kolumn.
 
   Matchkolumnen är den enda som bär långa lagnamn och får därför allt som blir
-  över. Kolumner med känt kort innehåll (datum, spelnamn, låsikonen) är
-  nedskurna till vad de faktiskt behöver i stället för att sitta på marginal.
+  över. Kolumner med känt kort innehåll (datum, spelnamn) är nedskurna till
+  vad de faktiskt behöver i stället för att sitta på marginal.
 */
 const COLUMNS: Column[] = [
-  { key: "date", label: "Datum", width: "w-[9%]" },
+  { key: "date", label: "Datum", width: "w-[8%]" },
+  { key: "match", label: "Match", width: "w-[22%] max-sheet-wide:w-[24%]" },
   { key: "league", label: "Liga", width: "w-[8%] max-sheet-wide:w-[5%]" },
-  { key: "match", label: "Match", width: "w-[17%] max-sheet-wide:w-[20%]" },
-  { key: "pick", label: "Spel", width: "w-[8%]" },
-  /* Låset bor i egen kolumn så spelnamnet alltid börjar på samma linje.
-     Bredden styrs av rubriken, inte ikonen: "LÅST SPEL" ska rymmas på en rad
-     ända ner till sheet-brytpunkten, annars växer hela huvudraden. */
-  { key: "locked", label: "Låst spel", width: "w-[8%]", sortable: false },
+  { key: "pick", label: "Spel", width: "w-[9%]" },
   { key: "bookmaker", label: "Bolag", width: "w-[8%]" },
-  { key: "stake", label: "Insats", width: "w-[6%]", align: "right" },
+  { key: "stake", label: "Insats", width: "w-[7%]", align: "right" },
   { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
-  { key: "result", label: "Rättning", width: "w-[13%]" },
+  { key: "result", label: "Rättning", width: "w-[14%]" },
   /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
   { key: "netto", label: "Netto", width: "w-[10%]", align: "right" },
   {
     key: "actions",
     label: "Åtgärder",
-    width: "w-[10%]",
+    width: "w-[9%]",
     align: "right",
     sortable: false,
   },
 ];
 
-/** Kolumner utan sortering som ändå ska visa sin rubrik. */
-const UNSORTABLE_WITH_LABEL = new Set<Column["key"]>(["locked"]);
-
-/** Datum på egen rad, tiden dämpad under. Datumet bryts aldrig mitt itu. */
+/** Datum på en rad — tiden visas i matchcellens statusfält. */
 function DateCell({ iso }: { iso: string }) {
   const date = new Date(iso);
   return (
-    <>
-      <div className="whitespace-nowrap font-mono-num text-[14px] text-text-soft">
-        {date.toLocaleDateString("sv-SE")}
-      </div>
-      <div className="font-mono-num text-[12.5px] text-faint">
-        {date.toLocaleTimeString("sv-SE", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
-      </div>
-    </>
+    <div className="whitespace-nowrap font-mono-num text-[14px] text-[#C3CBDB]">
+      {date.toLocaleDateString("sv-SE")}
+    </div>
   );
 }
 
@@ -191,11 +175,7 @@ export function SheetBetsTable({
                 )}
               >
                 {col.sortable === false || col.key === "actions" ? (
-                  UNSORTABLE_WITH_LABEL.has(col.key) ? (
-                    <span>{col.label}</span>
-                  ) : (
-                    <span className="sr-only">{col.label}</span>
-                  )
+                  <span className="sr-only">{col.label}</span>
                 ) : (
                   <button
                     type="button"
@@ -229,21 +209,13 @@ export function SheetBetsTable({
                   <DateCell iso={betDisplayDate(bet)} />
                 </td>
                 <td className="px-2.5 py-3 align-middle">
-                  <LeagueCell bet={bet} />
+                  <SheetMatchCell bet={bet} density={density} />
                 </td>
                 <td className="px-2.5 py-3 align-middle">
-                  <SheetMatchCell bet={bet} density={density} />
+                  <LeagueCell bet={bet} />
                 </td>
                 <td className="px-2.5 py-3 align-middle font-bold">
                   <span className="block min-w-0">{formatPick(bet.pick)}</span>
-                </td>
-                <td className="px-2.5 py-3 align-middle">
-                  {bet.logged_before_kickoff === null ||
-                  bet.logged_before_kickoff === undefined ? (
-                    <span className="text-faint">—</span>
-                  ) : (
-                    <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
-                  )}
                 </td>
                 <td className="px-2.5 py-3 align-middle">
                   <BookmakerPlate bet={bet} />

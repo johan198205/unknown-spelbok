@@ -2,11 +2,10 @@
 
 import { BetRowActions } from "@/components/bets/BetRowActions";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
-import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
+import { SheetLockIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
-import { fixtureFromBet, isInPlayStatus } from "@/lib/live-fixture";
 import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
 import { formatPick } from "@/lib/picks";
 import type { SheetDensity } from "@/lib/sheet-filters";
@@ -47,9 +46,6 @@ export function SheetBetCards({
       {bets.map((bet) => {
         const netto = betNetto(bet);
         const kickoff = new Date(betDisplayDate(bet));
-        const live =
-          bet.result === "open" &&
-          isInPlayStatus(fixtureFromBet(bet)?.status);
         return (
           <article
             key={bet.id}
@@ -70,18 +66,8 @@ export function SheetBetCards({
               ) : null}
               <span className="min-w-0 truncate text-[12.5px] text-muted">
                 {bet.league ? `${bet.league} · ` : ""}
-                {kickoff.toLocaleDateString("sv-SE")}{" "}
-                {kickoff.toLocaleTimeString("sv-SE", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {kickoff.toLocaleDateString("sv-SE")}
               </span>
-              {live ? (
-                <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-cyan">
-                  <span className="size-1.5 animate-sbpulse rounded-full bg-cyan" />
-                  Live
-                </span>
-              ) : null}
               <span className="ml-auto shrink-0">
                 <BetRowActions
                   bet={bet}
@@ -98,9 +84,7 @@ export function SheetBetCards({
             <SheetMatchCell bet={bet} density={density} variant="card" />
 
             <div className="flex min-w-0 items-center gap-2 rounded-[11px] border border-line-soft bg-bg-soft px-3 py-2.5">
-              <span className="inline-flex w-3.5 shrink-0 justify-center">
-                <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
-              </span>
+              <SheetLockIcon value={bet.logged_before_kickoff} className="mr-0" />
               <span className="min-w-0 flex-1 truncate text-[15px] font-bold">
                 {formatPick(bet.pick)}
               </span>
@@ -123,7 +107,12 @@ export function SheetBetCards({
                   {Number(bet.stake).toLocaleString("sv-SE")} kr
                 </div>
                 <div className="mt-1.5">
-                  <SheetSettleControls bet={bet} canEdit={canEdit} size="card" />
+                  <SheetSettleControls
+                    bet={bet}
+                    canEdit={canEdit}
+                    size="card"
+                    showLock={false}
+                  />
                 </div>
               </div>
               <div className="rounded-[11px] border border-line-soft bg-bg-soft px-2.5 py-2">

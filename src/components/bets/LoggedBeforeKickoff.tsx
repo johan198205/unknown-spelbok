@@ -43,6 +43,52 @@ export function LoggedBeforeKickoffIcon({
   return null;
 }
 
+const SHEET_LOCK = {
+  locked: {
+    icon: "🔒",
+    title: "Låst spel — lagt före avspark och kan inte ändras",
+    bg: "bg-[rgba(102,227,138,.14)]",
+    fg: "text-win",
+  },
+  open: {
+    icon: "🔓",
+    title: "Öppet spel — kan redigeras till avspark",
+    bg: "bg-[rgba(255,184,77,.14)]",
+    fg: "text-amber",
+  },
+} as const;
+
+/**
+ * Låsikonen i spelbokens Rättning-kolumn och kortvy.
+ *
+ * Värdet kommer från serverns `logged_before_kickoff` (created_at < kickoff) —
+ * komponenten räknar aldrig själv.
+ */
+export function SheetLockIcon({
+  value,
+  className,
+}: {
+  value: boolean | null | undefined;
+  className?: string;
+}) {
+  if (value !== true && value !== false) return null;
+  const spec = value ? SHEET_LOCK.locked : SHEET_LOCK.open;
+  return (
+    <span
+      title={spec.title}
+      aria-label={spec.title}
+      className={cn(
+        "mr-2 inline-flex size-[22px] shrink-0 cursor-help items-center justify-center rounded-full align-middle text-[12px] leading-none",
+        spec.bg,
+        spec.fg,
+        className
+      )}
+    >
+      <span aria-hidden>{spec.icon}</span>
+    </span>
+  );
+}
+
 /** Textbadge för detaljvy / action sheet. */
 export function LoggedBeforeKickoffBadge({
   value,

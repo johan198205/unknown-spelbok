@@ -257,6 +257,125 @@ export function fixtureClock(
   );
 }
 
+function isHockeySport(sport?: string | null) {
+  return (sport || "").toLowerCase().includes("hockey");
+}
+
+/** Halvtid i fotboll: minut 45–47. Aldrig i ishockey. */
+function isFootballHalftime(
+  sport: string | null | undefined,
+  minute: number | null
+) {
+  if (minute == null || isHockeySport(sport)) return false;
+  return minute >= 45 && minute <= 47;
+}
+
+export type MatchPhaseTone = "ns" | "live" | "ft";
+
+export type MatchPhase = {
+  /** Avsparkstid, "37'", "HT" eller "FT". */
+  label: string;
+  tone: MatchPhaseTone;
+  /** True under pågående match (inkl. HT). */
+  live: boolean;
+};
+
+/**
+ * Matchfasen i spelbokens cell: avsparkstid → löpande minut/HT → FT.
+ *
+ * API-Football status/elapsed har förtur. Saknas de räknas minuten ur
+ * kickoff mot `now` (fallback). Settlat eller avslutad fixture → FT.
+ */
+export function matchPhase(
+  fixture: Pick<
+    MatchFixture,
+    "status" | "elapsed" | "extra" | "kickoff" | "receivedAt" | "sport"
+  > | null,
+  opts: { settled?: boolean; placedAt?: string | null } = {},
+  now = Date.now()
+): MatchPhase {
+  const settled = !!opts.settled;
+  const kickoff = fixture?.kickoff || opts.placedAt || null;
+  const status = fixture?.status || null;
+  const sport = fixture?.sport;
+
+  if (isFinishedStatus(status)) {
+    return { label: "FT", tone: "ft", live: false };
+  }
+
+  if (isInPlayStatus(status) && fixture) {
+    if (status === "HT") {
+      return { label: "HT", tone: "live", live: true };
+    }
+    const clock = liveClock(
+      fixture.status,
+      fixture.elapsed,
+      fixture.extra,
+      fixture.receivedAt,
+      now,
+      fixture.kickoff
+    );
+    // Halvtid: minut 45–47 i fotboll, aldrig när andra halvlek redan pågår.
+    if (
+      isFootballHalftime(sport, clock.minute) &&
+      status != null &&
+      !["2H", "ET", "BT", "P"].includes(status)
+    ) {
+      return { label: "HT", tone: "live", live: true };
+    }
+    const label = formatMatchClock(
+      fixture.status,
+      clock.minute,
+      fixture.kickoff,
+      clock.extra
+    );
+    return { label, tone: "live", live: true };
+  }
+
+  if (kickoff) {
+    const start = new Date(kickoff).getTime();
+    if (Number.isFinite(start)) {
+      if (start > now) {
+        return {
+          label: formatKickoffTime(kickoff) || "—",
+          tone: "ns",
+          live: false,
+        };
+      }
+      // Kickoff har passerat men API har ännu ingen in-play/FT-status:
+      // räkna minuten lokalt. Det är bara ett fallback.
+      const mins = Math.floor((now - start) / 60_000);
+      if (mins >= 0) {
+        if (isFootballHalftime(sport, mins)) {
+          return { label: "HT", tone: "live", live: true };
+        }
+        const capped = Math.min(mins, isHockeySport(sport) ? 60 : 90);
+        return { label: `${capped}'`, tone: "live", live: true };
+      }
+    }
+  }
+
+  if (settled) {
+    return { label: "FT", tone: "ft", live: false };
+  }
+
+  return {
+    label: kickoff ? formatKickoffTime(kickoff) || "—" : "—",
+    tone: "ns",
+    live: false,
+  };
+}
+
+/** True när spelbokscellen behöver ticka upp fallback-/live-minuten. */
+export function needsMatchPhaseTick(
+  fixture: Pick<MatchFixture, "status" | "kickoff"> | null | undefined
+) {
+  if (!fixture) return false;
+  if (isFinishedStatus(fixture.status)) return false;
+  // Inkludera NS med kickoff så fasen byter till minut/HT/FT utan manuell refresh.
+  return !!fixture.kickoff || isInPlayStatus(fixture.status);
+}
+
 export function mergeLivePatch<T extends LiveFixturePatch>(
   fixture: T,
   patch: LiveFixturePatch | undefined

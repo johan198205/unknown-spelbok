@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { logAdmin } from "@/lib/admin/log";
 import { createClient } from "@/lib/supabase/server";
+import {
+  DEFAULT_LANDING,
+  serializeLandingContent,
+} from "@/lib/landing-content";
 import { slugify } from "@/lib/utils";
 import type { Page } from "@/lib/types";
 
@@ -58,8 +62,7 @@ const CORE_PAGES: Array<{
   {
     slug: "startsida",
     title: "TA KONTROLL ÖVER DITT SPELANDE.",
-    content:
-      "Bokför varje spel, se din riktiga ROI och sluta gissa. Jämför dig med andra i topplistorna där bara siffrorna talar.\n\n> Rubrik och första stycket visas i hero på startsidan (`/`).",
+    content: serializeLandingContent(DEFAULT_LANDING),
     seo_title: "Spelbok — ta kontroll över ditt spelande",
     seo_description:
       "Bokför varje spel, se din riktiga ROI och jämför dig i topplistorna.",
@@ -207,9 +210,11 @@ export async function savePage(id: string, draft: PageDraft) {
   if (!current) throw new Error("Sidan finns inte");
 
   const slug =
-    slugify(draft.slug) === current.slug
-      ? current.slug
-      : await uniqueSlug(draft.slug || draft.title, id);
+    current.slug === "startsida"
+      ? "startsida"
+      : slugify(draft.slug) === current.slug
+        ? current.slug
+        : await uniqueSlug(draft.slug || draft.title, id);
   const savedAt = new Date().toISOString();
 
   const { error } = await supabase

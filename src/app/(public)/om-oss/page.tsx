@@ -1,18 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import {
-  fetchAboutStats,
-  fetchTeamMembers,
-  formatCount,
-  formatTeamRoi,
-} from "@/lib/about";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Om Spelbok",
   description:
-    "Vi byggde verktyget vi själva saknade. Läs om Spelboks principer, team och siffror.",
+    "Vi byggde verktyget vi själva saknade. Läs om Spelboks principer.",
 };
 
 const PRINCIPLES = [
@@ -38,35 +31,7 @@ const PRINCIPLES = [
   },
 ] as const;
 
-export default async function OmOssPage() {
-  const [stats, team] = await Promise.all([
-    fetchAboutStats(),
-    fetchTeamMembers(),
-  ]);
-
-  const kpis = [
-    {
-      value: formatCount(stats.users),
-      label: "registrerade användare",
-      accent: true,
-    },
-    {
-      value: formatCount(stats.bets),
-      label: "bokförda spel",
-      accent: false,
-    },
-    {
-      value: formatCount(stats.publicSheets),
-      label: "publika spelböcker",
-      accent: false,
-    },
-    {
-      value: "0 kr",
-      label: "i spel förmedlade. Vi är ett bokföringsverktyg.",
-      accent: false,
-    },
-  ] as const;
-
+export default function OmOssPage() {
   return (
     <div className="animate-sbfade pb-20">
       <section className="mx-auto max-w-[1220px] px-5 pt-[72px]">
@@ -83,29 +48,6 @@ export default async function OmOssPage() {
             plattform för alla som vill bokföra sina spel, se sin riktiga ROI
             och jämföra sig med andra på lika villkor.
           </p>
-        </div>
-      </section>
-
-      <section className="mx-auto mt-[72px] max-w-[1220px] px-5">
-        <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4">
-          {kpis.map((kpi) => (
-            <div
-              key={kpi.label}
-              className="rounded-[14px] border border-line bg-panel p-[22px]"
-            >
-              <div
-                className={cn(
-                  "font-mono-num text-[34px] font-semibold",
-                  kpi.accent ? "text-win" : "text-[#E6EAF2]"
-                )}
-              >
-                {kpi.value}
-              </div>
-              <p className="mt-1 text-[13.5px] leading-snug text-[#8A94AB]">
-                {kpi.label}
-              </p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -143,71 +85,6 @@ export default async function OmOssPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="mx-auto mt-[72px] max-w-[1220px] px-5">
-        <h2 className="font-display text-[32px] font-semibold leading-[1.1] text-text">
-          Teamet
-        </h2>
-        <p className="mt-2 mb-[26px] max-w-[560px] text-[16px] leading-[1.6] text-[#8A94AB]">
-          Tre personer i Stockholm och Göteborg. Alla bokför sina egna spel
-          publikt på plattformen.
-        </p>
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-          {team.map((member) => (
-            <article
-              key={member.username}
-              className="overflow-hidden rounded-[14px] border border-line bg-panel"
-            >
-              <div className="relative h-[220px] bg-[#101623]">
-                <Image
-                  src={member.image}
-                  alt={member.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 100vw, 33vw"
-                />
-              </div>
-              <div className="p-[18px]">
-                <h3 className="font-display text-[20px] font-semibold text-text">
-                  {member.name}
-                </h3>
-                <p className="mt-0.5 mb-2 text-[13px] text-win">{member.role}</p>
-                <p className="text-[14px] leading-[1.55] text-[#8A94AB]">
-                  {member.bio}
-                </p>
-                <p className="mt-3 font-mono-num text-[12px] text-[#5D6883]">
-                  {member.isPublic ? (
-                    <>
-                      <Link
-                        href={`/profil/${encodeURIComponent(member.username)}`}
-                        className="text-[#5D6883] no-underline hover:text-text hover:underline"
-                      >
-                        @{member.username}
-                      </Link>
-                      {member.roi != null ? (
-                        <>
-                          {" · ROI "}
-                          <span
-                            className={cn(
-                              member.roi > 0 && "text-win",
-                              member.roi < 0 && "text-loss",
-                              member.roi === 0 && "text-[#C3CBDB]"
-                            )}
-                          >
-                            {formatTeamRoi(member.roi)}
-                          </span>
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    <span>@{member.username}</span>
-                  )}
-                </p>
-              </div>
-            </article>
-          ))}
         </div>
       </section>
 

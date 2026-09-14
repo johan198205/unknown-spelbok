@@ -1,26 +1,60 @@
 import Image from "next/image";
 import { ButtonLink } from "@/components/ui/Button";
-import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, Panel } from "@/components/ui/Panel";
-import { fetchLandingHero } from "@/lib/landing-hero";
+import { fetchLandingPage } from "@/lib/landing-content";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, formatMoney, formatRoi, nettoColor } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
 import type { Metadata } from "next";
 
+function LandingImage({
+  src,
+  alt,
+  fill,
+  priority,
+  sizes,
+  width,
+  height,
+  className,
+}: {
+  src: string;
+  alt: string;
+  fill?: boolean;
+  priority?: boolean;
+  sizes?: string;
+  width?: number;
+  height?: number;
+  className?: string;
+}) {
+  const remote = /^https?:\/\//i.test(src);
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill={fill}
+      priority={priority}
+      sizes={sizes}
+      width={fill ? undefined : width}
+      height={fill ? undefined : height}
+      className={className}
+      unoptimized={remote}
+    />
+  );
+}
+
 export async function generateMetadata(): Promise<Metadata> {
-  const hero = await fetchLandingHero();
+  const landing = await fetchLandingPage();
   return {
-    title: hero.seoTitle || undefined,
-    description: hero.seoDescription || undefined,
+    title: landing.seoTitle || undefined,
+    description: landing.seoDescription || undefined,
   };
 }
 
 export default async function LandingPage() {
   const supabase = await createClient();
   const site = await fetchSiteSettings(supabase);
-  const hero = await fetchLandingHero();
+  const landing = await fetchLandingPage();
 
   const [{ data: publicSheets }, { data: competitions }] = await Promise.all([
     supabase
@@ -55,59 +89,38 @@ export default async function LandingPage() {
 
   const comp = site.competitions_enabled ? competitions?.[0] : undefined;
 
-  const steps = [
-    {
-      no: "01",
-      title: "Skapa ett spreadsheet",
-      body: "En bok per strategi. Sätt startbankroll, välj om den ska vara publik och börja logga.",
-      img: "/img/sa-funkar-det/skapa-spreadsheet.png",
-      alt: "Formuläret för nytt spreadsheet med namn, startbankroll och publik-val.",
-    },
-    {
-      no: "02",
-      title: "Bokför varje spel",
-      body: "Match, tipp, odds, insats och resultat. Filtrera på liga, spelbolag eller oddsintervall.",
-      img: "/img/sa-funkar-det/bokfor-spel.png",
-      alt: "Spellistan med datum, liga, match, tipp, odds, resultat och netto per rad.",
-    },
-    {
-      no: "03",
-      title: "Läs av sanningen",
-      body: "Netto, ROI och hitrate räknas om direkt. Jämför dig i topplistorna.",
-      img: "/img/sa-funkar-det/statistik.png",
-      alt: "Statistikvyn med netto, ROI, hitrate och grafen över ackumulerat netto.",
-    },
-  ];
-
   return (
     <div className="animate-sbfade">
       <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-7 pb-6 pt-16 md:grid-cols-[0.95fr_1.15fr] md:gap-6 lg:gap-10">
         <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1.5 text-[12px] uppercase tracking-[0.08em] text-muted">
             <span className="h-[7px] w-[7px] rounded-full bg-cyan animate-sbpulse" />
-            Live bokföring
+            {landing.hero.badge}
           </div>
           <h1 className="font-display mb-4 whitespace-pre-line text-[42px] font-bold leading-[1.02] tracking-[-0.01em] md:text-[58px]">
-            {hero.title}
+            {landing.title}
           </h1>
           <p className="mb-7 max-w-[520px] text-lg leading-relaxed text-muted">
-            {hero.body}
+            {landing.hero.body}
           </p>
           <div className="flex flex-wrap gap-3">
-            <ButtonLink href="/registrera" size="lg">
-              Börja bokföra gratis
+            <ButtonLink href={landing.hero.primaryCta.href} size="lg">
+              {landing.hero.primaryCta.label}
             </ButtonLink>
-            <ButtonLink href="/topplista" variant="secondary" size="lg">
-              Se ett publikt spreadsheet
+            <ButtonLink
+              href={landing.hero.secondaryCta.href}
+              variant="secondary"
+              size="lg"
+            >
+              {landing.hero.secondaryCta.label}
             </ButtonLink>
           </div>
         </div>
 
-        {/* Produktmockup: desktop + mobil — transparent PNG */}
         <div className="relative md:-mr-4 lg:-mr-8 xl:-mr-12">
-          <Image
-            src="/mockups/spelbok-devices.png"
-            alt="Spelbok på laptop och mobil — dashboard med netto, ROI, hitrate och bokförda spel."
+          <LandingImage
+            src={landing.hero.image}
+            alt={landing.hero.imageAlt}
             width={979}
             height={624}
             priority
@@ -119,17 +132,16 @@ export default async function LandingPage() {
 
       <section className="mx-auto max-w-[1180px] px-7 pt-16">
         <h2 className="font-display mb-1.5 text-[34px] font-semibold">
-          Så funkar det
+          {landing.howItWorks.title}
         </h2>
         <p className="mb-7 max-w-[560px] text-muted">
-          Tre steg från utspridda skärmdumpar och minneslappar till en bok som
-          visar exakt var pengarna kommer ifrån.
+          {landing.howItWorks.body}
         </p>
         <div className="grid gap-[18px] md:grid-cols-3">
-          {steps.map((s) => (
+          {landing.howItWorks.steps.map((s) => (
             <Panel key={s.no} className="overflow-hidden">
               <div className="relative h-[150px] border-b border-line-soft bg-bg-soft">
-                <Image
+                <LandingImage
                   src={s.img}
                   alt={s.alt}
                   fill
@@ -158,14 +170,18 @@ export default async function LandingPage() {
           <div className="flex items-center justify-between border-b border-line px-4 py-4">
             <div>
               <div className="font-display text-xl font-semibold">
-                Topplistan just nu
+                {landing.leaderboard.title}
               </div>
               <div className="text-[13px] text-muted">
-                Publika spreadsheets rankade på ROI
+                {landing.leaderboard.body}
               </div>
             </div>
-            <ButtonLink href="/topplista" variant="secondary" size="sm">
-              Se hela listan
+            <ButtonLink
+              href={landing.leaderboard.ctaHref}
+              variant="secondary"
+              size="sm"
+            >
+              {landing.leaderboard.ctaLabel}
             </ButtonLink>
           </div>
           {board.length ? (
@@ -222,34 +238,18 @@ export default async function LandingPage() {
             ) : null}
           </Panel>
         ) : null}
-
-        {/* Annonsytan flyttad från sidokolumnen till fullbredd under listan —
-            formaten matchar övriga sidor så samma HTML-banners kan återanvändas. */}
-        <AdSlot
-          format="970x90"
-          placement="home"
-          className="mt-6 hidden h-[90px] lg:flex"
-        />
-        <AdSlot
-          format="320x100"
-          placement="home"
-          className="mt-6 h-[100px] lg:hidden"
-        />
       </section>
 
       <section className="mx-auto max-w-[1180px] px-7 py-16">
         <Panel className="flex flex-col items-start justify-between gap-6 p-8 md:flex-row md:items-center">
           <div>
             <h2 className="font-display mb-2 text-[32px] font-semibold">
-              Börja bokföra idag
+              {landing.cta.title}
             </h2>
-            <p className="max-w-[520px] text-muted">
-              Gratis konto, obegränsat antal spreadsheets och full statistik från
-              första spelet.
-            </p>
+            <p className="max-w-[520px] text-muted">{landing.cta.body}</p>
           </div>
-          <ButtonLink href="/registrera" size="lg">
-            Skapa konto
+          <ButtonLink href={landing.cta.buttonHref} size="lg">
+            {landing.cta.buttonLabel}
           </ButtonLink>
         </Panel>
       </section>

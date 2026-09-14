@@ -3,12 +3,10 @@
 import { TeamLogo } from "@/components/bets/TeamPair";
 import { useClockTick } from "@/hooks/useClockTick";
 import {
-  fixtureClock,
   fixtureFromBet,
-  formatKickoffTime,
-  isFinishedStatus,
-  isInPlayStatus,
-  isTickingStatus,
+  matchPhase,
+  needsMatchPhaseTick,
+  type MatchPhaseTone,
 } from "@/lib/live-fixture";
 import { parseMatchSides, teamLogoUrl } from "@/lib/logos";
 import type { Bet } from "@/lib/types";
@@ -26,8 +24,15 @@ type Sides = {
   away: Side;
   /** Spelminut ("67'", "45+2'"), HT, FT eller starttid. */
   status: string;
+  tone: MatchPhaseTone;
   live: boolean;
   hasScore: boolean;
+};
+
+const PHASE_COLOR: Record<MatchPhaseTone, string> = {
+  ns: "text-[#8A94AB]",
+  live: "text-cyan",
+  ft: "text-[#5D6883]",
 };
 
 /**
@@ -41,16 +46,10 @@ type Sides = {
  */
 export function betMatchSides(bet: Bet, now = Date.now()): Sides {
   const fixture = fixtureFromBet(bet);
-  const live = isInPlayStatus(fixture?.status);
-  const settled = bet.result !== "open";
-  // Fixturens egen status går före rättningen: en avgjord match visar FT via
-  // klockan ändå, medan ett rättat spel utan fixture inte har någon minut alls.
-  const status =
-    fixture && (live || isFinishedStatus(fixture.status))
-      ? fixtureClock(fixture, now)
-      : settled
-        ? "FT"
-        : formatKickoffTime(fixture?.kickoff || bet.placed_at) || "—";
+  const phase = matchPhase(fixture, {
+    settled: bet.result !== "open",
+    placedAt: bet.placed_at,
+  }, now);
 
   if (fixture) {
     const sport = fixture.sport;
@@ -65,8 +64,9 @@ export function betMatchSides(bet: Bet, now = Date.now()): Sides {
         logo: teamLogoUrl(fixture.away_logo, fixture.away_team_id, sport),
         score: fixture.away_score ?? null,
       },
-      status,
-      live,
+      status: phase.label,
+      tone: phase.tone,
+      live: phase.live,
       hasScore: fixture.home_score != null && fixture.away_score != null,
     };
   }
@@ -75,8 +75,9 @@ export function betMatchSides(bet: Bet, now = Date.now()): Sides {
   return {
     home: { name: manual?.home || bet.match, logo: null, score: null },
     away: { name: manual?.away || "", logo: null, score: null },
-    status,
-    live,
+    status: phase.label,
+    tone: phase.tone,
+    live: phase.live,
     hasScore: false,
   };
 }
@@ -153,8 +154,8 @@ export function SheetMatchCell({
   density: SheetDensity;
   variant?: "table" | "card";
 }) {
-  // Bara pågående matcher behöver en timer — resten renderas en gång.
-  const now = useClockTick(isTickingStatus(bet.fixtures?.status));
+  // Tick var 30:e sekund så fallback-minuten och HT/FT byter utan refresh.
+  const now = useClockTick(needsMatchPhaseTick(bet.fixtures), 30_000);
   const sides = betMatchSides(bet, now);
   const showScore = sides.hasScore;
   // density "slim" borttaget — prop behålls för anropare.
@@ -174,7 +175,7 @@ export function SheetMatchCell({
         className={cn(
           "shrink-0 whitespace-nowrap border-r border-line-soft font-mono-num text-[12px] font-semibold",
           variant === "card" ? "mr-3 pr-3" : "mr-2 pr-2",
-          sides.live ? "text-cyan" : "text-faint"
+          PHASE_COLOR[sides.tone]
         )}
       >
         {sides.status}
