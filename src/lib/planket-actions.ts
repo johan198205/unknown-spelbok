@@ -47,6 +47,8 @@ export type CreatePostInput = {
   attachmentType: "none" | "bet" | "coupon";
   betId?: string | null;
   couponId?: string | null;
+  /** Storage-URL för fristående bild (kräver db/planket-image-replies.sql). */
+  imageUrl?: string | null;
 };
 
 export async function createPost(
@@ -66,6 +68,7 @@ export async function createPost(
   const betId = input.attachmentType === "bet" ? (input.betId ?? null) : null;
   const couponId =
     input.attachmentType === "coupon" ? (input.couponId ?? null) : null;
+  const imageUrl = input.imageUrl?.trim() || null;
 
   if (input.attachmentType === "bet" && !betId) {
     return { ok: false, error: "Välj ett spel att bifoga." };
@@ -73,8 +76,8 @@ export async function createPost(
   if (input.attachmentType === "coupon" && !couponId) {
     return { ok: false, error: "Välj en kupong att bifoga." };
   }
-  if (!body && input.attachmentType === "none") {
-    return { ok: false, error: "Skriv något eller bifoga ett spel." };
+  if (!body && input.attachmentType === "none" && !imageUrl) {
+    return { ok: false, error: "Skriv något, bifoga en bild eller ett spel." };
   }
 
   const supabase = await createClient();
@@ -86,6 +89,7 @@ export async function createPost(
       attachment_type: input.attachmentType,
       bet_id: betId,
       coupon_id: couponId,
+      image_url: imageUrl,
     })
     .select("id")
     .maybeSingle();
@@ -95,6 +99,67 @@ export async function createPost(
 
   revalidatePath(PLANKET_PATH);
   return { ok: true, postId: data.id };
+}
+
+export async function createPostReply(
+  postId: string,
+  body: string
+): Promise<{ ok: true } | Fail> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+  const clean = body.trim();
+  if (!clean) return { ok: false, error: "Skriv ett svar." };
+  if (clean.length > PLANKET_MAX_BODY) {
+    return { ok: false, error: `Max ${PLANKET_MAX_BODY} tecken.` };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("post_replies").insert({
+    post_id: postId,
+    author_id: user.id,
+    body: clean,
+  });
+  if (error) return toFailure(error.message, "Kunde inte spara svaret.");
+  revalidatePath(PLANKET_PATH);
+  return { ok: true };
+}
+
+export type PostReplyRow = {
+  id: string;
+  body: string;
+  created_at: string;
+  author_username: string;
+  author_avatar: string | null;
+};
+
+export async function listPostReplies(postId: string): Promise<PostReplyRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("post_replies")
+    .select("id, body, created_at, profiles:author_id(username, avatar_url)")
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true })
+    .limit(100);
+
+  if (error || !data) {
+    if (error) console.error("planket replies", error.message);
+    return [];
+  }
+
+  return data.map((row) => {
+    const profile = Array.isArray(row.profiles)
+      ? row.profiles[0]
+      : row.profiles;
+    return {
+      id: row.id,
+      body: row.body,
+      created_at: row.created_at,
+      author_username:
+        (profile as { username?: string } | null)?.username || "användare",
+      author_avatar:
+        (profile as { avatar_url?: string | null } | null)?.avatar_url ?? null,
+    };
+  });
 }
 
 export async function editPost(postId: string, body: string) {

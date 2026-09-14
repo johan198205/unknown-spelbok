@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { TeamCrest } from "@/components/bets/TeamPair";
 import { CouponCountdown, CouponPublished } from "./CouponCountdown";
@@ -150,7 +151,7 @@ export function CouponCard({
       {/* SPELREKOMMENDATION + SPELBEVIS */}
       <div className="flex flex-wrap items-start gap-5 px-5 pt-4">
         <div className="min-w-0" style={{ flex: "1 1 320px" }}>
-          <div className={`${LABEL} mb-[7px]`}>Spelrekommendation</div>
+          <div className={`${LABEL} mb-[7px]`}>Kommentar</div>
           <p className="m-0 text-[15px] leading-[1.65] text-text-soft [text-wrap:pretty]">
             {coupon.body}
           </p>
@@ -300,11 +301,7 @@ function SummaryCell({
 }
 
 /**
- * Rekommenderat spelbolag.
- *
- * Loggans mått följer kolumnantalet via --kupong-cta-logo-*; i 3-läget
- * ligger den på egen rad i full bredd så textkolumnen behåller hela
- * kortbredden. Motiveringen får radbryta — ellips på den gör den obegriplig.
+ * Spelbolagsbox på kupong: logga, namn, bonus, CTA — ingen "bästa oddset".
  */
 function CouponCta({ coupon }: { coupon: Coupon }) {
   const bookmaker = coupon.bookmakers;
@@ -312,6 +309,12 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
 
   const logo = getBookmakerLogoUrl(bookmaker.logo_url);
   const short = bookmaker.name.split(" ")[0];
+  const bonusText = bookmaker.bonus?.trim()
+    ? bookmaker.bonus
+    : bookmaker.bonus_value
+      ? `${bookmaker.bonus_value.toLocaleString("sv-SE")} kr`
+      : null;
+  const goHref = `/go/${bookmaker.slug}?src=kupong`;
 
   return (
     <div className="px-5 pt-4">
@@ -324,9 +327,13 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
             gap: "var(--kupong-cta-gap)",
           }}
         >
-          <span
+          <a
+            href={goHref}
+            target="_blank"
+            rel="noopener sponsored nofollow"
             title={bookmaker.name}
-            className="inline-block shrink-0 rounded-[9px] bg-panel-2 bg-center bg-no-repeat"
+            onClick={() => track({ event: "affiliate_click", bookmaker: bookmaker.slug })}
+            className="inline-block shrink-0 rounded-[9px] bg-panel-2 bg-center bg-no-repeat no-underline"
             style={{
               width: "var(--kupong-cta-logo-w)",
               height: "var(--kupong-cta-logo-h)",
@@ -335,20 +342,19 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
             }}
           />
           <div className="w-full min-w-0 flex-1">
-            <div className={`${LABEL} mb-[3px]`}>Rekommenderat spelbolag</div>
             <div className="font-display text-[17px] font-semibold leading-[1.2]">
               {bookmaker.name}
             </div>
-            {coupon.bookmaker_reason ? (
-              <div className="mt-0.5 text-[12.5px] leading-[1.45] text-muted">
-                {coupon.bookmaker_reason}
+            {bonusText ? (
+              <div className="mt-0.5 text-[13px] font-semibold text-win">
+                {bonusText}
               </div>
             ) : null}
           </div>
         </div>
 
         <a
-          href={`/go/${bookmaker.slug}?src=kupong`}
+          href={goHref}
           target="_blank"
           rel="noopener sponsored nofollow"
           onClick={() => track({ event: "affiliate_click", bookmaker: bookmaker.slug })}
@@ -357,9 +363,11 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
           Spela hos {short}
         </a>
       </div>
-      <div className="mt-2 text-[11.5px] text-faint">
-        Reklamlänk. {bookmaker.terms || "Villkor gäller. 18+"}
-      </div>
+      <BookmakerDisclaimer
+        prefix="Reklamlänk"
+        bookmaker={bookmaker}
+        className="mt-2"
+      />
     </div>
   );
 }

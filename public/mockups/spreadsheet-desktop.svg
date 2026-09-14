@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-label="Mockup av ett spreadsheet i Spelbok">
+  <defs>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#66e38a" stop-opacity="0.26" />
+      <stop offset="100%" stop-color="#66e38a" stop-opacity="0" />
+    </linearGradient>
+    <style>
+      text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      .label { font-size: 12px; fill: #8e99b0; letter-spacing: 1.4px; }
+      .kpi { font-size: 28px; font-weight: 600; }
+      .head { font-size: 12px; fill: #8e99b0; letter-spacing: 1.2px; }
+      .cell { font-size: 15px; fill: #aab4c9; }
+      .cell-strong { font-size: 15px; fill: #e6eaf2; font-weight: 600; }
+      .num { font-size: 15px; font-weight: 600; }
+      .pill { font-size: 12px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="1199" height="799" rx="18" fill="#0f1420" stroke="#232b3e" />
+
+  <text x="28" y="42" fill="#e6eaf2" font-size="17" font-weight="700" letter-spacing="2.4">SPELBOK</text>
+  <text x="150" y="42" class="cell">Min spelbok · 2026</text>
+  <rect x="1108" y="20" width="64" height="28" rx="14" fill="#1b2436" stroke="#2a3346" />
+  <text x="1140" y="39" class="pill" fill="#aab4c9" text-anchor="middle">SEK</text>
+  <line x1="0" y1="64" x2="1200" y2="64" stroke="#1c2333" />
+
+  <g>
+    <rect x="28" y="88" width="271" height="96" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="52" y="118" class="label">NETTO</text>
+    <text x="52" y="156" class="kpi" fill="#66e38a">+12 480 kr</text>
+
+    <rect x="319" y="88" width="271" height="96" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="343" y="118" class="label">ROI</text>
+    <text x="343" y="156" class="kpi" fill="#66e38a">+14,2 %</text>
+
+    <rect x="610" y="88" width="271" height="96" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="634" y="118" class="label">HITRATE</text>
+    <text x="634" y="156" class="kpi" fill="#e6eaf2">54 %</text>
+
+    <rect x="901" y="88" width="271" height="96" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="925" y="118" class="label">BOKFÖRDA SPEL</text>
+    <text x="925" y="156" class="kpi" fill="#e6eaf2">312</text>
+  </g>
+
+  <g>
+    <rect x="28" y="208" width="1144" height="200" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="52" y="238" class="label">ACKUMULERAT NETTO</text>
+    <line x1="52" y1="272" x2="1148" y2="272" stroke="#1c2333" />
+    <line x1="52" y1="316" x2="1148" y2="316" stroke="#1c2333" />
+    <line x1="52" y1="360" x2="1148" y2="360" stroke="#1c2333" />
+    <path d="M52 378 L152 366 L252 372 L352 344 L452 350 L552 318 L652 326 L752 296 L852 284 L952 292 L1052 262 L1148 252 L1148 392 L52 392 Z" fill="url(#area)" />
+    <path d="M52 378 L152 366 L252 372 L352 344 L452 350 L552 318 L652 326 L752 296 L852 284 L952 292 L1052 262 L1148 252" fill="none" stroke="#66e38a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+    <circle cx="1148" cy="252" r="4.5" fill="#66e38a" />
+  </g>
+
+  <g>
+    <rect x="28" y="428" width="1144" height="344" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="52" y="459" class="head">DATUM</text>
+    <text x="160" y="459" class="head">MATCH</text>
+    <text x="560" y="459" class="head">TIPP</text>
+    <text x="722" y="459" class="head" text-anchor="end">ODDS</text>
+    <text x="856" y="459" class="head" text-anchor="end">INSATS</text>
+    <text x="920" y="459" class="head">RESULTAT</text>
+    <text x="1148" y="459" class="head" text-anchor="end">NETTO</text>
+    <line x1="28" y1="472" x2="1172" y2="472" stroke="#232b3e" />
+
+    <g>
+      <text x="52" y="503" class="cell">12 mar</text>
+      <circle cx="170" cy="498" r="9" fill="#1b2436" stroke="#2a3346" />
+      <circle cx="188" cy="498" r="9" fill="#1b2436" stroke="#2a3346" />
+      <text x="208" y="503" class="cell-strong">Arsenal  Chelsea</text>
+      <text x="560" y="503" class="cell-strong">Över 2.5</text>
+      <text x="722" y="503" class="cell" text-anchor="end">1.87</text>
+      <text x="856" y="503" class="cell" text-anchor="end">500 kr</text>
+      <rect x="920" y="486" width="66" height="24" rx="12" fill="#66e38a" fill-opacity="0.14" stroke="#66e38a" stroke-opacity="0.4" />
+      <text x="953" y="503" class="pill" fill="#66e38a" text-anchor="middle">Vinst</text>
+      <text x="1148" y="503" class="num" fill="#66e38a" text-anchor="end">+435 kr</text>
+      <line x1="28" y1="524" x2="1172" y2="524" stroke="#1b2233" />
+    </g>
+
+    <g>
+      <text x="52" y="555" class="cell">12 mar</text>
+      <circle cx="170" cy="550" r="9" fill="#1b2436" stroke="#2a3346" />
+      <circle cx="188" cy="550" r="9" fill="#1b2436" stroke="#2a3346" />
+      <text x="208" y="555" class="cell-strong">Malmö FF  AIK</text>
+      <text x="560" y="555" class="cell-strong">1</text>
+      <text x="722" y="555" class="cell" text-anchor="end">2.10</text>
+      <text x="856" y="555" class="cell" text-anchor="end">300 kr</text>
+      <rect x="920" y="538" width="74" height="24" rx="12" fill="#ff5c6c" fill-opacity="0.12" stroke="#ff5c6c" stroke-opacity="0.4" />
+      <text x="957" y="555" class="pill" fill="#ff8a96" text-anchor="middle">Förlust</text>
+      <text x="1148" y="555" class="num" fill="#ff5c6c" text-anchor="end">300 kr</text>
+      <line x1="28" y1="576" x2="1172" y2="576" stroke="#1b2233" />
+    </g>
+
+    <g>
+      <text x="52" y="607" class="cell">11 mar</text>
+      <circle cx="170" cy="602" r="9" fill="#1b2436" stroke="#2a3346" />
+      <circle cx="188" cy="602" r="9" fill="#1b2436" stroke="#2a3346" />
+      <text x="208" y="607" class="cell-strong">Barcelona  Sevilla</text>
+      <text x="560" y="607" class="cell-strong">X2</text>
+      <text x="722" y="607" class="cell" text-anchor="end">1.65</text>
+      <text x="856" y="607" class="cell" text-anchor="end">400 kr</text>
+      <rect x="920" y="590" width="66" height="24" rx="12" fill="#66e38a" fill-opacity="0.14" stroke="#66e38a" stroke-opacity="0.4" />
+      <text x="953" y="607" class="pill" fill="#66e38a" text-anchor="middle">Vinst</text>
+      <text x="1148" y="607" class="num" fill="#66e38a" text-anchor="end">+260 kr</text>
+      <line x1="28" y1="628" x2="1172" y2="628" stroke="#1b2233" />
+    </g>
+
+    <g>
+      <text x="52" y="659" class="cell">11 mar</text>
+      <circle cx="170" cy="654" r="9" fill="#1b2436" stroke="#2a3346" />
+      <circle cx="188" cy="654" r="9" fill="#1b2436" stroke="#2a3346" />
+      <text x="208" y="659" class="cell-strong">Färjestad  Frölunda</text>
+      <text x="560" y="659" class="cell-strong">2</text>
+      <text x="722" y="659" class="cell" text-anchor="end">2.35</text>
+      <text x="856" y="659" class="cell" text-anchor="end">250 kr</text>
+      <rect x="920" y="642" width="66" height="24" rx="12" fill="#66e38a" fill-opacity="0.14" stroke="#66e38a" stroke-opacity="0.4" />
+      <text x="953" y="659" class="pill" fill="#66e38a" text-anchor="middle">Vinst</text>
+      <text x="1148" y="659" class="num" fill="#66e38a" text-anchor="end">+338 kr</text>
+      <line x1="28" y1="680" x2="1172" y2="680" stroke="#1b2233" />
+    </g>
+
+    <g>
+      <text x="52" y="711" class="cell">10 mar</text>
+      <circle cx="170" cy="706" r="9" fill="#1b2436" stroke="#2a3346" />
+      <circle cx="188" cy="706" r="9" fill="#1b2436" stroke="#2a3346" />
+      <text x="208" y="711" class="cell-strong">Inter  Napoli</text>
+      <text x="560" y="711" class="cell-strong">Under 3.5</text>
+      <text x="722" y="711" class="cell" text-anchor="end">1.72</text>
+      <text x="856" y="711" class="cell" text-anchor="end">600 kr</text>
+      <rect x="920" y="694" width="60" height="24" rx="12" fill="#1b2436" stroke="#2a3346" />
+      <text x="950" y="711" class="pill" fill="#aab4c9" text-anchor="middle">Void</text>
+      <text x="1148" y="711" class="num" fill="#aab4c9" text-anchor="end">0 kr</text>
+      <line x1="28" y1="732" x2="1172" y2="732" stroke="#1b2233" />
+    </g>
+
+    <text x="52" y="757" class="cell" fill="#8e99b0">Visar 5 av 312 bokförda spel</text>
+    <text x="1148" y="757" class="cell" fill="#8e99b0" text-anchor="end">Filtrera på liga, spelbolag och odds</text>
+  </g>
+</svg>

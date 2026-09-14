@@ -33,7 +33,7 @@ const POST_COLUMNS = `
   bet_bookmaker_id, bet_bookmaker_name, bet_bookmaker_logo,
   fixture_id, kickoff, fixture_status,
   home_name, home_logo, home_team_id, away_name, away_logo, away_team_id,
-  verified, fire_count, thumb_count, back_count
+  verified, fire_count, thumb_count, back_count, image_url
 `;
 
 /**
@@ -149,6 +149,7 @@ async function decoratePosts(
 
   return rows.map((row) => ({
     ...row,
+    image_url: row.image_url ?? null,
     coupon: row.coupon_id ? (coupons.get(row.coupon_id) ?? null) : null,
     myReactions: mine.get(row.id) ?? [],
     backedByMe: backed.has(row.id),

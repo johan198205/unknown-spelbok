@@ -13,13 +13,7 @@ import {
   type DistributionGroups,
 } from "@/components/bets/DistributionCard";
 import { MatchLine } from "@/components/bets/TeamPair";
-import {
-  MatchesForYou,
-  type MatchForYou,
-} from "@/components/suggestions/MatchesForYou";
 import { formatPick } from "@/lib/picks";
-import { stockholmYmd } from "@/lib/stockholm";
-import { SUGGESTION_COLUMNS, normalizeSuggestion } from "@/lib/suggestions";
 import {
   bookmakerKey,
   categoryKey,
@@ -73,8 +67,7 @@ export default async function HemPage() {
   const prefs = await getDisplayPrefs();
   const supabase = await createClient();
 
-  const [{ data: sheets }, betsQuery, { data: suggestionRows }] =
-    await Promise.all([
+  const [{ data: sheets }, betsQuery] = await Promise.all([
       supabase
         .from("sheets")
         .select("*")
@@ -87,20 +80,6 @@ export default async function HemPage() {
         )
         .eq("user_id", user.id)
         .order("placed_at", { ascending: false }),
-      // Serverrenderat: sektionen ska inte blinka in efter laddning. Saknas
-      // tabellen (migrationen inte körd) blir data null och sektionen uteblir.
-      //
-      // sheet_id is null = kontots förslag. Spelbökernas egna rader ligger i
-      // samma tabell men hämtas på /spelbok.
-      supabase
-        .from("daily_suggestions")
-        .select(SUGGESTION_COLUMNS)
-        .eq("user_id", user.id)
-        .is("sheet_id", null)
-        .eq("suggestion_date", stockholmYmd())
-        .eq("dismissed", false)
-        .order("match_score", { ascending: false })
-        .order("kickoff", { ascending: true }),
     ]);
 
   // Livekolumnerna är migreringar som kan sakna körning i en given databas.
@@ -143,39 +122,6 @@ export default async function HemPage() {
   };
 
   const recent = settled.slice(0, 8);
-
-  // Matchningen ska motiveras med användarens egen historik, inte med en
-  // naken poäng. Ligastatistiken räknas på rättade spel — öppna spel säger
-  // inget om hur det har gått.
-  const leagueHistory = new Map<string, { bets: number; netto: number }>();
-  for (const bet of settled) {
-    const key = leagueKey(bet);
-    const cur = leagueHistory.get(key) ?? { bets: 0, netto: 0 };
-    cur.bets += 1;
-    cur.netto += betNetto(bet);
-    leagueHistory.set(key, cur);
-  }
-
-  const seenMatch = new Set<string>();
-  const matches: MatchForYou[] = (suggestionRows ?? [])
-    .map(normalizeSuggestion)
-    .filter((s) => {
-      const key = `${s.home_team} – ${s.away_team}`.toLowerCase();
-      if (seenMatch.has(key)) return false;
-      seenMatch.add(key);
-      return true;
-    })
-    .slice(0, 3)
-    .map((suggestion) => {
-      const league = suggestion.league_name || "ligan";
-      const history = leagueHistory.get(league);
-      return {
-        suggestion,
-        note: history
-          ? `${history.bets} tidigare spel i ${league} · netto ${formatAmount(history.netto, prefs)}`
-          : `Ny liga för dig · ${league}`,
-      };
-    });
 
   const kpis = [
     {
@@ -392,7 +338,6 @@ export default async function HemPage() {
             </div>
           </section>
 
-          <MatchesForYou items={matches} dateLabel={stockholmYmd()} />
         </div>
       </div>
 

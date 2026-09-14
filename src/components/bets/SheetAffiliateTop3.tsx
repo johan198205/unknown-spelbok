@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
 import { track } from "@/lib/analytics";
 import { wageringLabel, type AffiliateTopRow } from "@/lib/bet-stats";
@@ -24,7 +25,10 @@ export function SheetAffiliateTop3({
           Hela listan
         </Link>
       </div>
-      <p className="mb-3 mt-1 text-[11px] text-faint">Reklamlänkar · 18+</p>
+      <BookmakerDisclaimer
+        prefix="Reklamlänkar"
+        className="mb-3 mt-1 text-[11px]"
+      />
 
       {!affiliates.length ? (
         <p className="py-6 text-center text-[13px] text-muted">

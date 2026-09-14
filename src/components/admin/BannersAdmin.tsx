@@ -34,44 +34,45 @@ const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
 ];
 
 /**
- * Annonsytorna går i full bredd och beskärs av object-cover. Bilden ska därför
- * ritas i ytans bredaste läge (width×height) med allt innehåll samlat i de
- * mittersta `safe` pixlarna — kanterna kapas på smalare skärmar.
+ * Formatet är också enhetsvalet: desktop- och mobilkoden är två banners på
+ * samma placering, och sidan renderar rätt av dem beroende på skärmbredd.
+ * Kreativen centreras i ytan utan att beskäras, så måtten nedan är den
+ * maxstorlek som får plats — en mindre kreativ hamnar mitt i ytan.
  */
 const FORMATS: {
   value: BannerFormat;
   label: string;
   short: string;
+  device: string;
   width: number;
   height: number;
-  safe: number;
   where: string;
 }[] = [
   {
     value: "970x90",
-    label: "Leaderboard · full bredd × 90 px",
+    label: "Desktop · leaderboard, upp till 970 × 90 px",
     short: "Leaderboard",
-    width: 1320,
+    device: "Desktop",
+    width: 970,
     height: 90,
-    safe: 940,
     where: "Desktop, toppen av sidan",
   },
   {
     value: "320x100",
-    label: "Mobil · full bredd × 100 px",
+    label: "Mobil · upp till 320 × 100 px",
     short: "Mobil",
-    width: 1040,
+    device: "Mobil",
+    width: 320,
     height: 100,
-    safe: 300,
     where: "Mobil och surfplatta, toppen av sidan",
   },
   {
     value: "300x250",
-    label: "Rektangel · sidokolumn × 250 px",
+    label: "Desktop · rektangel, upp till 300 × 250 px",
     short: "Rektangel",
-    width: 500,
+    device: "Desktop",
+    width: 300,
     height: 250,
-    safe: 300,
     where: "Sidokolumnen på startsidan",
   },
 ];
@@ -340,7 +341,7 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                       {placementLabel(b.placement)}
                     </span>
                     <span className="rounded-[var(--radius-badge)] bg-panel-2 px-2 py-[3px] text-[11px] text-text-soft">
-                      {formatOf(b.format).short}
+                      {formatOf(b.format).device} · {formatOf(b.format).short}
                     </span>
                     {b.creative_type === "html" ? (
                       <span className="rounded-[var(--radius-badge)] bg-cyan/15 px-2 py-[3px] text-[11px] text-cyan">
@@ -475,11 +476,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                 label="Bild-URL"
                 value={draft.image_url}
                 onChange={(url) => setDraft({ ...draft, image_url: url })}
-                hint={`${formatOf(draft.format).width}×${
+                hint={`Upp till ${formatOf(draft.format).width}×${
                   formatOf(draft.format).height
-                } px · innehållet i mitten (${
-                  formatOf(draft.format).safe
-                } px) · kanterna beskärs på smala skärmar`}
+                } px · visas centrerad i ytan utan beskärning`}
               />
             )}
 
@@ -527,7 +526,7 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                 ))}
               </Select>
               <Select
-                label="Format"
+                label="Format (enhet)"
                 value={draft.format}
                 onChange={(e) =>
                   setDraft({
@@ -542,6 +541,11 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   </option>
                 ))}
               </Select>
+              <div className="rounded-[var(--radius-card)] border border-line-soft bg-bg px-3 py-2 text-[12.5px] text-muted sm:col-span-2">
+                Desktop och mobil är två separata banners: spara den här, byt
+                format och spara annonsörens andra kod på samma placering. Sidan
+                väljer rätt av dem efter skärmbredd.
+              </div>
               {!FORMATS_BY_PLACEMENT[draft.placement].includes(draft.format) ? (
                 <div className="rounded-[var(--radius-card)] border border-yellow/40 bg-yellow/10 px-3 py-2 text-[12.5px] text-yellow sm:col-span-2">
                   {placementLabel(draft.placement)} har ingen{" "}
@@ -589,8 +593,8 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               <div className="mb-2.5 text-[10.5px] uppercase tracking-[0.12em] text-dim">
                 Förhandsvisning i AdSlot
               </div>
-              {/* Rutan har ytans bredaste proportioner och markerar den säkra
-                  zonen — allt utanför strecken kapas på smalare skärmar. */}
+              {/* Rutan är ytans maxmått. Kreativen centreras och beskärs inte —
+                  samma regler som AdSlot på sajten. */}
               <div
                 className="relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-[var(--radius-ad)] border border-dashed border-line-strong bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] font-mono-num text-[12px] tracking-[0.13em] text-dim"
                 style={{
@@ -616,37 +620,18 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                   <img
                     src={draft.image_url}
                     alt=""
-                    className="h-full w-full object-cover"
+                    className="max-h-full max-w-full object-contain"
                   />
                 ) : (
                   `${formatOf(draft.format).width}×${
                     formatOf(draft.format).height
                   } · ${draft.title || "Namnlös banner"}`
                 )}
-                <span
-                  aria-hidden
-                  hidden={draft.creative_type === "html"}
-                  className="pointer-events-none absolute inset-y-0 border-x border-dashed border-cyan/45"
-                  style={{
-                    left: `${
-                      (50 *
-                        (formatOf(draft.format).width -
-                          formatOf(draft.format).safe)) /
-                      formatOf(draft.format).width
-                    }%`,
-                    right: `${
-                      (50 *
-                        (formatOf(draft.format).width -
-                          formatOf(draft.format).safe)) /
-                      formatOf(draft.format).width
-                    }%`,
-                  }}
-                />
               </div>
               <div className="mt-2 text-center text-[11.5px] text-dim">
                 {draft.creative_type === "html"
                   ? "Snutten körs på riktigt här — annonsören kan räkna en visning redan av förhandsvisningen."
-                  : "Streckad zon = alltid synlig. Utanför den beskärs bilden på smalare skärmar."}
+                  : "Rutan är ytans maxmått. En mindre bild centreras, ingenting beskärs."}
               </div>
             </div>
 

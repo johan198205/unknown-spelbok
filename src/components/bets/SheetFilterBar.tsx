@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { Select } from "@/components/ui/Input";
 import {
-  DENSITY_OPTIONS,
   PERIOD_FILTER_OPTIONS,
   RESULT_FILTER_OPTIONS,
   SPORT_FILTER_OPTIONS,
@@ -14,7 +13,6 @@ import {
   clearPanelFilters,
   type BookmakerOption,
   type LeagueOption,
-  type SheetDensity,
   type SheetFilterState,
   type SheetPeriodFilter,
   type SheetResultFilter,
@@ -298,11 +296,6 @@ export function SheetFilterBar({
         <span className="font-mono-num text-[14px] text-muted">
           {filteredCount} av {totalCount} spel
         </span>
-        <PillGroup<SheetDensity>
-          value={filters.density}
-          options={DENSITY_OPTIONS}
-          onChange={(density) => onChange({ density })}
-        />
         <PillGroup<SheetViewMode>
           value={filters.view}
           options={VIEW_OPTIONS}

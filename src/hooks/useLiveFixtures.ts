@@ -41,8 +41,8 @@ function patchFromRow(row: {
 
 /**
  * Prenumererar på fixtures-UPDATEs och pollar /api/fixtures/live så länge
- * minst en synlig match pågår. Servern hämtar API-Football, skriver cachen
- * och autorättar när status blir FT.
+ * minst en synlig match pågår. Servern hämtar API-Football och skriver cachen.
+ * Auto-rättning vid FT styrs av FEATURES.autoSettle (avstängd i fas 1).
  */
 export function useLiveFixtures(
   fixtureIds: number[],

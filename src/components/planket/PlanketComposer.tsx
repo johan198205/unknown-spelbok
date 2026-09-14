@@ -56,10 +56,12 @@ export function PlanketComposer({
   const [expanded, setExpanded] = useState(false);
   const [body, setBody] = useState("");
   const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [picker, setPicker] = useState<"bet" | "coupon" | null>(null);
   const [focused, setFocused] = useState(false);
   const [busy, setBusy] = useState(false);
   const areaRef = useRef<HTMLTextAreaElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Auto-växande textarea: höjden följer innehållet, ingen inre scroll.
@@ -70,12 +72,39 @@ export function PlanketComposer({
     el.style.height = `${Math.max(52, el.scrollHeight)}px`;
   }, [body, expanded]);
 
-  const canPost = (body.trim().length > 0 || attachment != null) && !busy;
+  const canPost =
+    (body.trim().length > 0 || attachment != null || !!imageUrl) && !busy;
 
   function reset() {
     setBody("");
     setAttachment(null);
+    setImageUrl(null);
     setPicker(null);
+  }
+
+  async function onPickImage(file: File | null | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast("Filen måste vara en bild");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      toast("Max 4 MB");
+      return;
+    }
+    setBusy(true);
+    const supabase = (await import("@/lib/supabase/client")).createClient();
+    const path = `planket/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const { error } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+    setBusy(false);
+    if (error) {
+      toast(error.message);
+      return;
+    }
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    setImageUrl(data.publicUrl);
   }
 
   async function submit() {
@@ -87,6 +116,7 @@ export function PlanketComposer({
       attachmentType: attachment?.type ?? "none",
       betId: attachment?.type === "bet" ? attachment.bet.id : null,
       couponId: attachment?.type === "coupon" ? attachment.coupon.id : null,
+      imageUrl,
     });
 
     setBusy(false);
@@ -130,6 +160,10 @@ export function PlanketComposer({
             setBody={setBody}
             attachment={attachment}
             setAttachment={setAttachment}
+            imageUrl={imageUrl}
+            onClearImage={() => setImageUrl(null)}
+            onPickImage={onPickImage}
+            imageRef={imageRef}
             picker={picker}
             setPicker={setPicker}
             focused={focused}
@@ -151,6 +185,10 @@ export function PlanketComposer({
       setBody={setBody}
       attachment={attachment}
       setAttachment={setAttachment}
+      imageUrl={imageUrl}
+      onClearImage={() => setImageUrl(null)}
+      onPickImage={onPickImage}
+      imageRef={imageRef}
       picker={picker}
       setPicker={setPicker}
       focused={focused}
@@ -169,6 +207,10 @@ function ComposerCard({
   setBody,
   attachment,
   setAttachment,
+  imageUrl,
+  onClearImage,
+  onPickImage,
+  imageRef,
   picker,
   setPicker,
   focused,
@@ -183,6 +225,10 @@ function ComposerCard({
   setBody: (value: string) => void;
   attachment: Attachment | null;
   setAttachment: (value: Attachment | null) => void;
+  imageUrl: string | null;
+  onClearImage: () => void;
+  onPickImage: (file: File | null | undefined) => void;
+  imageRef: React.RefObject<HTMLInputElement | null>;
   picker: "bet" | "coupon" | null;
   setPicker: (value: "bet" | "coupon" | null) => void;
   focused: boolean;
@@ -217,6 +263,24 @@ function ComposerCard({
             style={{ minHeight: 52 }}
           />
 
+          {imageUrl ? (
+            <div className="relative mt-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt=""
+                className="max-h-56 w-full rounded-[11px] border border-line object-contain"
+              />
+              <button
+                type="button"
+                onClick={onClearImage}
+                className="absolute right-2 top-2 cursor-pointer rounded-full border border-line bg-[#151B2B] px-2 py-1 text-[12px] text-muted"
+              >
+                Ta bort bild
+              </button>
+            </div>
+          ) : null}
+
           {attachment ? (
             <AttachmentPreview
               attachment={attachment}
@@ -235,6 +299,17 @@ function ComposerCard({
             />
           ) : null}
 
+          <input
+            ref={imageRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              onPickImage(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+
           <div className="mt-3 flex flex-wrap items-center gap-[9px] border-t border-line-soft pt-[13px]">
             <AttachButton
               label={hasBet ? "Spel bifogat" : "Bifoga spel"}
@@ -247,6 +322,12 @@ function ComposerCard({
               active={hasCoupon}
               disabled={hasBet}
               onClick={() => setPicker(picker === "coupon" ? null : "coupon")}
+            />
+            <AttachButton
+              label={imageUrl ? "Bild bifogad" : "Bifoga bild"}
+              active={!!imageUrl}
+              disabled={false}
+              onClick={() => imageRef.current?.click()}
             />
 
             <span

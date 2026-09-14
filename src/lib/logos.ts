@@ -73,3 +73,22 @@ export function parseMatchSides(match: string) {
   if (!home || !away) return null;
   return { home, away };
 }
+
+/** Primärt datum i sheet: matchavspark, annars när spelet loggades. */
+export function betDisplayDate(bet: {
+  placed_at: string;
+  fixtures?: { kickoff?: string | null } | null;
+}) {
+  return bet.fixtures?.kickoff || bet.placed_at;
+}
+
+/** True om spelet får raderas (före avspark). Saknad kickoff → tillåt (manuell match). */
+export function canDeleteBet(bet: {
+  fixtures?: { kickoff?: string | null } | null;
+}) {
+  const kickoffIso = bet.fixtures?.kickoff;
+  if (!kickoffIso) return true;
+  const kickoff = new Date(kickoffIso).getTime();
+  if (!Number.isFinite(kickoff)) return true;
+  return kickoff > Date.now();
+}

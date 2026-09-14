@@ -26,6 +26,11 @@ import {
 
 const FIXTURE_BATCH = 200;
 
+/** Kill-switch — speglar src/lib/features.ts autoSettle (avstängd i fas 1). */
+const AUTO_SETTLE =
+  (typeof Deno !== "undefined" ? Deno.env.get("AUTO_SETTLE") : undefined) ===
+  "1";
+
 type PendingFixture = {
   fixture_id: number;
   kickoff: string;
@@ -160,13 +165,15 @@ export async function handleSettleResults(req: Request) {
       summary.updated = updates.length;
     }
 
-    const settled = await settleOpenBets(supabase, {
-      finalById,
-      awardedIds,
-      voidIds,
-      missingIds,
-      dryRun,
-    });
+    const settled = AUTO_SETTLE
+      ? await settleOpenBets(supabase, {
+          finalById,
+          awardedIds,
+          voidIds,
+          missingIds,
+          dryRun,
+        })
+      : { settled: 0, voided: 0, queued: 0 };
     summary.settled = settled.settled;
     summary.voided = settled.voided;
     summary.queued = settled.queued;

@@ -58,6 +58,7 @@ export function LeagueLogo({
       height={size}
       loading="lazy"
       decoding="async"
+      referrerPolicy="no-referrer"
       className={cn("shrink-0 object-contain", className)}
       style={{ width: size, height: size }}
       onError={() => setFailed(true)}

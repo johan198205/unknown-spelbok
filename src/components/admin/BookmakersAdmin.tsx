@@ -58,12 +58,16 @@ type Draft = {
   bonus: string;
   bonus_value: string;
   terms: string;
+  terms_url: string;
+  extra_disclaimer: string;
   usp: string;
   review: string;
   plus: string[];
   minus: string[];
   payments: string[];
   fast_payout: boolean;
+  brand_color: string;
+  withdrawal_time: string;
   tracking_url: string;
   active: boolean;
 };
@@ -81,12 +85,16 @@ function toDraft(b: BookmakerRow): Draft {
     bonus: b.bonus ?? "",
     bonus_value: b.bonus_value != null ? String(b.bonus_value) : "",
     terms: b.terms ?? "",
+    terms_url: b.terms_url ?? "",
+    extra_disclaimer: b.extra_disclaimer ?? "",
     usp: b.usp ?? "",
     review: b.review ?? "",
     plus: b.plus ?? [],
     minus: b.minus ?? [],
     payments: b.payments ?? [],
     fast_payout: b.fast_payout,
+    brand_color: b.brand_color ?? "",
+    withdrawal_time: b.withdrawal_time ?? "",
     tracking_url: b.tracking_url ?? "",
     active: b.active,
   };
@@ -103,12 +111,16 @@ function newDraft(rank: number): Draft {
     bonus: "",
     bonus_value: "",
     terms: "",
+    terms_url: "",
+    extra_disclaimer: "",
     usp: "",
     review: "",
     plus: [],
     minus: [],
     payments: [],
     fast_payout: false,
+    brand_color: "",
+    withdrawal_time: "",
     tracking_url: "",
     active: true,
   };
@@ -271,12 +283,16 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
         bonus: draft.bonus,
         bonus_value: parseNum(draft.bonus_value) ?? 0,
         terms: draft.terms,
+        terms_url: draft.terms_url,
+        extra_disclaimer: draft.extra_disclaimer,
         usp: draft.usp,
         review: draft.review,
         plus: draft.plus,
         minus: draft.minus,
         payments: draft.payments,
         fast_payout: draft.fast_payout,
+        brand_color: draft.brand_color,
+        withdrawal_time: draft.withdrawal_time,
         tracking_url: draft.tracking_url,
         active: draft.active,
       });
@@ -465,6 +481,54 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
                 />
               </Field>
             </div>
+            <Field label="Uttagstid">
+              <input
+                value={draft.withdrawal_time}
+                onChange={(e) => patch({ withdrawal_time: e.target.value })}
+                placeholder="t.ex. 1–3 bankdagar"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Brandfärg (hex)">
+              <input
+                value={draft.brand_color}
+                onChange={(e) => patch({ brand_color: e.target.value })}
+                placeholder="#1B2436"
+                className={cn(monoInputClass, "text-[12.5px]")}
+              />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Ansvar & villkor">
+          <p className="mb-3 text-[12.5px] text-muted">
+            Standardraden (18+ | Regler &amp; Villkor gäller | Spela
+            ansvarsfullt | Stodlinjen.se | Spelpaus.se) visas alltid och går
+            inte att stänga av. Fälten här styr bara det som är specifikt för
+            bolaget.
+          </p>
+          <Field label="Villkors-URL">
+            <input
+              value={draft.terms_url}
+              onChange={(e) => patch({ terms_url: e.target.value })}
+              placeholder="https://…"
+              className={cn(monoInputClass, "text-[12.5px]")}
+            />
+          </Field>
+          <p className="mt-1.5 text-[12.5px] text-muted">
+            Tom URL: &quot;Regler &amp; Villkor&quot; står kvar som text utan
+            länk.
+          </p>
+          <div className="mt-3">
+            <Field label="Extra disclaimer">
+              <textarea
+                value={draft.extra_disclaimer}
+                onChange={(e) => patch({ extra_disclaimer: e.target.value })}
+                rows={2}
+                placeholder="Bolagets egen obligatoriska formulering, ordagrant."
+                className="w-full resize-y rounded-[9px] border border-line bg-bg-soft p-3 text-[13.5px] leading-[1.55] text-text-soft outline-none focus:border-line-hover"
+              />
+            </Field>
           </div>
         </Section>
 
@@ -580,9 +644,13 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               bonus_value: parseNum(draft.bonus_value) ?? 0,
               usp: draft.usp || null,
               terms: draft.terms || null,
+              terms_url: draft.terms_url || null,
+              extra_disclaimer: draft.extra_disclaimer || null,
               review: draft.review || null,
               plus: draft.plus,
               minus: draft.minus,
+              brand_color: draft.brand_color || null,
+              withdrawal_time: draft.withdrawal_time || null,
               tracking_url: draft.tracking_url || null,
             }}
           />

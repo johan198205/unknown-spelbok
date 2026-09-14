@@ -86,10 +86,10 @@ export function BannerHtml({
       sandbox={BANNER_HTML_SANDBOX}
       loading="lazy"
       scrolling="no"
-      className={cn(
-        "block w-full overflow-hidden rounded-[var(--radius-ad)] border border-line bg-panel",
-        className
-      )}
+      // Ingen ram och ingen bakgrund: kreativen ska stå fritt i ytan. Dokumentet
+      // i srcDoc är transparent och centrerar sitt innehåll (lib/banner-html),
+      // så en 728×90-snutt hamnar mitt i en bredare yta utan att skalas upp.
+      className={cn("block w-full bg-transparent", className)}
     />
   );
 }

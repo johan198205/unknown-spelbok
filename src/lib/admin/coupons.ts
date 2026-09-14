@@ -36,7 +36,9 @@ export type CouponDraft = {
 
 const ADMIN_SELECT = `
   *,
-  bookmakers ( id, name, slug, logo_url, terms, tracking_url ),
+  bookmakers (
+    id, name, slug, logo_url, bonus, bonus_value, terms, terms_url, extra_disclaimer, tracking_url
+  ),
   legs:coupon_legs (
     id, coupon_id, sort_order, fixture_id, pick, odds, result,
     fixtures (

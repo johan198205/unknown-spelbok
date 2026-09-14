@@ -364,7 +364,7 @@ function CouponForm({
       </div>
 
       <Textarea
-        label="Spelrekommendation"
+        label="Kommentar"
         rows={4}
         value={draft.body}
         onChange={(e) => patch({ body: e.target.value })}

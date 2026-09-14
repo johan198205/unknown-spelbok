@@ -6,6 +6,7 @@ import { Avatar, RoiBadge } from "@/components/planket/Bits";
 import { PostBetCard } from "@/components/planket/PostBetCard";
 import { PostCouponCard } from "@/components/planket/PostCouponCard";
 import { PostMenu } from "@/components/planket/PostMenu";
+import { PostThread } from "@/components/planket/PostThread";
 import { editPost, toggleReaction } from "@/lib/planket-actions";
 import {
   PLANKET_MAX_BODY,
@@ -181,6 +182,15 @@ export function PostCard({
         </p>
       ) : null}
 
+      {post.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.image_url}
+          alt=""
+          className="mb-3 max-h-[420px] w-full rounded-[12px] border border-line object-contain bg-[#0F1420]"
+        />
+      ) : null}
+
       {/* ---------- Bilaga ---------- */}
       {post.attachment_type === "bet" ? <PostBetCard post={post} /> : null}
       {isCoupon ? <PostCouponCard coupon={post.coupon!} /> : null}
@@ -238,6 +248,8 @@ export function PostCard({
           </span>
         ) : null}
       </div>
+
+      <PostThread postId={post.id} />
     </article>
   );
 }

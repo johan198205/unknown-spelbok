@@ -46,14 +46,28 @@ export default async function PublicProfilePage({
   return (
     <div className="mx-auto max-w-[800px] px-5 py-10">
       <div className="mb-8 flex items-center gap-4">
-        <span className="font-display flex size-16 items-center justify-center rounded-full border border-line-strong bg-panel-2 text-2xl font-semibold">
-          {initialOf(profile.username)}
-        </span>
+        {profile.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.avatar_url}
+            alt=""
+            className="size-16 rounded-full border border-line-strong object-cover"
+          />
+        ) : (
+          <span className="font-display flex size-16 items-center justify-center rounded-full border border-line-strong bg-panel-2 text-2xl font-semibold">
+            {initialOf(profile.username)}
+          </span>
+        )}
         <div>
           <h1 className="font-display text-3xl font-semibold uppercase tracking-[0.05em]">
             {profile.username}
           </h1>
           <p className="text-muted">Publik profil</p>
+          {profile.bio?.trim() ? (
+            <p className="mt-2 max-w-[42ch] text-[14.5px] leading-relaxed text-text-soft">
+              {profile.bio.trim()}
+            </p>
+          ) : null}
         </div>
       </div>
 

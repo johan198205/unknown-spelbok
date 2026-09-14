@@ -270,6 +270,7 @@ function MatchDropdown({
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-busy={loading}
         disabled={disabled || (loading && totalCount === 0)}
         onClick={() => {
           if (disabled) return;
@@ -283,9 +284,28 @@ function MatchDropdown({
             "cursor-not-allowed opacity-45 hover:border-line"
         )}
       >
+        {loading ? (
+          <span
+            className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-line-strong border-t-cyan"
+            aria-hidden
+          />
+        ) : null}
         <span className="min-w-0 flex-1 truncate">{triggerLabel}</span>
         <span className="text-[11px] font-normal text-faint">▾</span>
       </button>
+
+      {loading ? (
+        <div
+          className="mt-2 flex items-center gap-2 rounded-[9px] border border-line-soft bg-panel px-3 py-2 text-[12.5px] text-muted"
+          role="status"
+        >
+          <span
+            className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-line-strong border-t-cyan"
+            aria-hidden
+          />
+          Hämtar matcher från API…
+        </div>
+      ) : null}
 
       {open && !disabled ? (
         <div
@@ -549,15 +569,34 @@ export function FixturePicker({
         />
       ),
     });
-    // Ligan utan matcher idag måste ändå finnas som val, annars tappar
-    // dropdownen sin etikett och användaren kan inte bläddra vidare i datum
     const sticky = league && !byLeague.some((g) => g.key === league.key)
       ? [toOption(league)]
       : [];
+
+    // Senast använda ligor (localStorage) först, därefter API-ordning (priority).
+    let recentKeys: string[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        recentKeys = JSON.parse(
+          localStorage.getItem("spelbok:recent-leagues") || "[]"
+        ) as string[];
+      } catch {
+        recentKeys = [];
+      }
+    }
+    const ranked = [...byLeague].sort((a, b) => {
+      const ai = recentKeys.indexOf(a.key);
+      const bi = recentKeys.indexOf(b.key);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+
     return [
       { value: ALL_LEAGUES, label: "Alla ligor" },
       ...sticky,
-      ...byLeague.map(toOption),
+      ...ranked.map(toOption),
     ];
   }, [byLeague, league, sport]);
 
@@ -647,6 +686,21 @@ export function FixturePicker({
                 sport: group.sport,
                 country: group.country,
               });
+              try {
+                const prev = JSON.parse(
+                  localStorage.getItem("spelbok:recent-leagues") || "[]"
+                ) as string[];
+                const next = [
+                  group.key,
+                  ...prev.filter((k) => k !== group.key),
+                ].slice(0, 8);
+                localStorage.setItem(
+                  "spelbok:recent-leagues",
+                  JSON.stringify(next)
+                );
+              } catch {
+                /* ignore */
+              }
               onMetaChange?.({
                 sport: group.sport || sport,
                 league: group.name,

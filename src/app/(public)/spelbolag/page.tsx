@@ -1,3 +1,4 @@
+import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
 import { BookmakersGrid } from "@/components/bets/BookmakersGrid";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { createClient } from "@/lib/supabase/server";
@@ -24,16 +25,10 @@ export default async function SpelbolagPage() {
           jämförda spelbolag
         </div>
       </div>
-      <div className="mb-5 text-[12.5px] text-faint">
-        Innehåller reklamlänkar · 18+ · Spela ansvarsfullt ·{" "}
-        <a href="https://stodlinjen.se" target="_blank" rel="noopener noreferrer">
-          Stödlinjen
-        </a>{" "}
-        ·{" "}
-        <a href="https://spelpaus.se" target="_blank" rel="noopener noreferrer">
-          Spelpaus
-        </a>
-      </div>
+      <BookmakerDisclaimer
+        prefix="Innehåller reklamlänkar"
+        className="mb-5 text-[12.5px]"
+      />
       <AdSlot
         format="970x90"
         placement="spelbolag"

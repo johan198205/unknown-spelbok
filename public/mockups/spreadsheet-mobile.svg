@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 860" width="430" height="860" role="img" aria-label="Mockup av Spelbok i mobilen">
+  <defs>
+    <linearGradient id="area-m" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#66e38a" stop-opacity="0.26" />
+      <stop offset="100%" stop-color="#66e38a" stop-opacity="0" />
+    </linearGradient>
+    <style>
+      text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      .label { font-size: 11px; fill: #8e99b0; letter-spacing: 1.3px; }
+      .kpi { font-size: 22px; font-weight: 600; }
+      .match { font-size: 14px; fill: #e6eaf2; font-weight: 600; }
+      .meta { font-size: 12px; fill: #8e99b0; }
+      .num { font-size: 14px; font-weight: 600; }
+      .pill { font-size: 11px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="429" height="859" rx="26" fill="#0f1420" stroke="#232b3e" />
+
+  <text x="20" y="40" fill="#e6eaf2" font-size="15" font-weight="700" letter-spacing="2.2">SPELBOK</text>
+  <circle cx="404" cy="34" r="15" fill="#1b2436" stroke="#2a3346" />
+  <text x="404" y="39" class="pill" fill="#aab4c9" text-anchor="middle">JW</text>
+  <line x1="0" y1="58" x2="430" y2="58" stroke="#1c2333" />
+
+  <g>
+    <rect x="20" y="76" width="186" height="84" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="38" y="104" class="label">NETTO</text>
+    <text x="38" y="136" class="kpi" fill="#66e38a">+12 480</text>
+
+    <rect x="224" y="76" width="186" height="84" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="242" y="104" class="label">ROI</text>
+    <text x="242" y="136" class="kpi" fill="#66e38a">+14,2 %</text>
+
+    <rect x="20" y="172" width="186" height="84" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="38" y="200" class="label">HITRATE</text>
+    <text x="38" y="232" class="kpi" fill="#e6eaf2">54 %</text>
+
+    <rect x="224" y="172" width="186" height="84" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="242" y="200" class="label">SPEL</text>
+    <text x="242" y="232" class="kpi" fill="#e6eaf2">312</text>
+  </g>
+
+  <g>
+    <rect x="20" y="268" width="390" height="150" rx="12" fill="#131826" stroke="#232b3e" />
+    <text x="38" y="296" class="label">ACKUMULERAT NETTO</text>
+    <line x1="38" y1="326" x2="392" y2="326" stroke="#1c2333" />
+    <line x1="38" y1="362" x2="392" y2="362" stroke="#1c2333" />
+    <path d="M38 392 L76 384 L114 388 L152 368 L190 372 L228 350 L266 356 L304 334 L342 326 L392 310 L392 400 L38 400 Z" fill="url(#area-m)" />
+    <path d="M38 392 L76 384 L114 388 L152 368 L190 372 L228 350 L266 356 L304 334 L342 326 L392 310" fill="none" stroke="#66e38a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+    <circle cx="392" cy="310" r="4" fill="#66e38a" />
+  </g>
+
+  <g>
+    <rect x="20" y="434" width="390" height="96" rx="12" fill="#131826" stroke="#232b3e" />
+    <circle cx="46" cy="466" r="10" fill="#1b2436" stroke="#2a3346" />
+    <circle cx="66" cy="466" r="10" fill="#1b2436" stroke="#2a3346" />
+    <text x="88" y="471" class="match">Arsenal  Chelsea</text>
+    <text x="38" y="504" class="meta">12 mar · Över 2.5 · odds 1.87 · 500 kr</text>
+    <rect x="300" y="452" width="66" height="24" rx="12" fill="#66e38a" fill-opacity="0.14" stroke="#66e38a" stroke-opacity="0.4" />
+    <text x="333" y="469" class="pill" fill="#66e38a" text-anchor="middle">Vinst</text>
+    <text x="392" y="505" class="num" fill="#66e38a" text-anchor="end">+435 kr</text>
+  </g>
+
+  <g>
+    <rect x="20" y="542" width="390" height="96" rx="12" fill="#131826" stroke="#232b3e" />
+    <circle cx="46" cy="574" r="10" fill="#1b2436" stroke="#2a3346" />
+    <circle cx="66" cy="574" r="10" fill="#1b2436" stroke="#2a3346" />
+    <text x="88" y="579" class="match">Malmö FF  AIK</text>
+    <text x="38" y="612" class="meta">12 mar · 1 · odds 2.10 · 300 kr</text>
+    <rect x="292" y="560" width="74" height="24" rx="12" fill="#ff5c6c" fill-opacity="0.12" stroke="#ff5c6c" stroke-opacity="0.4" />
+    <text x="329" y="577" class="pill" fill="#ff8a96" text-anchor="middle">Förlust</text>
+    <text x="392" y="613" class="num" fill="#ff5c6c" text-anchor="end">300 kr</text>
+  </g>
+
+  <g>
+    <rect x="20" y="650" width="390" height="96" rx="12" fill="#131826" stroke="#232b3e" />
+    <circle cx="46" cy="682" r="10" fill="#1b2436" stroke="#2a3346" />
+    <circle cx="66" cy="682" r="10" fill="#1b2436" stroke="#2a3346" />
+    <text x="88" y="687" class="match">Barcelona  Sevilla</text>
+    <text x="38" y="720" class="meta">11 mar · X2 · odds 1.65 · 400 kr</text>
+    <rect x="300" y="668" width="66" height="24" rx="12" fill="#66e38a" fill-opacity="0.14" stroke="#66e38a" stroke-opacity="0.4" />
+    <text x="333" y="685" class="pill" fill="#66e38a" text-anchor="middle">Vinst</text>
+    <text x="392" y="721" class="num" fill="#66e38a" text-anchor="end">+260 kr</text>
+  </g>
+
+  <g>
+    <rect x="20" y="758" width="390" height="82" rx="12" fill="#131826" stroke="#232b3e" />
+    <circle cx="46" cy="788" r="10" fill="#1b2436" stroke="#2a3346" />
+    <circle cx="66" cy="788" r="10" fill="#1b2436" stroke="#2a3346" />
+    <text x="88" y="793" class="match">Inter  Napoli</text>
+    <text x="38" y="822" class="meta">10 mar · Under 3.5 · odds 1.72 · 600 kr</text>
+    <rect x="306" y="776" width="60" height="24" rx="12" fill="#1b2436" stroke="#2a3346" />
+    <text x="336" y="793" class="pill" fill="#aab4c9" text-anchor="middle">Void</text>
+  </g>
+</svg>

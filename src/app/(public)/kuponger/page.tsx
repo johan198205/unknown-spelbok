@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
 import { CouponsView } from "@/components/coupons/CouponsView";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { getSessionUser } from "@/lib/auth";
@@ -59,21 +60,7 @@ export default async function KupongerPage() {
           spelbolag. Varje kupong går att kopiera rakt in i din egen spelbok och
           dela vidare i sin helhet.
         </p>
-        <div className="flex flex-wrap items-center gap-2.5 text-[12.5px] text-faint">
-          <span className="font-display rounded-[5px] border border-line-strong px-[7px] py-0.5 font-semibold text-muted">
-            18+
-          </span>
-          <span>
-            Reklamlänkar · Spela ansvarsfullt ·{" "}
-            <a href="https://stodlinjen.se" target="_blank" rel="noopener noreferrer">
-              Stödlinjen
-            </a>{" "}
-            ·{" "}
-            <a href="https://spelpaus.se" target="_blank" rel="noopener noreferrer">
-              Spelpaus
-            </a>
-          </span>
-        </div>
+        <BookmakerDisclaimer prefix="Reklamlänkar" className="text-[12.5px]" />
       </header>
 
       <CouponsView

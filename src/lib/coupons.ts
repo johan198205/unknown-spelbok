@@ -55,7 +55,16 @@ export type CouponLeg = CouponLegRow & {
 
 export type CouponBookmaker = Pick<
   Bookmaker,
-  "id" | "name" | "slug" | "logo_url" | "terms" | "tracking_url"
+  | "id"
+  | "name"
+  | "slug"
+  | "logo_url"
+  | "bonus"
+  | "bonus_value"
+  | "terms"
+  | "terms_url"
+  | "extra_disclaimer"
+  | "tracking_url"
 >;
 
 export type Coupon = CouponRow & {

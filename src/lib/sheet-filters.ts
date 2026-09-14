@@ -14,8 +14,8 @@ export type SheetPeriodFilter = "30d" | "3m" | "ytd" | "all";
 /** Dashboardens graf har fortfarande en egen period med 1 år. */
 export type ChartPeriodFilter = "30d" | "3m" | "1y" | "all";
 export type SheetViewMode = "table" | "cards";
-/** Matchcellens täthet: inramat resultatblock eller en enda rad. */
-export type SheetDensity = "result" | "slim";
+/** Matchcellens täthet — slim borttaget (feedback); typen behålls för props. */
+export type SheetDensity = "result";
 
 export const SPORT_FILTER_OPTIONS: Array<{
   value: SheetSportFilter;
@@ -59,9 +59,9 @@ export const CHART_PERIOD_OPTIONS: Array<{
   { value: "all", label: "Allt" },
 ];
 
+/** Slimmad-läge borttaget — behåll tom lista så filterbaren kan dölja kontrollen. */
 export const DENSITY_OPTIONS: Array<{ value: SheetDensity; label: string }> = [
   { value: "result", label: "Resultat" },
-  { value: "slim", label: "Slimmad" },
 ];
 
 export const VIEW_OPTIONS: Array<{ value: SheetViewMode; label: string }> = [
@@ -196,7 +196,9 @@ const RESULT_ORDER: BetResult[] = [
 function sortValue(bet: Bet, key: SheetSortKey): number | string {
   switch (key) {
     case "date":
-      return +new Date(bet.placed_at);
+      return +new Date(
+        bet.fixtures?.kickoff || bet.placed_at
+      );
     case "league":
       return (bet.league || "").toLowerCase();
     case "match":
@@ -385,7 +387,9 @@ export function parseSheetFilters(
   const view: SheetViewMode = viewRaw === "cards" ? "cards" : "table";
 
   const densityRaw = params.get("dens") || "result";
-  const density: SheetDensity = densityRaw === "slim" ? "slim" : "result";
+  // Gamla länkar med dens=slim faller tillbaka till result.
+  const density: SheetDensity = "result";
+  void densityRaw;
 
   return {
     sport,

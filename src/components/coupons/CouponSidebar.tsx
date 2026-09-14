@@ -3,29 +3,21 @@
 import { useState, useTransition } from "react";
 import { SheetAffiliateTop3 } from "@/components/bets/SheetAffiliateTop3";
 import { subscribeToCoupons } from "@/lib/coupon-actions";
-import type { CouponRecord } from "@/lib/coupons";
 import type { AffiliateTopRow } from "@/lib/bet-stats";
-import { formatMoney, formatPercent, formatRoi, nettoColor } from "@/lib/utils";
 
 const HEADING =
   "font-display text-[15px] font-semibold uppercase tracking-[0.09em]";
 
 export function CouponSidebar({
-  record,
   affiliates,
 }: {
-  record: CouponRecord;
+  /** Behålls för bakåtkompatibilitet — facit visas inte längre. */
+  record?: unknown;
   affiliates: AffiliateTopRow[];
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <NotifyCard />
-      <RecordCard record={record} />
-      {/*
-        Samma widget som spelbok-vyn, med samma nyckelnamn (AffiliateTopRow).
-        Byggde vi en egen rad-typ här med t.ex. `bonusValue` i stället för
-        `bonus_value` hade fälten tystnat i stället för att krascha.
-      */}
       <SheetAffiliateTop3 affiliates={affiliates} />
     </div>
   );
@@ -79,50 +71,6 @@ function NotifyCard() {
       {error ? (
         <div className="mt-2 text-[12px] text-loss">{error}</div>
       ) : null}
-      <div className="mt-[9px] text-[11.5px] text-faint">
-        Avregistrera när du vill. 18+
-      </div>
     </form>
-  );
-}
-
-function RecordCard({ record }: { record: CouponRecord }) {
-  const rows: { label: string; value: string; color?: string }[] = [
-    { label: "Kuponger", value: String(record.total) },
-    { label: "Vunna", value: String(record.won) },
-    { label: "Förlorade", value: String(record.lost) },
-    { label: "Träffprocent", value: formatPercent(record.hitrate) },
-    {
-      label: "Netto",
-      value: formatMoney(record.netto, "kr"),
-      color: nettoColor(record.netto),
-    },
-    {
-      label: "ROI",
-      value: formatRoi(record.roi),
-      color: nettoColor(record.roi),
-    },
-  ];
-
-  return (
-    <section className="rounded-[14px] border border-line bg-panel p-[18px]">
-      <div className={`${HEADING} mb-2.5`}>Redaktionens facit</div>
-      {rows.map((row) => (
-        <div
-          key={row.label}
-          className="flex items-baseline gap-3 border-t border-line-soft py-[9px]"
-        >
-          <span className="flex-1 text-[14px] text-muted">{row.label}</span>
-          <span
-            className={`font-mono-num text-[15px] font-semibold ${row.color ?? "text-text"}`}
-          >
-            {row.value}
-          </span>
-        </div>
-      ))}
-      <div className="mt-2.5 text-[11.5px] text-faint">
-        Räknat på avgjorda kuponger med redaktionens rekommenderade insats.
-      </div>
-    </section>
   );
 }

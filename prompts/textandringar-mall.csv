@@ -1,0 +1,11 @@
+id,yta,komponent_eller_fil,nuvarande_text,onskad_text,prioritet,status,noter
+1,Kuponger,CouponCard.tsx,Spelrekommendation,Kommentar,P0,kodad,
+2,Admin kuponger,CouponsAdmin.tsx,Spelrekommendation,Kommentar,P0,kodad,
+3,Startsida,page.tsx,Bokför spel från Unibet,(ta bort),P1,kodad,
+4,Startsida,page.tsx,Jämför svenska spelbolag,(ta bort),P1,kodad,
+5,Kuponger,CouponSidebar.tsx,Redaktionens facit,(ta bort),P3,kodad,
+6,Kuponger,CouponSidebar.tsx,Avregistrera när du vill. 18+,(ta bort),P3,kodad,
+7,Startsida,page.tsx,Keynotes / statistik-siffror,(ta bort),P1,kodad,
+8,Kupong CTA,CouponCard.tsx,Rekommenderat spelbolag / Bästa oddset,Visa bonus + CTA,P2,kodad,
+9,Filter,SheetFilterBar.tsx,Slimmad,(ta bort),P3,kodad,
+10,,,,,P2,öppen,Fyll på fler copy-rader från redaktionen

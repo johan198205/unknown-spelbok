@@ -5,6 +5,7 @@ import { Copy, Trash2 } from "lucide-react";
 import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
 import { ACTION_ICON_SIZE, type BetActionSize } from "@/lib/bet-actions-ui";
 import { canNotifyBet, canRyggaBet } from "@/lib/rygga";
+import { canDeleteBet } from "@/lib/logos";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -86,7 +87,7 @@ export function BetRowActions({
 }) {
   const showNotify = canEdit && canNotifyBet(bet);
   const showRygga = canRygga && canRyggaBet(bet);
-  const showDelete = canEdit && !!onRemove;
+  const showDelete = canEdit && !!onRemove && canDeleteBet(bet);
 
   if (!showNotify && !showRygga && !showDelete) return null;
 

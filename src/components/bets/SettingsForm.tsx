@@ -11,6 +11,7 @@ export function SettingsForm({ profile }: { profile: Profile }) {
   const router = useRouter();
   const [username, setUsername] = useState(profile.username);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || "");
+  const [bio, setBio] = useState(profile.bio || "");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +25,7 @@ export function SettingsForm({ profile }: { profile: Profile }) {
       .update({
         username: username.trim(),
         avatar_url: avatarUrl.trim() || null,
+        bio: bio.trim() || null,
       })
       .eq("id", profile.id);
 
@@ -49,8 +51,30 @@ export function SettingsForm({ profile }: { profile: Profile }) {
         label="Avatar-URL"
         value={avatarUrl}
         onChange={(e) => setAvatarUrl(e.target.value)}
-        placeholder="https://…"
+        placeholder="https://… eller ladda upp till storage och klistra in URL"
       />
+      {avatarUrl.trim() ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={avatarUrl.trim()}
+          alt=""
+          className="size-16 rounded-full border border-line object-cover"
+        />
+      ) : null}
+      <label className="block space-y-1.5">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+          Om mig
+        </span>
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value.slice(0, 280))}
+          rows={3}
+          maxLength={280}
+          placeholder="Valfri kort presentation (max 280 tecken)"
+          className="w-full rounded-[10px] border border-line bg-bg-soft px-3 py-2.5 text-[14px] text-text outline-none focus:border-line-hover"
+        />
+        <span className="block text-[11px] text-faint">{bio.length}/280</span>
+      </label>
       <div className="text-sm text-muted">
         Roll: <span className="text-text">{profile.role}</span>
       </div>

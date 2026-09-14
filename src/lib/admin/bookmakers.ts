@@ -23,12 +23,16 @@ export type BookmakerInput = {
   bonus: string | null;
   bonus_value: number | null;
   terms: string | null;
+  terms_url: string | null;
+  extra_disclaimer: string | null;
   usp: string | null;
   review: string | null;
   plus: string[];
   minus: string[];
   payments: string[];
   fast_payout: boolean;
+  brand_color: string | null;
+  withdrawal_time: string | null;
   tracking_url: string | null;
   active: boolean;
 };
@@ -181,12 +185,16 @@ export async function saveBookmaker(input: BookmakerInput): Promise<SaveResult> 
     bonus: textOrNull(input.bonus),
     bonus_value: Math.max(0, Math.round(Number(input.bonus_value) || 0)),
     terms: textOrNull(input.terms),
+    terms_url: textOrNull(input.terms_url),
+    extra_disclaimer: textOrNull(input.extra_disclaimer),
     usp: textOrNull(input.usp),
     review: textOrNull(input.review),
     plus: cleanList(input.plus),
     minus: cleanList(input.minus),
     payments: cleanList(input.payments),
     fast_payout: !!input.fast_payout,
+    brand_color: textOrNull(input.brand_color),
+    withdrawal_time: textOrNull(input.withdrawal_time),
     tracking_url: textOrNull(input.tracking_url),
     active: input.active !== false,
     updated_at: new Date().toISOString(),

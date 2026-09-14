@@ -364,7 +364,10 @@ export type Database = {
           active: boolean
           bonus: string | null
           bonus_value: number | null
+          extra_disclaimer: string | null
           fast_payout: boolean
+          brand_color: string | null
+          withdrawal_time: string | null
           id: string
           logo_url: string | null
           minus: string[] | null
@@ -376,6 +379,7 @@ export type Database = {
           review: string | null
           slug: string
           terms: string | null
+          terms_url: string | null
           tracking_url: string | null
           updated_at: string
           usp: string | null
@@ -384,7 +388,10 @@ export type Database = {
           active?: boolean
           bonus?: string | null
           bonus_value?: number | null
+          extra_disclaimer?: string | null
           fast_payout?: boolean
+          brand_color?: string | null
+          withdrawal_time?: string | null
           id?: string
           logo_url?: string | null
           minus?: string[] | null
@@ -396,6 +403,7 @@ export type Database = {
           review?: string | null
           slug: string
           terms?: string | null
+          terms_url?: string | null
           tracking_url?: string | null
           updated_at?: string
           usp?: string | null
@@ -404,7 +412,10 @@ export type Database = {
           active?: boolean
           bonus?: string | null
           bonus_value?: number | null
+          extra_disclaimer?: string | null
           fast_payout?: boolean
+          brand_color?: string | null
+          withdrawal_time?: string | null
           id?: string
           logo_url?: string | null
           minus?: string[] | null
@@ -416,6 +427,7 @@ export type Database = {
           review?: string | null
           slug?: string
           terms?: string | null
+          terms_url?: string | null
           tracking_url?: string | null
           updated_at?: string
           usp?: string | null
@@ -1137,6 +1149,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           banned: boolean
+          bio: string | null
           created_at: string
           currency: string
           display_mode: string
@@ -1150,6 +1163,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           banned?: boolean
+          bio?: string | null
           created_at?: string
           currency?: string
           display_mode?: string
@@ -1163,6 +1177,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           banned?: boolean
+          bio?: string | null
           created_at?: string
           currency?: string
           display_mode?: string

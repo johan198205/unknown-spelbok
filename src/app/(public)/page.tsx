@@ -1,45 +1,20 @@
 import Image from "next/image";
-import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
-import { formatPick } from "@/lib/picks";
-import {
-  computeStats,
-  formatMoney,
-  formatRoi,
-  initialOf,
-  nettoColor,
-} from "@/lib/utils";
+import { computeStats, formatMoney, formatRoi, nettoColor } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
 
 export default async function LandingPage() {
   const supabase = await createClient();
   const site = await fetchSiteSettings(supabase);
 
-  const [
-    { count: betsCount },
-    { count: sheetsCount },
-    { data: bookmakers },
-    { data: publicSheets },
-    { data: competitions },
-  ] = await Promise.all([
-    supabase.from("bets").select("*", { count: "exact", head: true }),
+  const [{ data: publicSheets }, { data: competitions }] = await Promise.all([
     supabase
       .from("sheets")
-      .select("*", { count: "exact", head: true })
-      .eq("is_public", true),
-    supabase
-      .from("bookmakers")
-      .select("name")
-      .eq("active", true)
-      .order("rank")
-      .limit(8),
-    supabase
-      .from("sheets")
-      .select("id, name, user_id, profiles(username), bets(stake, payout, result, odds, match, pick)")
+      .select("id, name, user_id, profiles(username), bets(stake, payout, result, odds)")
       .eq("is_public", true)
       .limit(20),
     supabase
@@ -67,25 +42,6 @@ export default async function LandingPage() {
     .sort((a, b) => b.roi - a.roi)
     .slice(0, 5);
 
-  const top = board[0];
-  const topBets = top
-    ? ((publicSheets || []).find((s) => s.id === top.id)?.bets as Bet[]) || []
-    : [];
-  const recentRows = topBets
-    .filter((b) => b.result !== "open")
-    .slice(0, 5)
-    .map((b) => {
-      const netto = Number(b.payout) - Number(b.stake);
-      return {
-        match: b.match,
-        pick: b.pick,
-        odds: Number(b.odds).toFixed(2),
-        netto: formatMoney(netto),
-        color: netto >= 0 ? "#66E38A" : "#FF6B6B",
-      };
-    });
-
-  const turnover = board.reduce((sum, s) => sum + s.stake, 0);
   const comp = site.competitions_enabled ? competitions?.[0] : undefined;
 
   const steps = [
@@ -137,107 +93,31 @@ export default async function LandingPage() {
               Se ett publikt spreadsheet
             </ButtonLink>
           </div>
-          <div className="mt-9 flex gap-8">
-            <div>
-              <div className="font-display text-[30px] font-semibold tabular-nums">
-                {(betsCount || 0).toLocaleString("sv-SE")}
-              </div>
-              <div className="text-[13px] text-muted">bokförda spel</div>
-            </div>
-            <div>
-              <div className="font-display text-[30px] font-semibold tabular-nums">
-                {(sheetsCount || 0).toLocaleString("sv-SE")}
-              </div>
-              <div className="text-[13px] text-muted">publika spreadsheets</div>
-            </div>
-            <div>
-              <div className="font-display text-[30px] font-semibold tabular-nums">
-                {formatMoney(turnover).replace("+", "")}
-              </div>
-              <div className="text-[13px] text-muted">omsättning</div>
-            </div>
-          </div>
         </div>
 
-        <Panel className="p-[18px] shadow-[0_24px_60px_rgba(0,0,0,.45)]">
-          <div className="mb-3.5 flex items-baseline justify-between">
-            <div>
-              <div className="font-display text-[19px] font-semibold">
-                {top?.name || "Ingen publik bok ännu"}
-              </div>
-              <div className="text-[13px] text-muted">
-                av {top?.owner || "—"}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="font-display text-[26px] font-semibold text-win tabular-nums">
-                {top ? formatMoney(top.netto) : "—"}
-              </div>
-              <div className="text-[12px] text-muted">
-                netto · ROI {top ? formatRoi(top.roi) : "—"}
-              </div>
-            </div>
-          </div>
-          {recentRows.length ? (
-            recentRows.map((r) => (
-              <div
-                key={`${r.match}-${r.pick}-${r.odds}`}
-                className="flex items-center gap-2.5 border-t border-line-soft py-2.5 text-[13px]"
-              >
-                <span className="flex-1 truncate text-[#C3CBDB]">{r.match}</span>
-                <span className="font-bold">{formatPick(r.pick)}</span>
-                <span className="font-mono-num text-muted">{r.odds}</span>
-                <span
-                  className="min-w-[74px] text-right font-mono-num font-semibold"
-                  style={{ color: r.color }}
-                >
-                  {r.netto}
-                </span>
-              </div>
-            ))
-          ) : (
-            <div className="border-t border-line-soft py-8 text-center text-sm text-muted">
-              Registrera dig och bli först i topplistan.
-            </div>
-          )}
-          <div className="mt-3.5 border-t border-line-soft pt-3">
-            <div className="mb-2 text-[11px] uppercase tracking-[0.12em] text-muted">
-              Topplista · ROI i år
-            </div>
-            {board.slice(0, 3).map((l, i) => (
-              <div
-                key={l.id}
-                className="flex items-center gap-2.5 py-1.5 text-sm"
-              >
-                <span className="font-display w-[18px] text-muted">{i + 1}</span>
-                <span className="flex-1">{l.owner}</span>
-                <span className="font-mono-num text-win">{formatRoi(l.roi)}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
+        {/* Statisk mockup — inte live data. Byts mot riktiga assets när design
+            är beslutad (public/mockups/spreadsheet-{desktop,mobile}.svg). */}
+        <div>
+          <Image
+            src="/mockups/spreadsheet-desktop.svg"
+            alt="Mockup av ett spreadsheet i Spelbok med netto, ROI, hitrate och bokförda spel."
+            width={1200}
+            height={800}
+            unoptimized
+            priority
+            className="hidden w-full rounded-[var(--radius-panel)] border border-line shadow-[0_24px_60px_rgba(0,0,0,.45)] md:block"
+          />
+          <Image
+            src="/mockups/spreadsheet-mobile.svg"
+            alt="Mockup av Spelbok i mobilen med netto, ROI och bokförda spel som kort."
+            width={430}
+            height={860}
+            unoptimized
+            priority
+            className="mx-auto w-full max-w-[320px] rounded-[var(--radius-panel)] border border-line shadow-[0_24px_60px_rgba(0,0,0,.45)] md:hidden"
+          />
+        </div>
       </section>
-
-      <div className="mx-auto max-w-[1180px] px-7">
-        <div className="flex flex-wrap items-center gap-3.5 border-y border-line-soft py-4">
-          <span className="mr-1.5 text-[11px] uppercase tracking-[0.14em] text-faint">
-            Bokför spel från
-          </span>
-          {(bookmakers || []).map((b) => (
-            <span
-              key={b.name}
-              className="font-display text-[15px] tracking-[0.04em] text-muted"
-            >
-              {b.name}
-            </span>
-          ))}
-          {!bookmakers?.length ? (
-            <span className="text-sm text-muted">
-              Importera spelbolag via scripts/import-bookmakers.ts
-            </span>
-          ) : null}
-        </div>
-      </div>
 
       <section className="mx-auto max-w-[1180px] px-7 pt-16">
         <h2 className="font-display mb-1.5 text-[34px] font-semibold">
@@ -276,84 +156,87 @@ export default async function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-[1180px] px-7 pt-16">
-        <div className="grid items-start gap-6 md:grid-cols-[1.2fr_1fr]">
-          <Panel className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line px-4 py-4">
-              <div>
-                <div className="font-display text-xl font-semibold">
-                  Topplistan just nu
-                </div>
-                <div className="text-[13px] text-muted">
-                  Publika spreadsheets rankade på ROI
-                </div>
+        <Panel className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-line px-4 py-4">
+            <div>
+              <div className="font-display text-xl font-semibold">
+                Topplistan just nu
               </div>
-              <ButtonLink href="/topplista" variant="secondary" size="sm">
-                Se hela listan
-              </ButtonLink>
+              <div className="text-[13px] text-muted">
+                Publika spreadsheets rankade på ROI
+              </div>
             </div>
-            {board.length ? (
-              board.map((r, i) => (
-                <div
-                  key={r.id}
-                  className="flex items-center gap-3 border-b border-[#171E2C] px-[18px] py-3"
-                >
-                  <span className="font-display w-[26px] text-lg font-semibold text-muted">
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold">{r.name}</div>
-                    <div className="text-[12.5px] text-muted">
-                      {r.owner} · {r.bets} spel · hitrate{" "}
-                      {r.hitrate.toFixed(0)}%
-                    </div>
-                  </div>
-                  <span
-                    className={`font-display min-w-[72px] text-right text-[19px] font-semibold ${nettoColor(r.roi)}`}
-                  >
-                    {formatRoi(r.roi)}
-                  </span>
-                  <span
-                    className={`min-w-[96px] text-right font-mono-num font-semibold ${nettoColor(r.netto)}`}
-                  >
-                    {formatMoney(r.netto)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="px-6 py-10 text-center text-muted">
-                Inga publika spreadsheets ännu.
-              </div>
-            )}
-          </Panel>
-
-          <div className="flex flex-col gap-4">
-            {site.competitions_enabled ? (
-              <Panel className="p-[18px]">
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <div className="font-display text-[19px] font-semibold">
-                    {comp?.name || "Ingen tävling just nu"}
-                  </div>
-                  {comp ? <Badge tone="cyan">Pågår</Badge> : null}
-                </div>
-                <div className="mb-3 text-sm leading-relaxed text-muted">
-                  {comp?.description ||
-                    "Admin kan skapa tävlingar under Admin → Tävlingar."}
-                </div>
-                {comp ? (
-                  <div className="font-mono-num text-[12.5px] text-faint">
-                    {new Date(comp.starts_at).toLocaleDateString("sv-SE")} –{" "}
-                    {new Date(comp.ends_at).toLocaleDateString("sv-SE")}
-                  </div>
-                ) : null}
-              </Panel>
-            ) : null}
-            <AdSlot
-              format="300x250"
-              placement="home"
-              className="h-[250px]"
-            />
+            <ButtonLink href="/topplista" variant="secondary" size="sm">
+              Se hela listan
+            </ButtonLink>
           </div>
-        </div>
+          {board.length ? (
+            board.map((r, i) => (
+              <div
+                key={r.id}
+                className="flex items-center gap-3 border-b border-[#171E2C] px-[18px] py-3"
+              >
+                <span className="font-display w-[26px] text-lg font-semibold text-muted">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold">{r.name}</div>
+                  <div className="text-[12.5px] text-muted">
+                    {r.owner} · {r.bets} spel · hitrate {r.hitrate.toFixed(0)}%
+                  </div>
+                </div>
+                <span
+                  className={`font-display min-w-[72px] text-right text-[19px] font-semibold ${nettoColor(r.roi)}`}
+                >
+                  {formatRoi(r.roi)}
+                </span>
+                <span
+                  className={`min-w-[96px] text-right font-mono-num font-semibold ${nettoColor(r.netto)}`}
+                >
+                  {formatMoney(r.netto)}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="px-6 py-10 text-center text-muted">
+              Inga publika spreadsheets ännu.
+            </div>
+          )}
+        </Panel>
+
+        {site.competitions_enabled ? (
+          <Panel className="mt-6 p-[18px]">
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="font-display text-[19px] font-semibold">
+                {comp?.name || "Ingen tävling just nu"}
+              </div>
+              {comp ? <Badge tone="cyan">Pågår</Badge> : null}
+            </div>
+            <div className="mb-3 text-sm leading-relaxed text-muted">
+              {comp?.description ||
+                "Admin kan skapa tävlingar under Admin → Tävlingar."}
+            </div>
+            {comp ? (
+              <div className="font-mono-num text-[12.5px] text-faint">
+                {new Date(comp.starts_at).toLocaleDateString("sv-SE")} –{" "}
+                {new Date(comp.ends_at).toLocaleDateString("sv-SE")}
+              </div>
+            ) : null}
+          </Panel>
+        ) : null}
+
+        {/* Annonsytan flyttad från sidokolumnen till fullbredd under listan —
+            formaten matchar övriga sidor så samma HTML-banners kan återanvändas. */}
+        <AdSlot
+          format="970x90"
+          placement="home"
+          className="mt-6 hidden h-[90px] lg:flex"
+        />
+        <AdSlot
+          format="320x100"
+          placement="home"
+          className="mt-6 h-[100px] lg:hidden"
+        />
       </section>
 
       <section className="mx-auto max-w-[1180px] px-7 py-16">
@@ -371,14 +254,6 @@ export default async function LandingPage() {
             Skapa konto
           </ButtonLink>
         </Panel>
-        <div className="mt-8 flex items-center gap-2 text-[13px] text-faint">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#2A3346] bg-panel-2 font-display font-semibold">
-            {initialOf("S")}
-          </span>
-          <Link href="/spelbolag" className="text-muted">
-            Jämför svenska spelbolag
-          </Link>
-        </div>
       </section>
     </div>
   );

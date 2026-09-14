@@ -157,38 +157,8 @@ export function SheetMatchCell({
   const now = useClockTick(isTickingStatus(bet.fixtures?.status));
   const sides = betMatchSides(bet, now);
   const showScore = sides.hasScore;
-
-  if (density === "slim") {
-    /*
-      Här ryms båda lagen på EN rad i samma kolumn — namnen måste därför få
-      kortas. Titeln bär hela namnet så inget är oåtkomligt; vill man se dem
-      i klartext är resultatläget rätt läge.
-    */
-    return (
-      <span className="flex min-w-0 items-center gap-1.5 text-[14.5px]">
-        <TeamLogo src={sides.home.logo} size={22} initial={sides.home.name} />
-        <span
-          title={sides.home.name}
-          className="min-w-[24px] flex-[0_1_auto] truncate"
-        >
-          {sides.home.name}
-        </span>
-        <span className="shrink-0 text-faint">–</span>
-        <TeamLogo src={sides.away.logo} size={22} initial={sides.away.name} />
-        <span
-          title={sides.away.name}
-          className="min-w-[24px] flex-[0_1_auto] truncate"
-        >
-          {sides.away.name}
-        </span>
-        <span className="shrink-0 rounded-[6px] bg-panel-2 px-1.5 py-0.5 font-mono-num text-[12.5px] font-semibold">
-          {showScore
-            ? `${scoreText(sides.home.score)}–${scoreText(sides.away.score)}`
-            : sides.status}
-        </span>
-      </span>
-    );
-  }
+  // density "slim" borttaget — prop behålls för anropare.
+  void density;
 
   return (
     <span

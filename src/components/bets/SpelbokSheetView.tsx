@@ -28,6 +28,7 @@ import { DailySuggestions } from "@/components/suggestions/DailySuggestions";
 import { MobileBetCards } from "@/components/pwa/MobileBetCards";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import { track } from "@/lib/analytics";
+import { FEATURES } from "@/lib/features";
 import type { AffiliateTopRow, BetStatsPayload } from "@/lib/bet-stats";
 import {
   bookmakerKey,
@@ -213,9 +214,23 @@ export function SpelbokSheetView({
   }
 
   async function removeBet(bet: Bet) {
+    const kickoffIso = bet.fixtures?.kickoff;
+    if (kickoffIso) {
+      const kickoff = new Date(kickoffIso).getTime();
+      if (Number.isFinite(kickoff) && kickoff <= Date.now()) {
+        window.alert(
+          "Spelet kan inte raderas efter avspark. Använd Void om det lagts fel."
+        );
+        return;
+      }
+    }
     if (!confirm("Ta bort spelet?")) return;
     const supabase = createClient();
-    await supabase.from("bets").delete().eq("id", bet.id);
+    const { error } = await supabase.from("bets").delete().eq("id", bet.id);
+    if (error) {
+      window.alert(error.message || "Kunde inte radera spelet.");
+      return;
+    }
     router.refresh();
   }
 
@@ -282,7 +297,8 @@ export function SpelbokSheetView({
         </div>
       </div>
 
-      {isOwner && suggestions?.length ? (
+      {/* AI-förslag pausade (features.aiSuggestionsUi) — fas 2 */}
+      {FEATURES.aiSuggestionsUi && isOwner && suggestions?.length ? (
         <div className="mb-[26px]">
           <DailySuggestions initial={suggestions} scope="sheet" />
         </div>

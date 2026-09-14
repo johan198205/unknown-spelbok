@@ -67,6 +67,7 @@ export type PlanketPostRow = {
   attachment_type: PostAttachmentType;
   bet_id: string | null;
   coupon_id: string | null;
+  image_url: string | null;
   created_at: string;
   edited_at: string | null;
 

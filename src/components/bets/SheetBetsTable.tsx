@@ -6,7 +6,7 @@ import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
-import { betLeagueLogo } from "@/lib/logos";
+import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
 import { formatPick } from "@/lib/picks";
 import type {
   SheetDensity,
@@ -226,7 +226,7 @@ export function SheetBetsTable({
                 )}
               >
                 <td className="px-2.5 py-3 align-middle">
-                  <DateCell iso={bet.placed_at} />
+                  <DateCell iso={betDisplayDate(bet)} />
                 </td>
                 <td className="px-2.5 py-3 align-middle">
                   <LeagueCell bet={bet} />

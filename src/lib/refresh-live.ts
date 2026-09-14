@@ -14,6 +14,7 @@ import {
 import { mapFixtureRow } from "@/lib/map-fixture";
 import { isInPlayStatus, type LiveFixturePatch } from "@/lib/live-fixture";
 import { notifyGoals } from "@/lib/send-push";
+import { FEATURES } from "@/lib/features";
 import { settleOpenBets } from "@/lib/settle-open";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -241,7 +242,11 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
   }
 
   let settled = 0;
-  if (finalById.size || voidIds.length || awardedIds.length) {
+  // Kill-switch: auto-rättning pausad tills vidare (features.autoSettle).
+  if (
+    FEATURES.autoSettle &&
+    (finalById.size || voidIds.length || awardedIds.length)
+  ) {
     const outcome = await settleOpenBets(admin, {
       finalById,
       awardedIds,

@@ -3,13 +3,25 @@ import { createClient } from "@/lib/supabase/server";
 import type { Banner, BannerFormat, BannerPlacement } from "@/lib/types";
 
 /**
- * Rotation is keyed on the day of year so every render inside the same day
- * picks the same banner — otherwise the click logged by the browser could
- * belong to a different banner than the one the view was logged for.
+ * Var i turordningen varje placering + format står just nu. Räknaren lever i
+ * processen och nollställs när instansen byts ut — det gör inget, poängen är
+ * att två laddningar i rad inte ska visa samma banner, inte att räkna exakt.
  */
-function dayOfYear(now = new Date()) {
-  const start = Date.UTC(now.getUTCFullYear(), 0, 0);
-  return Math.floor((now.getTime() - start) / 86_400_000);
+const rotation = new Map<string, number>();
+
+/**
+ * Rotationen sker per sidvisning, inte per dygn: annonsörerna delar ytan lika
+ * i stället för att en av dem äger den ett helt dygn.
+ *
+ * Spårningen påverkas inte. Både visning och klick loggas i klienten mot den
+ * banner-id som faktiskt renderades (se BannerLink/BannerHtml), och cache()
+ * nedan gör att en och samma placering aldrig kan byta banner mitt i en
+ * rendering.
+ */
+function nextIndex(key: string, length: number) {
+  const at = (rotation.get(key) ?? 0) % length;
+  rotation.set(key, at + 1);
+  return at;
 }
 
 /**
@@ -46,7 +58,8 @@ export const getBannerForPlacement = cache(
       (b) => (b.format ?? format) === format
     );
     if (!banners.length) return null;
+    if (banners.length === 1) return banners[0];
 
-    return banners[dayOfYear() % banners.length];
+    return banners[nextIndex(`${placement}:${format}`, banners.length)];
   }
 );

@@ -44,6 +44,7 @@ export function TeamLogo({
       height={size}
       loading="lazy"
       decoding="async"
+      referrerPolicy="no-referrer"
       className="shrink-0 object-contain"
       style={{ width: size, height: size }}
       onError={() => setFailed(true)}
