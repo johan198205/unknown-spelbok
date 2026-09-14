@@ -77,7 +77,7 @@ export default async function SpelbokPage({
     const query = await supabase
       .from("bets")
       .select(
-        "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, extra, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
+        "*, bookmakers(id, name, logo_url, brand_color), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, extra, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
       )
       .eq("sheet_id", activeSheet.id)
       .order("placed_at", { ascending: false });
@@ -86,7 +86,7 @@ export default async function SpelbokPage({
       const fallback = await supabase
         .from("bets")
         .select(
-          "*, bookmakers(id, name, logo_url), fixtures:fixture_id(fixture_id, kickoff, status, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
+          "*, bookmakers(id, name, logo_url, brand_color), fixtures:fixture_id(fixture_id, kickoff, status, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
         )
         .eq("sheet_id", activeSheet.id)
         .order("placed_at", { ascending: false });
@@ -150,12 +150,12 @@ export default async function SpelbokPage({
         <AdSlot
           format="970x90"
           placement="sheet"
-          className="hidden h-[90px] lg:flex"
+          className="hidden lg:flex"
         />
         <AdSlot
           format="320x100"
           placement="sheet"
-          className="h-[100px] lg:hidden"
+          className="lg:hidden"
         />
       </div>
 

@@ -115,8 +115,7 @@ export type NotificationSettings = {
 
 /**
  * Vad en användare utan rad i notification_settings ska få. Samma värden
- * som kolumndefaults i db/notifications.sql — allt på utom mejl vid
- * tävlingsplacering.
+ * som kolumndefaults i db — allt på för nya konton.
  */
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   goal_in_app: true,
@@ -128,13 +127,11 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   coupon_in_app: true,
   coupon_email: true,
   competition_in_app: true,
-  competition_email: false,
-  // En kampanjruta besökaren redan sett på sajten är inte värd ett mejl.
+  competition_email: true,
   popup_in_app: true,
-  popup_email: false,
-  // Planket är ett flöde man besöker. Ett mejl per reaktion vore brus.
+  popup_email: true,
   planket_in_app: true,
-  planket_email: false,
+  planket_email: true,
 };
 
 export const NOTIFICATION_SETTINGS_COLUMNS = [

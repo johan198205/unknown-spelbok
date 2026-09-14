@@ -344,12 +344,12 @@ export default async function HemPage() {
       <AdSlot
         format="320x100"
         placement="home"
-        className="mt-[18px] h-[100px] min-[1080px]:hidden"
+        className="mt-[18px] min-[1080px]:hidden"
       />
       <AdSlot
         format="970x90"
         placement="home"
-        className="mt-[18px] hidden h-[90px] min-[1080px]:flex"
+        className="mt-[18px] hidden min-[1080px]:flex"
       />
     </div>
   );

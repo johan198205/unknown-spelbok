@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatAmount } from "@/lib/display";
 import { getDisplayPrefs } from "@/lib/display-prefs";
+import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, formatRoi, initialOf } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
@@ -15,6 +16,7 @@ export default async function PublicProfilePage({
   const supabase = await createClient();
   // Betraktarens läge och unit-storlek — samma val som på publika spelböcker.
   const prefs = await getDisplayPrefs();
+  const viewer = await getProfile();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -23,6 +25,9 @@ export default async function PublicProfilePage({
     .maybeSingle();
 
   if (!profile || profile.banned) notFound();
+
+  const isOwn = viewer?.id === profile.id;
+  const bio = profile.bio?.trim() || "";
 
   const { data: sheets } = await supabase
     .from("sheets")
@@ -45,31 +50,45 @@ export default async function PublicProfilePage({
 
   return (
     <div className="mx-auto max-w-[800px] px-5 py-10">
-      <div className="mb-8 flex items-center gap-4">
+      <div className="mb-8 flex items-start gap-4">
         {profile.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={profile.avatar_url}
             alt=""
-            className="size-16 rounded-full border border-line-strong object-cover"
+            className="size-20 shrink-0 rounded-full border border-line-strong object-cover"
           />
         ) : (
-          <span className="font-display flex size-16 items-center justify-center rounded-full border border-line-strong bg-panel-2 text-2xl font-semibold">
+          <span className="font-display flex size-20 shrink-0 items-center justify-center rounded-full border border-line-strong bg-panel-2 text-2xl font-semibold">
             {initialOf(profile.username)}
           </span>
         )}
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="font-display text-3xl font-semibold uppercase tracking-[0.05em]">
             {profile.username}
           </h1>
           <p className="text-muted">Publik profil</p>
-          {profile.bio?.trim() ? (
-            <p className="mt-2 max-w-[42ch] text-[14.5px] leading-relaxed text-text-soft">
-              {profile.bio.trim()}
-            </p>
+          {isOwn ? (
+            <Link
+              href="/installningar"
+              className="mt-2 inline-block text-[13.5px] font-semibold text-cyan no-underline hover:underline"
+            >
+              Redigera profilbild och bio
+            </Link>
           ) : null}
         </div>
       </div>
+
+      {bio ? (
+        <div className="mb-8">
+          <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dim">
+            Om mig
+          </div>
+          <p className="max-w-[52ch] text-[15px] leading-relaxed text-text-soft whitespace-pre-wrap">
+            {bio}
+          </p>
+        </div>
+      ) : null}
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[

@@ -33,7 +33,7 @@ export function SheetSettleControls({
   bet,
   canEdit,
   size = "table",
-  /** Låsikonen hör hemma i tabellens Rättning-kolumn, inte i kortets resultatbox. */
+  /** Låsikonen hör hemma i tabellens Rättning-kolumn, inte i kortets huvudrad. */
   showLock = size === "table",
 }: {
   bet: Bet;
@@ -85,71 +85,65 @@ export function SheetSettleControls({
     router.refresh();
   }
 
+  if (!canEdit) {
+    return (
+      <span
+        className={cn(
+          "inline-block rounded-[7px] px-[11px] py-1.5 font-mono-num text-[11.5px] font-semibold tracking-[0.06em]",
+          resultTone(bet.result).bg,
+          resultTone(bet.result).fg
+        )}
+      >
+        {resultLabel(bet.result)}
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(
         "flex items-center",
-        card ? "min-w-0 flex-1" : "whitespace-nowrap"
+        card ? "w-full min-w-0" : "whitespace-nowrap"
       )}
     >
       {showLock ? <SheetLockIcon value={bet.logged_before_kickoff} /> : null}
-      {canEdit ? (
-        <span
-          role="group"
-          aria-label="Rättning"
-          className={cn(
-            "flex",
-            card
-              ? // Ett sammanhållet segmentreglage i stället för fyra lösa
-                // bokstäver: samma höjd (32px) som ikonknapparna bredvid.
-                "min-w-0 flex-1 items-center gap-px rounded-[9px] border border-line bg-panel-2 p-[3px]"
-              : "gap-1"
-          )}
-        >
-          {CHOICES.map(({ value, short, label }) => {
-            const active = shown === value;
-            const waiting = active && saving;
-            const tone = choiceTone(value);
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => void setResult(value)}
-                disabled={saving && !active}
-                title={label}
-                aria-label={label}
-                aria-pressed={active}
-                aria-busy={waiting || undefined}
-                className={cn(
-                  "cursor-pointer border font-mono-num font-semibold transition disabled:cursor-wait",
-                  card
-                    ? "flex h-6 min-w-0 flex-1 items-center justify-center rounded-[6px] text-[11.5px]"
-                    : "rounded-[6px] px-[7px] py-[5px] text-[11.5px]",
-                  active
-                    ? `${tone.bg} ${tone.fg} ${tone.border}`
-                    : cn(
-                        "border-transparent text-faint hover:text-text",
-                        card && "hover:bg-[rgba(230,234,242,0.06)]"
-                      ),
-                  waiting && "animate-sbshimmer"
-                )}
-              >
-                {short}
-              </button>
-            );
-          })}
-        </span>
-      ) : (
-        <span
-          className={cn(
-            "rounded-[6px] px-2 py-[5px] text-[11.5px] font-semibold",
-            resultTone(bet.result).bg,
-            resultTone(bet.result).fg
-          )}
-        >
-          {resultLabel(bet.result)}
-        </span>
-      )}
+      <span
+        role="group"
+        aria-label="Rättning"
+        className={cn("flex", card ? "min-w-0 w-full gap-[5px]" : "gap-1")}
+      >
+        {CHOICES.map(({ value, short, label }) => {
+          const active = shown === value;
+          const waiting = active && saving;
+          const tone = choiceTone(value);
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => void setResult(value)}
+              disabled={saving && !active}
+              title={label}
+              aria-label={label}
+              aria-pressed={active}
+              aria-busy={waiting || undefined}
+              className={cn(
+                "cursor-pointer border font-mono-num font-semibold transition disabled:cursor-wait",
+                card
+                  ? "min-w-0 flex-1 rounded-[8px] px-0 py-[9px] text-[12px]"
+                  : "rounded-[6px] px-[7px] py-[5px] text-[11.5px]",
+                active
+                  ? `${tone.bg} ${tone.fg} ${tone.border}`
+                  : card
+                    ? "border-line-strong bg-transparent text-[#5D6883] hover:border-line-hover hover:text-text"
+                    : "border-transparent text-faint hover:text-text",
+                waiting && "animate-sbshimmer"
+              )}
+            >
+              {short}
+            </button>
+          );
+        })}
+      </span>
     </span>
   );
 }

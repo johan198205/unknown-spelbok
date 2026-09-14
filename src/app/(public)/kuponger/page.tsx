@@ -49,7 +49,7 @@ export default async function KupongerPage() {
 
   return (
     <div className="animate-sbfade mx-auto w-full max-w-[1360px] px-5 py-8">
-      <AdSlot format="970x90" placement="kuponger" className="mb-6 h-[90px]" />
+      <AdSlot format="970x90" placement="kuponger" className="mb-6" />
 
       <header className="mb-[22px] max-w-[760px]">
         <h1 className="font-display mb-2 text-[34px] font-semibold uppercase tracking-[0.03em]">

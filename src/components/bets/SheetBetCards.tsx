@@ -4,16 +4,26 @@ import { BetRowActions } from "@/components/bets/BetRowActions";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { SheetLockIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
-import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
+import {
+  SheetMatchCell,
+  betMatchSides,
+} from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
+import { useAmount } from "@/components/DisplayPrefsProvider";
+import { formatKickoffTime } from "@/lib/live-fixture";
 import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
-import { formatPick } from "@/lib/picks";
+import { formatPick, pickHint } from "@/lib/picks";
 import type { SheetDensity } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
-import { useAmount } from "@/components/DisplayPrefsProvider";
-import { betNetto, cn, formatOdds, nettoColor } from "@/lib/utils";
+import {
+  betNetto,
+  betPossibleWin,
+  cn,
+  formatOdds,
+  nettoColor,
+} from "@/lib/utils";
 
-/** Kortvy: lag → avlång spelval-box → tre boxar (resultat/insats, odds, bolag). */
+/** Kortvy: huvudrad → match → spel/odds → utfall → rättning. */
 export function SheetBetCards({
   bets,
   canEdit,
@@ -42,33 +52,57 @@ export function SheetBetCards({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sheet:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sheet:grid-cols-4">
       {bets.map((bet) => {
+        const kickoffIso = betDisplayDate(bet);
+        const kickoff = new Date(kickoffIso);
+        const time = formatKickoffTime(kickoffIso);
+        const sides = betMatchSides(bet);
+        const hint = pickHint(bet.pick, sides.home.name, sides.away.name);
+        const pick = formatPick(bet.pick);
+        const settled = bet.result !== "open";
         const netto = betNetto(bet);
-        const kickoff = new Date(betDisplayDate(bet));
+        const possibleWin = betPossibleWin(bet);
+        const outcomeValue = settled ? netto : possibleWin;
+        const outcomeLabel = settled ? "Resultat" : "Möjlig vinst";
+        const note = bet.note?.trim() || "";
+        const meta = [
+          bet.league,
+          [
+            kickoff.toLocaleDateString("sv-SE"),
+            time,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        ]
+          .filter(Boolean)
+          .join(" · ");
+
         return (
           <article
             key={bet.id}
             className={cn(
-              "group/row flex flex-col gap-2.5 rounded-[14px] border border-line bg-panel p-3.5",
+              "group/row flex flex-col rounded-[14px] border border-line bg-panel p-3.5",
               bet.id === highlightBetId && "animate-sbrowpulse"
             )}
           >
-            <div className="flex min-w-0 items-center gap-1.5">
+            {/* 1. Huvudrad */}
+            <div className="flex min-w-0 items-center gap-2.5">
               {bet.league ? (
-                <LeagueLogo
-                  src={betLeagueLogo(bet)}
-                  leagueId={bet.league_id ?? bet.fixtures?.league_id}
-                  sport={bet.sport ?? bet.fixtures?.sport}
-                  name={bet.league}
-                  size={22}
-                />
+                <span className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-full bg-[rgba(230,234,242,0.07)] p-[3px]">
+                  <LeagueLogo
+                    src={betLeagueLogo(bet)}
+                    leagueId={bet.league_id ?? bet.fixtures?.league_id}
+                    sport={bet.sport ?? bet.fixtures?.sport}
+                    name={bet.league}
+                    size={20}
+                  />
+                </span>
               ) : null}
-              <span className="min-w-0 truncate text-[12.5px] text-muted">
-                {bet.league ? `${bet.league} · ` : ""}
-                {kickoff.toLocaleDateString("sv-SE")}
+              <span className="min-w-0 flex-auto truncate text-[12.5px] text-[#8A94AB]">
+                {meta}
               </span>
-              <span className="ml-auto shrink-0">
+              <span className="flex shrink-0 items-center gap-1.5">
                 <BetRowActions
                   bet={bet}
                   canEdit={canEdit}
@@ -78,57 +112,80 @@ export function SheetBetCards({
                   onRemove={onRemove ? () => onRemove(bet) : undefined}
                   hoverReveal={false}
                 />
+                {note ? (
+                  <span
+                    title={note}
+                    aria-label={note}
+                    className="inline-flex size-[22px] shrink-0 cursor-help items-center justify-center rounded-full border border-line-strong font-mono-num text-[11px] font-semibold text-[#5D6883]"
+                  >
+                    i
+                  </span>
+                ) : null}
+                <SheetLockIcon
+                  value={bet.logged_before_kickoff}
+                  className="mr-0"
+                />
               </span>
             </div>
 
-            <SheetMatchCell bet={bet} density={density} variant="card" />
-
-            <div className="flex min-w-0 items-center gap-2 rounded-[11px] border border-line-soft bg-bg-soft px-3 py-2.5">
-              <SheetLockIcon value={bet.logged_before_kickoff} className="mr-0" />
-              <span className="min-w-0 flex-1 truncate text-[15px] font-bold">
-                {formatPick(bet.pick)}
-              </span>
+            {/* 2. Matchblocket */}
+            <div className="mt-2.5">
+              <SheetMatchCell bet={bet} density={density} variant="card" />
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-[11px] border border-line-soft bg-bg-soft px-2.5 py-2">
-                <div className="text-[10px] uppercase tracking-[0.08em] text-faint">
-                  Resultat
+            {/* 3. Spel och odds */}
+            <div className="mt-3 flex items-stretch gap-2.5">
+              <div className="min-w-0 flex-1 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+                  Spel
                 </div>
-                <div
-                  className={cn(
-                    "mt-1 font-display text-[16px] font-semibold leading-none",
-                    bet.result === "open" ? "text-muted" : nettoColor(netto)
-                  )}
-                >
-                  {bet.result === "open" ? "—" : amount(netto)}
-                </div>
-                <div className="mt-1 font-mono-num text-[11px] text-muted">
-                  {Number(bet.stake).toLocaleString("sv-SE")} kr
-                </div>
-                <div className="mt-1.5">
-                  <SheetSettleControls
-                    bet={bet}
-                    canEdit={canEdit}
-                    size="card"
-                    showLock={false}
-                  />
+                <div className="flex min-w-0 items-baseline gap-2">
+                  <span className="shrink-0 whitespace-nowrap text-[16px] font-bold">
+                    {pick}
+                  </span>
+                  {hint ? (
+                    <span className="min-w-0 truncate text-[13px] text-[#8A94AB]">
+                      {hint}
+                    </span>
+                  ) : null}
                 </div>
               </div>
-              <div className="rounded-[11px] border border-line-soft bg-bg-soft px-2.5 py-2">
-                <div className="text-[10px] uppercase tracking-[0.08em] text-faint">
+              <div className="w-[84px] shrink-0 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5 text-right">
+                <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
                   Odds
                 </div>
-                <div className="mt-1 font-mono-num text-[16px] font-semibold">
+                <div className="font-mono-num text-[16px] font-semibold tabular-nums">
                   {formatOdds(Number(bet.odds))}
                 </div>
               </div>
-              <div className="flex flex-col items-center justify-center rounded-[11px] border border-line-soft bg-bg-soft px-2 py-2">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.08em] text-faint">
-                  Bolag
+            </div>
+
+            {/* 4. Utfallsrad */}
+            <div className="mt-3.5 flex items-end gap-3 border-t border-line-soft pt-3.5">
+              <div className="min-w-0 flex-1">
+                <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+                  {outcomeLabel}
                 </div>
-                <BookmakerPlate bet={bet} width={54} height={26} />
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span
+                    className={cn(
+                      "whitespace-nowrap font-mono-num text-[19px] font-semibold tabular-nums",
+                      settled ? nettoColor(outcomeValue) : "text-[#C3CBDB]"
+                    )}
+                  >
+                    {amount(outcomeValue)}
+                  </span>
+                  <span className="whitespace-nowrap font-mono-num text-[12.5px] tabular-nums text-[#5D6883]">
+                    insats {amount(Number(bet.stake), { sign: false })}
+                  </span>
+                </div>
               </div>
+              <BookmakerPlate bet={bet} width={62} height={28} branded />
+            </div>
+
+            {/* 5. Rättningsknappar */}
+            <div className="mt-3">
+              <SheetSettleControls bet={bet} canEdit={canEdit} size="card" />
             </div>
           </article>
         );

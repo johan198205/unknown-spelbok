@@ -72,10 +72,10 @@ export function BannerLink({
     track({ event: "banner_click", banner_id: bannerId, placement });
   }
 
-  // Ingen ram och ingen bakgrund runt kreativen, och den beskärs inte: en bild
-  // som är smalare än ytan centreras i stället för att sträckas ut.
+  // Ingen ram och ingen bakgrund. Bredden begränsas till ytans bredd; höjden
+  // följer bilden — annonsplatserna låses inte till 90/100/250 px.
   const frame = cn(
-    "flex items-center justify-center overflow-hidden bg-transparent",
+    "flex w-full items-center justify-center overflow-hidden bg-transparent",
     className
   );
 
@@ -85,7 +85,7 @@ export function BannerLink({
       src={imageUrl}
       alt={title}
       loading="lazy"
-      className="max-h-full max-w-full object-contain"
+      className="h-auto max-w-full object-contain"
     />
   );
 

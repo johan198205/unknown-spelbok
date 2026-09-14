@@ -6,6 +6,14 @@ import { requireAdmin } from "@/lib/auth";
 import { logAdmin } from "@/lib/admin/log";
 import { createClient } from "@/lib/supabase/server";
 import {
+  DEFAULT_ABOUT,
+  serializeAboutContent,
+} from "@/lib/about-content";
+import {
+  DEFAULT_CONTACT,
+  serializeContactContent,
+} from "@/lib/contact-content";
+import {
   DEFAULT_LANDING,
   serializeLandingContent,
 } from "@/lib/landing-content";
@@ -71,20 +79,19 @@ const CORE_PAGES: Array<{
   {
     slug: "om-oss",
     title: "Om oss",
-    content:
-      "## Vem är Spelbok?\n\nSpelbok hjälper dig att bokföra spel, följa ROI och jämföra dig med andra — utan gissningar.\n\n## Kontakt\n\nHar du frågor? Gå till [Kontakt](/kontakt).",
+    content: serializeAboutContent(DEFAULT_ABOUT),
     seo_title: "Om Spelbok",
     seo_description:
-      "Läs mer om Spelbok och hur vi hjälper dig att ta kontroll över ditt spelande.",
+      "Vi byggde verktyget vi själva saknade. Läs om Spelboks principer.",
     show_in_footer: true,
   },
   {
     slug: "kontakt",
     title: "Kontakt",
-    content:
-      "## Hör av dig\n\nSkicka mejl till **support@spelbok.se** så återkommer vi så snart vi kan.\n\n## Ansvarsfullt spelande\n\n18+ | Spela ansvarsfullt | [Stödlinjen](https://www.stodlinjen.se) | [Spelpaus](https://www.spelpaus.se)",
+    content: serializeContactContent(DEFAULT_CONTACT),
     seo_title: "Kontakta Spelbok",
-    seo_description: "Kontakta Spelbok — support och frågor om tjänsten.",
+    seo_description:
+      "Hör av dig till Spelbok — support, press, annonsering och samarbeten.",
     show_in_footer: true,
   },
 ];
@@ -209,12 +216,17 @@ export async function savePage(id: string, draft: PageDraft) {
     .maybeSingle();
   if (!current) throw new Error("Sidan finns inte");
 
-  const slug =
-    current.slug === "startsida"
-      ? "startsida"
-      : slugify(draft.slug) === current.slug
-        ? current.slug
-        : await uniqueSlug(draft.slug || draft.title, id);
+  const lockedSlug =
+    current.slug === "startsida" ||
+    current.slug === "om-oss" ||
+    current.slug === "kontakt"
+      ? current.slug
+      : null;
+  const slug = lockedSlug
+    ? lockedSlug
+    : slugify(draft.slug) === current.slug
+      ? current.slug
+      : await uniqueSlug(draft.slug || draft.title, id);
   const savedAt = new Date().toISOString();
 
   const { error } = await supabase

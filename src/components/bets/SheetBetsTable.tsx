@@ -89,35 +89,45 @@ export function LeagueCell({ bet }: { bet: Bet }) {
 /**
  * Spelbolagets logotyp, textchip när logga saknas.
  *
- * Ingen platta bakom loggan — den ljusa rutan blev en vit fyrkant i en mörk
- * tabell. Rutans mått finns kvar så kolumnen håller samma linje oavsett hur
- * bred wordmarken är.
+ * Tabellen: ingen färgplatta (vit/ljus ruta stör i mörk tabell).
+ * Kortet: varumärkesfärgad platta 62×28.
  */
 export function BookmakerPlate({
   bet,
   width = 68,
   height = 32,
+  branded = false,
 }: {
   bet: Bet;
   width?: number;
   height?: number;
+  /** Varumärkesfärg bakom loggan — kortvyn. */
+  branded?: boolean;
 }) {
   const name = bet.bookmakers?.name || "";
   if (!bet.bookmakers?.logo_url) {
     return (
       <span
         title={name || undefined}
-        className="inline-block max-w-full truncate rounded-[7px] bg-panel-2 px-2 py-1 text-[12.5px] text-muted"
+        className="inline-block max-w-full truncate rounded-[6px] bg-panel-2 px-2.5 py-1.5 text-[11.5px] text-[#8A94AB]"
       >
         {name || "—"}
       </span>
     );
   }
+  const brand = bet.bookmakers.brand_color?.trim() || "#1B2436";
   return (
     <span
       title={name}
-      className="inline-flex shrink-0 items-center justify-center"
-      style={{ width, height }}
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-[7px]",
+        branded && "overflow-hidden"
+      )}
+      style={{
+        width,
+        height,
+        ...(branded ? { backgroundColor: brand } : {}),
+      }}
     >
       <BookmakerLogo
         logoPath={bet.bookmakers.logo_url}

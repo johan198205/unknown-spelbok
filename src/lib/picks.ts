@@ -207,6 +207,43 @@ export function formatPick(pick: string | null | undefined): string {
   return (pick ?? "").replace(/^([12X])\s*\((?:hemma|borta|oavgjort)\)$/i, "$1");
 }
 
+/**
+ * Förklaring bredvid korta spelval ("2" → "AIK vinner"). Tom sträng = visa
+ * ingen förklaringsrad (valet är redan självförklarande).
+ *
+ * Lagnamn kommer från matchens hemma-/bortalag, inte från pick-strängen.
+ */
+export function pickHint(
+  pick: string | null | undefined,
+  home: string,
+  away: string
+): string {
+  const p = formatPick(pick).trim();
+  const map: Record<string, string> = {
+    "1": `${home} vinner`,
+    "2": `${away} vinner`,
+    X: "Oavgjort",
+    "1X": `${home} eller oavgjort`,
+    X2: `${away} eller oavgjort`,
+    "12": "Ingen oavgjord",
+    "Hemma DNB": `${home} utan oavgjort`,
+    "Borta DNB": `${away} utan oavgjort`,
+  };
+  if (map[p]) return map[p];
+
+  const tot = p.match(/^([ÖöUu])\s?([\d.,]+)(.*)$/);
+  if (tot) {
+    const rest = tot[3].trim();
+    // "Ö9.5 hörnor" m.m. är redan begripliga — ingen extra rad.
+    if (rest && !/^mål\b/i.test(rest)) return "";
+    const over = tot[1].toLowerCase() === "ö";
+    const num = tot[2].replace(/\./g, ",");
+    return `${over ? "Över" : "Under"} ${num} ${rest || "mål"}`;
+  }
+
+  return "";
+}
+
 export const STAKE_PRESETS = [50, 100, 250, 500];
 
 export function leaguesForSport(sport: string): string[] {

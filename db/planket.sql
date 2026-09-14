@@ -196,12 +196,36 @@ create trigger coupons_detach_posts
   for each row execute function public.posts_detach_on_source_delete();
 
 -- -------------------------------------------------------------
+-- 4c. IMAGE_URL (valfri bildbilaga)
+--
+-- Kolumnen ligger här så planket_posts alltid bär den. Trådsvar och
+-- utökad body-constraint finns i db/planket-image-replies.sql.
+-- -------------------------------------------------------------
+alter table public.posts
+  add column if not exists image_url text;
+
+comment on column public.posts.image_url is
+  'Valfri bildbilaga (Storage-URL). Fristående från bet/coupon.';
+
+-- -------------------------------------------------------------
 -- 5. RÄKNARVYER
 --
 -- Aggregat, inte kolumner. En räknarkolumn kräver en trigger som ökar
 -- och minskar den, och den driftar första gången två klick landar i
 -- samma millisekund eller en cascade-radering går förbi triggern.
+--
+-- CREATE OR REPLACE VIEW får inte ta bort kolumner (42P16). Droppa
+-- därför först — behövs när en tidigare körning eller
+-- planket-image-replies.sql lagt till kolumner i samma vy.
 -- -------------------------------------------------------------
+drop view if exists public.planket_top_backed cascade;
+drop view if exists public.planket_posts cascade;
+drop view if exists public.planket_sheet_stats cascade;
+drop view if exists public.post_reaction_counts cascade;
+drop view if exists public.post_back_counts cascade;
+drop view if exists public.planket_active_users cascade;
+drop view if exists public.planket_reported_posts cascade;
+
 create or replace view public.post_reaction_counts as
 select
   post_id,
@@ -326,7 +350,10 @@ select
 
   coalesce(rc.fire_count, 0)        as fire_count,
   coalesce(rc.thumb_count, 0)       as thumb_count,
-  coalesce(bc.back_count, 0)        as back_count
+  coalesce(bc.back_count, 0)        as back_count,
+
+  -- Sist: CREATE OR REPLACE får lägga till kolumner sist, inte mitt i.
+  p.image_url
 from public.posts p
 join public.profiles au on au.id = p.author_id
 left join public.bets b on b.id = p.bet_id
@@ -725,11 +752,10 @@ alter table public.notifications drop constraint if exists notifications_target_
 alter table public.notifications add constraint notifications_target_type_check
   check (target_type in ('sheet','comp','coupon','bet','post'));
 
--- Sjunde kategorin i inställningarna. Mejl av som default: Planket är ett
--- flöde man besöker, inte något att bli mejlad om per reaktion.
+-- Sjunde kategorin i inställningarna. Allt på som default för nya konton.
 alter table public.notification_settings
   add column if not exists planket_in_app boolean not null default true,
-  add column if not exists planket_email  boolean not null default false;
+  add column if not exists planket_email  boolean not null default true;
 
 notify pgrst, 'reload schema';
 

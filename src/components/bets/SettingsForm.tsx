@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
@@ -47,20 +48,14 @@ export function SettingsForm({ profile }: { profile: Profile }) {
         required
         minLength={3}
       />
-      <Input
-        label="Avatar-URL"
+      <ImageUpload
+        bucket="avatars"
+        folder={profile.id}
+        label="Profilbild"
         value={avatarUrl}
-        onChange={(e) => setAvatarUrl(e.target.value)}
-        placeholder="https://… eller ladda upp till storage och klistra in URL"
+        onChange={setAvatarUrl}
+        hint="JPG, PNG eller WebP · dra hit eller bläddra"
       />
-      {avatarUrl.trim() ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={avatarUrl.trim()}
-          alt=""
-          className="size-16 rounded-full border border-line object-cover"
-        />
-      ) : null}
       <label className="block space-y-1.5">
         <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
           Om mig
@@ -70,7 +65,7 @@ export function SettingsForm({ profile }: { profile: Profile }) {
           onChange={(e) => setBio(e.target.value.slice(0, 280))}
           rows={3}
           maxLength={280}
-          placeholder="Valfri kort presentation (max 280 tecken)"
+          placeholder="Valfri kort presentation som syns på din publika profil (max 280 tecken)"
           className="w-full rounded-[10px] border border-line bg-bg-soft px-3 py-2.5 text-[14px] text-text outline-none focus:border-line-hover"
         />
         <span className="block text-[11px] text-faint">{bio.length}/280</span>

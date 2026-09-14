@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Input, Select, Textarea } from "@/components/ui/Input";
@@ -14,6 +14,7 @@ import {
   type BannerRow,
 } from "@/lib/admin/banners";
 import {
+  BANNER_HTML_RESIZE_TYPE,
   BANNER_HTML_SANDBOX,
   bannerHtmlDocument,
   describeBannerHtml,
@@ -34,10 +35,10 @@ const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
 ];
 
 /**
- * Formatet är också enhetsvalet: desktop- och mobilkoden är två banners på
- * samma placering, och sidan renderar rätt av dem beroende på skärmbredd.
- * Kreativen centreras i ytan utan att beskäras, så måtten nedan är den
- * maxstorlek som får plats — en mindre kreativ hamnar mitt i ytan.
+ * Formatet är enhetsvalet: desktop- och mobilkoden är två banners på samma
+ * placering, och sidan renderar rätt av dem beroende på skärmbredd. Höjd och
+ * bredd följer snutten/bilden — formatnamnen är typiska affiliate-storlekar,
+ * inte hårda pixelrutor.
  */
 const FORMATS: {
   value: BannerFormat;
@@ -50,30 +51,30 @@ const FORMATS: {
 }[] = [
   {
     value: "970x90",
-    label: "Desktop · leaderboard, upp till 970 × 90 px",
+    label: "Desktop · leaderboard (typiskt 970 × 90)",
     short: "Leaderboard",
     device: "Desktop",
     width: 970,
     height: 90,
-    where: "Desktop, toppen av sidan",
+    where: "Desktop, toppen av sidan — höjden följer snutten",
   },
   {
     value: "320x100",
-    label: "Mobil · upp till 320 × 100 px",
+    label: "Mobil (typiskt 320 × 100)",
     short: "Mobil",
     device: "Mobil",
     width: 320,
     height: 100,
-    where: "Mobil och surfplatta, toppen av sidan",
+    where: "Mobil och surfplatta, toppen av sidan — höjden följer snutten",
   },
   {
     value: "300x250",
-    label: "Desktop · rektangel, upp till 300 × 250 px",
+    label: "Desktop · rektangel (typiskt 300 × 250)",
     short: "Rektangel",
     device: "Desktop",
     width: 300,
     height: 250,
-    where: "Sidokolumnen på startsidan",
+    where: "Sidokolumnen på startsidan — höjden följer snutten",
   },
 ];
 
@@ -465,7 +466,8 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                 />
                 <p className="mt-1.5 text-[12.5px] text-muted">
                   Klistra in snutten precis som du fick den — {"<script>"},{" "}
-                  {"<iframe>"} och länkad bild fungerar alla. Koden körs i en
+                  {"<iframe>"} och länkad bild fungerar alla. Annonsplatsen
+                  anpassar höjd och bredd efter snutten. Koden körs i en
                   sandlåda utan åtkomst till sajtens inloggning, och länkar
                   öppnas automatiskt i ny flik.
                 </p>
@@ -476,9 +478,9 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
                 label="Bild-URL"
                 value={draft.image_url}
                 onChange={(url) => setDraft({ ...draft, image_url: url })}
-                hint={`Upp till ${formatOf(draft.format).width}×${
+                hint={`Typiskt ${formatOf(draft.format).width}×${
                   formatOf(draft.format).height
-                } px · visas centrerad i ytan utan beskärning`}
+                } px — bilden behåller sina egna mått, inget beskärs`}
               />
             )}
 
@@ -544,7 +546,8 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               <div className="rounded-[var(--radius-card)] border border-line-soft bg-bg px-3 py-2 text-[12.5px] text-muted sm:col-span-2">
                 Desktop och mobil är två separata banners: spara den här, byt
                 format och spara annonsörens andra kod på samma placering. Sidan
-                väljer rätt av dem efter skärmbredd.
+                väljer rätt av dem efter skärmbredd. Ytan låser inte höjd eller
+                bredd — snutten styr storleken.
               </div>
               {!FORMATS_BY_PLACEMENT[draft.placement].includes(draft.format) ? (
                 <div className="rounded-[var(--radius-card)] border border-yellow/40 bg-yellow/10 px-3 py-2 text-[12.5px] text-yellow sm:col-span-2">
@@ -593,45 +596,34 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
               <div className="mb-2.5 text-[10.5px] uppercase tracking-[0.12em] text-dim">
                 Förhandsvisning i AdSlot
               </div>
-              {/* Rutan är ytans maxmått. Kreativen centreras och beskärs inte —
-                  samma regler som AdSlot på sajten. */}
+              {/* Ytan följer snuttens/bildens höjd — samma regler som AdSlot. */}
               <div
-                className="relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-[var(--radius-ad)] border border-dashed border-line-strong bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] font-mono-num text-[12px] tracking-[0.13em] text-dim"
-                style={{
-                  maxWidth: formatOf(draft.format).width,
-                  aspectRatio: `${formatOf(draft.format).width} / ${
-                    formatOf(draft.format).height
-                  }`,
-                }}
+                className="relative mx-auto flex w-full min-h-[50px] items-center justify-center overflow-hidden rounded-[var(--radius-ad)] border border-dashed border-line-strong bg-[repeating-linear-gradient(135deg,var(--ad-a),var(--ad-a)_9px,var(--ad-b)_9px,var(--ad-b)_18px)] font-mono-num text-[12px] tracking-[0.13em] text-dim"
+                style={{ maxWidth: formatOf(draft.format).width }}
               >
                 {draft.creative_type === "html" && draft.html_code.trim() ? (
-                  // Samma sandlåda som skarpt läge — en snutt som inte
-                  // fungerar här fungerar inte på sajten heller.
-                  <iframe
-                    key={draft.html_code}
-                    title="Förhandsvisning"
-                    srcDoc={bannerHtmlDocument(draft.html_code)}
-                    sandbox={BANNER_HTML_SANDBOX}
-                    scrolling="no"
-                    className="h-full w-full border-0"
-                  />
+                  <BannerHtmlPreview html={draft.html_code} />
                 ) : draft.creative_type === "image" && draft.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={draft.image_url}
                     alt=""
-                    className="max-h-full max-w-full object-contain"
+                    className="h-auto max-w-full object-contain"
                   />
                 ) : (
-                  `${formatOf(draft.format).width}×${
-                    formatOf(draft.format).height
-                  } · ${draft.title || "Namnlös banner"}`
+                  <span className="px-3 py-6 text-center">
+                    {formatOf(draft.format).short} ·{" "}
+                    {draft.title || "Namnlös banner"}
+                    <span className="mt-1 block text-[11px] tracking-normal text-dim">
+                      Höjd och bredd följer snutten när den är inklistrad
+                    </span>
+                  </span>
                 )}
               </div>
               <div className="mt-2 text-center text-[11.5px] text-dim">
                 {draft.creative_type === "html"
-                  ? "Snutten körs på riktigt här — annonsören kan räkna en visning redan av förhandsvisningen."
-                  : "Rutan är ytans maxmått. En mindre bild centreras, ingenting beskärs."}
+                  ? "Snutten körs på riktigt här — höjden följer koden. Annonsören kan räkna en visning redan av förhandsvisningen."
+                  : "Bilden behåller sina egna mått (max bredd = ytans bredd). Inget beskärs."}
               </div>
             </div>
 
@@ -690,5 +682,44 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Samma sandlåda och höjdrapportering som skarp BannerHtml. */
+function BannerHtmlPreview({ html }: { html: string }) {
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const [height, setHeight] = useState<number | null>(null);
+  const srcDoc = bannerHtmlDocument(html);
+
+  useEffect(() => {
+    setHeight(null);
+
+    function onMessage(event: MessageEvent) {
+      if (event.source !== frameRef.current?.contentWindow) return;
+      const data = event.data;
+      if (!data || data.type !== BANNER_HTML_RESIZE_TYPE) return;
+      const next = Number(data.height);
+      if (!Number.isFinite(next) || next <= 0) return;
+      setHeight(Math.ceil(next));
+    }
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [html]);
+
+  return (
+    <iframe
+      ref={frameRef}
+      key={html}
+      title="Förhandsvisning"
+      srcDoc={srcDoc}
+      sandbox={BANNER_HTML_SANDBOX}
+      scrolling="no"
+      style={height != null ? { height } : undefined}
+      className={cn(
+        "block w-full border-0 bg-transparent",
+        height == null && "min-h-[50px]"
+      )}
+    />
   );
 }

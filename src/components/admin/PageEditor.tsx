@@ -5,9 +5,21 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { AboutSectionsEditor } from "@/components/admin/AboutSectionsEditor";
+import { ContactSectionsEditor } from "@/components/admin/ContactSectionsEditor";
 import { LandingSectionsEditor } from "@/components/admin/LandingSectionsEditor";
 import { Switch } from "@/components/ui/Switch";
 import { deletePage, publishPage, savePage, type PageDraft } from "@/lib/admin/pages";
+import {
+  aboutFromPageContent,
+  serializeAboutContent,
+  type AboutContent,
+} from "@/lib/about-content";
+import {
+  contactFromPageContent,
+  serializeContactContent,
+  type ContactContent,
+} from "@/lib/contact-content";
 import {
   landingFromPageContent,
   serializeLandingContent,
@@ -41,6 +53,10 @@ export function PageEditor({ page }: { page: Page }) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isLanding = page.slug === "startsida";
+  const isAbout = page.slug === "om-oss";
+  const isContact = page.slug === "kontakt";
+  const isStructured = isLanding || isAbout || isContact;
+  const lockedSlug = isStructured;
 
   const [draft, setDraft] = useState<PageDraft>(() => {
     const initial: PageDraft = {
@@ -55,11 +71,25 @@ export function PageEditor({ page }: { page: Page }) {
       initial.content = serializeLandingContent(
         landingFromPageContent(page.content)
       );
+    } else if (page.slug === "om-oss") {
+      initial.content = serializeAboutContent(
+        aboutFromPageContent(page.content)
+      );
+    } else if (page.slug === "kontakt") {
+      initial.content = serializeContactContent(
+        contactFromPageContent(page.content)
+      );
     }
     return initial;
   });
   const [landing, setLanding] = useState<LandingContent>(() =>
     landingFromPageContent(page.content)
+  );
+  const [about, setAbout] = useState<AboutContent>(() =>
+    aboutFromPageContent(page.content)
+  );
+  const [contact, setContact] = useState<ContactContent>(() =>
+    contactFromPageContent(page.content)
   );
   const [published, setPublished] = useState(page.published);
   const [slugTouched, setSlugTouched] = useState(false);
@@ -74,6 +104,16 @@ export function PageEditor({ page }: { page: Page }) {
   function patchLanding(next: LandingContent) {
     setLanding(next);
     setDraft((d) => ({ ...d, content: serializeLandingContent(next) }));
+  }
+
+  function patchAbout(next: AboutContent) {
+    setAbout(next);
+    setDraft((d) => ({ ...d, content: serializeAboutContent(next) }));
+  }
+
+  function patchContact(next: ContactContent) {
+    setContact(next);
+    setDraft((d) => ({ ...d, content: serializeContactContent(next) }));
   }
 
   const persist = useCallback(async () => {
@@ -109,7 +149,7 @@ export function PageEditor({ page }: { page: Page }) {
     setDraft((d) => ({
       ...d,
       title: value,
-      slug: isLanding || slugTouched ? d.slug : slugify(value),
+      slug: lockedSlug || slugTouched ? d.slug : slugify(value),
     }));
   }
 
@@ -215,19 +255,30 @@ export function PageEditor({ page }: { page: Page }) {
 
         {isLanding ? (
           <p className="mb-3 rounded-[10px] border border-cyan/30 bg-cyan/10 px-3.5 py-2.5 text-[13px] text-text-soft">
-            Den här sidan driver <strong>/</strong> (startsidan). Titel = hero-rubrik.
-            Övriga sektioner redigeras i formulären nedan. SEO sparas till höger.
+            Den här sidan driver <strong>/</strong> (startsidan). Titel =
+            hero-rubrik. Övriga sektioner redigeras i formulären nedan. SEO
+            sparas till höger.
           </p>
         ) : null}
-        {draft.slug === "om-oss" || draft.slug === "kontakt" ? (
-          <p className="mb-3 rounded-[10px] border border-line bg-bg-soft px-3.5 py-2.5 text-[13px] text-muted">
-            Sidan <strong>/{draft.slug}</strong> byggs i koden (inte markdown).
-            Den här CMS-raden styr bara footerns etikett när den är publicerad.
+        {isAbout ? (
+          <p className="mb-3 rounded-[10px] border border-cyan/30 bg-cyan/10 px-3.5 py-2.5 text-[13px] text-text-soft">
+            Driver <strong>/om-oss</strong>. Titel = footerns etikett. Hero,
+            principer och CTA redigeras nedan.
+          </p>
+        ) : null}
+        {isContact ? (
+          <p className="mb-3 rounded-[10px] border border-cyan/30 bg-cyan/10 px-3.5 py-2.5 text-[13px] text-text-soft">
+            Driver <strong>/kontakt</strong>. Titel = footerns etikett.
+            Kontaktkanaler och texter redigeras nedan. Formuläret styrs i koden.
           </p>
         ) : null}
 
         {isLanding ? (
           <LandingSectionsEditor value={landing} onChange={patchLanding} />
+        ) : isAbout ? (
+          <AboutSectionsEditor value={about} onChange={patchAbout} />
+        ) : isContact ? (
+          <ContactSectionsEditor value={contact} onChange={patchContact} />
         ) : (
           <div className="overflow-hidden rounded-[14px] border border-line bg-panel">
             <div className="flex flex-wrap items-center gap-1 border-b border-line-soft px-3 py-2.5">
@@ -416,16 +467,16 @@ export function PageEditor({ page }: { page: Page }) {
             </div>
             <input
               value={draft.slug}
-              disabled={isLanding}
+              disabled={lockedSlug}
               onChange={(e) => {
                 setSlugTouched(true);
                 patch({ slug: slugify(e.target.value) });
               }}
               className="font-mono-num w-full rounded-[9px] border border-line bg-bg-soft px-[11px] py-2.5 text-[12.5px] text-text-soft outline-none disabled:opacity-60"
             />
-            {isLanding ? (
+            {lockedSlug ? (
               <p className="mt-1.5 text-[12px] text-dim">
-                Låst — startsidan måste ha sluggen <code>startsida</code>.
+                Låst — kärnsidor måste behålla sin slug.
               </p>
             ) : null}
           </div>

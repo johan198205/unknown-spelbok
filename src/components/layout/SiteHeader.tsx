@@ -46,6 +46,7 @@ export async function SiteHeader({
       ? [{ href: "/tavlingar", label: "Tävlingar" }]
       : []),
     { href: "/topplista", label: "Topplistor" },
+    { href: "/spelbolag", label: "Spelbolag" },
     { href: "/installningar", label: "Profil" },
   ];
 
@@ -79,9 +80,18 @@ export async function SiteHeader({
                   {formatAmount(netto, prefs)}
                 </div>
               </div>
-              <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text">
-                {initialOf(profile.username)}
-              </div>
+              {profile.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-[34px] w-[34px] rounded-full border border-line-strong object-cover"
+                />
+              ) : (
+                <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text">
+                  {initialOf(profile.username)}
+                </div>
+              )}
               <NotificationBell userId={profile.id} initialUnread={unread} />
               {profile.role === "admin" ? (
                 <Link

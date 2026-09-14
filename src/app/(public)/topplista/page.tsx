@@ -158,12 +158,12 @@ export default async function TopplistaPage() {
       <AdSlot
         format="970x90"
         placement="topplista"
-        className="mb-5 hidden h-[90px] lg:flex"
+        className="mb-5 hidden lg:flex"
       />
       <AdSlot
         format="320x100"
         placement="topplista"
-        className="mb-4 h-[100px] lg:hidden"
+        className="mb-4 lg:hidden"
       />
 
       <Panel className="hidden overflow-hidden lg:block">

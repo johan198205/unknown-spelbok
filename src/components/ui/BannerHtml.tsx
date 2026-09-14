@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { track } from "@/lib/analytics";
 import { sendBannerEvent } from "@/lib/banner-events";
-import { BANNER_HTML_SANDBOX, bannerHtmlDocument } from "@/lib/banner-html";
+import {
+  BANNER_HTML_RESIZE_TYPE,
+  BANNER_HTML_SANDBOX,
+  bannerHtmlDocument,
+} from "@/lib/banner-html";
 import { cn } from "@/lib/utils";
 import type { BannerPlacement } from "@/lib/types";
 
@@ -28,6 +32,7 @@ export function BannerHtml({
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const viewLoggedRef = useRef(false);
   const clickLoggedRef = useRef(false);
+  const [height, setHeight] = useState<number | null>(null);
 
   const srcDoc = useMemo(() => bannerHtmlDocument(html), [html]);
 
@@ -37,6 +42,23 @@ export function BannerHtml({
     viewLoggedRef.current = false;
     clickLoggedRef.current = false;
   }, [bannerId, pathname]);
+
+  // Sandlådan saknar same-origin — höjden kommer via postMessage från snutten.
+  useEffect(() => {
+    setHeight(null);
+
+    function onMessage(event: MessageEvent) {
+      if (event.source !== frameRef.current?.contentWindow) return;
+      const data = event.data;
+      if (!data || data.type !== BANNER_HTML_RESIZE_TYPE) return;
+      const next = Number(data.height);
+      if (!Number.isFinite(next) || next <= 0) return;
+      setHeight(Math.ceil(next));
+    }
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [srcDoc]);
 
   useEffect(() => {
     const node = frameRef.current;
@@ -56,7 +78,7 @@ export function BannerHtml({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [bannerId, placement, pathname]);
+  }, [bannerId, placement, pathname, height]);
 
   // Klicket sker inuti ett dokument på annan origin — vi kan varken lyssna på
   // det eller läsa mål-URL:en. Det enda observerbara spåret är att fönstret
@@ -86,10 +108,14 @@ export function BannerHtml({
       sandbox={BANNER_HTML_SANDBOX}
       loading="lazy"
       scrolling="no"
-      // Ingen ram och ingen bakgrund: kreativen ska stå fritt i ytan. Dokumentet
-      // i srcDoc är transparent och centrerar sitt innehåll (lib/banner-html),
-      // så en 728×90-snutt hamnar mitt i en bredare yta utan att skalas upp.
-      className={cn("block w-full bg-transparent", className)}
+      // Ingen fast höjd: snutten rapporterar sin naturliga storlek. Bredden
+      // följer ytans bredd så en smalare kreativ centreras i dokumentet.
+      style={height != null ? { height } : undefined}
+      className={cn(
+        "block w-full border-0 bg-transparent",
+        height == null && "min-h-[50px]",
+        className
+      )}
     />
   );
 }

@@ -46,10 +46,19 @@ export async function MobileHeader({
           {username ? (
             <Link
               href="/installningar"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold text-text no-underline"
+              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold text-text no-underline"
               aria-label="Profil"
             >
-              {initialOf(username)}
+              {profile?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initialOf(username)
+              )}
             </Link>
           ) : null}
         </div>

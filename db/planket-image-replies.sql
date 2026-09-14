@@ -1,5 +1,8 @@
--- Planket: fristående bild + trådsvar (feedback prompt 17)
+-- Planket: trådsvar + body-constraint för bild-only (feedback prompt 17)
 -- Kör efter db/planket.sql
+--
+-- image_url-kolumnen och flödesvyn ligger i planket.sql. Den här filen
+-- utökar constraintet (bild räcker som bilaga) och lägger till replies.
 
 alter table public.posts
   add column if not exists image_url text;
@@ -10,7 +13,8 @@ comment on column public.posts.image_url is
 alter table public.posts drop constraint if exists posts_body_or_attachment;
 alter table public.posts
   add constraint posts_body_or_attachment check (
-    char_length(coalesce(body, '')) > 0
+    deleted_at is not null
+    or length(btrim(coalesce(body, ''))) > 0
     or attachment_type <> 'none'
     or image_url is not null
   );
@@ -48,10 +52,13 @@ create policy "radera eget reply" on public.post_replies
   for delete to authenticated
   using (author_id = auth.uid());
 
--- Uppdatera flödesvyn så image_url följer med.
--- Viktigt: nya kolumner MÅSTE läggas sist — CREATE OR REPLACE VIEW
--- får inte flytta/byta namn på befintliga kolumnpositioner.
-create or replace view public.planket_posts as
+-- Flödesvyn med image_url skapas i db/planket.sql. Om den saknas
+-- (äldre miljö där bara den här filen körts) återskapas den här.
+-- CREATE OR REPLACE får inte ta bort kolumner — droppa först.
+drop view if exists public.planket_top_backed cascade;
+drop view if exists public.planket_posts cascade;
+
+create view public.planket_posts as
 select
   p.id,
   p.author_id,
@@ -122,4 +129,31 @@ left join public.post_back_counts bc on bc.post_id = p.id
 where p.deleted_at is null
   and p.hidden_at is null;
 
+revoke all on public.planket_posts from anon;
 grant select on public.planket_posts to authenticated;
+
+-- planket_top_backed droppades med cascade — återskapa (samma som planket.sql).
+create view public.planket_top_backed as
+select
+  v.id                as post_id,
+  v.bet_id,
+  v.bet_league        as league,
+  v.bet_league_id     as league_id,
+  v.bet_league_logo   as league_logo,
+  v.bet_sport         as sport,
+  v.bet_match         as match,
+  v.bet_pick          as pick,
+  v.bet_odds          as odds,
+  v.author_username,
+  count(pb.id)::int   as backed_today
+from public.planket_posts v
+join public.post_backs pb on pb.post_id = v.id
+where v.attachment_type = 'bet'
+  and pb.created_at >= date_trunc('day', now() at time zone 'Europe/Stockholm')
+                       at time zone 'Europe/Stockholm'
+group by v.id, v.bet_id, v.bet_league, v.bet_league_id, v.bet_league_logo,
+         v.bet_sport, v.bet_match, v.bet_pick, v.bet_odds, v.author_username
+order by count(pb.id) desc, v.bet_odds desc;
+
+revoke all on public.planket_top_backed from anon;
+grant select on public.planket_top_backed to authenticated;

@@ -108,8 +108,8 @@ end $$;
 -- 4. NOTIFICATION_SETTINGS — per typ, per kanal
 --
 -- Fem kategorier (settled_win och settled_loss delar rad — "spel rättat"
--- är en sak att slå av), två kanaler var. Allt på utom mejl vid
--- tävlingsplacering, som är för lågt värde för att mejla oombedd.
+-- är en sak att slå av), två kanaler var. Allt på som default för nya
+-- konton — användaren stänger av det hen inte vill ha under Inställningar.
 -- -------------------------------------------------------------
 create table if not exists public.notification_settings (
   user_id           uuid primary key references public.profiles(id) on delete cascade,
@@ -122,7 +122,7 @@ create table if not exists public.notification_settings (
   coupon_in_app     boolean not null default true,
   coupon_email      boolean not null default true,
   competition_in_app boolean not null default true,
-  competition_email boolean not null default false,
+  competition_email boolean not null default true,
   updated_at        timestamptz not null default now()
 );
 

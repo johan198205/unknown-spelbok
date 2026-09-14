@@ -22,6 +22,8 @@ export function ImageUpload({
   hint,
   /** När true: spara Storage-path (inte full URL) och strikt MIME/storlek. */
   storePath,
+  /** Prefixa filnamnet med mapp (t.ex. userId för avatars-policyn). */
+  folder,
   required,
 }: {
   bucket: "logos" | "banners" | "avatars" | "bookmaker-logos" | "popups";
@@ -30,6 +32,7 @@ export function ImageUpload({
   onChange: (url: string) => void;
   hint?: string;
   storePath?: boolean;
+  folder?: string;
   required?: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -62,7 +65,8 @@ export function ImageUpload({
     setUploading(true);
     setError(null);
     const supabase = createClient();
-    const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const path = folder ? `${folder.replace(/\/+$/, "")}/${filename}` : filename;
     const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(path, file, { upsert: true });
@@ -155,7 +159,11 @@ export function ImageUpload({
           <img
             src={previewUrl}
             alt=""
-            className="max-h-16 rounded border border-line object-contain"
+            className={
+              bucket === "avatars"
+                ? "size-16 rounded-full border border-line object-cover"
+                : "max-h-16 rounded border border-line object-contain"
+            }
           />
           <Button
             size="sm"

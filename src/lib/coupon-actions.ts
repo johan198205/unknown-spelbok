@@ -164,29 +164,6 @@ export async function copyCouponToSheet(
   };
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-/** Mejllistan för nya kuponger. Ett mejl per kupong, inget annat. */
-export async function subscribeToCoupons(email: string) {
-  const clean = email.trim();
-  if (!EMAIL_RE.test(clean)) {
-    return { ok: false as const, message: "Skriv en giltig e-postadress." };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("coupon_subscribers")
-    .insert({ email: clean });
-
-  // Redan anmäld är inte ett fel för den som anmäler sig — svaret ska se
-  // likadant ut oavsett, annars går listan att avlyssna adress för adress.
-  if (error && !/duplicate|unique/i.test(error.message)) {
-    return { ok: false as const, message: "Kunde inte spara adressen." };
-  }
-
-  return { ok: true as const, message: "Anmäld ✓" };
-}
-
 /**
  * Spelbeviset. Bilden laddas upp direkt till Storage från redaktionens
  * webbläsare; det här skriver bara URL:en på kupongen.

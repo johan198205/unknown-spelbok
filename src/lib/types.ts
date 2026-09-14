@@ -1573,9 +1573,9 @@ export type BannerPlacement =
   | "kuponger";
 
 /**
- * Annonsytorna har olika mått per sida och brytpunkt. Formatet är en egen
- * dimension bredvid placeringen: en 970×90-banner får aldrig hamna i en
- * 300×250-ruta, där skulle object-cover beskära bort både erbjudande och CTA.
+ * Formatet skiljer enheter/platser (desktop-topp, mobil-topp, sidokolumn),
+ * inte en hård pixelruta. HTML- och bildkreativ anpassar höjden efter innehållet;
+ * namnen speglar typisk storlek från affiliatenätverken.
  */
 export type BannerFormat = "970x90" | "320x100" | "300x250";
 
@@ -1638,7 +1638,12 @@ export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
   result: BetResult;
   settled_by: "user" | "auto" | null;
   payout: number;
-  bookmakers?: Pick<Bookmaker, "id" | "name" | "logo_url"> | null;
+  /** Fri notering — visas som "i"-markör i kort-/tabellvy när den finns. */
+  note?: string | null;
+  bookmakers?: Pick<
+    Bookmaker,
+    "id" | "name" | "logo_url" | "brand_color"
+  > | null;
   fixtures?: Pick<
     Fixture,
     | "fixture_id"

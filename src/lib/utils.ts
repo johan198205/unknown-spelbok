@@ -97,6 +97,11 @@ export function betNetto(bet: Pick<Bet, "stake" | "payout" | "result">) {
   return Number(bet.payout) - Number(bet.stake);
 }
 
+/** Möjlig vinst (insats × (odds − 1)) — bara för kortets orättade etikett, aldrig Netto. */
+export function betPossibleWin(bet: Pick<Bet, "stake" | "odds">) {
+  return Number(bet.stake) * (Number(bet.odds) - 1);
+}
+
 export function payoutForResult(
   result: BetResult,
   stake: number,

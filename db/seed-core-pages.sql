@@ -1,6 +1,6 @@
 -- Kärnsidor i CMS: startsida, om-oss, kontakt
 -- Kör i Supabase SQL. Skriver inte över befintliga rader med samma slug.
--- Startsidans content är JSON med _type: "landing" (redigeras i Admin → Sidor).
+-- Strukturerade sidor sparas som JSON (_type: landing | about | contact).
 
 insert into public.pages (
   title, slug, content, seo_title, seo_description, published, show_in_footer, author_id
@@ -76,31 +76,91 @@ from (
     (
       'Om oss',
       'om-oss',
-      $md$## Vem är Spelbok?
-
-Spelbok hjälper dig att bokföra spel, följa ROI och jämföra dig med andra — utan gissningar.
-
-## Kontakt
-
-Har du frågor? Gå till [Kontakt](/kontakt).
-$md$,
+      $json${
+  "_type": "about",
+  "eyebrow": "Om Spelbok",
+  "headline": "Vi byggde verktyget vi själva saknade.",
+  "intro": "Spelbok startade 2025 som ett kalkylark mellan tre vänner som tröttnat på att gissa om de låg plus eller minus. Idag är det en plattform för alla som vill bokföra sina spel, se sin riktiga ROI och jämföra sig med andra på lika villkor.",
+  "principlesTitle": "Det vi tror på",
+  "principlesIntro": "Fyra principer som styr varje beslut om produkten. De står här så att du kan hålla oss ansvariga.",
+  "principles": [
+    {
+      "n": "01",
+      "title": "Siffrorna ljuger inte, det gör minnet",
+      "body": "Netto, ROI och hitrate räknas ut ur varje enskilt spel. Ingen kan runda upp, glömma en förlust eller välja period."
+    },
+    {
+      "n": "02",
+      "title": "Vi förmedlar inga spel",
+      "body": "Spelbok tar inga insatser och betalar inga vinster. Du spelar hos ditt licensierade spelbolag och bokför resultatet här."
+    },
+    {
+      "n": "03",
+      "title": "Öppet om hur vi tjänar pengar",
+      "body": "Tjänsten är gratis och finansieras av annonsplatser och reklamlänkar till spelbolag. Varje sådan länk är märkt. Betyg och rankning påverkas inte av ersättning."
+    },
+    {
+      "n": "04",
+      "title": "Ansvar före tillväxt",
+      "body": "18+, Stödlinjen och Spelpaus finns på varje sida. Vi använder aldrig brådska eller bonusretorik för att få någon att spela mer."
+    }
+  ],
+  "cta": {
+    "title": "Frågor, samarbeten eller press?",
+    "body": "Vi svarar på vardagar inom 24 timmar.",
+    "primaryLabel": "Kontakta oss",
+    "primaryHref": "/kontakt",
+    "secondaryLabel": "Skapa konto",
+    "secondaryHref": "/registrera"
+  }
+}$json$,
       'Om Spelbok',
-      'Läs mer om Spelbok och hur vi hjälper dig att ta kontroll över ditt spelande.',
+      'Vi byggde verktyget vi själva saknade. Läs om Spelboks principer.',
       true
     ),
     (
       'Kontakt',
       'kontakt',
-      $md$## Hör av dig
-
-Skicka mejl till **support@spelbok.se** så återkommer vi så snart vi kan.
-
-## Ansvarsfullt spelande
-
-18+ | Spela ansvarsfullt | [Stödlinjen](https://www.stodlinjen.se) | [Spelpaus](https://www.spelpaus.se)
-$md$,
+      $json${
+  "_type": "contact",
+  "eyebrow": "Kontakt",
+  "headline": "Hör av dig.",
+  "intro": "Vi är tre personer och läser allt själva. Vardagar svarar vi inom 24 timmar, helger lite långsammare — då har vi oftast egna spel att rätta.",
+  "channels": [
+    {
+      "badge": "@",
+      "title": "Allmänna frågor och support",
+      "href": "mailto:hej@spelbok.se",
+      "label": "hej@spelbok.se",
+      "lines": ""
+    },
+    {
+      "badge": "AD",
+      "title": "Annonsering och samarbeten",
+      "href": "mailto:partner@spelbok.se",
+      "label": "partner@spelbok.se",
+      "lines": ""
+    },
+    {
+      "badge": "PR",
+      "title": "Press",
+      "href": "mailto:press@spelbok.se",
+      "label": "press@spelbok.se",
+      "lines": ""
+    },
+    {
+      "badge": "AB",
+      "title": "Spelbok Sverige AB",
+      "href": "",
+      "label": "",
+      "lines": "Org.nr 559xxx-xxxx\nSveavägen 00, 111 00 Stockholm"
+    }
+  ],
+  "noticeBadge": "18+",
+  "noticeBody": "Behöver du prata med någon om ditt spelande? Vi är inte rätt mottagare, men [Stödlinjen](https://www.stodlinjen.se) är det — **020-81 91 00**, gratis och anonymt. Du kan också stänga av dig via [Spelpaus](https://www.spelpaus.se)."
+}$json$,
       'Kontakta Spelbok',
-      'Kontakta Spelbok — support och frågor om tjänsten.',
+      'Hör av dig till Spelbok — support, press, annonsering och samarbeten.',
       true
     )
 ) as v(title, slug, content, seo_title, seo_description, show_in_footer)

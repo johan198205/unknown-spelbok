@@ -196,15 +196,19 @@ alter table public.notifications
 comment on column public.notifications.href is
   'Färdig länk som vinner över target_type. Används av popup-notiser, som pekar på en fri URL.';
 
+-- Hela typ-listan, inte bara 'popup': en omkörning efter planket.sql
+-- skulle annars kasta 23514 mot befintliga back/reaction/post_report-rader.
 alter table public.notifications drop constraint if exists notifications_type_check;
 alter table public.notifications add constraint notifications_type_check
-  check (type in ('goal','settled_win','settled_loss','coupon','competition','kickoff','popup'));
+  check (type in (
+    'goal','settled_win','settled_loss','coupon','competition','kickoff',
+    'popup','back','reaction','post_report'
+  ));
 
--- Sjätte kategorin i inställningarna. Mejl är avstängt som default —
--- en kampanjruta man redan sett på sajten är inte värd ett mejl.
+-- Sjätte kategorin i inställningarna. Allt på som default för nya konton.
 alter table public.notification_settings
   add column if not exists popup_in_app boolean not null default true,
-  add column if not exists popup_email  boolean not null default false;
+  add column if not exists popup_email  boolean not null default true;
 
 -- -------------------------------------------------------------
 -- 5. STORAGE — popupbilder

@@ -43,12 +43,32 @@ export default async function InstallningarPage() {
       {/* Mobile profile hero */}
       <div className="lg:hidden">
         <div className="flex flex-col items-center pt-2 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display text-2xl font-semibold">
-            {initialOf(profile.username)}
-          </div>
+          {profile.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.avatar_url}
+              alt=""
+              className="h-16 w-16 rounded-full border border-line-strong object-cover"
+            />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display text-2xl font-semibold">
+              {initialOf(profile.username)}
+            </div>
+          )}
           <h1 className="mt-3 font-display text-[26px] font-semibold">
             {profile.username}
           </h1>
+          {profile.bio?.trim() ? (
+            <p className="mt-2 max-w-[36ch] text-[14px] leading-relaxed text-muted">
+              {profile.bio.trim()}
+            </p>
+          ) : null}
+          <Link
+            href={`/profil/${encodeURIComponent(profile.username)}`}
+            className="mt-2 text-[13px] font-semibold text-cyan no-underline hover:underline"
+          >
+            Visa publik profil
+          </Link>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2.5">
@@ -138,11 +158,19 @@ export default async function InstallningarPage() {
 
       {/* Desktop */}
       <div className="hidden lg:block">
-        <div>
-          <h1 className="font-display text-[32px] font-semibold">
-            Inställningar
-          </h1>
-          <p className="text-muted">Uppdatera din profil</p>
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[32px] font-semibold">
+              Inställningar
+            </h1>
+            <p className="text-muted">Uppdatera din profil</p>
+          </div>
+          <Link
+            href={`/profil/${encodeURIComponent(profile.username)}`}
+            className="text-[13.5px] font-semibold text-cyan no-underline hover:underline"
+          >
+            Visa publik profil
+          </Link>
         </div>
       </div>
 
