@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { logAdmin } from "@/lib/admin/log";
 import { requireAdmin } from "@/lib/auth";
+import { isEditor } from "@/lib/coupons-server";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import type { Bookmaker } from "@/lib/types";
@@ -18,10 +19,17 @@ export type BookmakerInput = {
   name: string;
   slug: string;
   logo_url: string | null;
+  hero_url?: string | null;
+  hero_filename?: string | null;
+  hero_uploaded_at?: string | null;
   rating: number | null;
   rank?: number | null;
   bonus: string | null;
   bonus_value: number | null;
+  badge?: string | null;
+  wagering?: string | null;
+  bonus2_label?: string | null;
+  bonus2_value?: string | null;
   terms: string | null;
   terms_url: string | null;
   extra_disclaimer: string | null;
@@ -34,6 +42,8 @@ export type BookmakerInput = {
   brand_color: string | null;
   withdrawal_time: string | null;
   tracking_url: string | null;
+  tags?: string[];
+  license?: string | null;
   active: boolean;
 };
 
@@ -177,13 +187,23 @@ export async function saveBookmaker(input: BookmakerInput): Promise<SaveResult> 
   if (!slug) return { ok: false, error: "Slug krävs." };
 
   const supabase = await createClient();
+  const heroUrl = textOrNull(input.hero_url);
   const payload = {
     name,
     slug,
     logo_url: logo,
+    hero_url: heroUrl,
+    hero_filename: heroUrl ? textOrNull(input.hero_filename) : null,
+    hero_uploaded_at: heroUrl
+      ? textOrNull(input.hero_uploaded_at) || new Date().toISOString()
+      : null,
     rating: clampRating(input.rating),
     bonus: textOrNull(input.bonus),
     bonus_value: Math.max(0, Math.round(Number(input.bonus_value) || 0)),
+    badge: textOrNull(input.badge),
+    wagering: textOrNull(input.wagering),
+    bonus2_label: textOrNull(input.bonus2_label),
+    bonus2_value: textOrNull(input.bonus2_value),
     terms: textOrNull(input.terms),
     terms_url: textOrNull(input.terms_url),
     extra_disclaimer: textOrNull(input.extra_disclaimer),
@@ -196,6 +216,8 @@ export async function saveBookmaker(input: BookmakerInput): Promise<SaveResult> 
     brand_color: textOrNull(input.brand_color),
     withdrawal_time: textOrNull(input.withdrawal_time),
     tracking_url: textOrNull(input.tracking_url),
+    tags: cleanList(input.tags),
+    license: textOrNull(input.license),
     active: input.active !== false,
     updated_at: new Date().toISOString(),
   };
@@ -268,4 +290,40 @@ export async function toggleBookmakerActive(id: string, active: boolean) {
     { id, active }
   );
   revalidateBookmakers();
+}
+
+/** Banneruppladdning från redaktionsläge på /spelbolag. */
+export async function saveBookmakerHero(input: {
+  id: string;
+  hero_url: string;
+  hero_filename: string;
+}): Promise<SaveResult> {
+  if (!(await isEditor())) {
+    return { ok: false, error: "Kräver redaktionsroll." };
+  }
+
+  const heroUrl = textOrNull(input.hero_url);
+  if (!heroUrl) return { ok: false, error: "Bild-URL saknas." };
+
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const supabase = createAdminClient();
+  const uploadedAt = new Date().toISOString();
+  const { error } = await supabase
+    .from("bookmakers")
+    .update({
+      hero_url: heroUrl,
+      hero_filename: textOrNull(input.hero_filename),
+      hero_uploaded_at: uploadedAt,
+      updated_at: uploadedAt,
+    })
+    .eq("id", input.id);
+
+  if (error) return { ok: false, error: writeError(error) };
+
+  await logAdmin("bookmaker.hero_uploaded", `banner ${input.id}`, {
+    id: input.id,
+    filename: input.hero_filename,
+  });
+  revalidateBookmakers();
+  return { ok: true, id: input.id };
 }

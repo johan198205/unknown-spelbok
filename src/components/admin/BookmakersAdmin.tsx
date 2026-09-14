@@ -41,7 +41,13 @@ import {
 import { cn, slugify } from "@/lib/utils";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 
-const PAYMENT_OPTIONS = ["Swish", "Trustly", "Bankkort", "Apple Pay", "Klarna"];
+const PAYMENT_OPTIONS = ["Swish", "Trustly", "Bankkort", "Apple Pay", "Klarna", "BankID"];
+const TAG_OPTIONS = [
+  "Populära",
+  "Nya spelbolag",
+  "Livebetting",
+];
+const BONUS2_OPTIONS = ["", "FREE BETS", "ODDS BOOST"];
 
 const inputClass =
   "w-full rounded-[9px] border border-line bg-bg-soft px-3 py-[11px] text-[14px] text-text outline-none placeholder:text-dim focus:border-line-hover";
@@ -53,10 +59,17 @@ type Draft = {
   name: string;
   slug: string;
   logo_url: string;
+  hero_url: string;
+  hero_filename: string;
+  hero_uploaded_at: string;
   rating: string;
   rank: string;
   bonus: string;
   bonus_value: string;
+  badge: string;
+  wagering: string;
+  bonus2_label: string;
+  bonus2_value: string;
   terms: string;
   terms_url: string;
   extra_disclaimer: string;
@@ -69,6 +82,8 @@ type Draft = {
   brand_color: string;
   withdrawal_time: string;
   tracking_url: string;
+  tags: string[];
+  license: string;
   active: boolean;
 };
 
@@ -80,10 +95,17 @@ function toDraft(b: BookmakerRow): Draft {
     name: b.name,
     slug: b.slug,
     logo_url: b.logo_url ?? "",
+    hero_url: b.hero_url ?? "",
+    hero_filename: b.hero_filename ?? "",
+    hero_uploaded_at: b.hero_uploaded_at ?? "",
     rating: b.rating != null ? String(b.rating).replace(".", ",") : "",
     rank: String(b.rank),
     bonus: b.bonus ?? "",
     bonus_value: b.bonus_value != null ? String(b.bonus_value) : "",
+    badge: b.badge ?? "",
+    wagering: b.wagering ?? "",
+    bonus2_label: b.bonus2_label ?? "",
+    bonus2_value: b.bonus2_value ?? "",
     terms: b.terms ?? "",
     terms_url: b.terms_url ?? "",
     extra_disclaimer: b.extra_disclaimer ?? "",
@@ -96,6 +118,8 @@ function toDraft(b: BookmakerRow): Draft {
     brand_color: b.brand_color ?? "",
     withdrawal_time: b.withdrawal_time ?? "",
     tracking_url: b.tracking_url ?? "",
+    tags: b.tags ?? [],
+    license: b.license ?? "",
     active: b.active,
   };
 }
@@ -106,10 +130,17 @@ function newDraft(rank: number): Draft {
     name: "",
     slug: "",
     logo_url: "",
+    hero_url: "",
+    hero_filename: "",
+    hero_uploaded_at: "",
     rating: "",
     rank: String(rank),
     bonus: "",
     bonus_value: "",
+    badge: "",
+    wagering: "",
+    bonus2_label: "",
+    bonus2_value: "",
     terms: "",
     terms_url: "",
     extra_disclaimer: "",
@@ -122,6 +153,8 @@ function newDraft(rank: number): Draft {
     brand_color: "",
     withdrawal_time: "",
     tracking_url: "",
+    tags: [],
+    license: "Svensk licens, Spelinspektionen",
     active: true,
   };
 }
@@ -278,10 +311,17 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
         name: draft.name,
         slug: draft.slug,
         logo_url: draft.logo_url,
+        hero_url: draft.hero_url || null,
+        hero_filename: draft.hero_filename || null,
+        hero_uploaded_at: draft.hero_uploaded_at || null,
         rating: parseNum(draft.rating),
         rank: parseNum(draft.rank),
         bonus: draft.bonus,
         bonus_value: parseNum(draft.bonus_value) ?? 0,
+        badge: draft.badge,
+        wagering: draft.wagering,
+        bonus2_label: draft.bonus2_label,
+        bonus2_value: draft.bonus2_value,
         terms: draft.terms,
         terms_url: draft.terms_url,
         extra_disclaimer: draft.extra_disclaimer,
@@ -294,6 +334,8 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
         brand_color: draft.brand_color,
         withdrawal_time: draft.withdrawal_time,
         tracking_url: draft.tracking_url,
+        tags: draft.tags,
+        license: draft.license,
         active: draft.active,
       });
 
@@ -435,6 +477,46 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
             </div>
           </div>
 
+          <div className="mt-3">
+            <div className="mb-1.5 text-[10.5px] uppercase tracking-[0.12em] text-dim">
+              Bannerbild (hjälte)
+            </div>
+            <p className="mb-2 text-[12.5px] text-muted">
+              Bolagens eget material — ladda aldrig upp något ni inte har rätt
+              att använda. Rekommenderat 640×300 (2,13:1).
+            </p>
+            <div className="rounded-[10px] border border-dashed border-line-strong p-3">
+              <ImageUpload
+                bucket="bookmaker-heroes"
+                label="Bannerbild"
+                value={draft.hero_url}
+                onChange={(url) =>
+                  patch({
+                    hero_url: url,
+                    hero_filename: url
+                      ? url.split("/").pop()?.split("?")[0] || draft.hero_filename
+                      : "",
+                    hero_uploaded_at: url
+                      ? new Date().toISOString()
+                      : "",
+                  })
+                }
+                hint="JPG, PNG eller WebP · 640×300 rekommenderas"
+              />
+            </div>
+            {draft.hero_url ? (
+              <div className="mt-2 space-y-1 font-mono-num text-[12px] text-muted">
+                <div>Fil: {draft.hero_filename || "—"}</div>
+                <div>
+                  Uppladdad:{" "}
+                  {draft.hero_uploaded_at
+                    ? new Date(draft.hero_uploaded_at).toLocaleString("sv-SE")
+                    : "—"}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           <div className="mt-3 flex items-center gap-2.5 text-[13.5px] text-text-soft">
             <Switch
               size="sm"
@@ -444,6 +526,9 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
             />
             Snabba uttag
           </div>
+          <p className="mt-3 text-[12.5px] text-muted">
+            Betyg och rankning påverkas inte av ersättning.
+          </p>
         </Section>
 
         <Section title="Erbjudande">
@@ -452,6 +537,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               <input
                 value={draft.bonus}
                 onChange={(e) => patch({ bonus: e.target.value })}
+                placeholder="100 % upp till 2 000 kr"
                 className={inputClass}
               />
             </Field>
@@ -461,6 +547,43 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
                 onChange={(e) => patch({ bonus_value: e.target.value })}
                 inputMode="numeric"
                 className={cn(monoInputClass, "text-text")}
+              />
+            </Field>
+            <Field label="Omsättningskrav">
+              <input
+                value={draft.wagering}
+                onChange={(e) => patch({ wagering: e.target.value })}
+                placeholder="6x — tomt = inget omsättningskrav"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Kampanjbadge">
+              <input
+                value={draft.badge}
+                onChange={(e) => patch({ badge: e.target.value })}
+                placeholder="Toppval, Ny bonus…"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Andra erbjudandet">
+              <select
+                value={draft.bonus2_label}
+                onChange={(e) => patch({ bonus2_label: e.target.value })}
+                className={inputClass}
+              >
+                {BONUS2_OPTIONS.map((o) => (
+                  <option key={o || "none"} value={o}>
+                    {o || "Inget"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Andra värdet">
+              <input
+                value={draft.bonus2_value}
+                onChange={(e) => patch({ bonus2_value: e.target.value })}
+                placeholder="500 kr / 25 %"
+                className={inputClass}
               />
             </Field>
             <div className="sm:col-span-2">
@@ -473,7 +596,17 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               </Field>
             </div>
             <div className="sm:col-span-2">
-              <Field label="USP-rad">
+              <Field label="Licensinfo">
+                <input
+                  value={draft.license}
+                  onChange={(e) => patch({ license: e.target.value })}
+                  placeholder="Svensk licens, Spelinspektionen"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+            <div className="sm:col-span-2">
+              <Field label="USP-rad (intern, visas ej i kortet)">
                 <input
                   value={draft.usp}
                   onChange={(e) => patch({ usp: e.target.value })}
@@ -481,7 +614,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
                 />
               </Field>
             </div>
-            <Field label="Uttagstid">
+            <Field label="Uttagstid (intern)">
               <input
                 value={draft.withdrawal_time}
                 onChange={(e) => patch({ withdrawal_time: e.target.value })}
@@ -497,6 +630,37 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
                 className={cn(monoInputClass, "text-[12.5px]")}
               />
             </Field>
+          </div>
+          <div className="mt-3.5">
+            <div className="mb-1.5 text-[10.5px] uppercase tracking-[0.12em] text-dim">
+              Filtertaggar
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {TAG_OPTIONS.map((tag) => {
+                const on = draft.tags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() =>
+                      patch({
+                        tags: on
+                          ? draft.tags.filter((t) => t !== tag)
+                          : [...draft.tags, tag],
+                      })
+                    }
+                    className={cn(
+                      "rounded-full border px-3.5 py-2.5 text-[13.5px] font-semibold transition",
+                      on
+                        ? "border-[rgba(102,227,138,.45)] bg-win/15 text-win"
+                        : "border-line bg-bg-soft text-text-soft hover:border-line-hover"
+                    )}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </Section>
 
@@ -638,10 +802,15 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               name: draft.name || "Nytt spelbolag",
               slug: draft.slug,
               logo_url: draft.logo_url || null,
+              hero_url: draft.hero_url || null,
               rank: parseNum(draft.rank) ?? 0,
               rating: parseNum(draft.rating),
               bonus: draft.bonus || null,
               bonus_value: parseNum(draft.bonus_value) ?? 0,
+              badge: draft.badge || null,
+              wagering: draft.wagering || null,
+              bonus2_label: draft.bonus2_label || null,
+              bonus2_value: draft.bonus2_value || null,
               usp: draft.usp || null,
               terms: draft.terms || null,
               terms_url: draft.terms_url || null,
@@ -649,9 +818,12 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               review: draft.review || null,
               plus: draft.plus,
               minus: draft.minus,
+              payments: draft.payments,
               brand_color: draft.brand_color || null,
-              withdrawal_time: draft.withdrawal_time || null,
+              license: draft.license || null,
               tracking_url: draft.tracking_url || null,
+              fast_payout: draft.fast_payout,
+              tags: draft.tags,
             }}
           />
         </Section>

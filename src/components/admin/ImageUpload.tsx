@@ -26,7 +26,13 @@ export function ImageUpload({
   folder,
   required,
 }: {
-  bucket: "logos" | "banners" | "avatars" | "bookmaker-logos" | "popups";
+  bucket:
+    | "logos"
+    | "banners"
+    | "avatars"
+    | "bookmaker-logos"
+    | "bookmaker-heroes"
+    | "popups";
   label: string;
   value: string;
   onChange: (url: string) => void;
@@ -55,6 +61,15 @@ export function ImageUpload({
       }
       if (file.size > BOOKMAKER_LOGO_MAX_BYTES) {
         setError("Max 200 KB");
+        return;
+      }
+    } else if (bucket === "bookmaker-heroes") {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        setError("JPG, PNG eller WebP");
+        return;
+      }
+      if (file.size > 1024 * 1024) {
+        setError("Max 1 MB");
         return;
       }
     } else if (!file.type.startsWith("image/")) {
@@ -124,7 +139,9 @@ export function ImageUpload({
           {hint ??
             (bucket === "bookmaker-logos"
               ? "PNG, SVG eller WebP · max 200 KB"
-              : "JPG, PNG eller WebP")}
+              : bucket === "bookmaker-heroes"
+                ? "JPG, PNG eller WebP · 640×300 rekommenderas"
+                : "JPG, PNG eller WebP")}
         </div>
         <input
           ref={fileRef}
@@ -132,7 +149,9 @@ export function ImageUpload({
           accept={
             bucket === "bookmaker-logos"
               ? "image/png,image/svg+xml,image/webp"
-              : "image/*"
+              : bucket === "bookmaker-heroes"
+                ? "image/jpeg,image/png,image/webp"
+                : "image/*"
           }
           className="hidden"
           onChange={(e) => {
@@ -162,7 +181,9 @@ export function ImageUpload({
             className={
               bucket === "avatars"
                 ? "size-16 rounded-full border border-line object-cover"
-                : "max-h-16 rounded border border-line object-contain"
+                : bucket === "bookmaker-heroes"
+                  ? "h-[70px] w-[150px] rounded border border-line object-cover"
+                  : "max-h-16 rounded border border-line object-contain"
             }
           />
           <Button

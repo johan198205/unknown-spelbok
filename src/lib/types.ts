@@ -362,13 +362,19 @@ export type Database = {
       bookmakers: {
         Row: {
           active: boolean
+          badge: string | null
           bonus: string | null
+          bonus2_label: string | null
+          bonus2_value: string | null
           bonus_value: number | null
+          brand_color: string | null
           extra_disclaimer: string | null
           fast_payout: boolean
-          brand_color: string | null
-          withdrawal_time: string | null
+          hero_filename: string | null
+          hero_uploaded_at: string | null
+          hero_url: string | null
           id: string
+          license: string | null
           logo_url: string | null
           minus: string[] | null
           name: string
@@ -378,21 +384,30 @@ export type Database = {
           rating: number | null
           review: string | null
           slug: string
+          tags: string[] | null
           terms: string | null
           terms_url: string | null
           tracking_url: string | null
           updated_at: string
           usp: string | null
+          wagering: string | null
+          withdrawal_time: string | null
         }
         Insert: {
           active?: boolean
+          badge?: string | null
           bonus?: string | null
+          bonus2_label?: string | null
+          bonus2_value?: string | null
           bonus_value?: number | null
+          brand_color?: string | null
           extra_disclaimer?: string | null
           fast_payout?: boolean
-          brand_color?: string | null
-          withdrawal_time?: string | null
+          hero_filename?: string | null
+          hero_uploaded_at?: string | null
+          hero_url?: string | null
           id?: string
+          license?: string | null
           logo_url?: string | null
           minus?: string[] | null
           name: string
@@ -402,21 +417,30 @@ export type Database = {
           rating?: number | null
           review?: string | null
           slug: string
+          tags?: string[] | null
           terms?: string | null
           terms_url?: string | null
           tracking_url?: string | null
           updated_at?: string
           usp?: string | null
+          wagering?: string | null
+          withdrawal_time?: string | null
         }
         Update: {
           active?: boolean
+          badge?: string | null
           bonus?: string | null
+          bonus2_label?: string | null
+          bonus2_value?: string | null
           bonus_value?: number | null
+          brand_color?: string | null
           extra_disclaimer?: string | null
           fast_payout?: boolean
-          brand_color?: string | null
-          withdrawal_time?: string | null
+          hero_filename?: string | null
+          hero_uploaded_at?: string | null
+          hero_url?: string | null
           id?: string
+          license?: string | null
           logo_url?: string | null
           minus?: string[] | null
           name?: string
@@ -426,11 +450,14 @@ export type Database = {
           rating?: number | null
           review?: string | null
           slug?: string
+          tags?: string[] | null
           terms?: string | null
           terms_url?: string | null
           tracking_url?: string | null
           updated_at?: string
           usp?: string | null
+          wagering?: string | null
+          withdrawal_time?: string | null
         }
         Relationships: []
       }

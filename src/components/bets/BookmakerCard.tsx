@@ -1,52 +1,151 @@
 "use client";
 
-import { useState } from "react";
-import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
+import { useRef, useState } from "react";
 import { track } from "@/lib/analytics";
-import { getBookmakerLogoUrl } from "@/lib/bookmakers";
+import {
+  BOOKMAKER_HERO_BUCKET,
+  PAYMENT_MARKS,
+  bonus2Kind,
+  displayText,
+  formatBonusLine,
+  getBookmakerHeroUrl,
+  getBookmakerLogoUrl,
+  hasPayment,
+  primaryPayment,
+  ratingTitle,
+  starRowDataUri,
+  wageringParts,
+} from "@/lib/bookmakers";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export type BookmakerCardData = {
+  id?: string;
   name: string;
   slug: string;
   logo_url: string | null;
+  hero_url?: string | null;
   rank: number;
   rating: number | null;
   bonus: string | null;
   bonus_value: number | null;
-  usp: string | null;
+  badge?: string | null;
+  wagering?: string | null;
+  bonus2_label?: string | null;
+  bonus2_value?: string | null;
+  usp?: string | null;
   terms: string | null;
-  terms_url: string | null;
-  extra_disclaimer: string | null;
+  terms_url?: string | null;
+  extra_disclaimer?: string | null;
   review: string | null;
   plus: string[] | null;
   minus: string[] | null;
+  payments?: string[] | null;
   brand_color?: string | null;
-  withdrawal_time?: string | null;
+  license?: string | null;
   tracking_url: string | null;
+  fast_payout?: boolean;
+  tags?: string[] | null;
 };
 
+const STODLINJEN = "https://stodlinjen.se";
+const SPELPAUS = "https://spelpaus.se";
+
 function StarRow({ rating }: { rating: number | null }) {
-  const value = Math.max(0, Math.min(5, rating ?? 0));
-  const full = Math.floor(value);
-  const half = value - full >= 0.5;
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label={`${value} av 5`}>
-      {Array.from({ length: 5 }, (_, i) => {
-        const on = i < full || (i === full && half);
-        return (
-          <span
-            key={i}
-            className={cn(
-              "text-[13px] leading-none",
-              on ? "text-[#F5C542]" : "text-[#C5CBD6]"
-            )}
-          >
-            ★
-          </span>
-        );
-      })}
+    <span
+      title={ratingTitle(rating)}
+      className="absolute right-3 top-3 z-[3] flex cursor-help items-center"
+    >
+      <span
+        className="block h-4 w-[84px] bg-contain bg-right bg-no-repeat"
+        style={{ backgroundImage: `url("${starRowDataUri(rating)}")` }}
+        aria-hidden
+      />
     </span>
+  );
+}
+
+function HeroUpload({
+  name,
+  onUploaded,
+}: {
+  name: string;
+  onUploaded: (url: string, filename: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onFile(file: File | null | undefined) {
+    if (!file) return;
+    const ok = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+    if (!ok) {
+      setError("JPG, PNG eller WebP");
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      setError("Max 1 MB");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const supabase = createClient();
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${Date.now()}-${safe}`;
+    const { error: uploadError } = await supabase.storage
+      .from(BOOKMAKER_HERO_BUCKET)
+      .upload(path, file, { upsert: true });
+    if (uploadError) {
+      setError(uploadError.message);
+      setBusy(false);
+      return;
+    }
+    const { data } = supabase.storage
+      .from(BOOKMAKER_HERO_BUCKET)
+      .getPublicUrl(path);
+    onUploaded(data.publicUrl, file.name);
+    setBusy(false);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        void onFile(e.dataTransfer.files?.[0]);
+      }}
+      className={cn(
+        "absolute inset-0 z-[1] flex cursor-pointer items-center justify-center border-0 px-4 text-center transition",
+        dragging ? "bg-black/45" : "bg-black/25 hover:bg-black/40"
+      )}
+    >
+      <span className="text-[13px] font-semibold leading-snug text-white drop-shadow">
+        {busy
+          ? "Laddar upp…"
+          : error
+            ? error
+            : `Släpp bannerbild för ${name} · 640×300`}
+      </span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          void onFile(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+    </button>
   );
 }
 
@@ -54,198 +153,263 @@ export function BookmakerCard({
   data,
   src,
   preview = false,
+  editorMode = false,
   open,
   onToggleReview,
+  onHeroUploaded,
   className,
 }: {
   data: BookmakerCardData;
   src?: string;
   preview?: boolean;
+  editorMode?: boolean;
   open?: boolean;
   onToggleReview?: () => void;
+  onHeroUploaded?: (url: string, filename: string) => void;
   className?: string;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [termsOpen, setTermsOpen] = useState(false);
   const isOpen = open ?? internalOpen;
   const toggle = onToggleReview ?? (() => setInternalOpen((v) => !v));
 
-  const brand = data.brand_color?.trim() || "#1B2436";
-  const usps = (data.plus ?? []).filter(Boolean).slice(0, 2);
+  const brand = displayText(data.brand_color) || "#1B2436";
   const goHref = `/go/${data.slug}${src ? `?src=${src}` : ""}`;
+  const isTop = data.rank === 1;
+  const heroUrl = getBookmakerHeroUrl(data.hero_url);
+  const logoUrl = getBookmakerLogoUrl(data.logo_url);
+  const badge = displayText(data.badge);
+  const pay = primaryPayment(data.payments);
+  const bonusLine = formatBonusLine(data);
+  const wager = wageringParts(data.wagering);
+  const bonus2Label = displayText(data.bonus2_label);
+  const bonus2Value = displayText(data.bonus2_value);
+  const showBonus2 = !!bonus2Label && !!bonus2Value && !!bonus2Kind(bonus2Label);
+  const review = displayText(data.review);
+  const terms = displayText(data.terms);
+  const license =
+    displayText(data.license) || "Svensk licens, Spelinspektionen";
+  const plus = (data.plus ?? []).map(displayText).filter(Boolean).slice(0, 3) as string[];
+  const minus = (data.minus ?? []).map(displayText).filter(Boolean).slice(0, 1) as string[];
 
-  const cta = (
-    <>
-      <span className="font-display block text-[17px] font-semibold tracking-[0.06em]">
-        TILL {data.name.toUpperCase()}
-      </span>
-      <span className="mt-0.5 block text-[12.5px] opacity-90">
-        Vidare till {data.name}
-      </span>
-    </>
-  );
+  const marks = [
+    { label: "Swish", on: hasPayment(data.payments, "Swish") },
+    { label: "Trustly", on: hasPayment(data.payments, "Trustly") },
+    { label: "BankID", on: true },
+    { label: "Licens", on: true },
+  ];
 
-  const logoBlock = data.logo_url ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={getBookmakerLogoUrl(data.logo_url) ?? data.logo_url}
-      alt={data.name}
-      className="max-h-10 max-w-[70%] object-contain"
-    />
-  ) : (
-    <span className="font-display text-2xl font-bold text-white">{data.name}</span>
-  );
+  const fallbackBg = {
+    backgroundColor: brand,
+    backgroundImage: [
+      logoUrl ? `url(${logoUrl})` : null,
+      "radial-gradient(120% 90% at 22% 10%, rgba(255,255,255,.22), rgba(255,255,255,0) 62%)",
+      "linear-gradient(165deg, rgba(255,255,255,.10), rgba(0,0,0,.34))",
+    ]
+      .filter(Boolean)
+      .join(", "),
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "center",
+    backgroundSize: logoUrl ? "62% auto, cover, cover" : "cover, cover",
+  } as const;
 
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-card-light shadow-[0_10px_30px_rgba(0,0,0,.25)] transition",
-        !preview && "hover:-translate-y-1",
+        "flex flex-col rounded-2xl bg-[#F7F8FB] transition duration-[180ms] ease-out",
+        isTop
+          ? "border border-[rgba(255,209,102,.5)] shadow-[0_0_40px_rgba(255,209,102,.10)]"
+          : "border border-[rgba(230,234,242,.10)] shadow-[0_10px_30px_rgba(0,0,0,.28)]",
+        !preview && "hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(0,0,0,.45)]",
         className
       )}
     >
       <div
-        className="relative flex h-[120px] items-center justify-center"
-        style={{ backgroundColor: brand }}
+        className="relative h-[150px] overflow-hidden rounded-t-[15px]"
+        style={heroUrl ? undefined : fallbackBg}
       >
-        {data.tracking_url && !preview ? (
-          <a
-            href={goHref}
-            target="_blank"
-            rel="noopener sponsored nofollow"
-            onClick={() => track({ event: "affiliate_click", bookmaker: data.slug })}
-            className="flex h-full w-full items-center justify-center no-underline"
-            aria-label={`Till ${data.name}`}
-          >
-            {logoBlock}
-          </a>
-        ) : (
-          logoBlock
-        )}
-        <span className="pointer-events-none absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg bg-white/95 font-display text-sm font-bold text-[#1A1F2B]">
+        {heroUrl ? (
+          <div
+            role="img"
+            aria-label={data.name}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${heroUrl})` }}
+          />
+        ) : null}
+
+        {editorMode ? (
+          <HeroUpload
+            name={data.name || "spelbolaget"}
+            onUploaded={(url, filename) => onHeroUploaded?.(url, filename)}
+          />
+        ) : null}
+
+        <span className="pointer-events-none absolute left-3 top-3 z-[3] flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(247,248,251,.94)] font-display text-[15px] font-bold text-[#1A1F2B]">
           {data.rank}
         </span>
-        {data.rating != null ? (
-          <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-[rgba(15,20,32,.72)] px-2.5 py-1">
-            <StarRow rating={data.rating} />
+        <StarRow rating={data.rating} />
+      </div>
+
+      <div className="relative z-[2] -mt-[17px] flex h-[34px] items-center justify-center gap-2">
+        {badge ? (
+          <span
+            className="whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,.28)]"
+            style={{ background: isTop ? "#1B4F8A" : "#2C3A52" }}
+          >
+            {badge}
+          </span>
+        ) : null}
+        {pay ? (
+          <span className="inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-black/[.08] bg-white px-3.5 py-[7px] text-[13px] font-semibold text-[#12171F] shadow-[0_4px_14px_rgba(0,0,0,.18)]">
+            <span
+              className="block size-4 bg-contain bg-center bg-no-repeat"
+              style={{ backgroundImage: `url("${PAYMENT_MARKS[pay]}")` }}
+              aria-hidden
+            />
+            {pay}
           </span>
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 px-4 pb-0 pt-4 text-center">
-        <div>
-          <div className="text-[10.5px] font-bold tracking-[0.14em] text-[#6B7688]">
-            BONUS
+      <div className="flex flex-1 flex-col justify-center px-[18px] pb-5 pt-4 text-center">
+        {bonusLine ? (
+          <div className="text-[19px] font-bold leading-snug text-[#12171F]">
+            {bonusLine}
           </div>
-          <div className="font-display text-[26px] font-semibold leading-tight text-[#12171F]">
-            {data.bonus_value
-              ? `${data.bonus_value.toLocaleString("sv-SE")} kr`
-              : data.bonus || "—"}
-          </div>
-          {data.usp ? (
-            <div className="mt-1 text-[12.5px] text-[#6B7688]">{data.usp}</div>
-          ) : null}
-        </div>
-
-        {usps.length ? (
-          <ul className="space-y-1 text-left text-[12.5px] text-[#333A45]">
-            {usps.map((u) => (
-              <li key={u} className="flex gap-2">
-                <span className="font-bold text-[#1E8E4E]">+</span>
-                <span>{u}</span>
-              </li>
-            ))}
-          </ul>
         ) : null}
-
-        {data.withdrawal_time ? (
-          <div className="rounded-[9px] bg-[#F3F5F8] px-3 py-2 text-[12.5px] text-[#5B6472]">
-            Uttag:{" "}
-            <span className="font-semibold text-[#12171F]">
-              {data.withdrawal_time}
+        <div className="mt-[5px] text-[14px] text-[#5B6472]">
+          {wager.value == null ? (
+            wager.label
+          ) : (
+            <>
+              {wager.label}{" "}
+              <span className="font-bold text-[#12171F]">{wager.value}</span>
+            </>
+          )}
+        </div>
+        {showBonus2 ? (
+          <div className="mx-auto mt-[11px] inline-flex items-baseline gap-[7px] rounded-full border border-black/[.07] bg-[#F0F2F7] px-[13px] py-1.5">
+            <span className="text-[10.5px] font-bold uppercase tracking-[0.13em] text-[#5B6472]">
+              {bonus2Label}
+            </span>
+            <span className="text-[14px] font-bold text-[#12171F]">
+              {bonus2Value}
             </span>
           </div>
         ) : null}
+      </div>
 
-        {data.tracking_url ? (
-          preview ? (
-            <div className="mt-auto block rounded-[11px] bg-[#3FA662] px-3.5 py-3 text-center text-white">
-              {cta}
-            </div>
+      {data.tracking_url ? (
+        <div className="px-[18px]">
+          {preview ? (
+            <span className="block rounded-full bg-[#2F8B4F] px-[18px] py-[15px] text-center text-[17px] font-bold text-white">
+              Till {data.name || "spelbolaget"}
+            </span>
           ) : (
             <a
               href={goHref}
               target="_blank"
               rel="noopener sponsored nofollow"
-              onClick={() => track({ event: "affiliate_click", bookmaker: data.slug })}
-              className="mt-auto block rounded-[11px] bg-[#3FA662] px-3.5 py-3 text-center text-white no-underline hover:bg-[#348C53] hover:text-white hover:no-underline"
+              onClick={() =>
+                track({ event: "affiliate_click", bookmaker: data.slug })
+              }
+              className="block rounded-full bg-[#2F8B4F] px-[18px] py-[15px] text-center text-[17px] font-bold text-white no-underline transition-colors hover:bg-[#26703F] hover:text-white hover:no-underline"
             >
-              {cta}
+              Till {data.name || "spelbolaget"}
             </a>
-          )
-        ) : null}
+          )}
+        </div>
+      ) : null}
 
-        {(data.terms || data.terms_url) && (
-          <div className="text-left">
-            <button
-              type="button"
-              onClick={() => setTermsOpen((v) => !v)}
-              className="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] font-semibold text-[#3A6FD8]"
+      <div className="mt-4 border-t border-black/[.07] px-[18px] pb-4 pt-[13px]">
+        <div className="flex items-start gap-2.5">
+          <div className="min-w-0 flex-1 text-[12.5px] leading-[1.55] text-[#5B6472]">
+            18+, Spela ansvarsfullt,{" "}
+            <a
+              href={STODLINJEN}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-[#2C6FD6] no-underline hover:underline"
             >
-              {termsOpen ? "Dölj villkor" : "Regler & villkor"}
-            </button>
-            {termsOpen ? (
-              <p className="mt-1.5 text-[12px] leading-relaxed text-[#5B6472]">
-                {data.terms || "Se villkor via länken i disclaimern."}
-              </p>
-            ) : data.terms ? (
-              <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[#7A838F]">
-                {data.terms}
+              stödlinjen
+            </a>
+            ,{" "}
+            <a
+              href={SPELPAUS}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-[#2C6FD6] no-underline hover:underline"
+            >
+              spelpaus
+            </a>
+          </div>
+          <button
+            type="button"
+            onClick={toggle}
+            className="inline-flex min-h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded border-0 bg-transparent px-2 py-1.5 text-[13px] font-semibold text-[#5B6472]"
+          >
+            {isOpen ? "Stäng" : "Läs mer"}
+            <span className="text-[10px]" aria-hidden>
+              {isOpen ? "▲" : "▼"}
+            </span>
+          </button>
+        </div>
+
+        {isOpen ? (
+          <div className="mt-3 animate-sbfade border-t border-black/[.07] pt-3 text-left">
+            <div className="mb-1.5 text-[15px] font-bold text-[#12171F]">
+              {data.name}
+            </div>
+            {review ? (
+              <p className="mb-2.5 text-[13.5px] leading-[1.6] text-[#333A45]">
+                {review}
               </p>
             ) : null}
-          </div>
-        )}
-
-        <BookmakerDisclaimer
-          tone="light"
-          prefix="Reklamlänk"
-          bookmaker={data}
-          className="text-[11px]"
-        />
-      </div>
-
-      <div className="mt-3.5 rounded-b-[15px] border-t border-black/10 bg-[#ECEFF4] p-3 text-center">
-        <div className="text-[12.5px] text-[#5B6472]">{data.name}</div>
-        <button
-          type="button"
-          onClick={toggle}
-          className="cursor-pointer border-0 bg-transparent text-[13.5px] font-bold text-[#12171F]"
-        >
-          {isOpen ? "Dölj recension" : "Läs mer"}
-        </button>
-        {isOpen ? (
-          <div className="mt-2.5 animate-sbfade text-left">
-            <p className="mb-2.5 text-[13px] leading-relaxed text-[#333A45]">
-              {data.review}
-            </p>
-            {(data.plus || []).map((p) => (
+            {plus.map((p) => (
               <div
                 key={p}
-                className="flex gap-2 py-0.5 text-[12.5px] text-[#333A45]"
+                className="flex gap-2 py-[3px] text-[13px] text-[#333A45]"
               >
-                <span className="font-bold text-[#1E8E4E]">+</span>
+                <span className="shrink-0 font-bold text-[#1E8E4E]">+</span>
                 {p}
               </div>
             ))}
-            {(data.minus || []).map((m) => (
+            {minus.map((m) => (
               <div
                 key={m}
-                className="flex gap-2 py-0.5 text-[12.5px] text-[#333A45]"
+                className="flex gap-2 py-[3px] text-[13px] text-[#333A45]"
               >
-                <span className="font-bold text-[#C23B4A]">−</span>
+                <span className="shrink-0 font-bold text-[#C8324A]">−</span>
                 {m}
               </div>
             ))}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {marks.map((m) => (
+                <span
+                  key={m.label}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-black/[.08] px-2.5 py-1.5"
+                  style={{ opacity: m.on ? 1 : 0.3 }}
+                >
+                  <span
+                    className="block size-[15px] bg-contain bg-center bg-no-repeat"
+                    style={{
+                      backgroundImage: `url("${PAYMENT_MARKS[m.label]}")`,
+                    }}
+                    aria-hidden
+                  />
+                  <span
+                    className="text-xs font-semibold"
+                    style={{ color: m.on ? "#333A45" : "#9AA3AF" }}
+                  >
+                    {m.label}
+                  </span>
+                </span>
+              ))}
+            </div>
+            <div className="mt-2.5 text-xs text-[#5B6472]">
+              Reklamlänk.
+              {terms ? ` ${terms}` : ""}
+              {` ${license}`}
+            </div>
           </div>
         ) : null}
       </div>

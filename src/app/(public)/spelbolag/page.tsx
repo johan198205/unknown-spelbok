@@ -1,16 +1,15 @@
-import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
 import { BookmakersGrid } from "@/components/bets/BookmakersGrid";
 import { AdSlot } from "@/components/ui/AdSlot";
+import { isEditor } from "@/lib/coupons-server";
 import { createClient } from "@/lib/supabase/server";
 import type { Bookmaker } from "@/lib/types";
 
 export default async function SpelbolagPage() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("bookmakers")
-    .select("*")
-    .eq("active", true)
-    .order("rank");
+  const [{ data }, editorMode] = await Promise.all([
+    supabase.from("bookmakers").select("*").eq("active", true).order("rank"),
+    isEditor(),
+  ]);
 
   const bookmakers = (data || []) as Bookmaker[];
 
@@ -25,16 +24,8 @@ export default async function SpelbolagPage() {
           jämförda spelbolag
         </div>
       </div>
-      <BookmakerDisclaimer
-        prefix="Innehåller reklamlänkar"
-        className="mb-5 text-[12.5px]"
-      />
-      <AdSlot
-        format="970x90"
-        placement="spelbolag"
-        className="mb-5"
-      />
-      <BookmakersGrid bookmakers={bookmakers} />
+      <AdSlot format="970x90" placement="spelbolag" className="mb-5" />
+      <BookmakersGrid bookmakers={bookmakers} editorMode={editorMode} />
     </div>
   );
 }

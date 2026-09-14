@@ -1,7 +1,5 @@
-import {
-  fetchLandingPage,
-  type LandingPage,
-} from "@/lib/landing-content";
+import type { LandingPage } from "@/lib/landing-content";
+import { fetchLandingPage } from "@/lib/landing-content.server";
 
 /** @deprecated Använd LandingPage / fetchLandingPage. */
 export type LandingHero = {

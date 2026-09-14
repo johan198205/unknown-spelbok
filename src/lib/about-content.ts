@@ -1,5 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
-
 export type AboutPrinciple = {
   n: string;
   title: string;
@@ -132,30 +130,4 @@ export function aboutFromPageContent(content: string): AboutContent {
 
 export function serializeAboutContent(about: AboutContent): string {
   return JSON.stringify({ _type: ABOUT_TYPE, ...about }, null, 2);
-}
-
-export async function fetchAboutPage(): Promise<AboutPage> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("pages")
-    .select("title, content, seo_title, seo_description")
-    .eq("slug", "om-oss")
-    .eq("published", true)
-    .maybeSingle();
-
-  if (!data) {
-    return {
-      ...DEFAULT_ABOUT,
-      title: "Om oss",
-      seoTitle: "Om Spelbok",
-      seoDescription: DEFAULT_ABOUT.intro.slice(0, 160),
-    };
-  }
-
-  return {
-    ...aboutFromPageContent(String(data.content ?? "")),
-    title: data.title || "Om oss",
-    seoTitle: data.seo_title,
-    seoDescription: data.seo_description,
-  };
 }

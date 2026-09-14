@@ -21,7 +21,31 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-function extractBookmakers(source: string) {
+type DesignBookmaker = {
+  rank: number;
+  name: string;
+  logo: string;
+  bonus: string;
+  terms: string;
+  usp: string;
+  payments: string[];
+  rating: number;
+  fastPayout: boolean;
+  bonusValue: number;
+  trackingUrl: string;
+  review: string;
+  plus: string[];
+  minus: string[];
+  brand?: string;
+  wagering?: string;
+  badge?: string;
+  bonus2Label?: string;
+  bonus2Value?: string;
+  tags?: string[];
+  license?: string;
+};
+
+function extractBookmakers(source: string): DesignBookmaker[] {
   const start = source.indexOf("window.SBBookmakers = [");
   if (start < 0) throw new Error("Could not find SBBookmakers array");
   const arrayStart = source.indexOf("[", start);
@@ -39,37 +63,82 @@ function extractBookmakers(source: string) {
   }
   if (end < 0) throw new Error("Unclosed SBBookmakers array");
 
-  // Evaluate in a sandbox-ish way: convert JS object literals to JSON-ish
-  // by using Function — data is local trusted design file.
   const raw = source.slice(arrayStart, end);
-  // logo() calls need a stub
   const fn = new Function(
     `function logo(text){ return 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 44"><text x="120" y="32" text-anchor="middle" fill="#fff">' + text + '</text></svg>'); }
      return ${raw};`
   );
-  return fn() as Array<{
-    rank: number;
-    name: string;
-    logo: string;
-    bonus: string;
-    terms: string;
-    usp: string;
-    payments: string[];
-    rating: number;
-    fastPayout: boolean;
-    bonusValue: number;
-    trackingUrl: string;
-    review: string;
-    plus: string[];
-    minus: string[];
-  }>;
+  const items = fn() as DesignBookmaker[];
+
+  const EXTRA: Record<string, [string, string]> = {
+    Unibet: ["#0F6B3D", "6x"],
+    Bet365: ["#0E5C44", "4x"],
+    Betsson: ["#20242B", "5x"],
+    "Svenska Spel Sport & Casino": ["#002B57", "–"],
+    LeoVegas: ["#1B1B1B", "8x"],
+    ComeOn: ["#0B2A3A", "6x"],
+    Expekt: ["#15161A", "5x"],
+    Betfair: ["#1A1A1A", "–"],
+    NordicBet: ["#0B2445", "6x"],
+    Bethard: ["#0C0E13", "8x"],
+  };
+
+  const CARD: Record<string, [string, string, string, string[]]> = {
+    Unibet: [
+      "Toppval",
+      "FREE BETS",
+      "500 kr",
+      ["Populära", "Livebetting"],
+    ],
+    Bet365: ["", "", "", ["Populära", "Livebetting"]],
+    Betsson: [
+      "Ny bonus",
+      "ODDS BOOST",
+      "25 %",
+      ["Populära"],
+    ],
+    "Svenska Spel Sport & Casino": [
+      "",
+      "",
+      "",
+      ["Populära", "Livebetting"],
+    ],
+    LeoVegas: ["", "FREE BETS", "200 kr", ["Populära"]],
+    ComeOn: [
+      "Nytt 2026",
+      "ODDS BOOST",
+      "30 %",
+      ["Nya spelbolag"],
+    ],
+    Expekt: ["", "", "", []],
+    Betfair: ["", "", "", ["Populära", "Livebetting"]],
+    NordicBet: ["", "FREE BETS", "100 kr", []],
+    Bethard: ["Nytt 2026", "", "", ["Nya spelbolag"]],
+  };
+
+  return items.map((b) => {
+    const e = EXTRA[b.name];
+    const c = CARD[b.name];
+    return {
+      ...b,
+      brand: e?.[0],
+      wagering: e?.[1] === "–" ? "" : e?.[1],
+      badge: c?.[0] || "",
+      bonus2Label: c?.[1] || "",
+      bonus2Value: c?.[2] || "",
+      tags: c?.[3] || [],
+      license: "Svensk licens, Spelinspektionen",
+    };
+  });
 }
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local");
+    throw new Error(
+      "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local"
+    );
   }
 
   const file = resolve(process.cwd(), "design/bookmakers.js");
@@ -96,6 +165,13 @@ async function main() {
     review: b.review,
     plus: b.plus,
     minus: b.minus,
+    brand_color: b.brand || null,
+    wagering: b.wagering || null,
+    badge: b.badge || null,
+    bonus2_label: b.bonus2Label || null,
+    bonus2_value: b.bonus2Value || null,
+    tags: b.tags || [],
+    license: b.license || "Svensk licens, Spelinspektionen",
     active: true,
     updated_at: new Date().toISOString(),
   }));

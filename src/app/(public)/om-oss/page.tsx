@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { fetchAboutPage } from "@/lib/about-content";
+import { fetchAboutPage } from "@/lib/about-content.server";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { ButtonLink } from "@/components/ui/Button";
 import { Badge, Panel } from "@/components/ui/Panel";
-import { fetchLandingPage } from "@/lib/landing-content";
+import { fetchLandingPage } from "@/lib/landing-content.server";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, formatMoney, formatRoi, nettoColor } from "@/lib/utils";

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { fetchContactPage } from "@/lib/contact-content";
+import { fetchContactPage } from "@/lib/contact-content.server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const page = await fetchContactPage();
