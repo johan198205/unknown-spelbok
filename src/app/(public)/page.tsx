@@ -95,26 +95,16 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        {/* Statisk mockup — inte live data. Byts mot riktiga assets när design
-            är beslutad (public/mockups/spreadsheet-{desktop,mobile}.svg). */}
-        <div>
+        {/* Produktmockup: desktop + mobil i samma bild */}
+        <div className="relative">
           <Image
-            src="/mockups/spreadsheet-desktop.svg"
-            alt="Mockup av ett spreadsheet i Spelbok med netto, ROI, hitrate och bokförda spel."
-            width={1200}
-            height={800}
-            unoptimized
+            src="/mockups/spelbok-devices.jpg"
+            alt="Spelbok på laptop och mobil — dashboard med netto, ROI, hitrate och bokförda spel."
+            width={1024}
+            height={682}
             priority
-            className="hidden w-full rounded-[var(--radius-panel)] border border-line shadow-[0_24px_60px_rgba(0,0,0,.45)] md:block"
-          />
-          <Image
-            src="/mockups/spreadsheet-mobile.svg"
-            alt="Mockup av Spelbok i mobilen med netto, ROI och bokförda spel som kort."
-            width={430}
-            height={860}
-            unoptimized
-            priority
-            className="mx-auto w-full max-w-[320px] rounded-[var(--radius-panel)] border border-line shadow-[0_24px_60px_rgba(0,0,0,.45)] md:hidden"
+            sizes="(min-width: 768px) 520px, 100vw"
+            className="mx-auto w-full max-w-[560px] object-contain drop-shadow-[0_24px_60px_rgba(0,0,0,.55)] md:max-w-none"
           />
         </div>
       </section>
