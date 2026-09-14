@@ -5,9 +5,8 @@ import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getProfile } from "@/lib/auth";
-import { getDisplayPrefs } from "@/lib/display-prefs";
+import { FormattedAmount } from "@/components/FormattedAmount";
 import { getUnreadNotificationCount } from "@/lib/notifications-server";
-import { formatAmount } from "@/lib/display";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
 import { initialOf } from "@/lib/utils";
@@ -34,7 +33,6 @@ export async function SiteHeader({
   }
 
   const site = await fetchSiteSettings(supabase);
-  const prefs = await getDisplayPrefs();
   const unread = profile ? await getUnreadNotificationCount() : 0;
 
   const appNav = [
@@ -77,7 +75,7 @@ export async function SiteHeader({
                 </div>
                 {/* Mockup: netto i header är muted mono, inte grön/röd */}
                 <div className="font-mono-num text-xs text-muted">
-                  {formatAmount(netto, prefs)}
+                  <FormattedAmount value={netto} />
                 </div>
               </div>
               {profile.avatar_url ? (

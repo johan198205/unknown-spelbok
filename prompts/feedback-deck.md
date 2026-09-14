@@ -851,8 +851,8 @@ Gör inte: ny global färgpalett för hela sajten; mörkt tema-projekt.
 - Mät innan/efter kvalitativt (ingen ny monitoring-stack).
 
 **Acceptanskriterier:**
-- [ ] Toggle SEK/Units känns omedelbar (<100ms upplevt för siffror som kan räknas om lokalt).
-- [ ] Flikbyte utan onödig “vit skärm” om det kan undvikas med loading.tsx/skeletons.
+- [x] Toggle SEK/Units känns omedelbar (<100ms upplevt för siffror som kan räknas om lokalt).
+- [x] Flikbyte utan onödig “vit skärm” om det kan undvikas med loading.tsx/skeletons.
 
 ````cursor-prompt
 Du arbetar i Spelbok.

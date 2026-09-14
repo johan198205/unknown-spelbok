@@ -1,21 +1,19 @@
 import Link from "next/link";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
+import { FormattedAmount } from "@/components/FormattedAmount";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getProfile } from "@/lib/auth";
-import { formatAmount, type DisplayPrefs } from "@/lib/display";
 import { getUnreadNotificationCount } from "@/lib/notifications-server";
 import { initialOf, nettoColor } from "@/lib/utils";
 
 export async function MobileHeader({
   username,
   netto,
-  prefs,
 }: {
   username?: string | null;
   netto: number;
-  prefs: DisplayPrefs;
 }) {
-  // Båda är memoiserade per request — layouten har redan betalat för dem.
+  // Memoiserad per request — layouten har redan betalat för profilen.
   const profile = username ? await getProfile() : null;
   const unread = profile ? await getUnreadNotificationCount() : 0;
 
@@ -33,7 +31,7 @@ export async function MobileHeader({
           <span
             className={`font-mono-num text-[13px] font-semibold ${nettoColor(netto)}`}
           >
-            {formatAmount(netto, prefs)}
+            <FormattedAmount value={netto} />
           </span>
           {profile ? (
             <NotificationBell

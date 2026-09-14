@@ -3,7 +3,6 @@ import { SiteFooter, SiteHeader } from "@/components/layout/SiteHeader";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileChrome } from "@/components/layout/MobileChrome";
 import { getProfile } from "@/lib/auth";
-import { getDisplayPrefs } from "@/lib/display-prefs";
 import { createClient } from "@/lib/supabase/server";
 import type { Bookmaker, Sheet } from "@/lib/types";
 
@@ -32,7 +31,6 @@ export default async function PublicLayout({
   }
 
   const supabase = await createClient();
-  const prefs = await getDisplayPrefs();
   const [{ data: bets }, { data: sheetRows }, { data: bookRows }] =
     await Promise.all([
       supabase
@@ -58,7 +56,7 @@ export default async function PublicLayout({
       <div className="hidden lg:contents">
         <SiteHeader variant="app" />
       </div>
-      <MobileHeader username={profile!.username} netto={netto} prefs={prefs} />
+      <MobileHeader username={profile!.username} netto={netto} />
       <MobileChrome
         sheets={(sheetRows || []) as Sheet[]}
         bookmakers={(bookRows || []) as Bookmaker[]}

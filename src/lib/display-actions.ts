@@ -31,7 +31,7 @@ export async function setDisplayMode(mode: DisplayMode): Promise<DisplayPrefsRes
 
   if (error) return { ok: false, error: error.message };
 
-  // Belopp renderas på servern i stort sett varje vy — hela trädet måste om.
+  // Klienten uppdaterar prefs lokalt; nästa navigation ska hämta rätt läge.
   revalidatePath("/", "layout");
   return { ok: true };
 }

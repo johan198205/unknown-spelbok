@@ -6,7 +6,11 @@ import type { Fixture } from "@/lib/types";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { TeamLogo } from "@/components/bets/TeamPair";
-import { SearchDropdown, type DropdownOption } from "@/components/ui/SearchDropdown";
+import {
+  SearchDropdown,
+  type DropdownGroup,
+  type DropdownOption,
+} from "@/components/ui/SearchDropdown";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   finishedPickerMeta,
@@ -14,6 +18,10 @@ import {
   mergeLivePatch,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
+import {
+  compareLeaguesByPriority,
+  sportLabelToSlug,
+} from "@/lib/league-priority";
 import { teamLogoUrl } from "@/lib/logos";
 import {
   addStockholmDays,
@@ -22,7 +30,49 @@ import {
   stockholmYmd,
   type DayChip,
 } from "@/lib/stockholm";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+const RECENT_LEAGUES_LEGACY_KEY = "spelbok:recent-leagues";
+const RECENT_LEAGUES_MAX = 8;
+
+function recentLeaguesStorageKey(userId: string | null) {
+  return userId
+    ? `${RECENT_LEAGUES_LEGACY_KEY}:${userId}`
+    : RECENT_LEAGUES_LEGACY_KEY;
+}
+
+function readRecentLeagueKeys(userId: string | null): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const scoped = localStorage.getItem(recentLeaguesStorageKey(userId));
+    if (scoped) return JSON.parse(scoped) as string[];
+    // Migrera o-scopad lista till profilnyckeln första gången.
+    if (userId) {
+      const legacy = localStorage.getItem(RECENT_LEAGUES_LEGACY_KEY);
+      if (legacy) {
+        const keys = JSON.parse(legacy) as string[];
+        writeRecentLeagueKeys(userId, keys);
+        return keys;
+      }
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentLeagueKeys(userId: string | null, keys: string[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      recentLeaguesStorageKey(userId),
+      JSON.stringify(keys.slice(0, RECENT_LEAGUES_MAX))
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 type Coverage = { from: string; to: string };
 
@@ -417,6 +467,25 @@ export function FixturePicker({
   const [loading, setLoading] = useState(false);
   const [filling, setFilling] = useState(false);
   const [planLimited, setPlanLimited] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [recentKeys, setRecentKeys] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const id = user?.id ?? null;
+      setUserId(id);
+      setRecentKeys(readRecentLeagueKeys(id));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function pickSport(next: string) {
     setSport(next);
@@ -541,12 +610,10 @@ export function FixturePicker({
         });
       }
     }
-    return [...map.values()].sort(
-      (a, b) =>
-        a.name.localeCompare(b.name, "sv") ||
-        (a.country || "").localeCompare(b.country || "", "sv")
+    return [...map.values()].sort((a, b) =>
+      compareLeaguesByPriority(sportLabelToSlug(sport), a, b)
     );
-  }, [items]);
+  }, [items, sport]);
 
   // Vald liga ligger kvar över datumbyten — matchar dagens data när den finns
   const selectedLeague = useMemo(
@@ -554,7 +621,7 @@ export function FixturePicker({
     [byLeague, league]
   );
 
-  const leagueOptions = useMemo((): DropdownOption[] => {
+  const leagueGroups = useMemo((): DropdownGroup[] => {
     const toOption = (g: LeagueSelection): DropdownOption => ({
       value: g.key,
       label: g.name,
@@ -569,36 +636,44 @@ export function FixturePicker({
         />
       ),
     });
-    const sticky = league && !byLeague.some((g) => g.key === league.key)
-      ? [toOption(league)]
-      : [];
 
-    // Senast använda ligor (localStorage) först, därefter API-ordning (priority).
-    let recentKeys: string[] = [];
-    if (typeof window !== "undefined") {
-      try {
-        recentKeys = JSON.parse(
-          localStorage.getItem("spelbok:recent-leagues") || "[]"
-        ) as string[];
-      } catch {
-        recentKeys = [];
-      }
+    const sticky =
+      league && !byLeague.some((g) => g.key === league.key) ? league : null;
+    const available = sticky ? [sticky, ...byLeague] : byLeague;
+
+    const popular: LeagueSelection[] = [];
+    for (const key of recentKeys) {
+      const match = available.find((g) => g.key === key);
+      if (match) popular.push(match);
     }
-    const ranked = [...byLeague].sort((a, b) => {
-      const ai = recentKeys.indexOf(a.key);
-      const bi = recentKeys.indexOf(b.key);
-      if (ai === -1 && bi === -1) return 0;
-      if (ai === -1) return 1;
-      if (bi === -1) return -1;
-      return ai - bi;
-    });
 
-    return [
-      { value: ALL_LEAGUES, label: "Alla ligor" },
-      ...sticky,
-      ...ranked.map(toOption),
+    const popularKeys = new Set(popular.map((g) => g.key));
+    const rest = available
+      .filter((g) => !popularKeys.has(g.key))
+      .sort((a, b) =>
+        compareLeaguesByPriority(sportLabelToSlug(sport), a, b)
+      );
+
+    const groups: DropdownGroup[] = [
+      {
+        label: "",
+        options: [{ value: ALL_LEAGUES, label: "Alla ligor" }],
+      },
     ];
-  }, [byLeague, league, sport]);
+    if (popular.length) {
+      groups.push({
+        label: "Dina populäraste ligor",
+        options: popular.map(toOption),
+      });
+    }
+    if (rest.length) {
+      groups.push({
+        label: "Alla ligor",
+        options: rest.map(toOption),
+      });
+    }
+    return groups;
+  }, [byLeague, league, recentKeys, sport]);
 
   const visibleGroups = useMemo((): LeagueGroup[] => {
     if (league) return selectedLeague ? [selectedLeague] : [];
@@ -669,14 +744,16 @@ export function FixturePicker({
             value={league?.key ?? ALL_LEAGUES}
             placeholder="Filtrera liga…"
             searchPlaceholder="Sök liga…"
-            options={leagueOptions}
+            groups={leagueGroups}
             disabled={loading && !byLeague.length}
             onChange={(next) => {
               if (next === ALL_LEAGUES) {
                 clearLeagueFilter();
                 return;
               }
-              const group = byLeague.find((g) => g.key === next);
+              const group =
+                byLeague.find((g) => g.key === next) ??
+                (league?.key === next ? league : null);
               if (!group) return;
               setLeague({
                 key: group.key,
@@ -686,21 +763,12 @@ export function FixturePicker({
                 sport: group.sport,
                 country: group.country,
               });
-              try {
-                const prev = JSON.parse(
-                  localStorage.getItem("spelbok:recent-leagues") || "[]"
-                ) as string[];
-                const next = [
-                  group.key,
-                  ...prev.filter((k) => k !== group.key),
-                ].slice(0, 8);
-                localStorage.setItem(
-                  "spelbok:recent-leagues",
-                  JSON.stringify(next)
-                );
-              } catch {
-                /* ignore */
-              }
+              const updated = [
+                group.key,
+                ...recentKeys.filter((k) => k !== group.key),
+              ].slice(0, RECENT_LEAGUES_MAX);
+              setRecentKeys(updated);
+              writeRecentLeagueKeys(userId, updated);
               onMetaChange?.({
                 sport: group.sport || sport,
                 league: group.name,

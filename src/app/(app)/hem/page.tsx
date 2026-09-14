@@ -14,6 +14,7 @@ import {
 } from "@/components/bets/DistributionCard";
 import { MatchLine } from "@/components/bets/TeamPair";
 import { formatPick } from "@/lib/picks";
+import { FormattedAmount } from "@/components/FormattedAmount";
 import {
   bookmakerKey,
   categoryKey,
@@ -23,8 +24,6 @@ import {
   pickKey,
   sportKey,
 } from "@/lib/breakdowns";
-import { formatAmount } from "@/lib/display";
-import { getDisplayPrefs } from "@/lib/display-prefs";
 import { parseMatchSides } from "@/lib/logos";
 import {
   MIN_ROI_BETS,
@@ -64,7 +63,6 @@ function BetMatchLine({ bet }: { bet: Bet }) {
 export default async function HemPage() {
   const user = await requireUser();
   const profile = await getProfile();
-  const prefs = await getDisplayPrefs();
   const supabase = await createClient();
 
   const [{ data: sheets }, betsQuery] = await Promise.all([
@@ -126,7 +124,7 @@ export default async function HemPage() {
   const kpis = [
     {
       label: "Netto",
-      value: formatAmount(stats.netto, prefs),
+      value: <FormattedAmount value={stats.netto} />,
       color: nettoColor(stats.netto),
     },
     {
@@ -143,7 +141,7 @@ export default async function HemPage() {
     },
     {
       label: "Omsättning",
-      value: formatAmount(stats.stake, prefs, { sign: false }),
+      value: <FormattedAmount value={stats.stake} sign={false} />,
       color: "text-text",
     },
     // Alla spel, inte bara rättade: annars kan "Levande" visa fler spel än
@@ -169,7 +167,7 @@ export default async function HemPage() {
               nettoColor(stats.netto)
             )}
           >
-            {formatAmount(stats.netto, prefs)}
+            <FormattedAmount value={stats.netto} />
           </div>
           <div className="font-mono-num text-[13px] text-faint">
             totalt netto · {sheetList.length} spreadsheets · {bets.length} spel
@@ -272,7 +270,7 @@ export default async function HemPage() {
                         nettoColor(st.netto)
                       )}
                     >
-                      {formatAmount(st.netto, prefs)}
+                      <FormattedAmount value={st.netto} />
                     </span>
                   </SheetStat>
                 </Link>
@@ -325,7 +323,7 @@ export default async function HemPage() {
                         nettoColor(netto)
                       )}
                     >
-                      {formatAmount(netto, prefs)}
+                      <FormattedAmount value={netto} />
                     </span>
                   </div>
                 );

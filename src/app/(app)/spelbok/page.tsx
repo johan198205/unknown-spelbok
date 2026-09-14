@@ -1,10 +1,9 @@
 import { Suspense } from "react";
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NewSheetForm } from "@/components/bets/NewSheetForm";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
-import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState } from "@/components/ui/Panel";
 import { getDisplayPrefs } from "@/lib/display-prefs";
 import { stockholmYmd } from "@/lib/stockholm";
@@ -53,10 +52,9 @@ export default async function SpelbokPage({
 
   /*
     En notis om ett enskilt spel länkar hit med bara ?bet=… — spelets id
-    är det enda notisen bär. Vilken spelbok raden ligger i slår vi upp
-    här, så användaren landar i rätt flik direkt.
+    är det enda notisen bär. Canonical URL inkluderar ?sheet= så flikarna
+    i layouten markerar rätt bok.
   */
-  let betSheetId: string | null = null;
   if (betParam && !sheetParam) {
     const { data: betRow } = await supabase
       .from("bets")
@@ -64,13 +62,15 @@ export default async function SpelbokPage({
       .eq("id", betParam)
       .eq("user_id", user.id)
       .maybeSingle();
-    betSheetId = betRow?.sheet_id ?? null;
+    if (betRow?.sheet_id) {
+      redirect(
+        `/spelbok?sheet=${encodeURIComponent(betRow.sheet_id)}&bet=${encodeURIComponent(betParam)}`
+      );
+    }
   }
 
   const activeSheet =
-    sheetList.find((s) => s.id === (sheetParam ?? betSheetId)) ||
-    sheetList[0] ||
-    null;
+    sheetList.find((s) => s.id === sheetParam) || sheetList[0] || null;
 
   let bets: Bet[] = [];
   if (activeSheet) {
@@ -144,68 +144,34 @@ export default async function SpelbokPage({
 
   const suggestions = (suggestionRows ?? []).map(normalizeSuggestion);
 
+  if (!sheetList.length) {
+    return (
+      <EmptyState>
+        Du har inga spreadsheets ännu. Skapa din första nedan.
+        <div className="mt-4 flex justify-center">
+          <NewSheetForm />
+        </div>
+      </EmptyState>
+    );
+  }
+
+  if (!activeSheet) return null;
+
   return (
-    <div className="animate-sbfade">
-      <div className="mb-[26px]">
-        <AdSlot
-          format="970x90"
-          placement="sheet"
-          className="hidden lg:flex"
-        />
-        <AdSlot
-          format="320x100"
-          placement="sheet"
-          className="lg:hidden"
-        />
-      </div>
-
-      {!sheetList.length ? (
-        <EmptyState>
-          Du har inga spreadsheets ännu. Skapa din första nedan.
-          <div className="mt-4 flex justify-center">
-            <NewSheetForm />
-          </div>
-        </EmptyState>
-      ) : (
-        <>
-          <div className="mb-[18px] flex flex-wrap items-center gap-2 sb-scroll">
-            {sheetList.map((s) => (
-              <Link
-                key={s.id}
-                href={`/spelbok?sheet=${s.id}`}
-                className={`shrink-0 rounded-[9px] border px-3.5 py-2 text-sm font-semibold no-underline ${
-                  activeSheet?.id === s.id
-                    ? "border-win bg-win/10 text-win"
-                    : "border-line bg-panel text-muted hover:text-text"
-                }`}
-              >
-                {s.name}
-              </Link>
-            ))}
-            <NewSheetForm buttonLabel="+ Ny" />
-          </div>
-
-          {activeSheet ? (
-            <Suspense
-              fallback={
-                <div className="py-10 text-center text-muted">Laddar…</div>
-              }
-            >
-              <SpelbokSheetView
-                sheet={toPlain(activeSheet)}
-                bets={bets}
-                sheets={toPlain(sheetList)}
-                bookmakers={toPlain((bookmakers || []) as Bookmaker[])}
-                username={username}
-                initialStats={toPlain(statsBundle.stats)}
-                suggestions={toPlain(suggestions)}
-                affiliates={toPlain(affiliates)}
-                isAuthenticated
-              />
-            </Suspense>
-          ) : null}
-        </>
-      )}
-    </div>
+    <Suspense
+      fallback={<div className="py-10 text-center text-muted">Laddar…</div>}
+    >
+      <SpelbokSheetView
+        sheet={toPlain(activeSheet)}
+        bets={bets}
+        sheets={toPlain(sheetList)}
+        bookmakers={toPlain((bookmakers || []) as Bookmaker[])}
+        username={username}
+        initialStats={toPlain(statsBundle.stats)}
+        suggestions={toPlain(suggestions)}
+        affiliates={toPlain(affiliates)}
+        isAuthenticated
+      />
+    </Suspense>
   );
 }

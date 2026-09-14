@@ -1,8 +1,10 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { useRef, useTransition } from "react";
+import {
+  useDisplayPrefs,
+  useSetDisplayMode,
+} from "@/components/DisplayPrefsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { setDisplayMode } from "@/lib/display-actions";
 import { type DisplayMode } from "@/lib/display";
@@ -11,27 +13,28 @@ import { cn } from "@/lib/utils";
 /**
  * Växlar mellan pengar och units för hela kontot. Syns bara inloggad.
  *
- * Läget ligger på profilen, så växlingen kräver en rundtur till servern och
- * en refresh av trädet (beloppen renderas serverside). useOptimistic gör att
- * knappen ändå svarar direkt.
+ * Belopp som går via useAmount/FormattedAmount byter direkt via kontext.
+ * Sparningen går i bakgrunden — ingen full router.refresh().
  */
 export function DisplayModeToggle({ className }: { className?: string }) {
   const prefs = useDisplayPrefs();
-  const router = useRouter();
+  const setModeLocal = useSetDisplayMode();
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
-  const [mode, setMode] = useOptimistic<DisplayMode>(prefs.mode);
+  const requestId = useRef(0);
 
   function select(next: DisplayMode) {
-    if (next === mode) return;
+    if (next === prefs.mode) return;
+    const prev = prefs.mode;
+    const id = ++requestId.current;
+    setModeLocal(next);
     startTransition(async () => {
-      setMode(next);
       const res = await setDisplayMode(next);
-      // Vid fel faller optimistic-värdet tillbaka av sig självt när
-      // transitionen är klar; refresh hämtar det som faktiskt sparades.
-      // Utan toasten ser en misslyckad sparning ut som att knappen är död.
-      if (res.ok) router.refresh();
-      else toast(`Kunde inte byta visningsläge: ${res.error}`);
+      if (id !== requestId.current) return;
+      if (!res.ok) {
+        setModeLocal(prev);
+        toast(`Kunde inte byta visningsläge: ${res.error}`);
+      }
     });
   }
 
@@ -59,11 +62,11 @@ export function DisplayModeToggle({ className }: { className?: string }) {
           key={opt.value}
           type="button"
           title={opt.title}
-          aria-pressed={mode === opt.value}
+          aria-pressed={prefs.mode === opt.value}
           onClick={() => select(opt.value)}
           className={cn(
             "min-w-[44px] rounded-[6px] px-2 py-1 text-[12px] font-semibold transition-colors",
-            mode === opt.value
+            prefs.mode === opt.value
               ? "bg-panel text-text"
               : "text-muted hover:text-text"
           )}

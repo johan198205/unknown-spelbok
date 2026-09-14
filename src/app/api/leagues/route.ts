@@ -6,6 +6,7 @@ import {
   type ApiLeagueItem,
   type SportSlug,
 } from "@/lib/apisports";
+import { priorityRank } from "@/lib/league-priority";
 import { createClient } from "@/lib/supabase/server";
 
 export const revalidate = 86400;
@@ -17,35 +18,6 @@ export type LeagueOption = {
   logo: string | null;
   priority: boolean;
 };
-
-const FOOTBALL_PRIORITY: { id: number; names: string[] }[] = [
-  { id: 113, names: ["allsvenskan"] },
-  { id: 39, names: ["premier league"] },
-  { id: 140, names: ["la liga", "primera division"] },
-  { id: 135, names: ["serie a"] },
-  { id: 78, names: ["bundesliga"] },
-  { id: 61, names: ["ligue 1"] },
-  { id: 2, names: ["uefa champions league", "champions league"] },
-];
-
-const HOCKEY_PRIORITY: { id: number; names: string[] }[] = [
-  { id: 57, names: ["shl", "swedish hockey league"] },
-];
-
-function normalize(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function priorityRank(sport: SportSlug, id: number, name: string): number {
-  const list = sport === "hockey" ? HOCKEY_PRIORITY : FOOTBALL_PRIORITY;
-  const needle = normalize(name);
-  const byId = list.findIndex((item) => item.id === id);
-  if (byId >= 0) return byId;
-  const byName = list.findIndex((item) =>
-    item.names.some((n) => needle === n || needle.includes(n))
-  );
-  return byName;
-}
 
 function isCurrentLeague(item: ApiLeagueItem) {
   const seasons = item.seasons;

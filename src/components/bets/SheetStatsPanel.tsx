@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
 import { formatAmount } from "@/lib/display";
 import {
@@ -23,6 +23,8 @@ type Row = { label: string; value: string; color?: string };
  *
  * Perioden här är fristående från filterraden — det är hela poängen: man ska
  * kunna se helåret utan att röra tabellens urval.
+ *
+ * Besökta perioder cachas lokalt så tillbakaklick inte väntar på nätet igen.
  */
 export function SheetStatsPanel({
   sheetId,
@@ -34,24 +36,34 @@ export function SheetStatsPanel({
   const amount = useAmount();
   const prefs = useDisplayPrefs();
 
-  // Hämtad period knyts till exakt det initialStats den bygger på. Kommer en
-  // ny serverrendering (byte av spelbok, eller en rättning som refreshar)
-  // faller panelen tillbaka till "Från start" i stället för att visa siffror
-  // som inte längre hör ihop med spelboken.
-  const [fetched, setFetched] = useState<{
-    source: BetStatsPayload;
-    period: StatsPeriod;
-    stats: BetStatsPayload;
-  } | null>(null);
+  const [period, setPeriod] = useState<StatsPeriod>("all");
+  const [cache, setCache] = useState<Partial<Record<StatsPeriod, BetStatsPayload>>>(
+    () => ({ all: initialStats })
+  );
   const [pending, setPending] = useState<StatsPeriod | null>(null);
+  const sourceRef = useRef(initialStats);
 
-  const active = fetched?.source === initialStats ? fetched : null;
-  const period = pending ?? active?.period ?? "all";
-  const stats = active?.stats ?? initialStats;
+  // Ny spelbok / serverrefresh → börja om med "Från start".
+  useEffect(() => {
+    if (sourceRef.current === initialStats) return;
+    sourceRef.current = initialStats;
+    setPeriod("all");
+    setCache({ all: initialStats });
+    setPending(null);
+  }, [initialStats]);
+
+  const highlight = pending ?? period;
+  const stats = cache[period] ?? initialStats;
   const loading = pending != null;
 
   async function selectPeriod(next: StatsPeriod) {
-    if (next === period || loading) return;
+    if (next === highlight || loading) return;
+
+    if (cache[next]) {
+      setPeriod(next);
+      return;
+    }
+
     setPending(next);
     try {
       const res = await fetch(
@@ -59,7 +71,8 @@ export function SheetStatsPanel({
       );
       if (!res.ok) return;
       const data = (await res.json()) as { stats: BetStatsPayload };
-      setFetched({ source: initialStats, period: next, stats: data.stats });
+      setCache((prev) => ({ ...prev, [next]: data.stats }));
+      setPeriod(next);
     } catch {
       /* nätverksfel — behåll den period som redan visas */
     } finally {
@@ -162,7 +175,7 @@ export function SheetStatsPanel({
               onClick={() => void selectPeriod(p.value)}
               className={cn(
                 "cursor-pointer border-b-2 pb-0.5 text-[14px] transition",
-                period === p.value
+                highlight === p.value
                   ? "border-win font-bold text-win"
                   : "border-transparent font-medium text-muted hover:text-text"
               )}

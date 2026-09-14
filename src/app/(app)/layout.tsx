@@ -4,7 +4,6 @@ import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileChrome } from "@/components/layout/MobileChrome";
 import { touchLastSeen } from "@/lib/admin/last-seen";
 import { getProfile } from "@/lib/auth";
-import { getDisplayPrefs } from "@/lib/display-prefs";
 import { createClient } from "@/lib/supabase/server";
 import type { Bookmaker, Sheet } from "@/lib/types";
 
@@ -17,7 +16,6 @@ export default async function AppLayout({
   // Bokföring, inte rendering — kör efter svaret så navigeringen inte väntar.
   if (profile) after(() => touchLastSeen(profile));
   const supabase = await createClient();
-  const prefs = await getDisplayPrefs();
 
   let netto = 0;
   let betCount = 0;
@@ -59,7 +57,7 @@ export default async function AppLayout({
       <div className="hidden lg:contents">
         <SiteHeader variant="app" />
       </div>
-      <MobileHeader username={profile?.username} netto={netto} prefs={prefs} />
+      <MobileHeader username={profile?.username} netto={netto} />
 
       <MobileChrome
         sheets={sheets}

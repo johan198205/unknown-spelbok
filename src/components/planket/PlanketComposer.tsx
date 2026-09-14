@@ -94,10 +94,20 @@ export function PlanketComposer({
     }
     setBusy(true);
     const supabase = (await import("@/lib/supabase/client")).createClient();
-    const path = `planket/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    // avatars-RLS: första mappen måste vara auth.uid() (samma som profilbild).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setBusy(false);
+      toast("Du måste vara inloggad.");
+      return;
+    }
+    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const path = `${user.id}/planket/${filename}`;
     const { error } = await supabase.storage
       .from("avatars")
-      .upload(path, file, { upsert: true });
+      .upload(path, file, { upsert: false });
     setBusy(false);
     if (error) {
       toast(error.message);
