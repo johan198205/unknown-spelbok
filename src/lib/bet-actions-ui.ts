@@ -1,9 +1,6 @@
 /**
  * Måtten på spelradens ikonknappar, på ett ställe.
  *
- * Egen fil för att BetRowActions och GoalNotifyButton båda behöver dem utan
- * att importera varandra i cirkel.
- *
  * sm 28 = tabellens täta åtgärdskolumn · card 32 = spelbokskortet, samma höjd
  * som rättningens segmentreglage bredvid · md 36 = formulär och mobil.
  */

@@ -93,7 +93,7 @@ export function NotifySettleToggle({
         <span>
           <span className="font-semibold text-text">När ett spel rättas</span>
           <span className="mt-0.5 block text-[13px] text-muted">
-            Push när matchen är slut och spelet rättas automatiskt.
+            Push när matchen är slut och spelet rättas.
           </span>
         </span>
       </label>

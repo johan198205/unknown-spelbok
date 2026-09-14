@@ -84,6 +84,10 @@ export const NOTIFICATION_CATEGORIES = [
   "planket",
 ] as const;
 
+/** Kategorier som visas i inställningarna. Målnotiser är avstängda. */
+export const NOTIFICATION_SETTINGS_CATEGORIES =
+  NOTIFICATION_CATEGORIES.filter((c) => c !== "goal");
+
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
 
 export const CATEGORY_LABELS: Record<NotificationCategory, string> = {

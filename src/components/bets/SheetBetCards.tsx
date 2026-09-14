@@ -5,10 +5,7 @@ import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
-import {
-  SettleSourceIcon,
-  SheetSettleControls,
-} from "@/components/bets/SheetSettleControls";
+import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
 import { fixtureFromBet, isInPlayStatus } from "@/lib/live-fixture";
 import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
 import { formatPick } from "@/lib/picks";
@@ -79,7 +76,6 @@ export function SheetBetCards({
                   minute: "2-digit",
                 })}
               </span>
-              <SettleSourceIcon bet={bet} />
               {live ? (
                 <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-cyan">
                   <span className="size-1.5 animate-sbpulse rounded-full bg-cyan" />

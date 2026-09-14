@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppNav } from "@/components/layout/AppNav";
+import { PublicNav } from "@/components/layout/PublicNav";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -62,26 +63,7 @@ export async function SiteHeader({
         {variant === "app" && profile ? (
           <AppNav items={appNav} />
         ) : (
-          <div className="flex flex-1 items-center gap-0.5 overflow-x-auto sb-scroll">
-            <Link
-              href="/kuponger"
-              className="whitespace-nowrap rounded-[var(--radius-btn-sm)] px-3.5 py-2 text-[14px] font-semibold text-muted no-underline hover:bg-panel-2 hover:text-text hover:no-underline"
-            >
-              Kuponger
-            </Link>
-            <Link
-              href="/topplista"
-              className="whitespace-nowrap rounded-[var(--radius-btn-sm)] px-3.5 py-2 text-[14px] font-semibold text-muted no-underline hover:bg-panel-2 hover:text-text hover:no-underline"
-            >
-              Topplista
-            </Link>
-            <Link
-              href="/spelbolag"
-              className="whitespace-nowrap rounded-[var(--radius-btn-sm)] px-3.5 py-2 text-[14px] font-semibold text-muted no-underline hover:bg-panel-2 hover:text-text hover:no-underline"
-            >
-              Spelbolag
-            </Link>
-          </div>
+          <PublicNav />
         )}
 
         <div className="ml-auto flex items-center gap-2.5">

@@ -190,6 +190,20 @@ export function PageEditor({ page }: { page: Page }) {
           className="font-display mb-3.5 w-full rounded-[12px] border border-line bg-panel p-4 text-[24px] font-semibold text-text outline-none"
         />
 
+        {draft.slug === "startsida" ? (
+          <p className="mb-3 rounded-[10px] border border-cyan/30 bg-cyan/10 px-3.5 py-2.5 text-[13px] text-text-soft">
+            Den här sidan driver hero på <strong>/</strong> (startsidan). Rubrik =
+            titel, brödtext = första stycket i innehållet. Layout och mockup-bild
+            styrs fortfarande i koden.
+          </p>
+        ) : null}
+        {draft.slug === "om-oss" || draft.slug === "kontakt" ? (
+          <p className="mb-3 rounded-[10px] border border-line bg-bg-soft px-3.5 py-2.5 text-[13px] text-muted">
+            Sidan <strong>/{draft.slug}</strong> byggs i koden (inte markdown).
+            Den här CMS-raden styr bara footerns etikett när den är publicerad.
+          </p>
+        ) : null}
+
         <div className="overflow-hidden rounded-[14px] border border-line bg-panel">
           <div className="flex flex-wrap items-center gap-1 border-b border-line-soft px-3 py-2.5">
             {TOOLS.map((t) => (
@@ -315,7 +329,7 @@ export function PageEditor({ page }: { page: Page }) {
 
           {published ? (
             <a
-              href={`/${draft.slug}`}
+              href={draft.slug === "startsida" ? "/" : `/${draft.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2.5 block text-center text-[13px] font-semibold"

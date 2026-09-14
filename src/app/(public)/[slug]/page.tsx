@@ -27,7 +27,18 @@ export default async function CmsPage({ params }: Props) {
   const { slug } = await params;
 
   // Reserved public routes — handled by dedicated pages
-  if (["topplista", "spelbolag", "login", "registrera"].includes(slug)) {
+  // startsida redigeras i CMS men visas på `/`, inte här.
+  if (
+    [
+      "topplista",
+      "spelbolag",
+      "login",
+      "registrera",
+      "startsida",
+      "om-oss",
+      "kontakt",
+    ].includes(slug)
+  ) {
     notFound();
   }
 

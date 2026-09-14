@@ -134,8 +134,8 @@ export function pendingToDisplayBet(pending: PendingBet): Bet & {
     placed_at: pending.payload.placed_at || pending.createdAt,
     settled_at: pending.payload.settled_at ?? null,
     settled_by: pending.payload.settled_by ?? null,
-    // Speglar databasens default: målnotiser är på från start.
-    notify_goals: true,
+    // Målnotiser avstängda (FEATURES.goalNotify).
+    notify_goals: false,
     logged_before_kickoff: null,
     copied_from_bet_id: null,
     copied_from_user_id: null,

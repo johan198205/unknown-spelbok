@@ -10,4 +10,9 @@ export const FEATURES = {
    * Manuell sättling i sheet/admin påverkas inte.
    */
   autoSettle: false,
+  /**
+   * Målnotiser (push + i appen) när ställningen ändras.
+   * Bell-knappen i spelboken är borttagen medan flaggan är false.
+   */
+  goalNotify: false,
 } as const;

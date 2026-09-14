@@ -13,6 +13,7 @@
  * som sedan göms i panelen vore både slöseri och en läckande räknare.
  */
 
+import { FEATURES } from "@/lib/features";
 import { chunkArray } from "@/lib/push";
 import { formatPick } from "@/lib/picks";
 import { rankBoard } from "@/lib/competitions";
@@ -210,6 +211,8 @@ export async function recordGoalNotifications(args: {
   awayScore: number;
   elapsed?: number | null;
 }) {
+  if (!FEATURES.goalNotify) return 0;
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("bets")

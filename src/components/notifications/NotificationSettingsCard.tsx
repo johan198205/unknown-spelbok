@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { setNotificationSetting } from "@/lib/notification-actions";
 import {
   CATEGORY_LABELS,
-  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_SETTINGS_CATEGORIES,
   type NotificationSettings,
 } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
@@ -87,7 +87,7 @@ export function NotificationSettingsCard({
         </span>
       </div>
 
-      {NOTIFICATION_CATEGORIES.map((category) => {
+      {NOTIFICATION_SETTINGS_CATEGORIES.map((category) => {
         const inApp = `${category}_in_app` as keyof NotificationSettings;
         const email = `${category}_email` as keyof NotificationSettings;
         const label = CATEGORY_LABELS[category];

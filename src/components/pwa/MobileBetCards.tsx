@@ -121,14 +121,8 @@ function statusBadge(bet: DisplayBet): {
   }
   if (bet.result === "open") {
     return {
-      label: bet.settled_by === "auto" ? "AUTO-RÄTTAS" : "Orättat",
+      label: "Orättat",
       className: "bg-blue/15 text-blue border-blue/45",
-    };
-  }
-  if (bet.settled_by === "auto") {
-    return {
-      label: "AUTO-RÄTTAS",
-      className: "bg-blue/15 text-blue border-blue/40",
     };
   }
   return {

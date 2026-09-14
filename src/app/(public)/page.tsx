@@ -2,14 +2,25 @@ import Image from "next/image";
 import { ButtonLink } from "@/components/ui/Button";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { Badge, Panel } from "@/components/ui/Panel";
+import { fetchLandingHero } from "@/lib/landing-hero";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, formatMoney, formatRoi, nettoColor } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const hero = await fetchLandingHero();
+  return {
+    title: hero.seoTitle || undefined,
+    description: hero.seoDescription || undefined,
+  };
+}
 
 export default async function LandingPage() {
   const supabase = await createClient();
   const site = await fetchSiteSettings(supabase);
+  const hero = await fetchLandingHero();
 
   const [{ data: publicSheets }, { data: competitions }] = await Promise.all([
     supabase
@@ -70,20 +81,17 @@ export default async function LandingPage() {
 
   return (
     <div className="animate-sbfade">
-      <section className="mx-auto grid max-w-[1180px] items-center gap-14 px-7 pb-6 pt-16 md:grid-cols-[1.05fr_.95fr]">
+      <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-7 pb-6 pt-16 md:grid-cols-[0.95fr_1.15fr] md:gap-6 lg:gap-10">
         <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-line bg-panel px-3 py-1.5 text-[12px] uppercase tracking-[0.08em] text-muted">
             <span className="h-[7px] w-[7px] rounded-full bg-cyan animate-sbpulse" />
             Live bokföring
           </div>
-          <h1 className="font-display mb-4 text-[42px] font-bold leading-[1.02] tracking-[-0.01em] md:text-[58px]">
-            TA KONTROLL ÖVER
-            <br />
-            DITT SPELANDE.
+          <h1 className="font-display mb-4 whitespace-pre-line text-[42px] font-bold leading-[1.02] tracking-[-0.01em] md:text-[58px]">
+            {hero.title}
           </h1>
           <p className="mb-7 max-w-[520px] text-lg leading-relaxed text-muted">
-            Bokför varje spel, se din riktiga ROI och sluta gissa. Jämför dig med
-            andra i topplistorna där bara siffrorna talar.
+            {hero.body}
           </p>
           <div className="flex flex-wrap gap-3">
             <ButtonLink href="/registrera" size="lg">
@@ -95,16 +103,16 @@ export default async function LandingPage() {
           </div>
         </div>
 
-        {/* Produktmockup: desktop + mobil i samma bild */}
-        <div className="relative">
+        {/* Produktmockup: desktop + mobil — transparent PNG */}
+        <div className="relative md:-mr-4 lg:-mr-8 xl:-mr-12">
           <Image
-            src="/mockups/spelbok-devices.jpg"
+            src="/mockups/spelbok-devices.png"
             alt="Spelbok på laptop och mobil — dashboard med netto, ROI, hitrate och bokförda spel."
-            width={1024}
-            height={682}
+            width={979}
+            height={624}
             priority
-            sizes="(min-width: 768px) 520px, 100vw"
-            className="mx-auto w-full max-w-[560px] object-contain drop-shadow-[0_24px_60px_rgba(0,0,0,.55)] md:max-w-none"
+            sizes="(min-width: 768px) 640px, 100vw"
+            className="mx-auto w-full max-w-[640px] object-contain drop-shadow-[0_28px_50px_rgba(0,0,0,.35)] md:max-w-none md:scale-[1.08] md:origin-center lg:scale-[1.14]"
           />
         </div>
       </section>

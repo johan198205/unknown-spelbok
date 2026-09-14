@@ -11,10 +11,10 @@ import {
   type ApiFixtureItem,
   type SportSlug,
 } from "@/lib/apisports";
+import { FEATURES } from "@/lib/features";
 import { mapFixtureRow } from "@/lib/map-fixture";
 import { isInPlayStatus, type LiveFixturePatch } from "@/lib/live-fixture";
 import { notifyGoals } from "@/lib/send-push";
-import { FEATURES } from "@/lib/features";
 import { settleOpenBets } from "@/lib/settle-open";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -193,25 +193,27 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
   await upsertRows(admin, updates);
 
   const goalNotices: Promise<unknown>[] = [];
-  for (const [id, hit] of results) {
-    const prev = rows.find((r) => r.fixture_id === id);
-    const next = currentScore(hit.item);
-    const status = hit.item.fixture.status.short;
-    if (!isInPlayStatus(status)) continue;
-    const prevHome = typeof prev?.home_score === "number" ? prev.home_score : 0;
-    const prevAway = typeof prev?.away_score === "number" ? prev.away_score : 0;
-    const nextHome = next.home ?? 0;
-    const nextAway = next.away ?? 0;
-    if (nextHome + nextAway <= prevHome + prevAway) continue;
-    goalNotices.push(
-      notifyGoals({
-        fixtureId: id,
-        homeName: hit.item.teams.home.name,
-        awayName: hit.item.teams.away.name,
-        homeScore: nextHome,
-        awayScore: nextAway,
-      })
-    );
+  if (FEATURES.goalNotify) {
+    for (const [id, hit] of results) {
+      const prev = rows.find((r) => r.fixture_id === id);
+      const next = currentScore(hit.item);
+      const status = hit.item.fixture.status.short;
+      if (!isInPlayStatus(status)) continue;
+      const prevHome = typeof prev?.home_score === "number" ? prev.home_score : 0;
+      const prevAway = typeof prev?.away_score === "number" ? prev.away_score : 0;
+      const nextHome = next.home ?? 0;
+      const nextAway = next.away ?? 0;
+      if (nextHome + nextAway <= prevHome + prevAway) continue;
+      goalNotices.push(
+        notifyGoals({
+          fixtureId: id,
+          homeName: hit.item.teams.home.name,
+          awayName: hit.item.teams.away.name,
+          homeScore: nextHome,
+          awayScore: nextAway,
+        })
+      );
+    }
   }
   // Måste await:as: Vercel fryser funktionen så fort svaret gått ut, en
   // fire-and-forget push hinner då aldrig i väg.

@@ -30,7 +30,7 @@ type Column = {
 /*
   Bredderna är räknade mot den SMALASTE tabellen (sheet-brytpunkten, ~1140px)
   så att inget innehåll behöver brytas till en andra rad där: datumet ska stå
-  på en rad, rättningens W/L/P/V ska ligga i linje med ⚡, och ikonerna ska
+  på en rad, rättningens W/L/P/V ska rymmas, och ikonerna ska
   rymmas bredvid varandra i sin egen kolumn.
 
   Matchkolumnen är den enda som bär långa lagnamn och får därför allt som blir

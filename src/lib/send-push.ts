@@ -1,4 +1,5 @@
 import { sendNotification, setVapidDetails, WebPushError } from "web-push";
+import { FEATURES } from "@/lib/features";
 import { formatPick } from "@/lib/picks";
 import { chunkArray } from "@/lib/push";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -368,6 +369,8 @@ export async function notifyGoals(args: {
   homeScore: number;
   awayScore: number;
 }) {
+  if (!FEATURES.goalNotify) return;
+
   const eventKey = `goal:${args.fixtureId}:${args.teamId ?? "?"}:${
     args.elapsed ?? "?"
   }:${args.homeScore}-${args.awayScore}`;

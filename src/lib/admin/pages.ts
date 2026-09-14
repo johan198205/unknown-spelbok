@@ -32,8 +32,10 @@ const RESERVED_SLUGS = [
   "admin",
   "hem",
   "installningar",
+  "kontakt",
   "login",
   "offline",
+  "om-oss",
   "profil",
   "registrera",
   "spelbok",
@@ -41,7 +43,74 @@ const RESERVED_SLUGS = [
   "statistik",
   "tavlingar",
   "topplista",
+  // "startsida" är tillåten: redigeras i CMS, renderas på `/` (inte /startsida)
+  // om-oss / kontakt har dedikerade routes — inte CMS-[slug]
 ];
+
+const CORE_PAGES: Array<{
+  slug: string;
+  title: string;
+  content: string;
+  seo_title: string;
+  seo_description: string;
+  show_in_footer: boolean;
+}> = [
+  {
+    slug: "startsida",
+    title: "TA KONTROLL ÖVER DITT SPELANDE.",
+    content:
+      "Bokför varje spel, se din riktiga ROI och sluta gissa. Jämför dig med andra i topplistorna där bara siffrorna talar.\n\n> Rubrik och första stycket visas i hero på startsidan (`/`).",
+    seo_title: "Spelbok — ta kontroll över ditt spelande",
+    seo_description:
+      "Bokför varje spel, se din riktiga ROI och jämför dig i topplistorna.",
+    show_in_footer: false,
+  },
+  {
+    slug: "om-oss",
+    title: "Om oss",
+    content:
+      "## Vem är Spelbok?\n\nSpelbok hjälper dig att bokföra spel, följa ROI och jämföra dig med andra — utan gissningar.\n\n## Kontakt\n\nHar du frågor? Gå till [Kontakt](/kontakt).",
+    seo_title: "Om Spelbok",
+    seo_description:
+      "Läs mer om Spelbok och hur vi hjälper dig att ta kontroll över ditt spelande.",
+    show_in_footer: true,
+  },
+  {
+    slug: "kontakt",
+    title: "Kontakt",
+    content:
+      "## Hör av dig\n\nSkicka mejl till **support@spelbok.se** så återkommer vi så snart vi kan.\n\n## Ansvarsfullt spelande\n\n18+ | Spela ansvarsfullt | [Stödlinjen](https://www.stodlinjen.se) | [Spelpaus](https://www.spelpaus.se)",
+    seo_title: "Kontakta Spelbok",
+    seo_description: "Kontakta Spelbok — support och frågor om tjänsten.",
+    show_in_footer: true,
+  },
+];
+
+/**
+ * Skapar kärnsidor om de saknas. Skriver aldrig över befintligt innehåll.
+ */
+export async function ensureCorePages() {
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  for (const page of CORE_PAGES) {
+    const { data: existing } = await supabase
+      .from("pages")
+      .select("id")
+      .eq("slug", page.slug)
+      .maybeSingle();
+    if (existing) continue;
+
+    const { error } = await supabase.from("pages").insert({
+      ...page,
+      published: true,
+      author_id: profile.id,
+    });
+    if (error) {
+      console.error("ensureCorePages", page.slug, error.message);
+    }
+  }
+}
 
 async function uniqueSlug(base: string, ignoreId?: string) {
   const supabase = await createClient();
@@ -66,6 +135,7 @@ function escapeFilter(value: string) {
 
 export async function listPages(q?: string): Promise<PageListRow[]> {
   await requireAdmin();
+  await ensureCorePages();
   const supabase = await createClient();
 
   let query = supabase
@@ -160,6 +230,9 @@ export async function savePage(id: string, draft: PageDraft) {
   if (current.published) {
     revalidatePath(`/${current.slug}`);
     if (slug !== current.slug) revalidatePath(`/${slug}`);
+    if (slug === "startsida" || current.slug === "startsida") {
+      revalidatePath("/");
+    }
   }
 
   return { slug, savedAt };
@@ -190,6 +263,7 @@ export async function publishPage(id: string, published: boolean) {
 
   revalidatePath("/admin/sidor");
   revalidatePath(`/${page.slug}`);
+  if (page.slug === "startsida") revalidatePath("/");
   revalidatePath("/", "layout");
 
   return { published };

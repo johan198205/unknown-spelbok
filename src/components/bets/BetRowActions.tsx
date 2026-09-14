@@ -2,9 +2,8 @@
 
 import type { ReactNode } from "react";
 import { Copy, Trash2 } from "lucide-react";
-import { GoalNotifyButton } from "@/components/bets/GoalNotifyButton";
 import { ACTION_ICON_SIZE, type BetActionSize } from "@/lib/bet-actions-ui";
-import { canNotifyBet, canRyggaBet } from "@/lib/rygga";
+import { canRyggaBet } from "@/lib/rygga";
 import { canDeleteBet } from "@/lib/logos";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -61,7 +60,7 @@ export function BetActionIconButton({
 }
 
 /**
- * Fast ordning: Notis · Rygga · Ta bort.
+ * Fast ordning: Rygga · Ta bort.
  * Saknade ikoner renderas inte (ingen disabled-placeholder).
  */
 export function BetRowActions({
@@ -85,11 +84,10 @@ export function BetRowActions({
   size?: BetActionSize;
   hoverReveal?: boolean;
 }) {
-  const showNotify = canEdit && canNotifyBet(bet);
   const showRygga = canRygga && canRyggaBet(bet);
   const showDelete = canEdit && !!onRemove && canDeleteBet(bet);
 
-  if (!showNotify && !showRygga && !showDelete) return null;
+  if (!showRygga && !showDelete) return null;
 
   return (
     <div
@@ -103,13 +101,6 @@ export function BetRowActions({
         className
       )}
     >
-      {showNotify ? (
-        <GoalNotifyButton
-          betId={bet.id}
-          enabled={bet.notify_goals === true}
-          size={size}
-        />
-      ) : null}
       {showRygga && onRygga ? (
         <BetActionIconButton label="Rygga spel" onClick={onRygga} size={size}>
           <Copy className="size-3.5" strokeWidth={2.25} />

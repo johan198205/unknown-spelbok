@@ -39,14 +39,6 @@ export function canRyggaBet(bet: RyggaBetLike) {
   return true;
 }
 
-/** Notis-klocka: öppet spel kopplat till fixture (som tidigare). */
-export function canNotifyBet(bet: {
-  result: string;
-  fixture_id?: number | null;
-}) {
-  return bet.result === "open" && bet.fixture_id != null;
-}
-
 /** Datum för ryggat spel: matchens kickoff, annars placed_at från original. */
 export function ryggaPlacedAt(bet: RyggaPlacedAtLike) {
   const kickoff = bet.fixtures?.kickoff;

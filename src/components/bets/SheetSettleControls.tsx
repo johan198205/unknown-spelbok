@@ -29,29 +29,6 @@ function choiceTone(result: BetResult) {
   return resultTone(result);
 }
 
-/** ⚡ = kopplad till en match och rättas automatiskt. ✎ = manuellt spel. */
-export function SettleSourceIcon({ bet }: { bet: Bet }) {
-  const auto = bet.fixture_id != null;
-  return (
-    <span
-      title={
-        auto
-          ? "Kopplat till en match — rättas automatiskt"
-          : "Manuellt spel — du rättar det själv"
-      }
-      className={cn(
-        "inline-flex size-[22px] shrink-0 items-center justify-center rounded-full text-[11px]",
-        auto
-          ? "bg-[var(--blue-soft)] text-blue"
-          : "bg-panel-2 text-muted"
-      )}
-      aria-hidden
-    >
-      {auto ? "⚡" : "✎"}
-    </span>
-  );
-}
-
 export function SheetSettleControls({
   bet,
   canEdit,
@@ -114,22 +91,12 @@ export function SheetSettleControls({
         card ? "min-w-0 flex-1" : "flex-wrap gap-1"
       )}
     >
-      {/*
-        Kortet visar redan ⚡ och live-pricken i sitt sidhuvud. Upprepades de
-        här knuffade de dessutom ner rättningen på en egen rad i den smala
-        fyrkolumnsvyn — ⚡ hamnade ensam ovanför W/L/P/V.
-      */}
-      {!card ? (
-        <>
-          <SettleSourceIcon bet={bet} />
-          {live ? (
-            <span
-              className="size-1.5 shrink-0 animate-sbpulse rounded-full bg-cyan"
-              title="Matchen pågår"
-              aria-hidden
-            />
-          ) : null}
-        </>
+      {!card && live ? (
+        <span
+          className="size-1.5 shrink-0 animate-sbpulse rounded-full bg-cyan"
+          title="Matchen pågår"
+          aria-hidden
+        />
       ) : null}
       {canEdit ? (
         <span
@@ -162,8 +129,6 @@ export function SheetSettleControls({
                   "cursor-pointer border font-mono-num font-semibold transition disabled:cursor-wait",
                   card
                     ? "flex h-6 min-w-0 flex-1 items-center justify-center rounded-[6px] text-[11.5px]"
-                    // Tabellens rättningskolumn är smal: chipsen måste rymmas
-                    // på samma rad som ⚡ även vid sheet-brytpunkten.
                     : "rounded-[6px] px-[7px] py-[5px] text-[11.5px]",
                   active
                     ? `${tone.bg} ${tone.fg} ${tone.border}`
