@@ -32,7 +32,9 @@ export function BannerHtml({
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const viewLoggedRef = useRef(false);
   const clickLoggedRef = useRef(false);
-  const [height, setHeight] = useState<number | null>(null);
+  const [size, setSize] = useState<{ width: number; height: number } | null>(
+    null
+  );
 
   const srcDoc = useMemo(() => bannerHtmlDocument(html), [html]);
 
@@ -43,17 +45,21 @@ export function BannerHtml({
     clickLoggedRef.current = false;
   }, [bannerId, pathname]);
 
-  // Sandlådan saknar same-origin — höjden kommer via postMessage från snutten.
+  // Sandlådan saknar same-origin — storleken kommer via postMessage från snutten.
   useEffect(() => {
-    setHeight(null);
+    setSize(null);
 
     function onMessage(event: MessageEvent) {
       if (event.source !== frameRef.current?.contentWindow) return;
       const data = event.data;
       if (!data || data.type !== BANNER_HTML_RESIZE_TYPE) return;
-      const next = Number(data.height);
-      if (!Number.isFinite(next) || next <= 0) return;
-      setHeight(Math.ceil(next));
+      const nextH = Number(data.height);
+      const nextW = Number(data.width);
+      if (!Number.isFinite(nextH) || nextH <= 0) return;
+      setSize({
+        height: Math.ceil(nextH),
+        width: Number.isFinite(nextW) && nextW > 0 ? Math.ceil(nextW) : 0,
+      });
     }
 
     window.addEventListener("message", onMessage);
@@ -78,7 +84,7 @@ export function BannerHtml({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [bannerId, placement, pathname, height]);
+  }, [bannerId, placement, pathname, size]);
 
   // Klicket sker inuti ett dokument på annan origin — vi kan varken lyssna på
   // det eller läsa mål-URL:en. Det enda observerbara spåret är att fönstret
@@ -101,21 +107,36 @@ export function BannerHtml({
   }, [bannerId, placement, pathname]);
 
   return (
-    <iframe
-      ref={frameRef}
-      title={title}
-      srcDoc={srcDoc}
-      sandbox={BANNER_HTML_SANDBOX}
-      loading="lazy"
-      scrolling="no"
-      // Ingen fast höjd: snutten rapporterar sin naturliga storlek. Bredden
-      // följer ytans bredd så en smalare kreativ centreras i dokumentet.
-      style={height != null ? { height } : undefined}
+    <div
       className={cn(
-        "block w-full border-0 bg-transparent",
-        height == null && "min-h-[50px]",
+        "flex w-full items-center justify-center bg-transparent",
         className
       )}
-    />
+    >
+      <iframe
+        ref={frameRef}
+        title={title}
+        srcDoc={srcDoc}
+        sandbox={BANNER_HTML_SANDBOX}
+        loading="lazy"
+        scrolling="no"
+        // Krymper till snuttens mått och centreras — ingen fullbredd vit yta.
+        style={{
+          backgroundColor: "transparent",
+          colorScheme: "dark",
+          ...(size
+            ? {
+                height: size.height,
+                width: size.width > 0 ? size.width : "100%",
+                maxWidth: "100%",
+              }
+            : undefined),
+        }}
+        className={cn(
+          "block max-w-full border-0 bg-transparent",
+          size == null && "min-h-[50px] w-full"
+        )}
+      />
+    </div>
   );
 }

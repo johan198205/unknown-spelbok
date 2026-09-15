@@ -685,22 +685,28 @@ export function BannersAdmin({ items }: { items: BannerRow[] }) {
   );
 }
 
-/** Samma sandlåda och höjdrapportering som skarp BannerHtml. */
+/** Samma sandlåda och storleksrapportering som skarp BannerHtml. */
 function BannerHtmlPreview({ html }: { html: string }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
-  const [height, setHeight] = useState<number | null>(null);
+  const [size, setSize] = useState<{ width: number; height: number } | null>(
+    null
+  );
   const srcDoc = bannerHtmlDocument(html);
 
   useEffect(() => {
-    setHeight(null);
+    setSize(null);
 
     function onMessage(event: MessageEvent) {
       if (event.source !== frameRef.current?.contentWindow) return;
       const data = event.data;
       if (!data || data.type !== BANNER_HTML_RESIZE_TYPE) return;
-      const next = Number(data.height);
-      if (!Number.isFinite(next) || next <= 0) return;
-      setHeight(Math.ceil(next));
+      const nextH = Number(data.height);
+      const nextW = Number(data.width);
+      if (!Number.isFinite(nextH) || nextH <= 0) return;
+      setSize({
+        height: Math.ceil(nextH),
+        width: Number.isFinite(nextW) && nextW > 0 ? Math.ceil(nextW) : 0,
+      });
     }
 
     window.addEventListener("message", onMessage);
@@ -715,10 +721,20 @@ function BannerHtmlPreview({ html }: { html: string }) {
       srcDoc={srcDoc}
       sandbox={BANNER_HTML_SANDBOX}
       scrolling="no"
-      style={height != null ? { height } : undefined}
+      style={{
+        backgroundColor: "transparent",
+        colorScheme: "dark",
+        ...(size
+          ? {
+              height: size.height,
+              width: size.width > 0 ? size.width : "100%",
+              maxWidth: "100%",
+            }
+          : undefined),
+      }}
       className={cn(
-        "block w-full border-0 bg-transparent",
-        height == null && "min-h-[50px]"
+        "block max-w-full border-0 bg-transparent",
+        size == null && "min-h-[50px] w-full"
       )}
     />
   );

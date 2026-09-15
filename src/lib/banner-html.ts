@@ -17,15 +17,15 @@
 export const BANNER_HTML_SANDBOX =
   "allow-scripts allow-popups allow-popups-to-escape-sandbox";
 
-/** postMessage-typ från sandlådan när snutten rapporterar sin naturliga höjd. */
+/** postMessage-typ från sandlådan när snutten rapporterar sin naturliga storlek. */
 export const BANNER_HTML_RESIZE_TYPE = "spelbok-banner-resize";
 
 /**
  * Snutten körs i ett eget dokument. `<base target="_blank">` gör att alla
  * länkar öppnas i ny flik i stället för att träffa toppnavigeringsspärren och
- * tyst dö. Höjden rapporteras till föräldern via postMessage — sandlådan har
- * ingen same-origin, så föräldern kan inte mäta innehållet själv. Bredden
- * begränsas till ytans bredd; höjden följer snutten (ingen fast 90/100 px).
+ * tyst dö. Storleken rapporteras till föräldern via postMessage — sandlådan har
+ * ingen same-origin, så föräldern kan inte mäta innehållet själv. Iframen
+ * krymper till snuttens mått och centreras i ytan så ingen vit ram syns runt.
  */
 export function bannerHtmlDocument(html: string) {
   return `<!doctype html>
@@ -33,11 +33,12 @@ export function bannerHtmlDocument(html: string) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
 <base target="_blank">
 <style>
-html,body{margin:0;padding:0;background:transparent;}
+html,body{margin:0;padding:0;width:max-content;max-width:100%;background:transparent!important;background-color:transparent!important;color-scheme:dark;}
 body{display:flex;align-items:center;justify-content:center;overflow:hidden;}
-img,iframe,video,ins,object,embed{max-width:100%;height:auto;border:0;display:block;}
+img,iframe,video,ins,object,embed{max-width:100%;height:auto;border:0;display:block;background:transparent;}
 a{display:block;max-width:100%;}
 </style>
 </head>
@@ -45,26 +46,34 @@ a{display:block;max-width:100%;}
 <script>
 (function(){
   function measure(){
-    var b=document.body,e=document.documentElement;
-    var h=Math.max(
-      b?b.scrollHeight:0,b?b.offsetHeight:0,
-      e?e.scrollHeight:0,e?e.offsetHeight:0
-    );
+    var b=document.body;
+    var h=0,w=0;
+    // Mät barnen — inte body/html — så en centrerad 728×90 inte
+    // rapporteras som ytans fulla bredd (då syns den vita iframeramen).
     if(b){
       var nodes=b.children;
       for(var i=0;i<nodes.length;i++){
         var el=nodes[i];
         if(!el||el.tagName==="SCRIPT")continue;
         var r=el.getBoundingClientRect();
-        h=Math.max(h,Math.ceil(r.bottom+window.scrollY));
+        h=Math.max(h,Math.ceil(r.height));
+        w=Math.max(w,Math.ceil(r.width));
       }
+      if(!h)h=Math.max(b.scrollHeight||0,b.offsetHeight||0);
+      if(!w)w=Math.max(b.scrollWidth||0,b.offsetWidth||0);
     }
-    return h;
+    return {height:h,width:w};
   }
   function report(){
     try{
-      var h=measure();
-      if(h>0)parent.postMessage({type:${JSON.stringify(BANNER_HTML_RESIZE_TYPE)},height:h},"*");
+      var m=measure();
+      if(m.height>0||m.width>0){
+        parent.postMessage({
+          type:${JSON.stringify(BANNER_HTML_RESIZE_TYPE)},
+          height:m.height,
+          width:m.width
+        },"*");
+      }
     }catch(err){}
   }
   report();

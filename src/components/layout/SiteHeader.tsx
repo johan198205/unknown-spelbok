@@ -173,7 +173,11 @@ export async function SiteFooter() {
               Spelbok
             </span>
             {navPages.map((p) => (
-              <Link key={p.slug} href={`/${p.slug}`}>
+              <Link
+                key={p.slug}
+                href={`/${p.slug}`}
+                className="text-text hover:text-text"
+              >
                 {p.title}
               </Link>
             ))}
@@ -191,11 +195,11 @@ export async function SiteFooter() {
                 Spela ansvarsfullt
               </span>
             </div>
-            {/* Mockup: footer-länkar är vanliga a → #4C8DFF */}
             <a
               href="https://www.stodlinjen.se"
               target="_blank"
               rel="noopener noreferrer"
+              className="text-text hover:text-text"
             >
               Stödlinjen — stöd vid spelproblem
             </a>
@@ -203,6 +207,7 @@ export async function SiteFooter() {
               href="https://www.spelpaus.se"
               target="_blank"
               rel="noopener noreferrer"
+              className="text-text hover:text-text"
             >
               Spelpaus — stäng av dig från spel
             </a>
