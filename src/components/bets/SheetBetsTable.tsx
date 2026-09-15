@@ -29,28 +29,27 @@ type Column = {
 /*
   Bredderna är räknade mot den SMALASTE tabellen (sheet-brytpunkten, ~1140px)
   så att inget innehåll behöver brytas till en andra rad där: datumet ska stå
-  på en rad, rättningens lås + W/L/P/V ska rymmas, och ikonerna ska
-  rymmas bredvid varandra i sin egen kolumn.
+  på en rad, liganamnet ska synas i sin helhet, rättningens lås + W/L/P/V ska
+  rymmas, och ikonerna ska rymmas bredvid varandra i sin egen kolumn.
 
-  Matchkolumnen är den enda som bär långa lagnamn och får därför allt som blir
-  över. Kolumner med känt kort innehåll (datum, spelnamn) är nedskurna till
-  vad de faktiskt behöver i stället för att sitta på marginal.
+  Ligakolumnen tar det den behöver för logga + fullt namn. Matchkolumnen får
+  resten. Rättning och netto sitter till höger med tätare marginal mellan sig.
 */
 const COLUMNS: Column[] = [
-  { key: "date", label: "Datum", width: "w-[8%]" },
-  { key: "match", label: "Match", width: "w-[22%] max-sheet-wide:w-[24%]" },
-  { key: "league", label: "Liga", width: "w-[8%] max-sheet-wide:w-[5%]" },
-  { key: "pick", label: "Spel", width: "w-[9%]" },
-  { key: "bookmaker", label: "Bolag", width: "w-[8%]" },
-  { key: "stake", label: "Insats", width: "w-[7%]", align: "right" },
+  { key: "date", label: "Datum", width: "w-[7%]" },
+  { key: "match", label: "Match", width: "w-[18%]" },
+  { key: "league", label: "Liga", width: "w-[15%]" },
+  { key: "pick", label: "Spel", width: "w-[10%]" },
+  { key: "bookmaker", label: "Bolag", width: "w-[7%]" },
+  { key: "stake", label: "Insats", width: "w-[6%]", align: "right" },
   { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
-  { key: "result", label: "Rättning", width: "w-[14%]" },
+  { key: "result", label: "Rättning", width: "w-[13%]", align: "right" },
   /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
-  { key: "netto", label: "Netto", width: "w-[10%]", align: "right" },
+  { key: "netto", label: "Netto", width: "w-[11%]", align: "right" },
   {
     key: "actions",
     label: "Åtgärder",
-    width: "w-[9%]",
+    width: "w-[8%]",
     align: "right",
     sortable: false,
   },
@@ -69,7 +68,7 @@ function DateCell({ iso }: { iso: string }) {
 export function LeagueCell({ bet }: { bet: Bet }) {
   if (!bet.league) return <span className="text-faint">—</span>;
   return (
-    <span className="flex min-w-0 items-center gap-2" title={bet.league}>
+    <span className="flex items-center gap-2.5" title={bet.league}>
       <span className="inline-flex size-[28px] shrink-0 items-center justify-center rounded-[8px] bg-[rgba(230,234,242,0.07)] p-[3px]">
         <LeagueLogo
           src={betLeagueLogo(bet)}
@@ -79,7 +78,7 @@ export function LeagueCell({ bet }: { bet: Bet }) {
           size={22}
         />
       </span>
-      <span className="min-w-0 truncate text-[15px] max-sheet-wide:hidden">
+      <span className="whitespace-nowrap text-[15px] leading-snug">
         {bet.league}
       </span>
     </span>
@@ -180,7 +179,7 @@ export function SheetBetsTable({
               <th
                 key={col.key}
                 className={cn(
-                  "sticky top-0 z-10 border-b border-line bg-bg-soft px-2.5 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.11em] text-muted",
+                  "sticky top-0 z-10 border-b border-line bg-bg-soft px-3.5 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.11em] text-muted",
                   col.align === "right" ? "text-right" : "text-left"
                 )}
               >
@@ -215,39 +214,41 @@ export function SheetBetsTable({
                   bet.id === highlightBetId && "animate-sbrowpulse"
                 )}
               >
-                <td className="px-2.5 py-3 align-middle">
+                <td className="px-3.5 py-3 align-middle">
                   <DateCell iso={betDisplayDate(bet)} />
                 </td>
-                <td className="px-2.5 py-3 align-middle">
+                <td className="px-3.5 py-3 align-middle">
                   <SheetMatchCell bet={bet} density={density} />
                 </td>
-                <td className="px-2.5 py-3 align-middle">
+                <td className="px-3.5 py-3 align-middle">
                   <LeagueCell bet={bet} />
                 </td>
-                <td className="px-2.5 py-3 align-middle font-bold">
+                <td className="px-3.5 py-3 align-middle font-bold">
                   <span className="block min-w-0">{formatPick(bet.pick)}</span>
                 </td>
-                <td className="px-2.5 py-3 align-middle">
+                <td className="px-3.5 py-3 align-middle">
                   <BookmakerPlate bet={bet} />
                 </td>
-                <td className="px-2.5 py-3 text-right align-middle font-mono-num">
+                <td className="px-3.5 py-3 text-right align-middle font-mono-num">
                   {Number(bet.stake).toLocaleString("sv-SE")}
                 </td>
-                <td className="px-2.5 py-3 text-right align-middle font-mono-num font-semibold">
+                <td className="px-3.5 py-3 text-right align-middle font-mono-num font-semibold">
                   {formatOdds(Number(bet.odds))}
                 </td>
-                <td className="px-2.5 py-3 align-middle">
-                  <SheetSettleControls bet={bet} canEdit={canEdit} />
+                <td className="px-3.5 py-3 text-right align-middle">
+                  <span className="inline-flex justify-end">
+                    <SheetSettleControls bet={bet} canEdit={canEdit} />
+                  </span>
                 </td>
                 <td
                   className={cn(
-                    "whitespace-nowrap px-2.5 py-3 text-right align-middle font-mono-num font-semibold",
+                    "whitespace-nowrap px-3.5 py-3 text-right align-middle font-mono-num font-semibold",
                     bet.result === "open" ? "text-muted" : nettoColor(netto)
                   )}
                 >
                   {bet.result === "open" ? "—" : amount(netto)}
                 </td>
-                <td className="px-2 py-3 align-middle">
+                <td className="px-2.5 py-3 align-middle">
                   <BetRowActions
                     bet={bet}
                     canEdit={canEdit}

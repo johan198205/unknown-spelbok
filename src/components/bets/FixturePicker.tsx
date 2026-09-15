@@ -33,47 +33,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
-const RECENT_LEAGUES_LEGACY_KEY = "spelbok:recent-leagues";
-const RECENT_LEAGUES_MAX = 8;
-
-function recentLeaguesStorageKey(userId: string | null) {
-  return userId
-    ? `${RECENT_LEAGUES_LEGACY_KEY}:${userId}`
-    : RECENT_LEAGUES_LEGACY_KEY;
-}
-
-function readRecentLeagueKeys(userId: string | null): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const scoped = localStorage.getItem(recentLeaguesStorageKey(userId));
-    if (scoped) return JSON.parse(scoped) as string[];
-    // Migrera o-scopad lista till profilnyckeln första gången.
-    if (userId) {
-      const legacy = localStorage.getItem(RECENT_LEAGUES_LEGACY_KEY);
-      if (legacy) {
-        const keys = JSON.parse(legacy) as string[];
-        writeRecentLeagueKeys(userId, keys);
-        return keys;
-      }
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-function writeRecentLeagueKeys(userId: string | null, keys: string[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(
-      recentLeaguesStorageKey(userId),
-      JSON.stringify(keys.slice(0, RECENT_LEAGUES_MAX))
-    );
-  } catch {
-    /* ignore */
-  }
-}
-
 type Coverage = { from: string; to: string };
 
 export type PickerFixture = Fixture & {
@@ -102,6 +61,51 @@ type LeagueGroup = {
 
 /** Vald liga lever kvar över datumbyten, även dagar utan matcher i ligan */
 type LeagueSelection = Omit<LeagueGroup, "rows">;
+
+type PlayedLeague = LeagueSelection & { count: number };
+
+function leagueSelectionKey(leagueId: number | null, name: string) {
+  return leagueId != null ? `id:${leagueId}` : `name:${name.toLowerCase()}`;
+}
+
+/** Aggregerar bokförda spel → ligor sorterade efter flest spel. */
+function aggregatePlayedLeagues(
+  rows: {
+    league: string | null;
+    league_id: number | null;
+    league_logo: string | null;
+    sport: string | null;
+  }[]
+): PlayedLeague[] {
+  const map = new Map<string, PlayedLeague>();
+  for (const row of rows) {
+    const name = (row.league || "").trim();
+    if (!name) continue;
+    const key = leagueSelectionKey(row.league_id, name);
+    const existing = map.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (!existing.logo && row.league_logo) existing.logo = row.league_logo;
+      if (existing.leagueId == null && row.league_id != null) {
+        existing.leagueId = row.league_id;
+      }
+      if (!existing.sport && row.sport) existing.sport = row.sport;
+    } else {
+      map.set(key, {
+        key,
+        name,
+        logo: row.league_logo ?? null,
+        leagueId: row.league_id ?? null,
+        sport: row.sport ?? null,
+        country: null,
+        count: 1,
+      });
+    }
+  }
+  return [...map.values()].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name, "sv")
+  );
+}
 
 function formatRange(from: string, to: string) {
   const fmt = (ymd: string) => {
@@ -467,8 +471,7 @@ export function FixturePicker({
   const [loading, setLoading] = useState(false);
   const [filling, setFilling] = useState(false);
   const [planLimited, setPlanLimited] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [recentKeys, setRecentKeys] = useState<string[]>([]);
+  const [playedLeagues, setPlayedLeagues] = useState<PlayedLeague[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -478,14 +481,22 @@ export function FixturePicker({
         data: { user },
       } = await supabase.auth.getUser();
       if (cancelled) return;
-      const id = user?.id ?? null;
-      setUserId(id);
-      setRecentKeys(readRecentLeagueKeys(id));
+      if (!user?.id) {
+        setPlayedLeagues([]);
+        return;
+      }
+      const { data } = await supabase
+        .from("bets")
+        .select("league, league_id, league_logo, sport")
+        .eq("user_id", user.id)
+        .not("league", "is", null);
+      if (cancelled) return;
+      setPlayedLeagues(aggregatePlayedLeagues(data ?? []));
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [active]);
 
   function pickSport(next: string) {
     setSport(next);
@@ -640,18 +651,44 @@ export function FixturePicker({
     const sticky =
       league && !byLeague.some((g) => g.key === league.key) ? league : null;
     const available = sticky ? [sticky, ...byLeague] : byLeague;
+    const availableByKey = new Map(available.map((g) => [g.key, g]));
 
+    const sportSlug = sportLabelToSlug(sport);
     const popular: LeagueSelection[] = [];
-    for (const key of recentKeys) {
-      const match = available.find((g) => g.key === key);
-      if (match) popular.push(match);
+    const popularKeys = new Set<string>();
+    for (const played of playedLeagues) {
+      if (
+        played.sport &&
+        sportLabelToSlug(played.sport) !== sportSlug
+      ) {
+        continue;
+      }
+      const fromDay =
+        availableByKey.get(played.key) ??
+        available.find(
+          (g) =>
+            (played.leagueId != null && g.leagueId === played.leagueId) ||
+            g.name.toLowerCase() === played.name.toLowerCase()
+        );
+      const entry: LeagueSelection = fromDay
+        ? fromDay
+        : {
+            key: played.key,
+            name: played.name,
+            logo: played.logo,
+            leagueId: played.leagueId,
+            sport: played.sport,
+            country: played.country,
+          };
+      if (popularKeys.has(entry.key)) continue;
+      popularKeys.add(entry.key);
+      popular.push(entry);
     }
 
-    const popularKeys = new Set(popular.map((g) => g.key));
     const rest = available
       .filter((g) => !popularKeys.has(g.key))
       .sort((a, b) =>
-        compareLeaguesByPriority(sportLabelToSlug(sport), a, b)
+        compareLeaguesByPriority(sportSlug, a, b)
       );
 
     const groups: DropdownGroup[] = [
@@ -673,7 +710,7 @@ export function FixturePicker({
       });
     }
     return groups;
-  }, [byLeague, league, recentKeys, sport]);
+  }, [byLeague, league, playedLeagues, sport]);
 
   const visibleGroups = useMemo((): LeagueGroup[] => {
     if (league) return selectedLeague ? [selectedLeague] : [];
@@ -751,8 +788,24 @@ export function FixturePicker({
                 clearLeagueFilter();
                 return;
               }
+              const fromPlayed = playedLeagues.find(
+                (p) =>
+                  p.key === next ||
+                  (p.leagueId != null && next === `id:${p.leagueId}`) ||
+                  next === `name:${p.name.toLowerCase()}`
+              );
               const group =
                 byLeague.find((g) => g.key === next) ??
+                (fromPlayed
+                  ? {
+                      key: fromPlayed.key,
+                      name: fromPlayed.name,
+                      logo: fromPlayed.logo,
+                      leagueId: fromPlayed.leagueId,
+                      sport: fromPlayed.sport,
+                      country: fromPlayed.country,
+                    }
+                  : null) ??
                 (league?.key === next ? league : null);
               if (!group) return;
               setLeague({
@@ -763,12 +816,6 @@ export function FixturePicker({
                 sport: group.sport,
                 country: group.country,
               });
-              const updated = [
-                group.key,
-                ...recentKeys.filter((k) => k !== group.key),
-              ].slice(0, RECENT_LEAGUES_MAX);
-              setRecentKeys(updated);
-              writeRecentLeagueKeys(userId, updated);
               onMetaChange?.({
                 sport: group.sport || sport,
                 league: group.name,

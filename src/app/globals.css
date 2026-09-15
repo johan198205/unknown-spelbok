@@ -202,8 +202,8 @@
   tabell och kort ritades samtidigt. Registrerade brytpunkter sorteras på
   sitt värde och hamnar rätt mellan lg och xl.
 
-  sheet      = 1180px, där nio kolumner får plats
-  sheet-wide = 1320px, där liganamnet får plats bredvid loggan
+  sheet      = 1180px, där nio kolumner får plats (inkl. fullt liganamn)
+  sheet-wide = 1320px, extra andrum i spelbokslayouten
   notif      = 520px, under den tar notispanelen full bredd
 */
 @theme {

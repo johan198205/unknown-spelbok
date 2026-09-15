@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AttachNewBet } from "@/components/planket/AttachNewBet";
 import { LeagueCrest } from "@/components/planket/Bits";
 import { formatPick } from "@/lib/picks";
 import {
@@ -9,35 +10,42 @@ import {
 } from "@/lib/planket-actions";
 import { planketKickoff, planketKr, planketOdds } from "@/lib/planket";
 import type { AttachableBet, AttachableCoupon } from "@/lib/planket-server";
+import type { Bookmaker, Sheet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export type Attachment =
   | { type: "bet"; bet: AttachableBet }
   | { type: "coupon"; coupon: AttachableCoupon };
 
+type BetSource = "book" | "new";
+
 /**
  * Bifoga-väljaren.
  *
- * Spel: användarens senaste 20 ur ALLA egna spelböcker, sökbar på lag och
- * marknad. Ett spel som redan ligger i ett levande inlägg markeras "Postad"
- * och går inte att välja igen — samma regel som det unika indexet
- * posts_bet_uidx, fast synlig.
+ * Spel: antingen ett befintligt spel ur spelboken, eller ett nytt spel via
+ * samma matchkaskad som när man lägger upp i boken. Ett spel som redan ligger
+ * i ett levande inlägg markeras "Postad" och går inte att välja igen.
  *
  * Kommer spelet ur en privat spelbok får raden den gula noten: det spelet
  * blir synligt, resten av boken förblir privat.
  */
 export function AttachPicker({
   mode,
+  sheets = [],
+  bookmakers = [],
   onPick,
   onClose,
 }: {
   mode: "bet" | "coupon";
+  sheets?: Sheet[];
+  bookmakers?: Bookmaker[];
   onPick: (attachment: Attachment) => void;
   onClose: () => void;
 }) {
   const [bets, setBets] = useState<AttachableBet[] | null>(null);
   const [coupons, setCoupons] = useState<AttachableCoupon[] | null>(null);
   const [query, setQuery] = useState("");
+  const [betSource, setBetSource] = useState<BetSource>("book");
 
   useEffect(() => {
     let alive = true;
@@ -81,42 +89,96 @@ export function AttachPicker({
     return coupons.filter((c) => c.title.toLowerCase().includes(needle));
   }, [coupons, needle]);
 
-  const loading = mode === "bet" ? visibleBets === null : visibleCoupons === null;
+  const showBookList = mode === "coupon" || betSource === "book";
+  const loading =
+    showBookList &&
+    (mode === "bet" ? visibleBets === null : visibleCoupons === null);
   const empty =
-    mode === "bet" ? visibleBets?.length === 0 : visibleCoupons?.length === 0;
+    showBookList &&
+    (mode === "bet" ? visibleBets?.length === 0 : visibleCoupons?.length === 0);
 
   return (
     <div className="mt-3 overflow-hidden rounded-[11px] border border-line-strong bg-[#0F1420]">
-      <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
-        <input
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={
-            mode === "bet" ? "Sök lag eller marknad…" : "Sök kupong…"
-          }
-          className="min-w-0 flex-1 border-none bg-transparent text-[14px] text-text outline-none"
-        />
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Stäng väljaren"
-          className="shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#1B2233] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
-        >
-          ×
-        </button>
-      </div>
+      {mode === "bet" ? (
+        <div className="flex gap-1 border-b border-line px-2 pt-2">
+          <SourceTab
+            active={betSource === "book"}
+            label="Från spelboken"
+            onClick={() => setBetSource("book")}
+          />
+          <SourceTab
+            active={betSource === "new"}
+            label="Nytt spel"
+            onClick={() => setBetSource("new")}
+          />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Stäng väljaren"
+            className="ml-auto mb-1.5 shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#1B2233] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
 
-      <div className="max-h-[280px] overflow-y-auto sb-scroll">
-        {loading ? (
+      {showBookList ? (
+        <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={
+              mode === "bet" ? "Sök lag eller marknad…" : "Sök kupong…"
+            }
+            className="min-w-0 flex-1 border-none bg-transparent text-[14px] text-text outline-none"
+          />
+          {mode === "coupon" ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Stäng väljaren"
+              className="shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#1B2233] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div
+        className={cn(
+          betSource === "new" && mode === "bet"
+            ? "overflow-visible"
+            : "max-h-[280px] overflow-y-auto sb-scroll"
+        )}
+      >
+        {mode === "bet" && betSource === "new" ? (
+          <AttachNewBet
+            sheets={sheets}
+            bookmakers={bookmakers}
+            onPick={(bet) => onPick({ type: "bet", bet })}
+          />
+        ) : loading ? (
           <div className="px-3 py-6 text-center text-[13.5px] text-[#5D6883]">
             Hämtar…
           </div>
         ) : empty ? (
           <div className="px-3 py-6 text-center text-[13.5px] text-[#5D6883]">
-            {mode === "bet"
-              ? "Inga spel att bifoga. Lägg ett spel i spelboken först."
-              : "Inga öppna kuponger just nu."}
+            {mode === "bet" ? (
+              <>
+                Inga spel i spelboken att bifoga.{" "}
+                <button
+                  type="button"
+                  onClick={() => setBetSource("new")}
+                  className="cursor-pointer font-semibold text-cyan hover:underline"
+                >
+                  Skapa ett nytt spel
+                </button>
+              </>
+            ) : (
+              "Inga öppna kuponger just nu."
+            )}
           </div>
         ) : mode === "bet" ? (
           visibleBets!.map((bet) => (
@@ -129,6 +191,31 @@ export function AttachPicker({
         )}
       </div>
     </div>
+  );
+}
+
+function SourceTab({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "cursor-pointer border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors",
+        active
+          ? "border-win text-win"
+          : "border-transparent text-[#8A94AB] hover:text-text"
+      )}
+    >
+      {label}
+    </button>
   );
 }
 

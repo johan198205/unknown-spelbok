@@ -4,15 +4,12 @@ import { BetRowActions } from "@/components/bets/BetRowActions";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { SheetLockIcon } from "@/components/bets/LoggedBeforeKickoff";
 import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
-import {
-  SheetMatchCell,
-  betMatchSides,
-} from "@/components/bets/SheetMatchCell";
+import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
 import { useAmount } from "@/components/DisplayPrefsProvider";
 import { formatKickoffTime } from "@/lib/live-fixture";
 import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
-import { formatPick, pickHint } from "@/lib/picks";
+import { formatPick } from "@/lib/picks";
 import type { SheetDensity } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
 import {
@@ -57,8 +54,6 @@ export function SheetBetCards({
         const kickoffIso = betDisplayDate(bet);
         const kickoff = new Date(kickoffIso);
         const time = formatKickoffTime(kickoffIso);
-        const sides = betMatchSides(bet);
-        const hint = pickHint(bet.pick, sides.home.name, sides.away.name);
         const pick = formatPick(bet.pick);
         const settled = bet.result !== "open";
         const netto = betNetto(bet);
@@ -139,15 +134,8 @@ export function SheetBetCards({
                 <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
                   Spel
                 </div>
-                <div className="flex min-w-0 items-baseline gap-2">
-                  <span className="shrink-0 whitespace-nowrap text-[16px] font-bold">
-                    {pick}
-                  </span>
-                  {hint ? (
-                    <span className="min-w-0 truncate text-[13px] text-[#8A94AB]">
-                      {hint}
-                    </span>
-                  ) : null}
+                <div className="whitespace-nowrap text-[16px] font-bold">
+                  {pick}
                 </div>
               </div>
               <div className="w-[84px] shrink-0 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5 text-right">

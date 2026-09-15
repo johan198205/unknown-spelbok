@@ -16,6 +16,7 @@ import {
   planketKr,
   planketOdds,
 } from "@/lib/planket";
+import type { Bookmaker, Sheet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,9 +49,13 @@ function AttachIcon({ color }: { color: string }) {
 
 export function PlanketComposer({
   username,
+  sheets,
+  bookmakers,
   onPosted,
 }: {
   username: string;
+  sheets: Sheet[];
+  bookmakers: Bookmaker[];
   onPosted: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -166,6 +171,8 @@ export function PlanketComposer({
         <div className="hidden lg:block">
           <ComposerCard
             username={username}
+            sheets={sheets}
+            bookmakers={bookmakers}
             body={body}
             setBody={setBody}
             attachment={attachment}
@@ -191,6 +198,8 @@ export function PlanketComposer({
   return (
     <ComposerCard
       username={username}
+      sheets={sheets}
+      bookmakers={bookmakers}
       body={body}
       setBody={setBody}
       attachment={attachment}
@@ -213,6 +222,8 @@ export function PlanketComposer({
 
 function ComposerCard({
   username,
+  sheets,
+  bookmakers,
   body,
   setBody,
   attachment,
@@ -231,6 +242,8 @@ function ComposerCard({
   onSubmit,
 }: {
   username: string;
+  sheets: Sheet[];
+  bookmakers: Bookmaker[];
   body: string;
   setBody: (value: string) => void;
   attachment: Attachment | null;
@@ -301,6 +314,8 @@ function ComposerCard({
           {picker ? (
             <AttachPicker
               mode={picker}
+              sheets={sheets}
+              bookmakers={bookmakers}
               onClose={() => setPicker(null)}
               onPick={(next) => {
                 setAttachment(next);

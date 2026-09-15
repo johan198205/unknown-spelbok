@@ -6,7 +6,7 @@ import { ResponsibleBox } from "@/components/planket/ResponsibleBox";
 import { getProfile } from "@/lib/auth";
 import { fetchPlanketPage } from "@/lib/planket-server";
 import { createClient } from "@/lib/supabase/server";
-import type { Sheet } from "@/lib/types";
+import type { Bookmaker, Sheet } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Planket",
@@ -22,7 +22,7 @@ export default async function PlanketPage() {
   const profile = await getProfile();
   const supabase = await createClient();
 
-  const [page, sheetRows] = await Promise.all([
+  const [page, sheetRows, bookRows] = await Promise.all([
     fetchPlanketPage(),
     profile
       ? supabase
@@ -31,9 +31,18 @@ export default async function PlanketPage() {
           .eq("user_id", profile.id)
           .order("created_at", { ascending: true })
       : Promise.resolve({ data: [] as Sheet[] }),
+    profile
+      ? supabase
+          .from("bookmakers")
+          .select("*")
+          .eq("active", true)
+          .order("rank")
+          .order("name")
+      : Promise.resolve({ data: [] as Bookmaker[] }),
   ]);
 
   const sheets = (sheetRows.data ?? []) as Sheet[];
+  const bookmakers = (bookRows.data ?? []) as Bookmaker[];
 
   return (
     <>
@@ -69,6 +78,7 @@ export default async function PlanketPage() {
             initialHasMore={page.hasMore}
             username={profile?.username ?? null}
             sheets={sheets}
+            bookmakers={bookmakers}
             isAuthenticated={!!profile}
             /*
               Ansvarsrutan är alltid synlig, aldrig bakom en flik. Under

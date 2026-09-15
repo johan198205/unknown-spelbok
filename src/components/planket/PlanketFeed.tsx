@@ -15,7 +15,7 @@ import {
   type PlanketFilter,
   type PlanketPost,
 } from "@/lib/planket";
-import type { Sheet } from "@/lib/types";
+import type { Bookmaker, Sheet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** Så ofta flödet frågar efter nya inlägg. */
@@ -27,6 +27,7 @@ export function PlanketFeed({
   initialHasMore,
   username,
   sheets,
+  bookmakers,
   isAuthenticated,
   footer,
 }: {
@@ -35,6 +36,7 @@ export function PlanketFeed({
   initialHasMore: boolean;
   username: string | null;
   sheets: Sheet[];
+  bookmakers: Bookmaker[];
   isAuthenticated: boolean;
   /** Ansvarsrutan på mobil — ligger sist i flödet, inte i en sidokolumn. */
   footer?: React.ReactNode;
@@ -142,7 +144,12 @@ export function PlanketFeed({
     <>
       <div className="flex flex-col gap-3 lg:gap-[14px]">
         {isAuthenticated && username ? (
-          <PlanketComposer username={username} onPosted={() => void afterPost()} />
+          <PlanketComposer
+            username={username}
+            sheets={sheets}
+            bookmakers={bookmakers}
+            onPosted={() => void afterPost()}
+          />
         ) : (
           <div className="rounded-[14px] border border-line bg-[#151B2B] p-4 text-[14.5px] text-[#C3CBDB]">
             <Link href="/registrera" className="font-semibold text-win">
