@@ -21,6 +21,13 @@ export const BANNER_HTML_SANDBOX =
 export const BANNER_HTML_RESIZE_TYPE = "spelbok-banner-resize";
 
 /**
+ * Samma som `--bg` i globals.css. Iframe-dokumentet ärver inte CSS-variabler
+ * från föräldern, och webbläsare målar ofta iframer vita trots transparent —
+ * därför speglar vi sidans bakgrund explicit.
+ */
+export const BANNER_HTML_PAGE_BG = "#0b0e14";
+
+/**
  * Snutten körs i ett eget dokument. `<base target="_blank">` gör att alla
  * länkar öppnas i ny flik i stället för att träffa toppnavigeringsspärren och
  * tyst dö. Storleken rapporteras till föräldern via postMessage — sandlådan har
@@ -36,31 +43,57 @@ export function bannerHtmlDocument(html: string) {
 <meta name="color-scheme" content="dark">
 <base target="_blank">
 <style>
-html,body{margin:0;padding:0;width:max-content;max-width:100%;background:transparent!important;background-color:transparent!important;color-scheme:dark;}
-body{display:flex;align-items:center;justify-content:center;overflow:hidden;}
-img,iframe,video,ins,object,embed{max-width:100%;height:auto;border:0;display:block;background:transparent;}
-a{display:block;max-width:100%;}
+html,body{
+  margin:0;padding:0;
+  width:max-content;max-width:100%;
+  background:${BANNER_HTML_PAGE_BG}!important;
+  background-color:${BANNER_HTML_PAGE_BG}!important;
+  color-scheme:dark;
+}
+body{display:block;overflow:hidden;line-height:0;font-size:0;}
+/* Affiliatesnuttar lägger ofta vit bakgrund på yttersta wrappen. */
+body>*:not(script){background-color:transparent!important;}
+img,iframe,video,ins,object,embed{
+  max-width:100%;height:auto;border:0;display:block;
+  background:transparent;vertical-align:top;
+}
+a{display:block;max-width:100%;line-height:0;}
 </style>
 </head>
 <body>${html}
 <script>
 (function(){
+  function sizeOf(el){
+    if(!el||el.tagName==="SCRIPT")return null;
+    var r=el.getBoundingClientRect();
+    var h=Math.ceil(r.height);
+    var w=Math.ceil(r.width);
+    // Hoppa över trackingpixlar och osynliga noder.
+    if(h<2||w<2)return null;
+    return {height:h,width:w};
+  }
   function measure(){
-    var b=document.body;
     var h=0,w=0;
-    // Mät barnen — inte body/html — så en centrerad 728×90 inte
-    // rapporteras som ytans fulla bredd (då syns den vita iframeramen).
-    if(b){
-      var nodes=b.children;
-      for(var i=0;i<nodes.length;i++){
-        var el=nodes[i];
-        if(!el||el.tagName==="SCRIPT")continue;
-        var r=el.getBoundingClientRect();
-        h=Math.max(h,Math.ceil(r.height));
-        w=Math.max(w,Math.ceil(r.width));
+    // Föredra media — annars blir höjden ofta wrappens vita padding.
+    var media=document.querySelectorAll("img,iframe,canvas,video,object,embed");
+    for(var i=0;i<media.length;i++){
+      var m=sizeOf(media[i]);
+      if(!m)continue;
+      h=Math.max(h,m.height);
+      w=Math.max(w,m.width);
+    }
+    if(!h||!w){
+      var nodes=document.body?document.body.children:[];
+      for(var j=0;j<nodes.length;j++){
+        var c=sizeOf(nodes[j]);
+        if(!c)continue;
+        h=Math.max(h,c.height);
+        w=Math.max(w,c.width);
       }
-      if(!h)h=Math.max(b.scrollHeight||0,b.offsetHeight||0);
-      if(!w)w=Math.max(b.scrollWidth||0,b.offsetWidth||0);
+    }
+    if((!h||!w)&&document.body){
+      h=Math.max(h,document.body.scrollHeight||0,document.body.offsetHeight||0);
+      w=Math.max(w,document.body.scrollWidth||0,document.body.offsetWidth||0);
     }
     return {height:h,width:w};
   }
@@ -79,13 +112,13 @@ a{display:block;max-width:100%;}
   report();
   window.addEventListener("load",report);
   window.addEventListener("resize",report);
-  if(typeof ResizeObserver!=="undefined"){
+  if(typeof ResizeObserver!=="undefined"&&document.body){
     var ro=new ResizeObserver(report);
     ro.observe(document.body);
     if(document.documentElement)ro.observe(document.documentElement);
   }
   document.addEventListener("load",report,true);
-  [100,300,800,2000].forEach(function(ms){setTimeout(report,ms);});
+  [50,100,300,800,2000].forEach(function(ms){setTimeout(report,ms);});
 })();
 </script>
 </body>

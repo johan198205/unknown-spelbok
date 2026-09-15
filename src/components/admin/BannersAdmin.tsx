@@ -14,6 +14,7 @@ import {
   type BannerRow,
 } from "@/lib/admin/banners";
 import {
+  BANNER_HTML_PAGE_BG,
   BANNER_HTML_RESIZE_TYPE,
   BANNER_HTML_SANDBOX,
   bannerHtmlDocument,
@@ -713,29 +714,41 @@ function BannerHtmlPreview({ html }: { html: string }) {
     return () => window.removeEventListener("message", onMessage);
   }, [html]);
 
+  const frameWidth = size ? (size.width > 0 ? size.width : "100%") : 0;
+  const frameHeight = size?.height ?? 0;
+
   return (
-    <iframe
-      ref={frameRef}
-      key={html}
-      title="Förhandsvisning"
-      srcDoc={srcDoc}
-      sandbox={BANNER_HTML_SANDBOX}
-      scrolling="no"
+    <div
+      className="relative max-w-full overflow-hidden"
       style={{
-        backgroundColor: "transparent",
-        colorScheme: "dark",
-        ...(size
-          ? {
-              height: size.height,
-              width: size.width > 0 ? size.width : "100%",
-              maxWidth: "100%",
-            }
-          : undefined),
+        width: frameWidth,
+        height: frameHeight,
+        maxWidth: "100%",
+        backgroundColor: BANNER_HTML_PAGE_BG,
+        lineHeight: 0,
       }}
-      className={cn(
-        "block max-w-full border-0 bg-transparent",
-        size == null && "min-h-[50px] w-full"
-      )}
-    />
+    >
+      <iframe
+        ref={frameRef}
+        key={html}
+        title="Förhandsvisning"
+        srcDoc={srcDoc}
+        sandbox={BANNER_HTML_SANDBOX}
+        scrolling="no"
+        allowTransparency
+        style={{
+          display: "block",
+          border: 0,
+          margin: 0,
+          padding: 0,
+          width: frameWidth,
+          height: frameHeight || 1,
+          maxWidth: "100%",
+          backgroundColor: BANNER_HTML_PAGE_BG,
+          colorScheme: "dark",
+          verticalAlign: "top",
+        }}
+      />
+    </div>
   );
 }

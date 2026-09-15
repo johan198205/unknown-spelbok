@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { track } from "@/lib/analytics";
 import { sendBannerEvent } from "@/lib/banner-events";
 import {
+  BANNER_HTML_PAGE_BG,
   BANNER_HTML_RESIZE_TYPE,
   BANNER_HTML_SANDBOX,
   bannerHtmlDocument,
@@ -106,37 +107,57 @@ export function BannerHtml({
     return () => window.removeEventListener("blur", onBlur);
   }, [bannerId, placement, pathname]);
 
+  const frameWidth = size
+    ? size.width > 0
+      ? size.width
+      : "100%"
+    : 0;
+  const frameHeight = size?.height ?? 0;
+
   return (
     <div
       className={cn(
-        "flex w-full items-center justify-center bg-transparent",
+        "flex w-full items-center justify-center overflow-hidden",
         className
       )}
+      style={{ backgroundColor: "transparent", lineHeight: 0 }}
     >
-      <iframe
-        ref={frameRef}
-        title={title}
-        srcDoc={srcDoc}
-        sandbox={BANNER_HTML_SANDBOX}
-        loading="lazy"
-        scrolling="no"
-        // Krymper till snuttens mått och centreras — ingen fullbredd vit yta.
+      {/*
+        Yttre klipp: webbläsare ger iframes default ~150px höjd (vit yta).
+        Vi håller ramen kollapsad tills snutten rapporterat mått, och speglar
+        sidans bakgrund så eventuell restyta aldrig syns som vit.
+      */}
+      <div
+        className="relative max-w-full overflow-hidden"
         style={{
-          backgroundColor: "transparent",
-          colorScheme: "dark",
-          ...(size
-            ? {
-                height: size.height,
-                width: size.width > 0 ? size.width : "100%",
-                maxWidth: "100%",
-              }
-            : undefined),
+          width: frameWidth,
+          height: frameHeight,
+          maxWidth: "100%",
+          backgroundColor: BANNER_HTML_PAGE_BG,
         }}
-        className={cn(
-          "block max-w-full border-0 bg-transparent",
-          size == null && "min-h-[50px] w-full"
-        )}
-      />
+      >
+        <iframe
+          ref={frameRef}
+          title={title}
+          srcDoc={srcDoc}
+          sandbox={BANNER_HTML_SANDBOX}
+          loading="lazy"
+          scrolling="no"
+          allowTransparency
+          style={{
+            display: "block",
+            border: 0,
+            margin: 0,
+            padding: 0,
+            width: frameWidth,
+            height: frameHeight || 1,
+            maxWidth: "100%",
+            backgroundColor: BANNER_HTML_PAGE_BG,
+            colorScheme: "dark",
+            verticalAlign: "top",
+          }}
+        />
+      </div>
     </div>
   );
 }
