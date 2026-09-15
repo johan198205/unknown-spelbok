@@ -7,6 +7,7 @@ import {
   type ColumnMapping,
   type ImportField,
   type ImportRow,
+  type ImportSource,
 } from "@/lib/import/types";
 
 /** Gemensam validering och uppslag för /api/import-rutterna. */
@@ -17,6 +18,7 @@ export type ImportRequestBody = {
   filename: string;
   file_hash: string;
   unit_value: number;
+  import_source: ImportSource;
 };
 
 export class ImportRequestError extends Error {}
@@ -84,12 +86,17 @@ export function parseImportBody(body: unknown): ImportRequestBody {
   const unitValue =
     Number.isFinite(unitRaw) && unitRaw > 0 ? unitRaw : DEFAULT_UNIT_VALUE;
 
+  const sourceRaw = asString(raw.import_source, 16);
+  const import_source: ImportSource =
+    sourceRaw === "image" ? "image" : "file";
+
   return {
     rows,
     mapping,
     filename: asString(raw.filename, 200) || "import",
     file_hash: fileHash,
     unit_value: unitValue,
+    import_source,
   };
 }
 

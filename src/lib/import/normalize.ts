@@ -5,6 +5,7 @@ import {
   type ColumnMapping,
   type ImportRow,
   type ImportResultValue,
+  type ImportSource,
   type ImportedBet,
   type PreviewRow,
 } from "@/lib/import/types";
@@ -320,6 +321,8 @@ export type NormalizeArgs = {
   mapping: ColumnMapping;
   fileHash: string;
   unitValue?: number;
+  /** Prefixa external_id: file:… eller image:… */
+  source?: ImportSource;
   /** gemener namn → bookmakers.id, för logga i spelboken */
   bookmakerIndex?: Map<string, string>;
 };
@@ -344,6 +347,7 @@ export function normalizeRows({
   mapping,
   fileHash,
   unitValue = DEFAULT_UNIT_VALUE,
+  source = "file",
   bookmakerIndex,
 }: NormalizeArgs): NormalizeResult {
   const header = fieldToHeader(mapping);
@@ -425,7 +429,7 @@ export function normalizeRows({
     }
 
     const bet: ImportedBet = {
-      external_id: `file:${fileHash}:${rowKey}`,
+      external_id: `${source}:${fileHash}:${rowKey}`,
       placed_at: placedAt,
       sport: normalizeSport(cell(row, "sport")),
       league: cell(row, "league") || null,

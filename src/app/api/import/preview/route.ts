@@ -49,6 +49,7 @@ export async function POST(request: Request) {
     mapping: body.mapping,
     fileHash: body.file_hash,
     unitValue: body.unit_value,
+    source: body.import_source,
     bookmakerIndex,
   });
 

@@ -75,6 +75,7 @@ export async function POST(request: Request) {
     mapping: body.mapping,
     fileHash: body.file_hash,
     unitValue: body.unit_value,
+    source: body.import_source,
     bookmakerIndex,
   });
 
@@ -104,7 +105,7 @@ export async function POST(request: Request) {
         // db/logged-before-kickoff.sql sätter den från fixture.kickoff och
         // tvingar null när fixture_id saknas — vilket alltid gäller import.
         // Verified-badgen kan därmed aldrig gälla importerad data.
-        import_source: "file",
+        import_source: body.import_source,
         import_external_id: bet.external_id,
         import_source_url: body.filename,
         ...(bet.placed_at ? { placed_at: bet.placed_at } : {}),

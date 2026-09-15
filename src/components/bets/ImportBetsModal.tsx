@@ -10,14 +10,18 @@ import { detectColumns } from "@/lib/import/detect-columns";
 import { ImportParseError, parseBetFile } from "@/lib/import/parse";
 import { downloadImportTemplate } from "@/lib/import/template";
 import {
+  ALLOWED_IMPORT_IMAGE_MIMES,
   DEFAULT_UNIT_VALUE,
   IMPORT_FIELDS,
   IMPORT_FIELD_LABELS,
+  MAX_IMPORT_IMAGE_BYTES,
   REQUIRED_IMPORT_FIELDS,
   type ColumnMapping,
   type ImportCommitResponse,
   type ImportField,
+  type ImportFromImageResponse,
   type ImportPreviewResponse,
+  type ImportSource,
   type ImportedBet,
   type ParsedFile,
   type PreviewRow,
@@ -25,6 +29,7 @@ import {
 import { cn, formatOdds } from "@/lib/utils";
 
 type Step = "file" | "map" | "preview";
+type FileMode = "excel" | "image";
 
 const RESULT_LABELS: Record<NonNullable<ImportedBet["result"]>, string> = {
   win: "Vinst",
@@ -34,6 +39,8 @@ const RESULT_LABELS: Record<NonNullable<ImportedBet["result"]>, string> = {
   halfloss: "Halv förlust",
   pending: "Orättat",
 };
+
+const IMAGE_ACCEPT = ALLOWED_IMPORT_IMAGE_MIMES.join(",");
 
 /**
  * Bara mappade kolumner går över nätet. En bred exportfil kan annars bli
@@ -57,6 +64,23 @@ function resultClass(result: ImportedBet["result"]) {
 function formatDate(iso: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("sv-SE");
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Kunde inte läsa bilden."));
+        return;
+      }
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(new Error("Kunde inte läsa bilden."));
+    reader.readAsDataURL(file);
+  });
 }
 
 export function ImportBetsButton({ sheetId }: { sheetId: string }) {
@@ -90,11 +114,13 @@ function ImportBetsModal({
   const { toast } = useToast();
 
   const [step, setStep] = useState<Step>("file");
+  const [fileMode, setFileMode] = useState<FileMode>("excel");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping>({});
+  const [importSource, setImportSource] = useState<ImportSource>("file");
   const [preview, setPreview] = useState<ImportPreviewResponse | null>(null);
   const [unitValue, setUnitValue] = useState(DEFAULT_UNIT_VALUE);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -129,7 +155,45 @@ function ImportBetsModal({
     (field) => !mappedFields.has(field)
   );
 
-  async function handleFile(file: File | null | undefined) {
+  async function applyPreview(
+    nextParsed: ParsedFile,
+    nextMapping: ColumnMapping,
+    source: ImportSource
+  ) {
+    const res = await fetch("/api/import/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rows: slimRows(nextParsed, nextMapping),
+        mapping: nextMapping,
+        filename: nextParsed.filename,
+        file_hash: nextParsed.fileHash,
+        unit_value: unitValue,
+        import_source: source,
+      }),
+    });
+    const json = (await res.json()) as ImportPreviewResponse & {
+      error?: string;
+    };
+    if (!res.ok) {
+      throw new Error(json.error || "Kunde inte förhandsgranska.");
+    }
+    setParsed(nextParsed);
+    setMapping(nextMapping);
+    setImportSource(source);
+    setPreview(json);
+    const dupes = new Set(json.duplicates);
+    setSelected(
+      new Set(
+        json.bets
+          .filter((row) => row.valid && !dupes.has(row.bet.external_id))
+          .map((row) => row.bet.external_id)
+      )
+    );
+    setStep("preview");
+  }
+
+  async function handleExcelFile(file: File | null | undefined) {
     if (!file) return;
     setError(null);
     setBusy(true);
@@ -137,10 +201,65 @@ function ImportBetsModal({
       const result = await parseBetFile(file);
       setParsed(result);
       setMapping(detectColumns(result.headers));
+      setImportSource("file");
+      setPreview(null);
       setStep("map");
     } catch (e) {
       setError(
         e instanceof ImportParseError ? e.message : "Filen kunde inte läsas."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleImageFile(file: File | null | undefined) {
+    if (!file) return;
+    setError(null);
+
+    const mime = file.type;
+    if (
+      !(ALLOWED_IMPORT_IMAGE_MIMES as readonly string[]).includes(mime)
+    ) {
+      setError("Endast JPEG, PNG eller WebP.");
+      return;
+    }
+    if (file.size > MAX_IMPORT_IMAGE_BYTES) {
+      setError("Bilden är för stor (max 5 MB).");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const image_base64 = await readFileAsBase64(file);
+      const res = await fetch("/api/import/from-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image_base64,
+          mime,
+          filename: file.name || "bildimport",
+        }),
+      });
+      const json = (await res.json()) as ImportFromImageResponse & {
+        error?: string;
+      };
+      if (!res.ok) {
+        setError(json.error || "Kunde inte tolka bilden.");
+        return;
+      }
+
+      const nextParsed: ParsedFile = {
+        filename: json.filename,
+        fileHash: json.file_hash,
+        headers: Object.keys(json.mapping),
+        rows: json.rows,
+        notices: json.notices ?? [],
+      };
+      await applyPreview(nextParsed, json.mapping, "image");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Kunde inte tolka bilden."
       );
     } finally {
       setBusy(false);
@@ -152,36 +271,11 @@ function ImportBetsModal({
     setError(null);
     setBusy(true);
     try {
-      const res = await fetch("/api/import/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rows: slimRows(parsed, mapping),
-          mapping,
-          filename: parsed.filename,
-          file_hash: parsed.fileHash,
-          unit_value: unitValue,
-        }),
-      });
-      const json = (await res.json()) as ImportPreviewResponse & {
-        error?: string;
-      };
-      if (!res.ok) {
-        setError(json.error || "Kunde inte förhandsgranska filen.");
-        return;
-      }
-      setPreview(json);
-      const dupes = new Set(json.duplicates);
-      setSelected(
-        new Set(
-          json.bets
-            .filter((row) => row.valid && !dupes.has(row.bet.external_id))
-            .map((row) => row.bet.external_id)
-        )
+      await applyPreview(parsed, mapping, importSource);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Kunde inte förhandsgranska filen."
       );
-      setStep("preview");
-    } catch {
-      setError("Kunde inte förhandsgranska filen.");
     } finally {
       setBusy(false);
     }
@@ -201,6 +295,7 @@ function ImportBetsModal({
           filename: parsed.filename,
           file_hash: parsed.fileHash,
           unit_value: unitValue,
+          import_source: importSource,
           external_ids: [...selected],
           sheet_id: sheetId,
         }),
@@ -235,6 +330,25 @@ function ImportBetsModal({
     });
   }
 
+  function goBack() {
+    if (step === "preview" && importSource === "image") {
+      setStep("file");
+      setPreview(null);
+      setParsed(null);
+      return;
+    }
+    setStep(step === "preview" ? "map" : "file");
+  }
+
+  const subtitle =
+    step === "file"
+      ? fileMode === "excel"
+        ? "Ladda upp en Excel- eller CSV-fil med dina spel."
+        : "Ladda upp en skärmdump av en speltabell eller kupong från spelbolag."
+      : step === "map"
+        ? "Kontrollera att kolumnerna hamnat rätt."
+        : "Välj vilka spel som ska importeras.";
+
   return (
     <div
       className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-[rgba(5,7,12,.72)] px-4 py-10 backdrop-blur-[4px]"
@@ -256,13 +370,7 @@ function ImportBetsModal({
             >
               Importera spel
             </h3>
-            <p className="mt-0.5 text-[13px] text-muted">
-              {step === "file"
-                ? "Ladda upp en Excel- eller CSV-fil med dina spel."
-                : step === "map"
-                  ? "Kontrollera att kolumnerna hamnat rätt."
-                  : "Välj vilka spel som ska importeras."}
-            </p>
+            <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>
           </div>
           <button
             type="button"
@@ -275,7 +383,13 @@ function ImportBetsModal({
         </div>
 
         {step === "file" ? (
-          <FileStep busy={busy} onFile={handleFile} />
+          <FileStep
+            mode={fileMode}
+            onModeChange={setFileMode}
+            busy={busy}
+            onExcelFile={handleExcelFile}
+            onImageFile={handleImageFile}
+          />
         ) : null}
 
         {step === "map" && parsed ? (
@@ -351,7 +465,7 @@ function ImportBetsModal({
               variant="secondary"
               className="px-5 py-[13px]"
               disabled={busy}
-              onClick={() => setStep(step === "preview" ? "map" : "file")}
+              onClick={goBack}
             >
               Tillbaka
             </Button>
@@ -372,17 +486,58 @@ function ImportBetsModal({
 }
 
 function FileStep({
+  mode,
+  onModeChange,
   busy,
-  onFile,
+  onExcelFile,
+  onImageFile,
 }: {
+  mode: FileMode;
+  onModeChange: (mode: FileMode) => void;
   busy: boolean;
-  onFile: (file: File | null | undefined) => void;
+  onExcelFile: (file: File | null | undefined) => void;
+  onImageFile: (file: File | null | undefined) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
+  function onFile(file: File | null | undefined) {
+    if (mode === "image") onImageFile(file);
+    else onExcelFile(file);
+  }
+
   return (
     <div>
+      <div
+        className="mb-3 inline-flex rounded-[10px] border border-line-strong bg-bg-soft p-1"
+        role="tablist"
+        aria-label="Importtyp"
+      >
+        {(
+          [
+            { id: "excel", label: "Excel / CSV" },
+            { id: "image", label: "Bild" },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={mode === tab.id}
+            disabled={busy}
+            onClick={() => onModeChange(tab.id)}
+            className={cn(
+              "rounded-[8px] px-3.5 py-1.5 text-[13px] font-semibold transition",
+              mode === tab.id
+                ? "bg-panel text-text shadow-sm"
+                : "text-muted hover:text-text"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -401,15 +556,23 @@ function FileStep({
       >
         <Upload className="size-6 text-faint" strokeWidth={1.75} />
         <div className="text-[15px] text-text">
-          {busy ? "Läser filen…" : "Dra hit din fil eller välj den nedan"}
+          {busy
+            ? mode === "image"
+              ? "AI tolkar bilden…"
+              : "Läser filen…"
+            : mode === "image"
+              ? "Dra hit en bild eller välj den nedan"
+              : "Dra hit din fil eller välj den nedan"}
         </div>
         <div className="text-[12.5px] text-muted">
-          .xlsx eller .csv · max 2 MB · max 1000 rader
+          {mode === "image"
+            ? "JPEG, PNG eller WebP · max 5 MB · skärmdump av tabell eller kupong"
+            : ".xlsx eller .csv · max 2 MB · max 1000 rader"}
         </div>
         <input
           ref={inputRef}
           type="file"
-          accept=".xlsx,.csv"
+          accept={mode === "image" ? IMAGE_ACCEPT : ".xlsx,.csv"}
           className="hidden"
           onChange={(e) => {
             onFile(e.target.files?.[0]);
@@ -422,16 +585,18 @@ function FileStep({
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          Välj fil
+          {mode === "image" ? "Välj bild" : "Välj fil"}
         </Button>
       </div>
-      <button
-        type="button"
-        onClick={() => void downloadImportTemplate()}
-        className="mt-3 text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
-      >
-        Ladda ner mall ›
-      </button>
+      {mode === "excel" ? (
+        <button
+          type="button"
+          onClick={() => void downloadImportTemplate()}
+          className="mt-3 text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
+        >
+          Ladda ner mall ›
+        </button>
+      ) : null}
     </div>
   );
 }

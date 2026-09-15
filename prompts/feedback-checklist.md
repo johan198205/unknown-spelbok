@@ -137,7 +137,7 @@ Bocka av när acceptanskriterierna är uppfyllda. Kör i ordning P0 → P1 → P
 ### 21 — CSV/Excel-import + Sharp RSS research
 - [ ] Användare kan preview + commit CSV/XLSX till sheet
 - [ ] Research-notes-fil skapad för Sharp RSS (`prompts/sharp-rss-research-notes.md`)
-- [ ] Skärmdump+AI-OCR out-of-scope (ej byggt)
+- [x] Skärmdump+AI-OCR via Importera → Bild (Claude Vision)
 
 ---
 

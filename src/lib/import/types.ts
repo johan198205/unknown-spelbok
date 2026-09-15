@@ -2,9 +2,13 @@
  * Delade typer för filimport av spel.
  *
  * Modellen är generisk med avsikt: `import_source` + `import_external_id`
- * räcker även för länkimport (Sharps m.fl.) utan ny migration — bara
- * prefixet i external_id byts ut ('file:' → 'sharps:').
+ * räcker även för länkimport (Sharps m.fl.) och bildimport utan ny
+ * migration — bara prefixet i external_id byts ut
+ * ('file:' → 'image:' / 'sharps:').
  */
+
+/** Proveniens som sparas i bets.import_source. */
+export type ImportSource = "file" | "image";
 
 export type ImportResultValue =
   | "win"
@@ -15,7 +19,7 @@ export type ImportResultValue =
   | "pending";
 
 export type ImportedBet = {
-  /** 'file:{filhash}:{radhash}' — dedupnyckel mot bets.import_external_id */
+  /** '{source}:{filhash}:{radhash}' — dedupnyckel mot bets.import_external_id */
   external_id: string;
   placed_at: string | null;
   sport: string | null;
@@ -114,6 +118,60 @@ export type ImportPreviewResponse = {
 
 export type ImportCommitResponse = { imported: number; skipped: number };
 
+/**
+ * Svar från /api/import/from-image. Klienten skickar rows + mapping vidare
+ * till /preview och /commit utan kolumnmappningssteget.
+ */
+export type ImportFromImageResponse = {
+  rows: ImportRow[];
+  mapping: ColumnMapping;
+  filename: string;
+  file_hash: string;
+  notices: string[];
+  import_source: "image";
+};
+
 export const MAX_IMPORT_ROWS = 1000;
 export const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+/** Skärmdumpar är ofta tyngre än Excel-filer. */
+export const MAX_IMPORT_IMAGE_BYTES = 5 * 1024 * 1024;
+export const ALLOWED_IMPORT_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+export type AllowedImportImageMime =
+  (typeof ALLOWED_IMPORT_IMAGE_MIMES)[number];
+
+/** Kanoniska rubriker som Vision skriver — 1:1 mot ImportField. */
+export const IMAGE_CANONICAL_HEADERS = [
+  "Datum",
+  "Sport",
+  "Liga",
+  "Match",
+  "Spel",
+  "Odds",
+  "Insats",
+  "Spelbolag",
+  "Resultat",
+  "Vinst",
+  "Netto",
+] as const;
+
+export const IMAGE_COLUMN_MAPPING: ColumnMapping = {
+  Datum: "placed_at",
+  Sport: "sport",
+  Liga: "league",
+  Match: "match_label",
+  Spel: "market",
+  Odds: "odds",
+  Insats: "stake",
+  Spelbolag: "bookmaker",
+  Resultat: "result",
+  Vinst: "payout",
+  Netto: "netto",
+};
+
 export const DEFAULT_UNIT_VALUE = 100;
+/** Max AI-bildtolkningar per användare och dygn (minnesbaserat). */
+export const DAILY_IMAGE_IMPORT_LIMIT = 20;
