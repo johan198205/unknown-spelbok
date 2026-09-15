@@ -413,12 +413,13 @@ export function normalizeRows({
     else if (stake == null) reason = "Saknar insats";
     else if (stake <= 0) reason = "Ogiltig insats";
 
-    // Taket gäller nya spel, inte historik. En importerad 15u-satsning är
-    // ett faktum som redan hänt — flagga den, kasta den inte.
+    // Taket gäller bara när filen/bilden faktiskt är i units — inte när
+    // insatserna redan är kronor (t.ex. 2500). En importerad 15u-satsning
+    // är ett faktum som redan hänt: flagga den, kasta den inte.
     const overCap =
-      stake != null &&
-      unitValue > 0 &&
-      stake / unitValue > MAX_UNITS_PER_BET + 1e-9;
+      unitDetected &&
+      rawStake != null &&
+      rawStake > MAX_UNITS_PER_BET + 1e-9;
 
     const netto = rawNetto == null ? null : round2(rawNetto * unit);
     let payout: number | null = null;
