@@ -33,6 +33,10 @@ export const BANNER_HTML_PAGE_BG = "#0b0e14";
  * tyst dö. Storleken rapporteras till föräldern via postMessage — sandlådan har
  * ingen same-origin, så föräldern kan inte mäta innehållet själv. Iframen
  * krymper till snuttens mått och centreras i ytan så ingen vit ram syns runt.
+ *
+ * Viktigt: sätt ALDRIG `height: auto` på nestlade iframer. Affiliatesnuttar
+ * (t.ex. Netrefer) anger height="90" som attribut — CSS `height:auto` nollar
+ * det och webbläsaren faller tillbaka till default ~150px med vit yta under.
  */
 export function bannerHtmlDocument(html: string) {
   return `<!doctype html>
@@ -51,10 +55,14 @@ html,body{
   color-scheme:dark;
 }
 body{display:block;overflow:hidden;line-height:0;font-size:0;}
-/* Affiliatesnuttar lägger ofta vit bakgrund på yttersta wrappen. */
 body>*:not(script){background-color:transparent!important;}
-img,iframe,video,ins,object,embed{
+img,video{
   max-width:100%;height:auto;border:0;display:block;
+  background:transparent;vertical-align:top;
+}
+/* Behåll width/height-attributen — height:auto ger vit defaultyta under. */
+iframe,ins,object,embed{
+  max-width:100%;border:0;display:block;
   background:transparent;vertical-align:top;
 }
 a{display:block;max-width:100%;line-height:0;}
@@ -63,18 +71,29 @@ a{display:block;max-width:100%;line-height:0;}
 <body>${html}
 <script>
 (function(){
+  function attrSize(el){
+    var ah=parseInt(el.getAttribute("height"),10);
+    var aw=parseInt(el.getAttribute("width"),10);
+    var h=Number.isFinite(ah)&&ah>0?ah:0;
+    var w=Number.isFinite(aw)&&aw>0?aw:0;
+    return {height:h,width:w};
+  }
   function sizeOf(el){
     if(!el||el.tagName==="SCRIPT")return null;
+    // Iframe/object: lita på width/height-attribut före layout —
+    // getBoundingClientRect kan spegla trasig CSS (t.ex. height:auto → 150).
+    if(el.tagName==="IFRAME"||el.tagName==="OBJECT"||el.tagName==="EMBED"){
+      var a=attrSize(el);
+      if(a.height>0&&a.width>0)return a;
+    }
     var r=el.getBoundingClientRect();
     var h=Math.ceil(r.height);
     var w=Math.ceil(r.width);
-    // Hoppa över trackingpixlar och osynliga noder.
     if(h<2||w<2)return null;
     return {height:h,width:w};
   }
   function measure(){
     var h=0,w=0;
-    // Föredra media — annars blir höjden ofta wrappens vita padding.
     var media=document.querySelectorAll("img,iframe,canvas,video,object,embed");
     for(var i=0;i<media.length;i++){
       var m=sizeOf(media[i]);
