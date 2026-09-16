@@ -167,7 +167,7 @@ export function SheetMatchCell({
         "flex min-w-0 items-center border border-line-soft bg-bg-soft",
         variant === "card"
           ? "rounded-[11px] px-[13px] py-2.5"
-          : "rounded-[10px] px-2.5 py-2"
+          : "w-full rounded-[10px] px-2.5 py-2"
       )}
     >
       {/* Statusblocket hålls smalt — varje pixel här är en pixel mindre lagnamn. */}

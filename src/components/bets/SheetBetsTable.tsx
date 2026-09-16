@@ -29,27 +29,28 @@ type Column = {
 /*
   Bredderna är räknade mot den SMALASTE tabellen (sheet-brytpunkten, ~1140px)
   så att inget innehåll behöver brytas till en andra rad där: datumet ska stå
-  på en rad, liganamnet ska synas i sin helhet, rättningens lås + W/L/P/V ska
-  rymmas, och ikonerna ska rymmas bredvid varandra i sin egen kolumn.
+  på en rad, rättningens lås + W/L/P/V ska rymmas, och ikonerna ska rymmas
+  bredvid varandra i sin egen kolumn.
 
-  Ligakolumnen tar det den behöver för logga + fullt namn. Matchkolumnen får
-  resten. Rättning och netto sitter till höger med tätare marginal mellan sig.
+  Matchkolumnen bär långa lagnamn och får därför mest plats. Ligakolumnen
+  trunkerar med title-tooltip när namnet inte ryms — hellre det än att
+  "Frigg Oslo FK W" bryts mitt i.
 */
 const COLUMNS: Column[] = [
   { key: "date", label: "Datum", width: "w-[7%]" },
-  { key: "match", label: "Match", width: "w-[18%]" },
-  { key: "league", label: "Liga", width: "w-[15%]" },
-  { key: "pick", label: "Spel", width: "w-[10%]" },
+  { key: "match", label: "Match", width: "w-[26%]" },
+  { key: "league", label: "Liga", width: "w-[11%]" },
+  { key: "pick", label: "Spel", width: "w-[9%]" },
   { key: "bookmaker", label: "Bolag", width: "w-[7%]" },
   { key: "stake", label: "Insats", width: "w-[6%]", align: "right" },
   { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
   { key: "result", label: "Rättning", width: "w-[13%]", align: "right" },
   /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
-  { key: "netto", label: "Netto", width: "w-[11%]", align: "right" },
+  { key: "netto", label: "Netto", width: "w-[10%]", align: "right" },
   {
     key: "actions",
     label: "Åtgärder",
-    width: "w-[8%]",
+    width: "w-[6%]",
     align: "right",
     sortable: false,
   },
@@ -68,7 +69,7 @@ function DateCell({ iso }: { iso: string }) {
 export function LeagueCell({ bet }: { bet: Bet }) {
   if (!bet.league) return <span className="text-faint">—</span>;
   return (
-    <span className="flex items-center gap-2.5" title={bet.league}>
+    <span className="flex min-w-0 items-center gap-2.5" title={bet.league}>
       <span className="inline-flex size-[28px] shrink-0 items-center justify-center rounded-[8px] bg-[rgba(230,234,242,0.07)] p-[3px]">
         <LeagueLogo
           src={betLeagueLogo(bet)}
@@ -78,7 +79,7 @@ export function LeagueCell({ bet }: { bet: Bet }) {
           size={22}
         />
       </span>
-      <span className="whitespace-nowrap text-[15px] leading-snug">
+      <span className="min-w-0 truncate text-[15px] leading-snug">
         {bet.league}
       </span>
     </span>
