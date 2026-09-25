@@ -138,6 +138,23 @@ export function computeStats(bets: Bet[]): BetStats {
   };
 }
 
+/**
+ * Antal raka vinster räknat bakåt från det senast lagda settlade spelet.
+ * Halvvinst räknas som vinst, void hoppas över, förlust/halvförlust bryter.
+ */
+export function currentWinStreak(bets: Bet[]): number {
+  const settled = bets
+    .filter((b) => b.result !== "open" && b.result !== "void")
+    .sort((a, b) => +new Date(b.placed_at) - +new Date(a.placed_at));
+
+  let streak = 0;
+  for (const bet of settled) {
+    if (bet.result !== "win" && bet.result !== "halfwin") break;
+    streak++;
+  }
+  return streak;
+}
+
 export function cumulativeNetto(bets: Bet[]) {
   const settled = [...bets]
     .filter((b) => b.result !== "open")

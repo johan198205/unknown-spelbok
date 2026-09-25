@@ -4,7 +4,14 @@ import { formatAmount } from "@/lib/display";
 import { getDisplayPrefs } from "@/lib/display-prefs";
 import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { computeStats, formatRoi, initialOf } from "@/lib/utils";
+import { BestSport } from "@/components/profile/BestSport";
+import { StreakBadge } from "@/components/ui/StreakBadge";
+import {
+  computeStats,
+  currentWinStreak,
+  formatRoi,
+  initialOf,
+} from "@/lib/utils";
 import type { Bet } from "@/lib/types";
 
 export default async function PublicProfilePage({
@@ -40,13 +47,14 @@ export default async function PublicProfilePage({
   if (sheetIds.length) {
     const { data } = await supabase
       .from("bets")
-      .select("*")
+      .select("*, fixtures:fixture_id(sport, league_logo)")
       .in("sheet_id", sheetIds)
       .order("placed_at", { ascending: false });
     bets = (data ?? []) as Bet[];
   }
 
   const stats = computeStats(bets);
+  const streak = currentWinStreak(bets);
 
   return (
     <div className="mx-auto max-w-[800px] px-5 py-10">
@@ -64,9 +72,12 @@ export default async function PublicProfilePage({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="font-display text-3xl font-semibold uppercase tracking-[0.05em]">
-            {profile.username}
-          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <h1 className="font-display text-3xl font-semibold uppercase tracking-[0.05em]">
+              {profile.username}
+            </h1>
+            <StreakBadge streak={streak} />
+          </div>
           <p className="text-muted">Publik profil</p>
           {isOwn ? (
             <Link
@@ -110,6 +121,8 @@ export default async function PublicProfilePage({
           </div>
         ))}
       </div>
+
+      <BestSport bets={bets} prefs={prefs} />
 
       {!sheets?.length ? (
         <p className="text-muted">Inga publika spelböcker.</p>

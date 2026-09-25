@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
 import { CouponsView } from "@/components/coupons/CouponsView";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { getSessionUser } from "@/lib/auth";
@@ -55,12 +54,11 @@ export default async function KupongerPage() {
         <h1 className="font-display mb-2 text-[34px] font-semibold uppercase tracking-[0.03em]">
           Kuponger
         </h1>
-        <p className="mb-2.5 text-[16px] leading-[1.6] text-muted [text-wrap:pretty]">
+        <p className="text-[16px] leading-[1.6] text-muted [text-wrap:pretty]">
           Redaktionens spelförslag med motivering, insats och rekommenderat
           spelbolag. Varje kupong går att kopiera rakt in i din egen spelbok och
           dela vidare i sin helhet.
         </p>
-        <BookmakerDisclaimer prefix="Reklamlänkar" className="text-[12.5px]" />
       </header>
 
       <CouponsView

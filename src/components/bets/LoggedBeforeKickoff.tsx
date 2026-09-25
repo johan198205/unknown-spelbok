@@ -2,8 +2,8 @@ import { Lock, LockOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const COPY = {
-  before: "Låst – loggat före avspark",
-  after: "Öppet – loggat efter matchstart",
+  before: "Låst spel - detta spel bokfördes före matchstart.",
+  after: "Olåst spel - detta spel bokfördes efter matchstart.",
   badgeBefore: "Låst – loggat före avspark",
   badgeAfter: "Öppet – efterregistrerat",
 } as const;
@@ -46,13 +46,13 @@ export function LoggedBeforeKickoffIcon({
 const SHEET_LOCK = {
   locked: {
     icon: "🔒",
-    title: "Låst spel — lagt före avspark och kan inte ändras",
+    title: "Låst spel - detta spel bokfördes före matchstart.",
     bg: "bg-[rgba(102,227,138,.14)]",
     fg: "text-win",
   },
   open: {
     icon: "🔓",
-    title: "Öppet spel — kan redigeras till avspark",
+    title: "Olåst spel - detta spel bokfördes efter matchstart.",
     bg: "bg-[rgba(255,184,77,.14)]",
     fg: "text-amber",
   },

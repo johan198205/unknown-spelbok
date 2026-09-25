@@ -13,9 +13,6 @@ import { cn } from "@/lib/utils";
 
 const SORT_OPTIONS: BookSortOption[] = ["Vårt betyg", "Högst bonus", "A–Ö"];
 
-const STODLINJEN = "https://stodlinjen.se";
-const SPELPAUS = "https://spelpaus.se";
-
 export function BookmakersGrid({
   bookmakers,
   editorMode = false,
@@ -139,26 +136,6 @@ export function BookmakersGrid({
         </div>
       </div>
 
-      <div className="mb-5 text-[12.5px] text-[#5D6883]">
-        Innehåller reklamlänkar · 18+ · Spela ansvarsfullt ·{" "}
-        <a
-          href={STODLINJEN}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold text-[#2C6FD6] no-underline hover:underline"
-        >
-          Stödlinjen
-        </a>{" "}
-        ·{" "}
-        <a
-          href={SPELPAUS}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold text-[#2C6FD6] no-underline hover:underline"
-        >
-          Spelpaus
-        </a>
-      </div>
 
       <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((b) => (

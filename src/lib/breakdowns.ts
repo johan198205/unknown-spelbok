@@ -115,3 +115,30 @@ export function groupByOdds<T extends GroupableBet>(bets: T[]): BreakdownRow[] {
       ODDS_BUCKETS.indexOf(b.name as (typeof ODDS_BUCKETS)[number])
   );
 }
+
+/** Minsta antal satta spel för att en sport/liga ska kunna bli "bästa". */
+export const MIN_BEST_BETS = 10;
+
+export type BestGroup = BreakdownRow & { hitrate: number };
+
+/**
+ * Gruppen med högst ROI bland dem med minst `MIN_BEST_BETS` satta spel
+ * (lika ROI avgörs på netto). Okänd sport/liga kan aldrig vinna.
+ */
+export function bestGroup<T extends GroupableBet>(
+  bets: T[],
+  key: (bet: T) => string
+): BestGroup | null {
+  const best = groupBets(bets, key)
+    .filter(
+      (r) => r.bets >= MIN_BEST_BETS && r.name !== "Okänt" && r.name !== "Övrigt"
+    )
+    .sort((a, b) => b.roi - a.roi || b.netto - a.netto)[0];
+  if (!best) return null;
+
+  const wins = bets.filter(
+    (b) =>
+      key(b) === best.name && (b.result === "win" || b.result === "halfwin")
+  ).length;
+  return { ...best, hitrate: (wins / best.bets) * 100 };
+}

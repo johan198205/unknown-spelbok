@@ -10,7 +10,6 @@ import {
   formatBonusLine,
   getBookmakerHeroUrl,
   getBookmakerLogoUrl,
-  hasPayment,
   primaryPayment,
   ratingTitle,
   starRowDataUri,
@@ -184,19 +183,9 @@ export function BookmakerCard({
   const bonus2Label = displayText(data.bonus2_label);
   const bonus2Value = displayText(data.bonus2_value);
   const showBonus2 = !!bonus2Label && !!bonus2Value && !!bonus2Kind(bonus2Label);
-  const review = displayText(data.review);
   const terms = displayText(data.terms);
-  const license =
-    displayText(data.license) || "Svensk licens, Spelinspektionen";
-  const plus = (data.plus ?? []).map(displayText).filter(Boolean).slice(0, 3) as string[];
-  const minus = (data.minus ?? []).map(displayText).filter(Boolean).slice(0, 1) as string[];
-
-  const marks = [
-    { label: "Swish", on: hasPayment(data.payments, "Swish") },
-    { label: "Trustly", on: hasPayment(data.payments, "Trustly") },
-    { label: "BankID", on: true },
-    { label: "Licens", on: true },
-  ];
+  const termsUrl = displayText(data.terms_url);
+  const hasMore = !!terms || !!termsUrl;
 
   const fallbackBg = {
     backgroundColor: brand,
@@ -322,7 +311,12 @@ export function BookmakerCard({
 
       <div className="mt-4 border-t border-black/[.07] px-[18px] pb-4 pt-[13px]">
         <div className="flex items-start gap-2.5">
-          <div className="min-w-0 flex-1 text-[12.5px] leading-[1.55] text-[#5B6472]">
+          <div
+            className={cn(
+              "min-w-0 flex-1 text-left text-[12.5px] leading-[1.55] text-[#5B6472]",
+              !isOpen && "line-clamp-1"
+            )}
+          >
             18+, Spela ansvarsfullt,{" "}
             <a
               href={STODLINJEN}
@@ -341,77 +335,42 @@ export function BookmakerCard({
             >
               spelpaus
             </a>
-          </div>
-          <button
-            type="button"
-            onClick={toggle}
-            className="inline-flex min-h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded border-0 bg-transparent px-2 py-1.5 text-[13px] font-semibold text-[#5B6472]"
-          >
-            {isOpen ? "Stäng" : "Läs mer"}
-            <span className="text-[10px]" aria-hidden>
-              {isOpen ? "▲" : "▼"}
-            </span>
-          </button>
-        </div>
-
-        {isOpen ? (
-          <div className="mt-3 animate-sbfade border-t border-black/[.07] pt-3 text-left">
-            <div className="mb-1.5 text-[15px] font-bold text-[#12171F]">
-              {data.name}
-            </div>
-            {review ? (
-              <p className="mb-2.5 text-[13.5px] leading-[1.6] text-[#333A45]">
-                {review}
-              </p>
-            ) : null}
-            {plus.map((p) => (
-              <div
-                key={p}
-                className="flex gap-2 py-[3px] text-[13px] text-[#333A45]"
-              >
-                <span className="shrink-0 font-bold text-[#1E8E4E]">+</span>
-                {p}
-              </div>
-            ))}
-            {minus.map((m) => (
-              <div
-                key={m}
-                className="flex gap-2 py-[3px] text-[13px] text-[#333A45]"
-              >
-                <span className="shrink-0 font-bold text-[#C8324A]">−</span>
-                {m}
-              </div>
-            ))}
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {marks.map((m) => (
-                <span
-                  key={m.label}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-black/[.08] px-2.5 py-1.5"
-                  style={{ opacity: m.on ? 1 : 0.3 }}
+            .{terms ? ` ${terms}` : ""}
+            {termsUrl ? (
+              <>
+                {" – "}
+                <a
+                  href={termsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="font-bold text-[#2C6FD6] no-underline hover:underline"
                 >
-                  <span
-                    className="block size-[15px] bg-contain bg-center bg-no-repeat"
-                    style={{
-                      backgroundImage: `url("${PAYMENT_MARKS[m.label]}")`,
-                    }}
-                    aria-hidden
-                  />
-                  <span
-                    className="text-xs font-semibold"
-                    style={{ color: m.on ? "#333A45" : "#9AA3AF" }}
-                  >
-                    {m.label}
-                  </span>
-                </span>
-              ))}
-            </div>
-            <div className="mt-2.5 text-xs text-[#5B6472]">
-              Reklamlänk.
-              {terms ? ` ${terms}` : ""}
-              {` ${license}`}
-            </div>
+                  Regler &amp; villkor gäller
+                </a>
+              </>
+            ) : null}
           </div>
-        ) : null}
+          {hasMore ? (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={isOpen}
+              aria-label={isOpen ? "Visa mindre" : "Visa hela texten"}
+              className="-mr-1.5 -mt-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-[#8A93A3] hover:text-[#5B6472]"
+            >
+              <svg
+                viewBox="0 0 12 8"
+                className={cn(
+                  "h-2 w-3 transition-transform duration-200",
+                  isOpen && "rotate-180"
+                )}
+                aria-hidden
+              >
+                <path d="M0 0h12L6 8z" fill="currentColor" />
+              </svg>
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
