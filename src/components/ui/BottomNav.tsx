@@ -4,20 +4,6 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-function IconHome({ filled }: { filled?: boolean }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"
-        fill={filled ? "currentColor" : "none"}
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function IconBooks({ filled }: { filled?: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -65,22 +51,20 @@ function IconPlanket({ filled }: { filled?: boolean }) {
   );
 }
 
-function IconProfile({ filled }: { filled?: boolean }) {
+function IconBank({ filled }: { filled?: boolean }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle
-        cx="12"
-        cy="9"
-        r="3.5"
+      <path
+        d="M3.5 9 12 4l8.5 5h-17Z"
         fill={filled ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth="1.8"
+        strokeLinejoin="round"
       />
       <path
-        d="M5 19.5c1.6-3.2 4-4.5 7-4.5s5.4 1.3 7 4.5"
-        fill={filled ? "currentColor" : "none"}
+        d="M6 11.5v6M10 11.5v6M14 11.5v6M18 11.5v6M4 20.5h16"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth={filled ? 2.2 : 1.8}
         strokeLinecap="round"
       />
     </svg>
@@ -88,7 +72,6 @@ function IconProfile({ filled }: { filled?: boolean }) {
 }
 
 const TABS = [
-  { href: "/hem", label: "Hem", match: (p: string) => p === "/hem", Icon: IconHome },
   {
     href: "/spelbok",
     label: "Böcker",
@@ -109,10 +92,10 @@ const TABS = [
     Icon: IconBoard,
   },
   {
-    href: "/installningar",
-    label: "Profil",
-    match: (p: string) => p.startsWith("/installningar"),
-    Icon: IconProfile,
+    href: "/spelbolag",
+    label: "Spelbolag",
+    match: (p: string) => p.startsWith("/spelbolag"),
+    Icon: IconBank,
   },
 ] as const;
 
@@ -132,7 +115,7 @@ function TabBody({ tab, active }: { tab: Tab; active: boolean }) {
       className={cn(
         "flex flex-col items-center gap-1 transition-colors duration-100",
         lit ? "text-win" : "text-faint",
-        pending && !active ? "opacity-70" : null
+        pending && !active ? "opacity-70" : null,
       )}
     >
       <tab.Icon filled={lit} />
@@ -164,10 +147,11 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
       aria-label="Huvudnavigering"
     >
       {/*
-        Sex kolumner sedan Planket kom till: Hem, Böcker, [+], Planket,
-        Topplista, Profil. Etiketterna är 10.5px och får plats på 390 px.
+        Fem kolumner med plusknappen exakt i mitten: Böcker, Planket, [+],
+        Topplista, Spelbolag. Startsidan nås via loggan och profilen via
+        profilbilden i headern.
       */}
-      <div className="grid grid-cols-6 items-end px-1">
+      <div className="grid grid-cols-5 items-end px-1">
         {TABS.slice(0, 2).map((tab) => (
           <NavTab key={tab.href} tab={tab} pathname={pathname} />
         ))}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
+import { MobileMenu } from "@/components/layout/MobileMenu";
 import { FormattedAmount } from "@/components/FormattedAmount";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getProfile } from "@/lib/auth";
@@ -27,7 +27,6 @@ export async function MobileHeader({
           SPELBOK
         </Link>
         <div className="ml-auto flex items-center gap-2.5">
-          {username ? <DisplayModeToggle /> : null}
           <span
             className={`font-mono-num text-[13px] font-semibold ${nettoColor(netto)}`}
           >
@@ -59,6 +58,18 @@ export async function MobileHeader({
               )}
             </Link>
           ) : null}
+          <MobileMenu
+            user={
+              profile
+                ? {
+                    username: profile.username,
+                    avatarUrl: profile.avatar_url,
+                    netto,
+                    isAdmin: profile.role === "admin",
+                  }
+                : null
+            }
+          />
         </div>
       </div>
     </header>

@@ -16,7 +16,14 @@ import { cn } from "@/lib/utils";
  * Belopp som går via useAmount/FormattedAmount byter direkt via kontext.
  * Sparningen går i bakgrunden — ingen full router.refresh().
  */
-export function DisplayModeToggle({ className }: { className?: string }) {
+export function DisplayModeToggle({
+  className,
+  variant = "compact",
+}: {
+  className?: string;
+  /** "menu": stora knappar i hamburgermenyn, aktivt val i grönt. */
+  variant?: "compact" | "menu";
+}) {
   const prefs = useDisplayPrefs();
   const setModeLocal = useSetDisplayMode();
   const { toast } = useToast();
@@ -53,8 +60,9 @@ export function DisplayModeToggle({ className }: { className?: string }) {
       aria-label="Visa belopp i valuta eller units"
       className={cn(
         "flex items-center gap-0.5 rounded-[var(--radius-btn-sm)] border border-line bg-panel-2 p-0.5",
+        variant === "menu" && "p-1",
         pending && "opacity-70",
-        className
+        className,
       )}
     >
       {options.map((opt) => (
@@ -65,10 +73,15 @@ export function DisplayModeToggle({ className }: { className?: string }) {
           aria-pressed={prefs.mode === opt.value}
           onClick={() => select(opt.value)}
           className={cn(
-            "min-w-[44px] rounded-[6px] px-2 py-1 text-[12px] font-semibold transition-colors",
+            "font-semibold transition-colors",
+            variant === "menu"
+              ? "flex-1 rounded-[7px] py-2.5 text-[14px]"
+              : "min-w-[44px] rounded-[6px] px-2 py-1 text-[12px]",
             prefs.mode === opt.value
-              ? "bg-panel text-text"
-              : "text-muted hover:text-text"
+              ? variant === "menu"
+                ? "bg-win text-win-ink"
+                : "bg-panel text-text"
+              : "text-muted hover:text-text",
           )}
         >
           {opt.label}

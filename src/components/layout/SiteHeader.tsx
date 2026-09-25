@@ -3,13 +3,14 @@ import { AppNav } from "@/components/layout/AppNav";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
 import { SignOutButton } from "@/components/layout/SignOutButton";
+import { MobileMenu } from "@/components/layout/MobileMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getProfile } from "@/lib/auth";
 import { FormattedAmount } from "@/components/FormattedAmount";
 import { getUnreadNotificationCount } from "@/lib/notifications-server";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
-import { initialOf } from "@/lib/utils";
+import { initialOf, nettoColor } from "@/lib/utils";
 
 export async function SiteHeader({
   variant = "public",
@@ -59,17 +60,25 @@ export async function SiteHeader({
           SPELBOK
         </Link>
 
-        {variant === "app" && profile ? (
-          <AppNav items={appNav} />
-        ) : (
-          <PublicNav />
-        )}
+        {/* I mobil ersätts menyraden av hamburgermenyn längst till höger. */}
+        <div className="hidden min-w-0 flex-1 lg:flex">
+          {variant === "app" && profile ? (
+            <AppNav items={appNav} />
+          ) : (
+            <PublicNav />
+          )}
+        </div>
 
         <div className="ml-auto flex items-center gap-2.5">
           {profile ? (
             <>
-              <DisplayModeToggle className="hidden sm:flex" />
-              <div className="hidden text-right sm:block">
+              <span
+                className={`font-mono-num text-[13px] font-semibold lg:hidden ${nettoColor(netto)}`}
+              >
+                <FormattedAmount value={netto} />
+              </span>
+              <DisplayModeToggle className="hidden lg:flex" />
+              <div className="hidden text-right lg:block">
                 <div className="text-sm font-semibold text-text">
                   {profile.username}
                 </div>
@@ -83,23 +92,37 @@ export async function SiteHeader({
                 <img
                   src={profile.avatar_url}
                   alt=""
-                  className="h-[34px] w-[34px] rounded-full border border-line-strong object-cover"
+                  className="h-[34px] w-[34px] rounded-full border border-line-strong object-cover max-lg:order-2"
                 />
               ) : (
-                <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text">
+                <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text max-lg:order-2">
                   {initialOf(profile.username)}
                 </div>
               )}
-              <NotificationBell userId={profile.id} initialUnread={unread} />
+              <div className="max-lg:order-1">
+                <NotificationBell userId={profile.id} initialUnread={unread} />
+              </div>
               {profile.role === "admin" ? (
                 <Link
                   href="/admin/anvandare"
-                  className="rounded-[var(--radius-btn-sm)] px-3 py-1.5 text-[13px] font-semibold text-yellow no-underline hover:bg-yellow/10 hover:text-yellow hover:no-underline"
+                  className="hidden rounded-[var(--radius-btn-sm)] px-3 lg:block py-1.5 text-[13px] font-semibold text-yellow no-underline hover:bg-yellow/10 hover:text-yellow hover:no-underline"
                 >
                   Admin
                 </Link>
               ) : null}
-              <SignOutButton />
+              <div className="hidden lg:block">
+                <SignOutButton />
+              </div>
+              <div className="max-lg:order-3">
+                <MobileMenu
+                  user={{
+                    username: profile.username,
+                    avatarUrl: profile.avatar_url,
+                    netto,
+                    isAdmin: profile.role === "admin",
+                  }}
+                />
+              </div>
             </>
           ) : (
             <Link
@@ -109,6 +132,7 @@ export async function SiteHeader({
               Logga in
             </Link>
           )}
+          {profile ? null : <MobileMenu user={null} />}
         </div>
       </div>
     </header>
