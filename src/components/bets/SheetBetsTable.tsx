@@ -13,6 +13,7 @@ import type {
   SheetSortKey,
 } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
+import { track } from "@/lib/analytics";
 import { useAmount } from "@/components/DisplayPrefsProvider";
 import { betNetto, cn, formatOdds, nettoColor } from "@/lib/utils";
 
@@ -107,36 +108,63 @@ export function BookmakerPlate({
   const name = bet.bookmakers?.name || "";
   if (!bet.bookmakers?.logo_url) {
     return (
-      <span
-        title={name || undefined}
-        className="inline-block max-w-full truncate rounded-[6px] bg-panel-2 px-2.5 py-1.5 text-[11.5px] text-[#8A94AB]"
-      >
-        {name || "—"}
-      </span>
+      <BookmakerLink bet={bet}>
+        <span
+          title={name || undefined}
+          className="inline-block max-w-full truncate rounded-[6px] bg-panel-2 px-2.5 py-1.5 text-[11.5px] text-[#8A94AB]"
+        >
+          {name || "—"}
+        </span>
+      </BookmakerLink>
     );
   }
   const brand = bet.bookmakers.brand_color?.trim() || "#1B2436";
   return (
-    <span
-      title={name}
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-[7px]",
-        branded && "overflow-hidden"
-      )}
-      style={{
-        width,
-        height,
-        ...(branded ? { backgroundColor: brand } : {}),
-      }}
+    <BookmakerLink bet={bet}>
+      <span
+        title={name}
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center rounded-[7px]",
+          branded && "overflow-hidden"
+        )}
+        style={{
+          width,
+          height,
+          ...(branded ? { backgroundColor: brand } : {}),
+        }}
+      >
+        <BookmakerLogo
+          logoPath={bet.bookmakers.logo_url}
+          name={name}
+          size={Math.round(height * 0.62)}
+          maxWidth={Math.round(width * 0.78)}
+          className="object-center"
+        />
+      </span>
+    </BookmakerLink>
+  );
+}
+
+/** Loggan går via /go/[slug] (klickloggning + redirect) när bolaget har en tracking-URL. */
+function BookmakerLink({
+  bet,
+  children,
+}: {
+  bet: Bet;
+  children: React.ReactNode;
+}) {
+  const slug = bet.bookmakers?.slug;
+  if (!slug || !bet.bookmakers?.tracking_url) return <>{children}</>;
+  return (
+    <a
+      href={`/go/${slug}?src=spelbok_rad`}
+      target="_blank"
+      rel="noopener sponsored nofollow"
+      onClick={() => track({ event: "affiliate_click", bookmaker: slug })}
+      className="inline-flex rounded-[7px] transition-opacity hover:opacity-80"
     >
-      <BookmakerLogo
-        logoPath={bet.bookmakers.logo_url}
-        name={name}
-        size={Math.round(height * 0.62)}
-        maxWidth={Math.round(width * 0.78)}
-        className="object-center"
-      />
-    </span>
+      {children}
+    </a>
   );
 }
 

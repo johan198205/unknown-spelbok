@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState, Panel } from "@/components/ui/Panel";
 import { createClient } from "@/lib/supabase/server";
@@ -61,6 +62,7 @@ export default async function TopplistaPage() {
       name: sheet.name,
       owner: sheet.owner,
       userId: sheet.userId,
+      href: sheet.slug ? `/s/${sheet.slug}` : null,
       ...computeStats(sheet.bets),
     }))
     .sort((a, b) => b.roi - a.roi);
@@ -176,8 +178,9 @@ export default async function TopplistaPage() {
         </div>
         {board.length ? (
           board.map((row, i) => (
-            <div
+            <RowLink
               key={row.id}
+              href={row.href}
               className="grid grid-cols-[40px_1fr_80px_100px_100px] items-center gap-3 border-b border-[#171E2C] px-5 py-3"
             >
               <span className={`font-display text-lg font-semibold ${medal(i)}`}>
@@ -202,7 +205,7 @@ export default async function TopplistaPage() {
               >
                 {formatMoney(row.netto)}
               </span>
-            </div>
+            </RowLink>
           ))
         ) : (
           <EmptyState>
@@ -217,8 +220,9 @@ export default async function TopplistaPage() {
           board.map((row, i) => {
             const isSelf = profile && row.userId === profile.id;
             return (
-              <div
+              <RowLink
                 key={row.id}
+                href={row.href}
                 className={`flex items-center gap-3 rounded-[12px] border px-3 py-3 ${
                   isSelf ? "border-win/40 bg-win/10" : "border-line bg-panel"
                 }`}
@@ -245,7 +249,7 @@ export default async function TopplistaPage() {
                 >
                   {formatMoney(row.netto)}
                 </span>
-              </div>
+              </RowLink>
             );
           })
         ) : (
@@ -281,5 +285,26 @@ export default async function TopplistaPage() {
         />
       ) : null}
     </div>
+  );
+}
+
+// Rader utan slug (äldre spelböcker) renderas som vanliga block.
+function RowLink({
+  href,
+  className,
+  children,
+}: {
+  href: string | null;
+  className: string;
+  children: React.ReactNode;
+}) {
+  if (!href) return <div className={className}>{children}</div>;
+  return (
+    <Link
+      href={href}
+      className={`${className} transition-colors hover:bg-panel-2`}
+    >
+      {children}
+    </Link>
   );
 }

@@ -16,7 +16,8 @@ import {
   formatPick,
   leaguesForSport,
 } from "@/lib/picks";
-import { FixturePicker, DayStrip } from "@/components/bets/FixturePicker";
+import { DayStrip } from "@/components/bets/FixturePicker";
+import { MatchSearch } from "@/components/bets/MatchSearch";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { BetRowActions } from "@/components/bets/BetRowActions";
 import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
@@ -243,6 +244,8 @@ export function BetForm({
     setLeagueLogo(f.league_logo ?? null);
     setSport(f.sport || "Fotboll");
     setChosenKickoff(f.kickoff);
+    // Datumet följer matchen — avgör placed_at för spel i efterhand
+    setYmd(stockholmYmd(new Date(f.kickoff)));
     setMatchMode("chosen");
   }
 
@@ -486,23 +489,7 @@ export function BetForm({
 
               {matchMode === "search" ? (
                 <div className="sm:col-span-2">
-                  <FixturePicker
-                    active={open}
-                    ymd={ymd}
-                    onYmdChange={setYmd}
-                    onSelect={selectFixture}
-                    onMetaChange={({
-                      sport: nextSport,
-                      league: nextLeague,
-                      leagueId: nextLeagueId,
-                      leagueLogo: nextLeagueLogo,
-                    }) => {
-                      if (nextSport) setSport(nextSport);
-                      if (nextLeague) setLeague(nextLeague);
-                      if (nextLeagueId != null) setLeagueId(nextLeagueId);
-                      if (nextLeagueLogo != null) setLeagueLogo(nextLeagueLogo);
-                    }}
-                  />
+                  <MatchSearch active={open} onSelect={selectFixture} />
                   <button
                     type="button"
                     onClick={goManual}

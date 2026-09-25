@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  FixturePicker,
-  type PickerFixture,
-} from "@/components/bets/FixturePicker";
+import { type PickerFixture } from "@/components/bets/FixturePicker";
+import { MatchSearch } from "@/components/bets/MatchSearch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { MatchStack } from "@/components/bets/TeamPair";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
@@ -93,6 +91,7 @@ export function AttachNewBet({
     setLeagueId(f.league_id ?? null);
     setLeagueLogo(f.league_logo ?? null);
     setSport(f.sport || "Fotboll");
+    setYmd(stockholmYmd(new Date(f.kickoff)));
     setPick("");
     setError(null);
     setStep(2);
@@ -200,23 +199,7 @@ export function AttachNewBet({
   if (step === 1) {
     return (
       <div className="space-y-3 p-3">
-        <FixturePicker
-          active
-          ymd={ymd}
-          onYmdChange={setYmd}
-          onMetaChange={({
-            sport: nextSport,
-            league: nextLeague,
-            leagueId: nextLeagueId,
-            leagueLogo: nextLeagueLogo,
-          }) => {
-            if (nextSport) setSport(nextSport);
-            if (nextLeague) setLeague(nextLeague);
-            if (nextLeagueId != null) setLeagueId(nextLeagueId);
-            if (nextLeagueLogo != null) setLeagueLogo(nextLeagueLogo);
-          }}
-          onSelect={selectFixture}
-        />
+        <MatchSearch onSelect={selectFixture} />
       </div>
     );
   }

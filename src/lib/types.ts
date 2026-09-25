@@ -1597,14 +1597,15 @@ export type BannerPlacement =
   | "sheet"
   | "topplista"
   | "spelbolag"
-  | "kuponger";
+  | "kuponger"
+  | "planket";
 
 /**
  * Formatet skiljer enheter/platser (desktop-topp, mobil-topp, sidokolumn),
  * inte en hård pixelruta. HTML- och bildkreativ anpassar höjden efter innehållet;
  * namnen speglar typisk storlek från affiliatenätverken.
  */
-export type BannerFormat = "970x90" | "320x100" | "300x250";
+export type BannerFormat = "970x90" | "320x100" | "300x250" | "160x600";
 
 /**
  * Kreativens ursprung. Affiliatenätverk levererar oftast en färdig kodsnutt
@@ -1670,7 +1671,8 @@ export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
   bookmakers?: Pick<
     Bookmaker,
     "id" | "name" | "logo_url" | "brand_color"
-  > | null;
+  > &
+    Partial<Pick<Bookmaker, "slug" | "tracking_url">> | null;
   fixtures?: Pick<
     Fixture,
     | "fixture_id"

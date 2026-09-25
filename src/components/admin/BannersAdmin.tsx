@@ -33,6 +33,7 @@ const PLACEMENTS: { value: BannerPlacement; label: string }[] = [
   { value: "topplista", label: "Topplista" },
   { value: "spelbolag", label: "Spelbolag" },
   { value: "kuponger", label: "Kuponger" },
+  { value: "planket", label: "Planket" },
 ];
 
 /**
@@ -77,6 +78,15 @@ const FORMATS: {
     height: 250,
     where: "Sidokolumnen på startsidan — höjden följer snutten",
   },
+  {
+    value: "160x600",
+    label: "Desktop · skyskrapa (typiskt 160 × 600)",
+    short: "Skyskrapa",
+    device: "Desktop",
+    width: 160,
+    height: 600,
+    where: "Högerkolumnen på Planket, två i bredd — alla aktiva visas samtidigt",
+  },
 ];
 
 const CREATIVE_TYPES: {
@@ -103,6 +113,7 @@ const FORMATS_BY_PLACEMENT: Record<BannerPlacement, BannerFormat[]> = {
   topplista: ["970x90", "320x100"],
   spelbolag: ["970x90"],
   kuponger: ["970x90"],
+  planket: ["160x600"],
 };
 
 function placementLabel(placement: string) {

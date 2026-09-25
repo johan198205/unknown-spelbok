@@ -8,7 +8,8 @@ import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { enqueuePendingBet } from "@/lib/offline-queue";
-import { FixturePicker, DayStrip, type PickerFixture } from "@/components/bets/FixturePicker";
+import { DayStrip, type PickerFixture } from "@/components/bets/FixturePicker";
+import { MatchSearch } from "@/components/bets/MatchSearch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { ManualMatchLabel, MatchStack } from "@/components/bets/TeamPair";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
@@ -208,21 +209,8 @@ export function MobileAddBetFlow({
           <div className="space-y-3">
             {!manual ? (
               <>
-                <FixturePicker
+                <MatchSearch
                   active={step === 1}
-                  ymd={ymd}
-                  onYmdChange={setYmd}
-                  onMetaChange={({
-                    sport: nextSport,
-                    league: nextLeague,
-                    leagueId: nextLeagueId,
-                    leagueLogo: nextLeagueLogo,
-                  }) => {
-                    if (nextSport) setSport(nextSport);
-                    if (nextLeague) setLeague(nextLeague);
-                    if (nextLeagueId != null) setLeagueId(nextLeagueId);
-                    if (nextLeagueLogo != null) setLeagueLogo(nextLeagueLogo);
-                  }}
                   onSelect={(f) => {
                     setFixtureId(f.fixture_id);
                     setChosenFixture(f);
@@ -231,6 +219,7 @@ export function MobileAddBetFlow({
                     setLeagueId(f.league_id ?? null);
                     setLeagueLogo(f.league_logo ?? null);
                     setSport(f.sport || "Fotboll");
+                    setYmd(stockholmYmd(new Date(f.kickoff)));
                     setStep(2);
                   }}
                 />

@@ -23,7 +23,31 @@ const FIXTURE_COLUMNS =
   "fixture_id, kickoff, status, sport, league_id, league_name, league_logo, home_team_id, home_name, home_logo, away_team_id, away_name, away_logo, home_score, away_score, season, raw, updated_at";
 
 function sanitizeIlike(raw: string) {
-  return raw.replace(/[%_,()\\]/g, " ").trim().slice(0, 80);
+  return raw.replace(/[%_*,()\\"]/g, " ").trim().slice(0, 80);
+}
+
+/**
+ * Söksträngen delas i ord och varje ord måste träffa början av ett ord i
+ * hemma- eller bortalagets namn. "liv" ska ge Liverpool, inte Olivais, och
+ * "liverpool arsenal" ska ge just den matchen. "vs" och bindestreck mellan
+ * lagen räknas inte som ord.
+ */
+function searchTokens(q: string) {
+  return q
+    .split(/[\s\-–—]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0 && !/^(vs|v)\.?$/i.test(t))
+    .slice(0, 4);
+}
+
+function tokenFilter(token: string) {
+  return ["home_name", "away_name"]
+    .flatMap((col) => [
+      `${col}.ilike.${token}%`,
+      `${col}.ilike.% ${token}%`,
+      `${col}.ilike.%-${token}%`,
+    ])
+    .join(",");
 }
 
 function venueFromRaw(raw: unknown) {
@@ -119,7 +143,7 @@ export async function GET(request: NextRequest) {
     .filter((id) => Number.isFinite(id) && id > 0)
     .slice(0, MAX_LIMIT);
 
-  if (!ids.length && !league && !date && !from && !to) {
+  if (!ids.length && !league && !date && !from && !to && !q) {
     return NextResponse.json(
       { error: "Parametern league eller date krävs" },
       { status: 400 }
@@ -182,10 +206,9 @@ export async function GET(request: NextRequest) {
       );
     } else query = query.in("status", UPCOMING);
 
-    if (q) {
-      query = query.or(
-        `home_name.ilike.%${q}%,away_name.ilike.%${q}%`
-      );
+    // Flera .or() läggs ihop med AND — varje ord måste träffa något av lagen
+    for (const token of searchTokens(q)) {
+      query = query.or(tokenFilter(token));
     }
 
     return query;

@@ -61,10 +61,10 @@ export default async function PlanketPage() {
         Två fasta kolumner med 24 px mellanrum, båda uppifrån.
 
         Högerkolumnen kommer in vid `sheet` (1180 px), inte vid lg (1024 px).
-        640 + 24 + 320 = 984, och med sidans 40 px vågräta padding blir det
-        exakt 1024 — noll marginal. Ett synligt rullningslist hade räckt för
-        att ge vågrät scroll. Korten byter däremot till desktopvarianten
-        redan vid lg, där kolumnen har gott om plats.
+        640 + 24 + 332 = 996, och med sidans 40 px vågräta padding blir det
+        1036 — vid lg hade det gett vågrät scroll. Korten byter däremot till
+        desktopvarianten redan vid lg, där kolumnen har gott om plats.
+        Högerkolumnen är annonsyta (160×600, se PlanketSidebar).
       */}
       <div className="mx-auto flex w-full max-w-[1280px] items-start gap-6">
         <div className="w-full min-w-0 lg:max-w-[640px] sheet:w-[640px] sheet:max-w-none sheet:shrink-0">
@@ -81,15 +81,11 @@ export default async function PlanketPage() {
             bookmakers={bookmakers}
             isAuthenticated={!!profile}
             /*
-              Ansvarsrutan är alltid synlig, aldrig bakom en flik. Under
-              1180 px finns ingen högerkolumn, så då ligger den sist i
-              flödet i stället.
+              Ansvarsrutan är alltid synlig, aldrig bakom en flik. Den
+              ligger sist i flödet på alla bredder — högerkolumnen är
+              annonsyta.
             */
-            footer={
-              <div className="sheet:hidden">
-                <ResponsibleBox />
-              </div>
-            }
+            footer={<ResponsibleBox />}
           />
         </div>
 

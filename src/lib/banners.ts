@@ -25,14 +25,15 @@ function nextIndex(key: string, length: number) {
 }
 
 /**
- * Cached per request: a page may render the same placement twice for
- * responsive variants, and only one of them is ever visible.
+ * Alla aktiva banners för placering + format, i sort-ordning. Cached per
+ * request: en sida kan rendera samma placering två gånger för responsiva
+ * varianter, och bara en av dem syns.
  */
-export const getBannerForPlacement = cache(
+export const getBannersForPlacement = cache(
   async (
     placement: BannerPlacement,
     format: BannerFormat
-  ): Promise<Banner | null> => {
+  ): Promise<Banner[]> => {
     const supabase = await createClient();
     const nowIso = new Date().toISOString();
 
@@ -47,16 +48,26 @@ export const getBannerForPlacement = cache(
       .order("id", { ascending: true });
 
     if (error) {
-      console.error("getBannerForPlacement failed", error.message);
-      return null;
+      console.error("getBannersForPlacement failed", error.message);
+      return [];
     }
 
     // Formatet filtreras i JS, inte i frågan: en banner utan format (raden är
     // äldre än db/banner-format.sql) får fortsätta visas i alla ytor i stället
     // för att försvinna.
-    const banners = ((data ?? []) as Banner[]).filter(
+    return ((data ?? []) as Banner[]).filter(
       (b) => (b.format ?? format) === format
     );
+  }
+);
+
+/** En banner per sidvisning, roterad bland de aktiva på placeringen. */
+export const getBannerForPlacement = cache(
+  async (
+    placement: BannerPlacement,
+    format: BannerFormat
+  ): Promise<Banner | null> => {
+    const banners = await getBannersForPlacement(placement, format);
     if (!banners.length) return null;
     if (banners.length === 1) return banners[0];
 

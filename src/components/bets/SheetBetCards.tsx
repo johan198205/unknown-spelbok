@@ -20,7 +20,7 @@ import {
   nettoColor,
 } from "@/lib/utils";
 
-/** Kortvy: huvudrad → match → spel/odds → utfall → rättning. */
+/** Kortvy: huvudrad → match → spel → insats/odds → utfall → rättning. */
 export function SheetBetCards({
   bets,
   canEdit,
@@ -128,21 +128,29 @@ export function SheetBetCards({
               <SheetMatchCell bet={bet} density={density} variant="card" />
             </div>
 
-            {/* 3. Spel och odds */}
-            <div className="mt-3 flex items-stretch gap-2.5">
-              <div className="min-w-0 flex-1 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-                  Spel
+            {/* 3. Spel i full bredd, insats och odds under */}
+            <div className="mt-3 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5">
+              <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+                Spel
+              </div>
+              <div className="break-words text-[16px] font-bold leading-snug">
+                {pick}
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
+                <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+                  Insats
                 </div>
-                <div className="whitespace-nowrap text-[16px] font-bold">
-                  {pick}
+                <div className="whitespace-nowrap font-mono-num text-[14px] font-semibold tabular-nums">
+                  {amount(Number(bet.stake), { sign: false })}
                 </div>
               </div>
-              <div className="w-[84px] shrink-0 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5 text-right">
-                <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+              <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2 text-right">
+                <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
                   Odds
                 </div>
-                <div className="font-mono-num text-[16px] font-semibold tabular-nums">
+                <div className="font-mono-num text-[14px] font-semibold tabular-nums">
                   {formatOdds(Number(bet.odds))}
                 </div>
               </div>
@@ -154,21 +162,16 @@ export function SheetBetCards({
                 <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
                   {outcomeLabel}
                 </div>
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <span
-                    className={cn(
-                      "whitespace-nowrap font-mono-num text-[19px] font-semibold tabular-nums",
-                      settled ? nettoColor(outcomeValue) : "text-[#C3CBDB]"
-                    )}
-                  >
-                    {amount(outcomeValue)}
-                  </span>
-                  <span className="whitespace-nowrap font-mono-num text-[12.5px] tabular-nums text-[#5D6883]">
-                    insats {amount(Number(bet.stake), { sign: false })}
-                  </span>
-                </div>
+                <span
+                  className={cn(
+                    "whitespace-nowrap font-mono-num text-[19px] font-semibold tabular-nums",
+                    settled ? nettoColor(outcomeValue) : "text-[#C3CBDB]"
+                  )}
+                >
+                  {amount(outcomeValue)}
+                </span>
               </div>
-              <BookmakerPlate bet={bet} width={62} height={28} branded />
+              <BookmakerPlate bet={bet} width={80} height={34} branded />
             </div>
 
             {/* 5. Rättningsknappar */}
