@@ -64,12 +64,13 @@ export default async function AppLayout({
         bookmakers={bookmakers}
         initialBetCount={betCount}
       >
-        <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 py-4 pb-[calc(112px+env(safe-area-inset-bottom))] lg:px-5 lg:py-6 lg:pb-6">
+        <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 py-4 pb-8 lg:px-5 lg:py-6 lg:pb-6">
           {children}
         </main>
       </MobileChrome>
 
-      <div className="hidden lg:block">
+      {/* Footern syns även i mobil; luft i botten så bottenmenyn inte täcker den. */}
+      <div className="flex flex-col pb-[calc(88px+env(safe-area-inset-bottom))] lg:pb-0">
         <SiteFooter />
       </div>
     </>
