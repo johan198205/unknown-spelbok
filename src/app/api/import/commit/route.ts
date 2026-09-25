@@ -9,6 +9,7 @@ import {
 } from "@/lib/import/server";
 import type { ImportCommitResponse } from "@/lib/import/types";
 import { createClient } from "@/lib/supabase/server";
+import { leagueByName, leagueLogoUrl, normalizeTeamName } from "@/lib/logos";
 
 export const runtime = "nodejs";
 
@@ -79,19 +80,55 @@ export async function POST(request: Request) {
     bookmakerIndex,
   });
 
+  // Ligan slås upp på namnet så att ligaloggan följer med importen:
+  // först bland ligorna appen synkar, sedan i den fasta namnlistan.
+  const leagueNames = [
+    ...new Set(
+      rows
+        .map((row) => row.bet.league)
+        .filter((name): name is string => !!name)
+    ),
+  ];
+  const leagueIndex = new Map<string, { id: number; logo: string | null }>();
+  if (leagueNames.length) {
+    const { data: active } = await supabase
+      .from("active_leagues")
+      .select("league_id, name, sport, logo_url")
+      .in("name", leagueNames);
+    for (const row of active || []) {
+      leagueIndex.set(normalizeTeamName(row.name), {
+        id: row.league_id,
+        logo: leagueLogoUrl(row.logo_url, row.league_id, row.sport),
+      });
+    }
+  }
+  const resolveLeague = (name: string | null | undefined) => {
+    if (!name) return null;
+    const hit = leagueIndex.get(normalizeTeamName(name));
+    if (hit) return hit;
+    const fixed = leagueByName(name);
+    return fixed
+      ? {
+          id: fixed.leagueId,
+          logo: leagueLogoUrl(null, fixed.leagueId, fixed.sport),
+        }
+      : null;
+  };
+
   const now = new Date().toISOString();
   const inserts = rows
     .filter((row) => row.valid && selected.has(row.bet.external_id))
     .map(({ bet, bookmaker_id }) => {
       const settled = bet.result !== "pending";
+      const league = resolveLeague(bet.league);
       return {
         sheet_id: sheet.id,
         user_id: user.id,
         fixture_id: null,
         sport: bet.sport,
         league: bet.league,
-        league_id: null,
-        league_logo: null,
+        league_id: league?.id ?? null,
+        league_logo: league?.logo ?? null,
         match: bet.match_label as string,
         pick: bet.market || "—",
         bookmaker_id,

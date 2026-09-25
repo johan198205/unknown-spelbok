@@ -10,6 +10,7 @@ import {
   type AffiliateTopRow,
 } from "@/lib/bet-stats";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
+import { attachManualLogos } from "@/lib/manual-logos";
 
 function toPlain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -95,6 +96,8 @@ export default async function PublicSheetPage({
     bookmakers: asOne(bet.bookmakers),
     fixtures: asOne(bet.fixtures),
   }));
+  // Manuella och importerade spel får lagloggor uppslagna på lagnamn.
+  bets = await attachManualLogos(supabase, bets);
 
   // Unit-storleken är betraktarens, inte ägarens — se kommentaren vid
   // owner-hämtningen ovan. Statistik-RPC:n behöver den i klartext.

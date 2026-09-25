@@ -609,7 +609,12 @@ function SwipeBetCard({
         {fixture ? (
           <FixtureMatch fixture={fixture} stacked logoSize={20} />
         ) : (
-          <ManualMatchLabel match={bet.match} stacked size={20} />
+          <ManualMatchLabel
+            match={bet.match}
+            logos={bet.manual_logos}
+            stacked
+            size={20}
+          />
         )}
         <div className="mt-1 flex items-center gap-1.5 text-[15px] font-bold">
           <span className="inline-flex w-3.5 shrink-0 justify-center">

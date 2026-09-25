@@ -35,6 +35,7 @@ import {
   nettoColor,
 } from "@/lib/utils";
 import type { Bet, Sheet } from "@/lib/types";
+import { attachManualLogos } from "@/lib/manual-logos";
 
 /** Under den här gränsen är ROI och hitrate brus — säg det i stället för att dölja det. */
 const THIN_SAMPLE = 20;
@@ -57,7 +58,14 @@ function BetMatchLine({ bet }: { bet: Bet }) {
   }
   const sides = parseMatchSides(bet.match);
   if (!sides) return <span className="min-w-0 truncate">{bet.match}</span>;
-  return <MatchLine homeName={sides.home} awayName={sides.away} />;
+  return (
+    <MatchLine
+      homeName={sides.home}
+      awayName={sides.away}
+      homeLogo={bet.manual_logos?.home}
+      awayLogo={bet.manual_logos?.away}
+    />
+  );
 }
 
 export default async function HemPage() {
@@ -119,7 +127,8 @@ export default async function HemPage() {
     odds: groupBets(settled, oddsKey),
   };
 
-  const recent = settled.slice(0, 8);
+  // Manuella och importerade spel får lagloggor uppslagna på lagnamn.
+  const recent = await attachManualLogos(supabase, settled.slice(0, 8));
 
   const kpis = [
     {

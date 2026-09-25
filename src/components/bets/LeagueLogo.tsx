@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { leagueInitials, leagueLogoUrl } from "@/lib/logos";
+import {
+  leagueInitials,
+  leagueLogoUrl,
+  needsLightBackdrop,
+} from "@/lib/logos";
 import { cn } from "@/lib/utils";
 
 type LeagueLogoProps = {
@@ -59,7 +63,12 @@ export function LeagueLogo({
       loading="lazy"
       decoding="async"
       referrerPolicy="no-referrer"
-      className={cn("shrink-0 object-contain", className)}
+      className={cn(
+        "shrink-0 object-contain",
+        // SHL-loggan är svart på genomskinlig botten och syns inte annars.
+        needsLightBackdrop(resolved) && "rounded-[4px] bg-white/90 p-[2px]",
+        className
+      )}
       style={{ width: size, height: size }}
       onError={() => setFailed(true)}
     />

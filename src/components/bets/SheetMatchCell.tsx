@@ -73,8 +73,16 @@ export function betMatchSides(bet: Bet, now = Date.now()): Sides {
 
   const manual = parseMatchSides(bet.match);
   return {
-    home: { name: manual?.home || bet.match, logo: null, score: null },
-    away: { name: manual?.away || "", logo: null, score: null },
+    home: {
+      name: manual?.home || bet.match,
+      logo: bet.manual_logos?.home ?? null,
+      score: null,
+    },
+    away: {
+      name: manual?.away || "",
+      logo: bet.manual_logos?.away ?? null,
+      score: null,
+    },
     status: phase.label,
     tone: phase.tone,
     live: phase.live,

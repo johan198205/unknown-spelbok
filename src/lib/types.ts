@@ -1668,6 +1668,8 @@ export type Bet = Omit<Tables<"bets">, "result" | "settled_by" | "payout"> & {
   payout: number;
   /** Fri notering — visas som "i"-markör i kort-/tabellvy när den finns. */
   note?: string | null;
+  /** Lagloggor för spel utan kopplad match, uppslagna på namn (manual-logos.ts). */
+  manual_logos?: { home: string | null; away: string | null } | null;
   bookmakers?: Pick<
     Bookmaker,
     "id" | "name" | "logo_url" | "brand_color"

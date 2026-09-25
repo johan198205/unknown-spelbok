@@ -258,8 +258,11 @@ export function ManualMatchLabel({
   match,
   size = 18,
   stacked = false,
+  logos,
 }: {
   match: string;
+  /** Loggor uppslagna på lagnamn (manual-logos.ts), när de finns. */
+  logos?: { home: string | null; away: string | null } | null;
   size?: number;
   stacked?: boolean;
 }) {
@@ -269,8 +272,22 @@ export function ManualMatchLabel({
   }
   if (stacked) {
     return (
-      <MatchStack homeName={sides.home} awayName={sides.away} size={size} />
+      <MatchStack
+        homeName={sides.home}
+        awayName={sides.away}
+        homeLogo={logos?.home}
+        awayLogo={logos?.away}
+        size={size}
+      />
     );
   }
-  return <MatchSides homeName={sides.home} awayName={sides.away} size={size} />;
+  return (
+    <MatchSides
+      homeName={sides.home}
+      awayName={sides.away}
+      homeLogo={logos?.home}
+      awayLogo={logos?.away}
+      size={size}
+    />
+  );
 }

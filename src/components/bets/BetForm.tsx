@@ -736,7 +736,7 @@ export function BetRow({
         {fixture ? (
           <FixtureMatch fixture={fixture} stacked logoSize={22} />
         ) : (
-          <ManualMatchLabel match={bet.match} stacked size={22} />
+          <ManualMatchLabel match={bet.match} logos={bet.manual_logos} stacked size={22} />
         )}
       </td>
       <td className="whitespace-nowrap px-2.5 py-3 font-bold">
