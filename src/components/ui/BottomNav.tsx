@@ -161,9 +161,23 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
             type="button"
             onClick={onAdd}
             aria-label="Lägg nytt spel"
-            className="-mt-[26px] flex h-14 w-14 items-center justify-center rounded-full border-4 border-bg-soft bg-win text-[28px] font-bold leading-none text-win-ink shadow-[0_8px_22px_rgba(102,227,138,.3)]"
+            className="-mt-[26px] flex h-14 w-14 items-center justify-center rounded-full border-4 border-bg-soft bg-win text-win-ink shadow-[0_8px_22px_rgba(102,227,138,.3)]"
           >
-            +
+            {/* SVG i stället för "+"-tecknet, som typsnittet placerar för lågt. */}
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M12 4v16M4 12h16"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
           </button>
         </div>
 
