@@ -60,10 +60,8 @@ export default async function PlanketPage() {
       {/*
         Två fasta kolumner med 24 px mellanrum, båda uppifrån.
 
-        Högerkolumnen kommer in vid `sheet` (1180 px), inte vid lg (1024 px).
-        640 + 24 + 332 = 996, och med sidans 40 px vågräta padding blir det
-        1036 — vid lg hade det gett vågrät scroll. Korten byter däremot till
-        desktopvarianten redan vid lg, där kolumnen har gott om plats.
+        Högerkolumnen är en banner bred (160 px) och kommer in vid lg:
+        640 + 24 + 160 = 824, med sidans 40 px vågräta padding 864 px.
         Högerkolumnen är annonsyta (160×600, se PlanketSidebar).
       */}
       <div className="mx-auto flex w-full max-w-[1280px] items-start gap-6">
