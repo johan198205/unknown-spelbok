@@ -2,8 +2,8 @@
  * Skapar (eller uppgraderar) en superadmin — kontot som loggar in på
  * /admin/login och därifrån kan lägga till användare och admins.
  *
- * Finns e-postadressen redan uppgraderas det kontot, lösenordet lämnas orört.
- * Annars skapas ett nytt konto med lösenordet du anger.
+ * Finns e-postadressen redan uppgraderas det kontot, och du kan välja att
+ * sätta ett nytt lösenord. Annars skapas ett nytt konto.
  *
  * Kör db/admin-invites.sql och db/superadmin.sql först.
  *
@@ -82,6 +82,21 @@ async function main() {
   if (existing) {
     console.log("Kontot finns redan — uppgraderar till superadmin.");
     userId = existing.id;
+
+    const rl2 = createInterface({ input: stdin, output: stdout });
+    const reset = (await rl2.question("Sätt nytt lösenord? (j/N): ")).trim();
+    rl2.close();
+    if (/^j/i.test(reset)) {
+      const password = await askHidden("Nytt lösenord (minst 8 tecken): ");
+      if (password.length < 8) throw new Error("Lösenordet ska vara minst 8 tecken");
+      const again = await askHidden("Upprepa lösenordet: ");
+      if (again !== password) throw new Error("Lösenorden matchar inte");
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        password,
+      });
+      if (error) throw error;
+      console.log("Lösenordet är uppdaterat.");
+    }
   } else {
     const rl2 = createInterface({ input: stdin, output: stdout });
     const username = (await rl2.question("Användarnamn: ")).trim();
@@ -90,6 +105,8 @@ async function main() {
 
     const password = await askHidden("Lösenord (minst 8 tecken): ");
     if (password.length < 8) throw new Error("Lösenordet ska vara minst 8 tecken");
+    const again = await askHidden("Upprepa lösenordet: ");
+    if (again !== password) throw new Error("Lösenorden matchar inte");
 
     const { data, error } = await supabase.auth.admin.createUser({
       email,
