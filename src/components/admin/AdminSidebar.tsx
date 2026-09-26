@@ -20,6 +20,7 @@ import {
   type LucideIcon,
   SlidersHorizontal,} from "lucide-react";
 import { cn, initialOf } from "@/lib/utils";
+import { adminSignOut } from "@/lib/admin/admin-auth";
 
 const NAV: {
   href: string;
@@ -121,6 +122,14 @@ export function AdminSidebar({
         >
           Till appen ↗
         </Link>
+        <form action={adminSignOut} className="mt-2">
+          <button
+            type="submit"
+            className="block w-full cursor-pointer rounded-[9px] border border-transparent bg-transparent px-[9px] py-[7px] text-center text-[13px] text-muted hover:text-text"
+          >
+            Logga ut från admin
+          </button>
+        </form>
       </div>
     </aside>
   );

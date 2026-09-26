@@ -1,6 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { fetchSiteSettingsCached } from "@/lib/site-settings";
+import {
+  ADMIN_AUTH_COOKIE,
+  AUTH_SCOPE_HEADER,
+  cookieOptionsFor,
+  isAdminAuthPath,
+  scopeForPath,
+} from "@/lib/supabase/scope";
 
 const MAINTENANCE_PATH = "/underhall";
 
@@ -19,13 +26,32 @@ function isMaintenanceExempt(path: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-  supabaseResponse.headers.set("x-pathname", request.nextUrl.pathname);
+  const scope = scopeForPath(request.nextUrl.pathname);
+
+  /** Vidarebefordrar requesten med scope-headern satt (och aldrig från klienten). */
+  function next() {
+    const headers = new Headers(request.headers);
+    headers.set(AUTH_SCOPE_HEADER, scope);
+    const res = NextResponse.next({ request: { headers } });
+    res.headers.set("x-pathname", request.nextUrl.pathname);
+    return res;
+  }
+
+  function redirectKeepingCookies(url: URL) {
+    const redirect = NextResponse.redirect(url);
+    for (const cookie of supabaseResponse.cookies.getAll()) {
+      redirect.cookies.set(cookie);
+    }
+    return redirect;
+  }
+
+  let supabaseResponse = next();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: cookieOptionsFor(scope),
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -34,11 +60,7 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
-          supabaseResponse.headers.set(
-            "x-pathname",
-            request.nextUrl.pathname
-          );
+          supabaseResponse = next();
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -61,28 +83,7 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/statistik") ||
     path.startsWith("/tavlingar") ||
     path.startsWith("/installningar");
-  const isAdmin = path.startsWith("/admin");
-
-  // Inloggade ska landa på Hem, inte marknadsföringsstartsidan.
-  if (user && (path === "/" || path === "/login" || path === "/registrera")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/hem";
-    url.search = "";
-    const redirect = NextResponse.redirect(url);
-    for (const cookie of supabaseResponse.cookies.getAll()) {
-      redirect.cookies.set(cookie);
-    }
-    return redirect;
-  }
-
-  if ((isApp || isAdmin) && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    const returnTo = path + (request.nextUrl.search || "");
-    url.search = "";
-    url.searchParams.set("next", returnTo);
-    return NextResponse.redirect(url);
-  }
+  const isAdmin = path === "/admin" || path.startsWith("/admin/");
 
   let role: string | null = null;
   async function loadRole() {
@@ -96,12 +97,47 @@ export async function middleware(request: NextRequest) {
     return role;
   }
 
-  if (isAdmin && user) {
-    if ((await loadRole()) !== "admin") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/spelbok";
-      return NextResponse.redirect(url);
+  // Admin: egen session och egen inloggning, se lib/supabase/scope.ts.
+  if (isAdmin) {
+    const isAdminUser = !!user && (await loadRole()) === "admin";
+
+    if (isAdminAuthPath(path)) {
+      if (isAdminUser && path === "/admin/login") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin";
+        url.search = "";
+        return redirectKeepingCookies(url);
+      }
+      return supabaseResponse;
     }
+
+    if (!isAdminUser) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin/login";
+      const returnTo = path + (request.nextUrl.search || "");
+      url.search = "";
+      if (returnTo !== "/admin") url.searchParams.set("next", returnTo);
+      return redirectKeepingCookies(url);
+    }
+
+    return supabaseResponse;
+  }
+
+  // Inloggade ska landa på Hem, inte marknadsföringsstartsidan.
+  if (user && (path === "/" || path === "/login" || path === "/registrera")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/hem";
+    url.search = "";
+    return redirectKeepingCookies(url);
+  }
+
+  if (isApp && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    const returnTo = path + (request.nextUrl.search || "");
+    url.search = "";
+    url.searchParams.set("next", returnTo);
+    return NextResponse.redirect(url);
   }
 
   if (!isMaintenanceExempt(path)) {
@@ -119,7 +155,11 @@ export async function middleware(request: NextRequest) {
       return redirect;
     }
 
-    if (site.maintenance && (await loadRole()) !== "admin") {
+    if (
+      site.maintenance &&
+      (await loadRole()) !== "admin" &&
+      !(await hasAdminSession(request))
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = MAINTENANCE_PATH;
       url.search = "";
@@ -134,6 +174,40 @@ export async function middleware(request: NextRequest) {
   }
 
   return supabaseResponse;
+}
+
+/**
+ * Admin ska kunna se sajten i underhållsläge även när hen bara är inloggad
+ * i admin. Kakorna skrivs aldrig tillbaka härifrån — adminsessionen förnyas
+ * när admin själv används.
+ */
+async function hasAdminSession(request: NextRequest) {
+  if (!request.cookies.getAll().some((c) => c.name.startsWith(ADMIN_AUTH_COOKIE))) {
+    return false;
+  }
+  const admin = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: cookieOptionsFor("admin"),
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll() {},
+      },
+    }
+  );
+  const {
+    data: { user },
+  } = await admin.auth.getUser();
+  if (!user) return false;
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  return profile?.role === "admin";
 }
 
 export const config = {

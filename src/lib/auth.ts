@@ -36,9 +36,9 @@ export async function requireUser() {
   return user;
 }
 
+/** Körs under /admin, där getProfile() läser adminsessionen (se supabase/scope.ts). */
 export async function requireAdmin() {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
-  if (profile.role !== "admin") redirect("/spelbok");
+  if (!profile || profile.role !== "admin") redirect("/admin/login");
   return profile;
 }
