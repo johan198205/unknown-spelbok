@@ -60,12 +60,12 @@ export default async function PlanketPage() {
       {/*
         Två fasta kolumner med 24 px mellanrum, båda uppifrån.
 
-        Högerkolumnen är en banner bred (160 px) och kommer in vid lg:
-        640 + 24 + 160 = 824, med sidans 40 px vågräta padding 864 px.
+        Flödet fyller samma bredd som övriga sidor (layoutens 1360 px) och
+        högerkolumnen är en banner bred (160 px) från lg.
         Högerkolumnen är annonsyta (160×600, se PlanketSidebar).
       */}
-      <div className="mx-auto flex w-full max-w-[1280px] items-start gap-6">
-        <div className="w-full min-w-0 lg:max-w-[640px] sheet:w-[640px] sheet:max-w-none sheet:shrink-0">
+      <div className="flex w-full items-start gap-6">
+        <div className="w-full min-w-0 flex-1">
           <h1 className="mb-4 hidden font-display text-[26px] font-semibold uppercase tracking-[0.06em] lg:block">
             Planket
           </h1>
