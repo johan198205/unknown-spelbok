@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireSuperadmin } from "@/lib/auth";
 import { logAdmin } from "@/lib/admin/log";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function setUserRole(userId: string, role: "user" | "admin") {
-  await requireAdmin();
+  await requireSuperadmin();
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
@@ -17,7 +17,8 @@ export async function setUserRole(userId: string, role: "user" | "admin") {
 
   const { error } = await supabase
     .from("profiles")
-    .update({ role })
+    // Superadmin kräver adminroll, så flaggan följer med ner.
+    .update(role === "user" ? { role, is_superadmin: false } : { role })
     .eq("id", userId);
   if (error) throw new Error(error.message);
 

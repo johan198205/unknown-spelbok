@@ -12,6 +12,7 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen bg-bg-soft text-text">
       <AdminSidebar
+        isSuperadmin={profile.is_superadmin}
         username={profile.username}
         avatarUrl={profile.avatar_url}
       />

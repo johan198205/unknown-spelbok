@@ -1211,6 +1211,7 @@ export type Database = {
           currency: string
           display_mode: string
           id: string
+          is_superadmin: boolean
           last_seen_at: string | null
           notify_settle: boolean
           role: string
@@ -1225,6 +1226,7 @@ export type Database = {
           currency?: string
           display_mode?: string
           id: string
+          is_superadmin?: boolean
           last_seen_at?: string | null
           notify_settle?: boolean
           role?: string
@@ -1239,6 +1241,7 @@ export type Database = {
           currency?: string
           display_mode?: string
           id?: string
+          is_superadmin?: boolean
           last_seen_at?: string | null
           notify_settle?: boolean
           role?: string

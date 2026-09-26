@@ -47,7 +47,9 @@ const NAV: {
 export function AdminSidebar({
   username,
   avatarUrl,
+  isSuperadmin,
 }: {
+  isSuperadmin: boolean;
   username: string;
   avatarUrl: string | null;
 }) {
@@ -113,7 +115,9 @@ export function AdminSidebar({
             <div className="truncate text-[13.5px] font-semibold">
               {username}
             </div>
-            <div className="text-[11.5px] text-dim">Superadmin</div>
+            <div className="text-[11.5px] text-dim">
+              {isSuperadmin ? "Superadmin" : "Admin"}
+            </div>
           </div>
         </div>
         <Link

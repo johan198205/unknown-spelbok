@@ -3,7 +3,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { getProfile, requireSuperadmin } from "@/lib/auth";
 import { logAdmin } from "@/lib/admin/log";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -166,7 +166,8 @@ export type AdminInviteRow = {
 };
 
 export async function getAdminInvites(): Promise<AdminInviteRow[]> {
-  await requireAdmin();
+  const profile = await getProfile();
+  if (!profile?.is_superadmin) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("admin_invites")
@@ -180,7 +181,7 @@ export async function getAdminInvites(): Promise<AdminInviteRow[]> {
 export async function createAdminInvite(
   email: string
 ): Promise<{ token: string } | { error: string }> {
-  const profile = await requireAdmin();
+  const profile = await requireSuperadmin();
   const normalized = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
     return { error: "Ange en giltig e-postadress." };
@@ -201,7 +202,7 @@ export async function createAdminInvite(
 }
 
 export async function revokeAdminInvite(id: string) {
-  await requireAdmin();
+  await requireSuperadmin();
   const supabase = await createClient();
   const { data } = await supabase
     .from("admin_invites")
@@ -212,4 +213,66 @@ export async function revokeAdminInvite(id: string) {
     .maybeSingle();
   if (data) await logAdmin("admin.invite_revoked", data.email);
   revalidatePath("/admin/anvandare");
+}
+
+/**
+ * Superadmin lägger in ett konto direkt, utan inbjudan. Kontot är
+ * bekräftat från start; lösenordet lämnar admin själv över till personen.
+ */
+export async function createUserAccount(input: {
+  email: string;
+  username: string;
+  password: string;
+  role: "user" | "admin";
+}): Promise<{ ok: true } | { error: string }> {
+  await requireSuperadmin();
+
+  const email = input.email.trim().toLowerCase();
+  const username = input.username.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Ange en giltig e-postadress." };
+  }
+  if (username.length < 3 || username.length > 30) {
+    return { error: "Användarnamnet ska vara 3–30 tecken." };
+  }
+  if (input.password.length < 8) {
+    return { error: "Lösenordet ska vara minst 8 tecken." };
+  }
+
+  const admin = createAdminClient();
+  const { data: taken } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+  if (taken) return { error: "Användarnamnet är upptaget." };
+
+  const { data: created, error } = await admin.auth.admin.createUser({
+    email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: { username },
+  });
+  if (error || !created.user) {
+    const exists = /already|registered|exists/i.test(error?.message ?? "");
+    return {
+      error: exists
+        ? "Det finns redan ett konto med den e-postadressen."
+        : "Kontot kunde inte skapas. Försök igen.",
+    };
+  }
+
+  if (input.role === "admin") {
+    await admin
+      .from("profiles")
+      .update({ role: "admin" })
+      .eq("id", created.user.id);
+  }
+
+  await logAdmin("user.created", `användare ${username}`, {
+    userId: created.user.id,
+    role: input.role,
+  });
+  revalidatePath("/admin/anvandare");
+  return { ok: true };
 }

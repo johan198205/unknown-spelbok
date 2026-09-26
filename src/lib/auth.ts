@@ -42,3 +42,12 @@ export async function requireAdmin() {
   if (!profile || profile.role !== "admin") redirect("/admin/login");
   return profile;
 }
+
+/** Superadmin: får skapa konton, bjuda in admins och ändra roller. */
+export async function requireSuperadmin() {
+  const profile = await requireAdmin();
+  if (!profile.is_superadmin) {
+    throw new Error("Bara superadmin kan göra det här.");
+  }
+  return profile;
+}

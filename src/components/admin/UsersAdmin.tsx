@@ -34,7 +34,9 @@ export function UsersAdminView({
   page,
   q,
   filter,
+  canManageRoles,
 }: {
+  canManageRoles: boolean;
   rows: AdminUserRow[];
   total: number;
   page: number;
@@ -229,20 +231,22 @@ export function UsersAdminView({
                   >
                     Visa profil
                   </Link>
-                  <button
-                    type="button"
-                    className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
-                    onClick={() => {
-                      setMenuId(null);
-                      setConfirm({
-                        type: "role",
-                        user: u,
-                        nextRole: isAdmin ? "user" : "admin",
-                      });
-                    }}
-                  >
-                    {isAdmin ? "Ta bort admin" : "Gör till admin"}
-                  </button>
+                  {canManageRoles ? (
+                    <button
+                      type="button"
+                      className="w-full rounded-[7px] px-[11px] py-[9px] text-left text-[13.5px] font-semibold hover:bg-hover2"
+                      onClick={() => {
+                        setMenuId(null);
+                        setConfirm({
+                          type: "role",
+                          user: u,
+                          nextRole: isAdmin ? "user" : "admin",
+                        });
+                      }}
+                    >
+                      {isAdmin ? "Ta bort admin" : "Gör till admin"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className={cn(

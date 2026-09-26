@@ -12,7 +12,8 @@
     "push:doctor": "tsx scripts/push-doctor.ts",
     "push:auth-check": "tsx scripts/notify-auth-check.ts",
     "check:notify-idempotens": "tsx scripts/notify-idempotens.ts",
-    "seed:banners": "tsx scripts/seed-demo-banners.ts"
+    "seed:banners": "tsx scripts/seed-demo-banners.ts",
+    "admin:superuser": "tsx scripts/create-superadmin.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
