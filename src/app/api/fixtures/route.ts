@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sportLabel, sportSlug } from "@/lib/apisports";
+import { SPORT_SLUGS, type SportSlug } from "@/lib/sports";
 import {
   ensureFixturesForDate,
   getFixtureCoverage,
@@ -58,7 +59,7 @@ function venueFromRaw(raw: unknown) {
   return trimmed || null;
 }
 
-/** Landet är en sträng i api-football och ett objekt i api-hockey */
+/** Landet är en sträng i api-football och ett objekt i v1-API:erna */
 function countryName(value: unknown) {
   if (typeof value === "string") return value.trim() || null;
   if (value && typeof value === "object") {
@@ -223,9 +224,24 @@ export async function GET(request: NextRequest) {
       (date < coverage.from || date > coverage.to)
     );
 
+    // Vald sport fylls; utan sportfilter (matchsöket "Alla") fylls alla.
+    // En sport som fallerar får inte stoppa de andra.
+    const fillSports: SportSlug[] = sportParam
+      ? [sportSlug(sportParam)]
+      : SPORT_SLUGS;
+
     if (date && !planLimited && !ids.length) {
-      const filled = await ensureFixturesForDate(date);
-      if (filled > 0) source = "api";
+      const filled = await Promise.allSettled(
+        fillSports.map((s) => ensureFixturesForDate(date, s))
+      );
+      for (const r of filled) {
+        if (r.status === "rejected") {
+          console.error("ensureFixturesForDate", date, r.reason);
+        }
+      }
+      if (filled.some((r) => r.status === "fulfilled" && r.value > 0)) {
+        source = "api";
+      }
     }
 
     const { data, error } = await load();
@@ -236,7 +252,7 @@ export async function GET(request: NextRequest) {
     const latestCoverage = ids.length ? null : getFixtureCoverage() ?? coverage;
     const filling =
       !!(date && !planLimited && !ids.length) &&
-      !(await isFixtureDayReady(date));
+      !(await isFixtureDayReady(date, fillSports[0]));
     const rows = data ?? [];
     const fixtures = rows.map(withLogos);
     return NextResponse.json(

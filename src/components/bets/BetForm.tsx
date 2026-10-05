@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
 import { SearchDropdown } from "@/components/ui/SearchDropdown";
+import { findSport } from "@/lib/sports";
 import { settleOutcome, track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import type { Bet, BetResult, Bookmaker, Fixture, Sheet } from "@/lib/types";
@@ -59,11 +60,9 @@ import type { DropdownOption } from "@/components/ui/SearchDropdown";
 
 type MatchMode = "search" | "manual" | "chosen";
 
+/** API-sportens slug, eller null för sporter utan API (Tennis). */
 function sportToApiSlug(sport: string) {
-  const s = sport.toLowerCase();
-  if (s.includes("hockey")) return "hockey";
-  if (s.includes("fotboll") || s.includes("football")) return "football";
-  return null;
+  return findSport(sport)?.slug ?? null;
 }
 
 function leagueOptionIcon(name: string, logo: string | null, id?: number | null) {
@@ -270,7 +269,7 @@ export function BetForm({
     if (fromApi) {
       setLeagueId(fromApi.id);
       setLeagueLogo(fromApi.logo);
-      setSport(sport || (sportToApiSlug(sport) === "hockey" ? "Ishockey" : "Fotboll"));
+      setSport(sport || "Fotboll");
       setPick("");
       return;
     }

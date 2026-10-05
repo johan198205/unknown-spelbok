@@ -1,9 +1,16 @@
 /**
  * SPELBOK — Edge Function: sync-fixtures
  *
- * Körs 1 gång/dygn (05:00 Europe/Stockholm, se db/cron.sql).
- * Hämtar säsongens matcher (+ lag om de saknas) för varje aktiv liga
- * och upsertar till fixtures/teams. Inga anrop sker från Next.js.
+ * Körs 1 gång/dygn (se db/cron.sql). Två lägen:
+ *
+ *   ?sport=football (standard)
+ *     Säsongens matcher (+ lag om de saknas) för varje aktiv liga i
+ *     active_leagues.
+ *
+ *   ?sport=hockey|basketball|… (övriga sporter i sports.ts)
+ *     Alla matcher i sporten för idag och de närmaste dagarna
+ *     (?days=, standard 7). Ett /games?date=-anrop per dygn — så att
+ *     matchsöket hittar kommande matcher utan att någon först öppnat dagen.
  *
  * Deploy:
  *   supabase secrets set APISPORTS_KEY=... APISPORTS_FOOTBALL_URL=https://v3.football.api-sports.io
@@ -19,6 +26,8 @@ import {
   type SportSlug,
 } from "../_shared/apisports.ts";
 import { mapFixtureRow, mapTeamRow } from "../_shared/map.ts";
+import { fetchGamesByDate } from "../_shared/sport-games.ts";
+import { isSportSlug } from "../_shared/sports.ts";
 import {
   createServiceClient,
   finishSyncLog,
@@ -41,11 +50,95 @@ function json(body: unknown, status = 200) {
   return Response.json(body, { status });
 }
 
+const DEFAULT_DAYS_AHEAD = 7;
+const MAX_DAYS_AHEAD = 14;
+
+function addDays(ymd: string, days: number) {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function stockholmToday() {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: DEFAULT_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/** Kommande dygn för en sport utan active_leagues (allt i sporten). */
+async function syncUpcoming(sport: SportSlug, days: number) {
+  const startedAt = Date.now();
+  const supabase = createServiceClient();
+  const logId = await startSyncLog(supabase, "sync-fixtures", sport);
+  const api = clientForSport(sport, { get: envGet });
+  const perDay: Record<string, number> = {};
+  let upserted = 0;
+
+  try {
+    const today = stockholmToday();
+    for (let i = 0; i <= days; i++) {
+      const ymd = addDays(today, i);
+      const games = await fetchGamesByDate(api, sport, ymd);
+      const now = new Date().toISOString();
+      const rows = games.map((g) => mapFixtureRow(g, sport, now));
+      for (let j = 0; j < rows.length; j += 200) {
+        const { error } = await supabase
+          .from("fixtures")
+          .upsert(rows.slice(j, j + 200), { onConflict: "fixture_id" });
+        if (error) throw new Error(`fixtures upsert: ${error.message}`);
+      }
+      perDay[ymd] = rows.length;
+      upserted += rows.length;
+    }
+
+    await finishSyncLog(supabase, logId, {
+      ok: true,
+      requests: api.requestCount(),
+      upserted,
+      meta: { days: perDay },
+    });
+    return json({
+      ok: true,
+      sport,
+      upserted,
+      requests: api.requestCount(),
+      days: perDay,
+      ms: Date.now() - startedAt,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("sync-fixtures", sport, message);
+    await finishSyncLog(supabase, logId, {
+      ok: false,
+      requests: api.requestCount(),
+      upserted,
+      error: message,
+      meta: { days: perDay },
+    }).catch(() => {});
+    return json({ ok: false, sport, error: message, upserted }, 500);
+  }
+}
+
 export async function handleSyncFixtures(req: Request) {
   const startedAt = Date.now();
   const url = new URL(req.url);
-  const sportFilter = (url.searchParams.get("sport") || "football") as SportSlug;
+  const sportParam = (url.searchParams.get("sport") || "football").toLowerCase();
+  if (!isSportSlug(sportParam)) {
+    return json({ ok: false, error: `Okänd sport: ${sportParam}` }, 400);
+  }
+  const sportFilter = sportParam as SportSlug;
   const forceTeams = url.searchParams.get("teams") === "1";
+
+  if (sportFilter !== "football") {
+    const days = Math.min(
+      MAX_DAYS_AHEAD,
+      Math.max(0, Number(url.searchParams.get("days") ?? DEFAULT_DAYS_AHEAD) || 0)
+    );
+    return syncUpcoming(sportFilter, days);
+  }
 
   let logId: string | null = null;
   let requests = 0;

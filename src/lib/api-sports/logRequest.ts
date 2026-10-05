@@ -17,7 +17,8 @@ import { after } from "next/server";
 import type { ApiSportsRequestEvent } from "@/lib/apisports";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type ApiProvider = "api-football" | "api-hockey";
+/** "api-football", "api-hockey", "api-basketball" … — se sports.ts. */
+export type ApiProvider = string;
 
 export type ApiRequestLogEntry = {
   provider: ApiProvider;

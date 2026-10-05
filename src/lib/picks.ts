@@ -1,6 +1,12 @@
-export const SPORTS = ["Fotboll", "Ishockey", "Tennis"] as const;
+import { SPORT_LABELS } from "@/lib/sports";
 
-export type Sport = (typeof SPORTS)[number];
+/**
+ * Sporterna i spelformuläret: alla API-sporter (sports.ts) plus Tennis,
+ * som saknas hos API-Sports och bara kan läggas in manuellt.
+ */
+export const SPORTS: readonly string[] = [...SPORT_LABELS, "Tennis"];
+
+export type Sport = string;
 
 /** Liga → sport. Statisk lista tills API levererar ligor. */
 export const LEAGUES: Record<string, Sport> = {
@@ -158,6 +164,55 @@ export const PICK_GROUPS: Record<string, PickGroup[]> = {
         "Ö2.5 skott på mål",
       ],
     },
+  ],
+  Basket: [
+    { label: "Matchvinnare inkl. övertid", options: ["1", "2"] },
+    {
+      label: "Handikapp",
+      options: ["Hemma -4.5", "Hemma -7.5", "Borta +4.5", "Borta +7.5"],
+    },
+    { label: "Poäng – totalen", options: ["Ö160.5", "U160.5", "Ö220.5", "U220.5"] },
+  ],
+  "Amerikansk fotboll": [
+    { label: "Matchvinnare inkl. övertid", options: ["1", "2"] },
+    {
+      label: "Handikapp",
+      options: ["Hemma -3.5", "Hemma -7.5", "Borta +3.5", "Borta +7.5"],
+    },
+    { label: "Poäng – totalen", options: ["Ö40.5", "U40.5", "Ö47.5", "U47.5"] },
+  ],
+  Baseboll: [
+    { label: "Matchvinnare inkl. extra innings", options: ["1", "2"] },
+    { label: "Run line", options: ["Hemma -1.5", "Borta +1.5"] },
+    { label: "Runs – totalen", options: ["Ö7.5", "U7.5", "Ö8.5", "U8.5"] },
+  ],
+  Handboll: [
+    { label: "Matchresultat", options: ["1", "X", "2", "1X", "X2", "12"] },
+    {
+      label: "Handikapp",
+      options: ["Hemma -2.5", "Hemma -4.5", "Borta +2.5", "Borta +4.5"],
+    },
+    { label: "Mål – totalen", options: ["Ö52.5", "U52.5", "Ö55.5", "U55.5"] },
+  ],
+  Rugby: [
+    { label: "Matchresultat", options: ["1", "X", "2"] },
+    { label: "Handikapp", options: ["Hemma -6.5", "Borta +6.5"] },
+    { label: "Poäng – totalen", options: ["Ö40.5", "U40.5", "Ö45.5", "U45.5"] },
+  ],
+  Volleyboll: [
+    { label: "Matchvinnare", options: ["1", "2"] },
+    { label: "Setresultat", options: ["3-0", "3-1", "3-2", "0-3", "1-3", "2-3"] },
+    { label: "Set – totalen", options: ["Ö3.5 set", "U3.5 set"] },
+  ],
+  AFL: [
+    { label: "Matchresultat", options: ["1", "X", "2"] },
+    { label: "Handikapp", options: ["Hemma -12.5", "Borta +12.5"] },
+    { label: "Poäng – totalen", options: ["Ö160.5", "U160.5"] },
+  ],
+  MMA: [
+    { label: "Matchvinnare", options: ["1", "2"] },
+    { label: "Vinstmetod", options: ["KO/TKO", "Submission", "Domslut"] },
+    { label: "Ronder", options: ["Ö1.5 ronder", "U1.5 ronder", "Går tiden ut"] },
   ],
   Tennis: [
     {

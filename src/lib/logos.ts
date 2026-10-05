@@ -1,5 +1,14 @@
+import { sportDef } from "@/lib/sports";
+
 function isHockey(sport?: string | null) {
   return (sport || "").toLowerCase().includes("hockey");
+}
+
+/** Mappen på media.api-sports.io. MMA har fighters i stället för lag. */
+function mediaPath(sport: string | null | undefined, kind: "teams" | "leagues") {
+  const def = sportDef(sport);
+  if (def.slug === "mma" && kind === "teams") return "mma/fighters";
+  return `${def.media}/${kind}`;
 }
 
 /** Fallback när fixtures-cachen saknar logo_url men har team-id. */
@@ -10,7 +19,7 @@ export function teamLogoUrl(
 ) {
   if (logo) return logo;
   if (teamId == null) return null;
-  return `https://media.api-sports.io/${isHockey(sport) ? "hockey" : "football"}/teams/${teamId}.png`;
+  return `https://media.api-sports.io/${mediaPath(sport, "teams")}/${teamId}.png`;
 }
 
 /** Fallback när fixtures-cachen saknar league_logo men har league_id. */
@@ -20,8 +29,9 @@ export function leagueLogoUrl(
   sport?: string | null
 ) {
   if (logo) return logo;
-  if (leagueId == null) return null;
-  return `https://media.api-sports.io/${isHockey(sport) ? "hockey" : "football"}/leagues/${leagueId}.png`;
+  // MMA har inga ligor (id 0) — ingen logga hellre än en trasig.
+  if (leagueId == null || leagueId === 0) return null;
+  return `https://media.api-sports.io/${mediaPath(sport, "leagues")}/${leagueId}.png`;
 }
 
 /** Första bokstaven i lagnamn (platshållare när logo saknas). */

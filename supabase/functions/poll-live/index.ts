@@ -4,7 +4,8 @@
  * Körs var 3:e minut (se db/cron.sql). Håller fixtures.status/elapsed/mål
  * uppdaterade under pågående matcher. Tom lista → noll API-anrop.
  *
- * Max 20 fixture-id:n per /fixtures?ids=…-anrop. När en match blir
+ * Fotboll: max 20 fixture-id:n per /fixtures?ids=…-anrop. Övriga sporter:
+ * ett /games?date=…-anrop per sport och dygn. När en match blir
  * FT/AET/PEN körs samma sättling som settle-results.
  *
  * Deploy:
@@ -13,10 +14,7 @@
 
 import {
   clientForSport,
-  chunk,
   currentScore,
-  DEFAULT_TIMEZONE,
-  FIXTURE_IDS_PER_CALL,
   isInPlay,
   POLL_LIVE_SKIP_STATUSES,
   regulationScore,
@@ -31,6 +29,8 @@ import {
   type FinishedMatchNotice,
 } from "../_shared/finish-notify.ts";
 import { mapFixtureRow } from "../_shared/map.ts";
+import { fetchGamesForFixtures } from "../_shared/sport-games.ts";
+import { sportDef } from "../_shared/sports.ts";
 import { settleOpenBets } from "../_shared/settle-open.ts";
 import { notifySite } from "../_shared/site-notify.ts";
 import {
@@ -43,6 +43,7 @@ const LIVE_BATCH = 60;
 
 type LiveFixture = {
   fixture_id: number;
+  kickoff: string;
   sport: string;
   home_score: number | null;
   away_score: number | null;
@@ -75,7 +76,7 @@ export async function handlePollLive(req: Request) {
   const nowIso = new Date().toISOString();
   const skipList = `("${POLL_LIVE_SKIP_STATUSES.join('","')}")`;
 
-  const cols = "fixture_id, sport, home_score, away_score";
+  const cols = "fixture_id, kickoff, sport, home_score, away_score";
 
   // Matcher med öppna spel går ALLTID först. Upp till ~190 matcher världen
   // över kan sparka i gång inom samma tvåtimmarsfönster, så en bettad match
@@ -152,16 +153,8 @@ export async function handlePollLive(req: Request) {
 
     for (const [sport, group] of groupBySport(fixtures)) {
       const api = clientForSport(sport, { get: envGet });
-      for (const ids of chunk(
-        group.map((f) => f.fixture_id),
-        FIXTURE_IDS_PER_CALL
-      )) {
-        const items = await api.get<ApiFixtureItem>("/fixtures", {
-          ids: ids.join("-"),
-          timezone: DEFAULT_TIMEZONE,
-        });
-        for (const item of items) results.set(item.fixture.id, { item, sport });
-      }
+      const games = await fetchGamesForFixtures(api, sport, group);
+      for (const [id, item] of games) results.set(id, { item, sport });
       summary.requests += api.requestCount();
     }
 
@@ -188,9 +181,12 @@ export async function handlePollLive(req: Request) {
       const nextHome = score.home ?? 0;
       const nextAway = score.away ?? 0;
       const inPlay = isInPlay(status);
+      // Målnotiser bara där en ändrad ställning är ett mål — i basket
+      // skulle varje korg bli en notis.
       if (
         !dryRun &&
         inPlay &&
+        sportDef(hit.sport).scoreNotices &&
         nextHome + nextAway > prevHome + prevAway
       ) {
         goalNotices.push(

@@ -1,5 +1,5 @@
 /**
- * Delad API-Sports-klient (API-Football v3 / API-Hockey v3).
+ * Delad API-Sports-klient (API-Football v3 + v1-API:erna för övriga sporter).
  *
  * Används av Edge Functions (kopia i supabase/functions/_shared/apisports.ts)
  * och eventuella serverscript. Route handlers i Next.js ska ALDRIG anropa
@@ -7,12 +7,13 @@
  *
  * Sport-agnostisk: skicka in rätt base-URL.
  *   football → APISPORTS_FOOTBALL_URL (https://v3.football.api-sports.io)
- *   hockey   → APISPORTS_HOCKEY_URL   (https://v3.hockey.api-sports.io)
+ *   övriga   → se sports.ts (t.ex. https://v1.hockey.api-sports.io)
  *
  * Håll i synk med supabase/functions/_shared/apisports.ts.
  */
 
 import { apiSportsLogger } from "./log-request.ts";
+import { sportDef, type SportSlug } from "./sports.ts";
 
 export const DEFAULT_TIMEZONE = "Europe/Stockholm";
 export const MAX_REQUESTS_PER_MINUTE = 8;
@@ -21,9 +22,9 @@ export const FIXTURE_IDS_PER_CALL = 20;
 export const API_PAGE_SIZE = 20;
 export const MAX_API_PAGES = 40;
 export const DEFAULT_FOOTBALL_URL = "https://v3.football.api-sports.io";
-export const DEFAULT_HOCKEY_URL = "https://v3.hockey.api-sports.io";
+export const DEFAULT_HOCKEY_URL = "https://v1.hockey.api-sports.io";
 
-export type SportSlug = "football" | "hockey";
+export type { SportSlug };
 
 export type ApiSportsPaging = {
   current: number;
@@ -323,7 +324,10 @@ export function createApiSportsClient(config: ApiSportsConfig): ApiSportsClient 
     let total = 1;
     // /fixtures?ids= är inte paginerat — skickar man page dit svarar API:et
     // "The Page field do not exist." och hela batchen går förlorad.
-    const pageable = params.ids === undefined;
+    // v1-API:erna (hockey, basket …) pagar inte och svarar med fel på
+    // page-parametern — bara API-Football v3 får bläddras.
+    const pageable =
+      params.ids === undefined && /\/\/v3\./.test(config.baseUrl);
 
     while (page <= total && page <= MAX_API_PAGES) {
       const json = await fetchPage(
@@ -370,9 +374,10 @@ function maxPerMinuteFromEnv(env: { get: (key: string) => string | undefined }) 
   return Number.isFinite(raw) && raw > 0 ? raw : MAX_REQUESTS_PER_MINUTE;
 }
 
-export function footballClientFromEnv(env: {
-  get: (key: string) => string | undefined;
-}): ApiSportsClient {
+export function footballClientFromEnv(
+  env: { get: (key: string) => string | undefined },
+  opts?: { maxPerMinute?: number }
+): ApiSportsClient {
   const apiKey = env.get("APISPORTS_KEY") || env.get("APIFOOTBALL_KEY");
   if (!apiKey) {
     throw new ApiSportsError(
@@ -382,44 +387,44 @@ export function footballClientFromEnv(env: {
   return createApiSportsClient({
     baseUrl: env.get("APISPORTS_FOOTBALL_URL") || DEFAULT_FOOTBALL_URL,
     apiKey,
-    maxPerMinute: maxPerMinuteFromEnv(env),
+    maxPerMinute: opts?.maxPerMinute ?? maxPerMinuteFromEnv(env),
     onRequest: apiSportsLogger("api-football"),
+  });
+}
+
+/** Klient för valfri sport. Fotboll går via footballClientFromEnv. */
+export function clientForSport(
+  sport: SportSlug,
+  env: { get: (key: string) => string | undefined },
+  opts?: { maxPerMinute?: number }
+): ApiSportsClient {
+  if (sport === "football") return footballClientFromEnv(env, opts);
+  const def = sportDef(sport);
+  const apiKey = env.get("APISPORTS_KEY") || env.get("APIFOOTBALL_KEY");
+  if (!apiKey) {
+    throw new ApiSportsError("APISPORTS_KEY saknas");
+  }
+  return createApiSportsClient({
+    baseUrl: env.get(def.urlEnv) || def.baseUrl,
+    apiKey,
+    maxPerMinute: opts?.maxPerMinute ?? maxPerMinuteFromEnv(env),
+    onRequest: apiSportsLogger(def.provider),
   });
 }
 
 export function hockeyClientFromEnv(env: {
   get: (key: string) => string | undefined;
 }): ApiSportsClient {
-  const apiKey = env.get("APISPORTS_KEY") || env.get("APIFOOTBALL_KEY");
-  if (!apiKey) {
-    throw new ApiSportsError("APISPORTS_KEY saknas");
-  }
-  return createApiSportsClient({
-    baseUrl: env.get("APISPORTS_HOCKEY_URL") || DEFAULT_HOCKEY_URL,
-    apiKey,
-    maxPerMinute: maxPerMinuteFromEnv(env),
-    onRequest: apiSportsLogger("api-hockey"),
-  });
-}
-
-export function clientForSport(
-  sport: SportSlug,
-  env: { get: (key: string) => string | undefined }
-): ApiSportsClient {
-  return sport === "hockey" ? hockeyClientFromEnv(env) : footballClientFromEnv(env);
+  return clientForSport("hockey", env);
 }
 
 /** Svensk UI-etikett ↔ intern slug. Fixtures.sport lagras som UI-etikett. */
-export function sportLabel(slug: string): string {
-  if (slug === "football" || slug === "Fotboll") return "Fotboll";
-  if (slug === "hockey" || slug === "Ishockey") return "Ishockey";
-  return slug;
+export function sportLabel(value: string): string {
+  return sportDef(value).label;
 }
 
 export function sportSlug(value: string): SportSlug {
-  const v = value.toLowerCase();
-  if (v === "ishockey" || v === "hockey") return "hockey";
-  return "football";
+  return sportDef(value).slug;
 }
 
 /**

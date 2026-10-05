@@ -5,6 +5,7 @@ import { Calendar, Search } from "lucide-react";
 import type { PickerFixture } from "@/components/bets/FixturePicker";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { SPORT_LABELS } from "@/lib/sports";
 import { isFinishedStatus, isInPlayStatus } from "@/lib/live-fixture";
 import {
   addStockholmDays,
@@ -22,9 +23,8 @@ const LIVE_GRACE_MS = 3 * 60 * 60 * 1000;
 
 const SPORT_CHIPS = [
   { value: "", label: "Alla" },
-  { value: "Fotboll", label: "Fotboll" },
-  { value: "Ishockey", label: "Ishockey" },
-] as const;
+  ...SPORT_LABELS.map((label) => ({ value: label, label })),
+];
 
 type DayFilter = "all" | "today" | "tomorrow" | "week" | { ymd: string };
 

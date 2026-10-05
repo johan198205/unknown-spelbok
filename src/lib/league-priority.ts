@@ -1,4 +1,4 @@
-import type { SportSlug } from "@/lib/apisports";
+import { sportDef, type SportSlug } from "@/lib/sports";
 
 const FOOTBALL_PRIORITY: { id: number; names: string[] }[] = [
   { id: 113, names: ["allsvenskan"] },
@@ -10,9 +10,25 @@ const FOOTBALL_PRIORITY: { id: number; names: string[] }[] = [
   { id: 2, names: ["uefa champions league", "champions league"] },
 ];
 
+// Id:n i API-Hockey: 47 = SHL, 57 = NHL (jfr LEAGUE_BY_NAME i logos.ts).
 const HOCKEY_PRIORITY: { id: number; names: string[] }[] = [
-  { id: 57, names: ["shl", "swedish hockey league"] },
+  { id: 47, names: ["shl", "swedish hockey league"] },
+  { id: 57, names: ["nhl"] },
 ];
+
+// Övriga sporter matchas på namn — id:n är API-specifika och okontrollerade.
+const PRIORITY_BY_SPORT: Partial<
+  Record<SportSlug, { id?: number; names: string[] }[]>
+> = {
+  football: FOOTBALL_PRIORITY,
+  hockey: HOCKEY_PRIORITY,
+  basketball: [{ names: ["nba"] }, { names: ["euroleague"] }, { names: ["basketligan"] }],
+  "american-football": [{ names: ["nfl"] }, { names: ["ncaa"] }],
+  baseball: [{ names: ["mlb"] }],
+  handball: [{ names: ["handbollsligan"] }, { names: ["ehf champions league"] }],
+  rugby: [{ names: ["six nations"] }, { names: ["premiership rugby"] }],
+  afl: [{ names: ["afl"] }],
+};
 
 function normalize(value: string) {
   return value.trim().toLowerCase();
@@ -24,7 +40,7 @@ export function priorityRank(
   id: number | null | undefined,
   name: string
 ): number {
-  const list = sport === "hockey" ? HOCKEY_PRIORITY : FOOTBALL_PRIORITY;
+  const list = PRIORITY_BY_SPORT[sport] ?? [];
   const needle = normalize(name);
   if (id != null) {
     const byId = list.findIndex((item) => item.id === id);
@@ -36,9 +52,7 @@ export function priorityRank(
 }
 
 export function sportLabelToSlug(sport: string | null | undefined): SportSlug {
-  const s = (sport || "").toLowerCase();
-  if (s.includes("hockey")) return "hockey";
-  return "football";
+  return sportDef(sport).slug;
 }
 
 /** Prioriterade först (egen ordning), därefter alfabetiskt. */

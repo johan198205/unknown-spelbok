@@ -31,7 +31,7 @@ async function requireApiAdmin() {
 /**
  * Förbrukning mot API-Sports.
  *
- * Query: from, to (ISO-datum), provider (api-football|api-hockey),
+ * Query: from, to (ISO-datum), provider (api-football, api-hockey … se sports.ts),
  * groupBy (day|hour). Utan parametrar: senaste 7 dygnen, båda providers.
  */
 export async function GET(request: NextRequest) {

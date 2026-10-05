@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Calendar } from "lucide-react";
+import { SPORT_LABELS } from "@/lib/sports";
 import type { Fixture } from "@/lib/types";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
@@ -40,7 +41,7 @@ export type PickerFixture = Fixture & {
   league_country?: string | null;
 };
 
-const PICKER_SPORTS = ["Fotboll", "Ishockey"] as const;
+const PICKER_SPORTS = SPORT_LABELS;
 /** Sentinel — liga är valfritt filter, inte ett obligatoriskt steg */
 const ALL_LEAGUES = "__all__";
 /** Sidstorlek mot /api/fixtures — en dag rymmer långt fler matcher än så */

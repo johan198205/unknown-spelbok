@@ -2,6 +2,7 @@ import { logApiSportsCacheHit } from "@/lib/api-sports/logRequest";
 import {
   chunk,
   DEFAULT_TIMEZONE,
+  clientForSport,
   footballClientFromEnv,
   MAX_API_PAGES,
   MAX_REQUESTS_PER_MINUTE,
@@ -9,6 +10,8 @@ import {
   type ApiFixtureItem,
 } from "@/lib/apisports";
 import { mapFixtureRow } from "@/lib/map-fixture";
+import { fetchGamesByDate } from "@/lib/sport-games";
+import { sportDef, type SportSlug } from "@/lib/sports";
 import { addStockholmDays, stockholmYmd } from "@/lib/stockholm";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -151,7 +154,7 @@ async function hasCompleteLog(ymd: string) {
   }
 }
 
-export async function isFixtureDayReady(ymd: string) {
+async function isFootballDayReady(ymd: string) {
   if (!hasApiKey()) return true;
   return recentlyComplete(ymd) || (await hasCompleteLog(ymd));
 }
@@ -279,7 +282,7 @@ async function fillDay(ymd: string) {
  * Fyller cachen för ett kalenderdygn tills alla API-sidor är hämtade.
  * Hoppar över om dagen redan fyllts klart (idag max 6 h).
  */
-export async function ensureFixturesForDate(ymd: string) {
+async function ensureFootballForDate(ymd: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !hasApiKey()) return 0;
 
   const window = await resolveFixtureCoverage();
@@ -323,4 +326,114 @@ export async function ensureFixturesForDate(ymd: string) {
     filling.set(ymd, pending);
   }
   return pending;
+}
+
+// -------------------------------------------------------------
+// Övriga sporter: hela dygnet i ett /games?date=-anrop.
+// Egen sync_log-jobbnyckel per sport ("fill-day:hockey" …) så att en
+// ifylld hockeydag aldrig misstas för en ifylld fotbollsdag.
+// -------------------------------------------------------------
+
+const sportFilling = new Map<string, Promise<number>>();
+const sportCompletedAt = new Map<string, number>();
+
+function sportJob(sport: SportSlug) {
+  return `${FILL_JOB}:${sport}`;
+}
+
+function sportDayFresh(sport: SportSlug, ymd: string, at: number) {
+  // Passerade dygn ändras inte längre; idag och framåt fylls om var 6:e timme.
+  if (ymd < stockholmYmd()) return true;
+  return Date.now() - at < TODAY_REFRESH_MS;
+}
+
+async function sportDayReady(sport: SportSlug, ymd: string) {
+  const key = `${sport}:${ymd}`;
+  const at = sportCompletedAt.get(key);
+  if (at && sportDayFresh(sport, ymd, at)) return true;
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("sync_log")
+      .select("started_at")
+      .eq("job", sportJob(sport))
+      .eq("ok", true)
+      .contains("meta", { ymd })
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data?.started_at) return false;
+    const loggedAt = new Date(data.started_at).getTime();
+    if (!sportDayFresh(sport, ymd, loggedAt)) return false;
+    sportCompletedAt.set(key, loggedAt);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fillSportDay(sport: SportSlug, ymd: string) {
+  const api = clientForSport(
+    sport,
+    { get: (key) => process.env[key] },
+    { maxPerMinute: PAID_REQUESTS_PER_MINUTE }
+  );
+  const now = new Date().toISOString();
+  const games = await fetchGamesByDate(api, sport, ymd);
+  const rows = games.map((g) => mapFixtureRow(g, sport, now));
+  await upsertFixtureRows(rows);
+  sportCompletedAt.set(`${sport}:${ymd}`, Date.now());
+  try {
+    const admin = createAdminClient();
+    await admin.from("sync_log").insert({
+      job: sportJob(sport),
+      sport,
+      ok: true,
+      requests: api.requestCount(),
+      upserted: rows.length,
+      finished_at: new Date().toISOString(),
+      meta: { ymd, complete: true },
+    });
+  } catch {
+    /* minnet räcker i den här instansen */
+  }
+  return rows.length;
+}
+
+async function ensureSportForDate(sport: SportSlug, ymd: string) {
+  if (await sportDayReady(sport, ymd)) {
+    logApiSportsCacheHit(sportDef(sport).provider, sportDef(sport).gamesPath, {
+      date: ymd,
+    });
+    return 0;
+  }
+  const key = `${sport}:${ymd}`;
+  let pending = sportFilling.get(key);
+  if (!pending) {
+    pending = fillSportDay(sport, ymd).finally(() => sportFilling.delete(key));
+    sportFilling.set(key, pending);
+  }
+  return pending;
+}
+
+/**
+ * Ser till att ett kalenderdygn finns i fixtures-cachen för en sport.
+ * Returnerar antalet nyss hämtade matcher (0 = cachen räckte).
+ */
+export async function ensureFixturesForDate(
+  ymd: string,
+  sport: SportSlug = "football"
+) {
+  if (sport === "football") return ensureFootballForDate(ymd);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd) || !hasApiKey()) return 0;
+  return ensureSportForDate(sport, ymd);
+}
+
+export async function isFixtureDayReady(
+  ymd: string,
+  sport: SportSlug = "football"
+) {
+  if (sport === "football") return isFootballDayReady(ymd);
+  if (!hasApiKey()) return true;
+  return sportDayReady(sport, ymd);
 }

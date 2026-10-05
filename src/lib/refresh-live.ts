@@ -3,8 +3,6 @@ import {
   chunk,
   clientForSport,
   currentScore,
-  DEFAULT_TIMEZONE,
-  FIXTURE_IDS_PER_CALL,
   regulationScore,
   sportSlug,
   statusBucket,
@@ -16,6 +14,8 @@ import { mapFixtureRow } from "@/lib/map-fixture";
 import { isInPlayStatus, type LiveFixturePatch } from "@/lib/live-fixture";
 import { notifyGoals } from "@/lib/send-push";
 import { settleOpenBets } from "@/lib/settle-open";
+import { fetchGamesForFixtures } from "@/lib/sport-games";
+import { sportDef, sportFromFixtureId } from "@/lib/sports";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const STALE_MS = 20_000;
@@ -119,7 +119,7 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
   const cachedSelect = await admin
     .from("fixtures")
     .select(
-      "fixture_id, sport, status, elapsed, extra, home_score, away_score, updated_at"
+      "fixture_id, kickoff, sport, status, elapsed, extra, home_score, away_score, updated_at"
     )
     .in("fixture_id", ids);
   const rows =
@@ -127,7 +127,7 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
       ? (
           await admin
             .from("fixtures")
-            .select("fixture_id, sport, status, home_score, away_score, updated_at")
+            .select("fixture_id, kickoff, sport, status, home_score, away_score, updated_at")
             .in("fixture_id", ids)
         ).data ?? []
       : cachedSelect.data ?? [];
@@ -151,7 +151,7 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
       }
       for (const [slug, count] of cachedBySport) {
         logApiSportsCacheHit(
-          slug === "hockey" ? "api-hockey" : "api-football",
+          sportDef(slug).provider,
           "/fixtures",
           { ids: count }
         );
@@ -160,16 +160,17 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
     return { fixtures: await loadCached(admin, ids), settled: 0, skipped: true };
   }
 
-  const bySport = new Map<SportSlug, number[]>();
+  type Stale = { fixture_id: number; kickoff: string | null };
+  const bySport = new Map<SportSlug, Stale[]>();
   for (const id of staleIds) {
     const row = rows.find((r) => r.fixture_id === id);
-    const slug = sportSlug((row?.sport as string) || "football");
+    // Utan cacherad rad avgör id-intervallet sporten (se sports.ts).
+    const slug = row?.sport
+      ? sportSlug(row.sport as string)
+      : sportFromFixtureId(id);
     const list = bySport.get(slug) ?? [];
-    list.push(id);
+    list.push({ fixture_id: id, kickoff: (row?.kickoff as string) ?? null });
     bySport.set(slug, list);
-  }
-  if (!bySport.size) {
-    bySport.set("football", staleIds);
   }
 
   const results = new Map<number, { item: ApiFixtureItem; sport: SportSlug }>();
@@ -177,13 +178,8 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
 
   for (const [sport, group] of bySport) {
     const api = clientForSport(sport, env);
-    for (const batch of chunk(group, FIXTURE_IDS_PER_CALL)) {
-      const items = await api.get<ApiFixtureItem>("/fixtures", {
-        ids: batch.join("-"),
-        timezone: DEFAULT_TIMEZONE,
-      });
-      for (const item of items) results.set(item.fixture.id, { item, sport });
-    }
+    const games = await fetchGamesForFixtures(api, sport, group);
+    for (const [id, item] of games) results.set(id, { item, sport });
   }
 
   const now = new Date().toISOString();
@@ -199,6 +195,8 @@ async function runRefresh(ids: number[]): Promise<RefreshLiveResult> {
       const next = currentScore(hit.item);
       const status = hit.item.fixture.status.short;
       if (!isInPlayStatus(status)) continue;
+      // I poängsporter (basket m.fl.) är en ändrad ställning inget mål.
+      if (!sportDef(hit.sport).scoreNotices) continue;
       const prevHome = typeof prev?.home_score === "number" ? prev.home_score : 0;
       const prevAway = typeof prev?.away_score === "number" ? prev.away_score : 0;
       const nextHome = next.home ?? 0;

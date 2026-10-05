@@ -13,7 +13,8 @@ import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import type { ApiSportsRequestEvent } from "./apisports.ts";
 import { createServiceClient } from "./supabase.ts";
 
-export type ApiProvider = "api-football" | "api-hockey";
+/** "api-football", "api-hockey", "api-basketball" … — se sports.ts. */
+export type ApiProvider = string;
 
 /** Nyckeln ligger i headern, aldrig i params — men filtrera ändå. */
 const SECRET_KEY = /key|token|secret|auth|apikey/i;

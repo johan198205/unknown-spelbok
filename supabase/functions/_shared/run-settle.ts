@@ -5,9 +5,6 @@
 
 import {
   clientForSport,
-  chunk,
-  DEFAULT_TIMEZONE,
-  FIXTURE_IDS_PER_CALL,
   isInPlay,
   regulationScore,
   sportSlug,
@@ -17,6 +14,7 @@ import {
   type SportSlug,
 } from "./apisports.ts";
 import { mapFixtureRow } from "./map.ts";
+import { fetchGamesForFixtures } from "./sport-games.ts";
 import { settleOpenBets } from "./settle-open.ts";
 import {
   createServiceClient,
@@ -105,16 +103,8 @@ export async function handleSettleResults(req: Request) {
 
     for (const [sport, group] of groupBySport(fixtures)) {
       const api = clientForSport(sport, { get: envGet });
-      for (const ids of chunk(
-        group.map((f) => f.fixture_id),
-        FIXTURE_IDS_PER_CALL
-      )) {
-        const items = await api.get<ApiFixtureItem>("/fixtures", {
-          ids: ids.join("-"),
-          timezone: DEFAULT_TIMEZONE,
-        });
-        for (const item of items) results.set(item.fixture.id, { item, sport });
-      }
+      const games = await fetchGamesForFixtures(api, sport, group);
+      for (const [id, item] of games) results.set(id, { item, sport });
       summary.requests += api.requestCount();
     }
 

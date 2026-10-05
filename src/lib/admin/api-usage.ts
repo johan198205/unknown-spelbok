@@ -12,7 +12,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { addStockholmDays, stockholmDayBounds, stockholmYmd } from "@/lib/stockholm";
 
-export type ApiUsageProvider = "api-football" | "api-hockey";
+import { SPORTS } from "@/lib/sports";
+
+/** "api-football", "api-hockey", "api-basketball" … — en per sport i sports.ts. */
+export type ApiUsageProvider = string;
 export type ApiUsageProviderFilter = "all" | ApiUsageProvider;
 export type ApiUsagePeriod = "today" | "7d" | "30d" | "custom";
 export type ApiUsageGroupBy = "day" | "hour";
@@ -22,8 +25,7 @@ export const API_USAGE_PROVIDERS: {
   label: string;
 }[] = [
   { key: "all", label: "Alla" },
-  { key: "api-football", label: "Fotboll" },
-  { key: "api-hockey", label: "Ishockey" },
+  ...SPORTS.map((s) => ({ key: s.provider, label: s.label })),
 ];
 
 export const API_USAGE_PERIODS: {
@@ -37,10 +39,18 @@ export const API_USAGE_PERIODS: {
   { key: "custom", label: "Anpassad", days: null },
 ];
 
-export const PROVIDER_LABELS: Record<ApiUsageProvider, string> = {
-  "api-football": "API-Football",
-  "api-hockey": "API-Hockey",
-};
+export const PROVIDER_LABELS: Record<ApiUsageProvider, string> =
+  Object.fromEntries(
+    SPORTS.map((s) => [
+      s.provider,
+      "API-" +
+        s.provider
+          .replace(/^api-/, "")
+          .split("-")
+          .map((w) => (w === "afl" || w === "mma" ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
+          .join("-"),
+    ])
+  );
 
 /** Ett års logg räcker gott — längre spann ger bara långsamma sidor. */
 const MAX_RANGE_DAYS = 366;
@@ -108,7 +118,7 @@ export type ApiUsageData = {
 };
 
 function isProvider(value: unknown): value is ApiUsageProvider {
-  return value === "api-football" || value === "api-hockey";
+  return SPORTS.some((s) => s.provider === value);
 }
 
 function num(value: unknown): number {

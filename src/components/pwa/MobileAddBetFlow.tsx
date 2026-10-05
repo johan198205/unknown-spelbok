@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Bookmaker, Sheet } from "@/lib/types";
-import { PICKS, STAKE_PRESETS } from "@/lib/picks";
+import { PICKS, SPORTS, STAKE_PRESETS } from "@/lib/picks";
 import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
@@ -262,8 +262,9 @@ export function MobileAddBetFlow({
                   onChange={(e) => setSport(e.target.value)}
                   className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3 text-[15px]"
                 >
-                  <option>Fotboll</option>
-                  <option>Ishockey</option>
+                  {SPORTS.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
                 </select>
                 <button
                   type="button"

@@ -7,6 +7,7 @@ import {
   type SportSlug,
 } from "@/lib/apisports";
 import { priorityRank } from "@/lib/league-priority";
+import { isSportSlug, SPORT_SLUGS, sportDef } from "@/lib/sports";
 import { createClient } from "@/lib/supabase/server";
 
 export const revalidate = 86400;
@@ -22,7 +23,14 @@ export type LeagueOption = {
 function isCurrentLeague(item: ApiLeagueItem) {
   const seasons = item.seasons;
   if (!Array.isArray(seasons) || !seasons.length) return true;
-  return seasons.some((s) => s.current);
+  if (seasons.some((s) => s.current)) return true;
+  // Basket anger inget `current` alls — räkna ligan som aktiv om den har
+  // en säsong som började i år eller i fjol.
+  if (seasons.every((s) => s.current === undefined)) {
+    const year = new Date().getFullYear();
+    return seasons.some((s) => s.year >= year - 1);
+  }
+  return false;
 }
 
 function sortLeagues(sport: SportSlug, items: ApiLeagueItem[]): LeagueOption[] {
@@ -69,23 +77,64 @@ function sortLeagues(sport: SportSlug, items: ApiLeagueItem[]): LeagueOption[] {
  */
 let apiFetches = 0;
 
+/**
+ * v1-API:erna svarar platt ({id, name, logo, country, seasons[{season}]})
+ * medan API-Football nästlar under `league`. Gör om till fotbollsformen.
+ */
+function toLeagueItem(raw: unknown): ApiLeagueItem {
+  const item = (raw ?? {}) as Record<string, unknown>;
+  if (item.league && typeof item.league === "object") return item as ApiLeagueItem;
+  const country = item.country as { name?: string } | null | undefined;
+  // AFL: en rad per liga och säsong, med season/current på toppnivå.
+  const flatSeason =
+    item.season != null
+      ? [
+          {
+            year: Number(String(item.season).slice(0, 4)) || 0,
+            current: item.current as boolean | undefined,
+          },
+        ]
+      : undefined;
+  const seasons = Array.isArray(item.seasons)
+    ? (item.seasons as { season?: unknown; current?: boolean }[]).map((s) => ({
+        year: Number(String(s.season ?? "").slice(0, 4)) || 0,
+        current: s.current,
+      }))
+    : flatSeason;
+  return {
+    league: {
+      id: Number(item.id) || 0,
+      name: String(item.name ?? ""),
+      logo: (item.logo as string | null) ?? null,
+    },
+    country: { name: country?.name },
+    seasons,
+  };
+}
+
 async function fetchLeaguesFromApi(sport: SportSlug): Promise<LeagueOption[]> {
+  if (!sportDef(sport).hasLeagues) return [];
   apiFetches += 1;
   const api = clientForSport(sport, {
     get: (key) => process.env[key],
   });
-  let items: ApiLeagueItem[];
-  try {
-    items = await api.get<ApiLeagueItem>("/leagues", { current: true });
-  } catch {
-    items = await api.get<ApiLeagueItem>("/leagues");
+  let items: unknown[];
+  if (sport === "football") {
+    try {
+      items = await api.get<unknown>("/leagues", { current: true });
+    } catch {
+      items = await api.get<unknown>("/leagues");
+    }
+  } else {
+    // v1-API:erna saknar current-filtret; sortLeagues sållar på seasons.
+    items = await api.get<unknown>("/leagues");
   }
-  return sortLeagues(sport, items);
+  return sortLeagues(sport, items.map(toLeagueItem));
 }
 
 const cachedLeagues = unstable_cache(
   async (sport: SportSlug) => fetchLeaguesFromApi(sport),
-  ["api-leagues-v1"],
+  ["api-leagues-v2"],
   { revalidate: 86400 }
 );
 
@@ -104,16 +153,16 @@ async function requireUser() {
 
 /**
  * Proxar API-Sports leagues. Cache 24h — ligor ändras sällan.
- * Query: sport=football|hockey
+ * Query: sport=football|hockey|basketball|… (se sports.ts)
  */
 export async function GET(request: NextRequest) {
   const auth = await requireUser();
   if ("error" in auth) return auth.error;
 
   const raw = (request.nextUrl.searchParams.get("sport") || "").toLowerCase();
-  if (raw !== "football" && raw !== "hockey") {
+  if (!isSportSlug(raw)) {
     return NextResponse.json(
-      { error: "Parametern sport måste vara football eller hockey" },
+      { error: `Parametern sport måste vara en av: ${SPORT_SLUGS.join(", ")}` },
       { status: 400 }
     );
   }
@@ -124,7 +173,7 @@ export async function GET(request: NextRequest) {
     const leagues = await cachedLeagues(sport);
     if (apiFetches === before) {
       logApiSportsCacheHit(
-        sport === "hockey" ? "api-hockey" : "api-football",
+        sportDef(sport).provider,
         "/leagues",
         { sport, current: true }
       );
