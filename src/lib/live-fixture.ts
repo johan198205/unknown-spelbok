@@ -270,6 +270,17 @@ function isFootballHalftime(
   return minute >= 45 && minute <= 47;
 }
 
+/** Slutstatusar där matchen inte spelats klart: etikett i FT-ton. */
+const TERMINAL_LABELS: Record<string, string> = {
+  AWD: "FT",
+  WO: "WO",
+  CANC: "Inst.",
+  ABD: "Avbr.",
+};
+
+/** Hur länge efter avspark minuten får räknas lokalt utan API-status. */
+const LOCAL_CLOCK_MAX_MINUTES = 180;
+
 export type MatchPhaseTone = "ns" | "live" | "ft";
 
 export type MatchPhase = {
@@ -303,6 +314,15 @@ export function matchPhase(
     return { label: "FT", tone: "ft", live: false };
   }
 
+  // Slutstatusar utan spelad match: aldrig live, aldrig tickande minut.
+  const terminal = status ? TERMINAL_LABELS[status] : undefined;
+  if (terminal) {
+    return { label: terminal, tone: "ft", live: false };
+  }
+  if (status === "PST") {
+    return { label: "Uppskj.", tone: "ns", live: false };
+  }
+
   if (isInPlayStatus(status) && fixture) {
     if (status === "HT") {
       return { label: "HT", tone: "live", live: true };
@@ -332,6 +352,13 @@ export function matchPhase(
     return { label, tone: "live", live: true };
   }
 
+  // Ett avgjort spel är färdigspelat oavsett vad klockan säger. Utan den
+  // här kontrollen fick importerade spel (ingen kopplad match, kickoff =
+  // placed_at) en tickande "90'" och såg pågående ut.
+  if (settled) {
+    return { label: "FT", tone: "ft", live: false };
+  }
+
   if (kickoff) {
     const start = new Date(kickoff).getTime();
     if (Number.isFinite(start)) {
@@ -342,21 +369,34 @@ export function matchPhase(
           live: false,
         };
       }
+      // Utan kopplad match är "kickoff" bara när spelet lades — visa
+      // datumet i stället för att hitta på en matchminut.
+      if (!fixture) {
+        return {
+          label: formatKickoffDay(kickoff) || "—",
+          tone: "ns",
+          live: false,
+        };
+      }
       // Kickoff har passerat men API har ännu ingen in-play/FT-status:
-      // räkna minuten lokalt. Det är bara ett fallback.
+      // räkna minuten lokalt. Det är bara ett fallback, och bara strax
+      // efter avspark — en NS-match som aldrig uppdaterats är inte live.
       const mins = Math.floor((now - start) / 60_000);
-      if (mins >= 0) {
+      if (mins >= 0 && mins < LOCAL_CLOCK_MAX_MINUTES) {
         if (isFootballHalftime(sport, mins)) {
           return { label: "HT", tone: "live", live: true };
         }
         const capped = Math.min(mins, isHockeySport(sport) ? 60 : 90);
         return { label: `${capped}'`, tone: "live", live: true };
       }
+      // Passerad avspark utan status: datum, inte en klocktid som ser
+      // kommande ut.
+      return {
+        label: formatKickoffDay(kickoff) || "—",
+        tone: "ns",
+        live: false,
+      };
     }
-  }
-
-  if (settled) {
-    return { label: "FT", tone: "ft", live: false };
   }
 
   return {
@@ -372,6 +412,7 @@ export function needsMatchPhaseTick(
 ) {
   if (!fixture) return false;
   if (isFinishedStatus(fixture.status)) return false;
+  if (fixture.status && fixture.status in TERMINAL_LABELS) return false;
   // Inkludera NS med kickoff så fasen byter till minut/HT/FT utan manuell refresh.
   return !!fixture.kickoff || isInPlayStatus(fixture.status);
 }
