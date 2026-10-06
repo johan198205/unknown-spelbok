@@ -16,6 +16,7 @@
  *   supabase functions deploy settle-results
  */
 
+import { withServiceRole } from "../_shared/require-service-role.ts";
 import { handleSettleResults } from "../_shared/run-settle.ts";
 
-Deno.serve(handleSettleResults);
+Deno.serve(withServiceRole(handleSettleResults));

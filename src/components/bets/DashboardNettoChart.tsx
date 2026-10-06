@@ -1,8 +1,11 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { toUnits } from "@/lib/display";
 import {
   CHART_PERIOD_OPTIONS,
+  axisDateLabels,
   compactAxisValue,
   periodCutoff,
   type ChartPeriodFilter,
@@ -36,12 +39,6 @@ const SCALE_MARGIN = 0.12;
 
 type Point = { x: number; value: number };
 
-/** m/d — samma format som resten av dashboarden. */
-function shortDate(ts: number) {
-  const d = new Date(ts);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
-
 /**
  * Ackumulerat netto på den GEMENSAMMA tidsaxeln: x = (ts − t0)/(t1 − t0)×1000.
  * Alla serier ankras i (0, 0) så linjerna startar vid vänsterkanten.
@@ -74,6 +71,7 @@ export function DashboardNettoChart({
 }) {
   const [period, setPeriod] = useState<ChartPeriodFilter>("all");
   const uid = useId().replace(/:/g, "");
+  const prefs = useDisplayPrefs();
 
   const chart = useMemo(() => {
     const cut = periodCutoff(period);
@@ -169,17 +167,20 @@ export function DashboardNettoChart({
   const y = (v: number) => H - ((v - chart.min) / chart.span) * H;
   const zeroY = y(0);
   const totalPath = toPath(chart.total, y);
-  const totalArea = `${totalPath} L${W},${H} L0,${H} Z`;
+  // Ytan stängs mot nollinjen, inte mot grafens botten — annars fylls fel
+  // fält rött när kurvan ligger under noll.
+  const lastX = chart.total[chart.total.length - 1].x.toFixed(1);
+  const firstX = chart.total[0].x.toFixed(1);
+  const totalArea = `${totalPath} L${lastX},${zeroY.toFixed(1)} L${firstX},${zeroY.toFixed(1)} Z`;
   const totalColor = chart.final >= 0 ? "#66E38A" : "#FF5C6C";
 
   const yTicks = Array.from({ length: 5 }, (_, i) => ({
     value: chart.max - (chart.span / 4) * i,
     top: (i / 4) * 100,
   }));
-  const xTicks = Array.from({ length: 4 }, (_, i) => ({
-    label: shortDate(chart.t0 + ((chart.t1 - chart.t0) / 3) * i),
-    key: i,
-  }));
+  const xTicks = axisDateLabels(
+    Array.from({ length: 4 }, (_, i) => chart.t0 + ((chart.t1 - chart.t0) / 3) * i)
+  ).map((label, key) => ({ label, key }));
 
   return (
     <section className="rounded-[14px] border border-line bg-panel p-4">
@@ -193,7 +194,9 @@ export function DashboardNettoChart({
               className="absolute right-0 -translate-y-1/2 font-mono-num text-[11px] leading-none text-faint"
               style={{ top: `${tick.top}%` }}
             >
-              {compactAxisValue(tick.value)}
+              {compactAxisValue(
+                prefs.mode === "units" ? toUnits(tick.value, prefs) : tick.value
+              )}
             </span>
           ))}
         </div>

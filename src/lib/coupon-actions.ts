@@ -60,7 +60,7 @@ export async function copyCouponToSheet(
   const { data: coupon, error } = await supabase
     .from("coupons")
     .select(
-      `id, title, type, stake, total_odds, bookmaker_id,
+      `id, title, type, status, stake, total_odds, bookmaker_id,
        legs:coupon_legs (
          sort_order, pick, odds, fixture_id,
          fixtures ( kickoff, sport, league_id, league_name, league_logo, home_name, away_name )
@@ -78,6 +78,20 @@ export async function copyCouponToSheet(
   );
   if (!legs.length) {
     return { ok: false, message: "Kupongen saknar objekt." };
+  }
+
+  // Samma spärr som när man ryggar ett inlägg på planket: ett utfall som
+  // redan är känt får inte bokföras som ett öppet spel och räknas in i
+  // topplistorna.
+  if (coupon.status !== "open") {
+    return { ok: false, message: "Kupongen är redan avgjord." };
+  }
+  const kickoffs = legs
+    .map((l) => l.fixtures?.kickoff)
+    .filter((k): k is string => !!k)
+    .map((k) => new Date(k).getTime());
+  if (kickoffs.length && Date.now() >= Math.min(...kickoffs)) {
+    return { ok: false, message: "Avspark passerad. Kupongen går inte längre att kopiera." };
   }
 
   // Dubblettspärren finns också som unikt index i databasen. Den här

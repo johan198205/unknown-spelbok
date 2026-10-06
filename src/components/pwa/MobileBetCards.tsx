@@ -15,6 +15,7 @@ import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
   fixtureFromBet,
+  isFinishedStatus,
   isInPlayStatus,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
@@ -34,7 +35,8 @@ import {
   type PendingBet,
 } from "@/lib/offline-queue";
 import { useAmount } from "@/components/DisplayPrefsProvider";
-import { betLeagueLogo } from "@/lib/logos";
+import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
+import { stockholmYmd } from "@/lib/stockholm";
 import {
   betNetto,
   cn,
@@ -95,6 +97,19 @@ function vibrate(ms = 12) {
   }
 }
 
+/** Avsparksdatum i svensk tid, t.ex. "10 okt." eller "31 okt. 2025". */
+function cardDate(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const sameYear = stockholmYmd(d).slice(0, 4) === stockholmYmd().slice(0, 4);
+  return d.toLocaleDateString("sv-SE", {
+    day: "2-digit",
+    month: "short",
+    ...(sameYear ? {} : { year: "numeric" }),
+    timeZone: "Europe/Stockholm",
+  });
+}
+
 function statusBadge(bet: DisplayBet): {
   label: string;
   className: string;
@@ -126,7 +141,11 @@ function statusBadge(bet: DisplayBet): {
     };
   }
   return {
-    label: bet.result === "win" || bet.result === "loss" ? "FT" : resultLabel(bet.result),
+    label:
+      (bet.result === "win" || bet.result === "loss") &&
+      isFinishedStatus(bet.fixtures?.status)
+        ? "FT"
+        : resultLabel(bet.result),
     className: `${resultTone(bet.result).bg} ${resultTone(bet.result).fg} ${resultTone(bet.result).border}`,
   };
 }
@@ -138,6 +157,7 @@ export function MobileBetCards({
   canRygga = false,
   onRygga,
   hideChrome = false,
+  liveManaged = false,
   highlightBetId,
 }: {
   bets: Bet[];
@@ -147,6 +167,8 @@ export function MobileBetCards({
   onRygga?: (bet: Bet) => void;
   /** Dölj KPI-rad + statuschips (när parent hanterar filter/metrics). */
   hideChrome?: boolean;
+  /** Parent kör redan useLiveFixtures och skickar in patchade spel. */
+  liveManaged?: boolean;
   /** Kortet en notis pekade ut. Pulsar i två sekunder, sedan null. */
   highlightBetId?: string | null;
 }) {
@@ -241,10 +263,15 @@ export function MobileBetCards({
     return displayBets.filter((b) => b.result === filter);
   }, [displayBets, filter, hideChrome]);
 
+  // Tom id-lista = ingen egen Realtime-kanal eller pollning.
   const live = useLiveFixtures(
-    filtered.map((b) => b.fixture_id).filter((id): id is number => id != null),
+    liveManaged
+      ? []
+      : filtered
+          .map((b) => b.fixture_id)
+          .filter((id): id is number => id != null),
     {
-      hasLive: filtered.some((b) =>
+      hasLive: !liveManaged && filtered.some((b) =>
         needsLiveRefresh(b.fixtures?.status, b.fixtures?.kickoff)
       ),
       onSettled: () => router.refresh(),
@@ -307,15 +334,27 @@ export function MobileBetCards({
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      alert("Du måste vara inloggad för att synka spelet.");
+      return;
+    }
     const { error } = await supabase
       .from("bets")
       .insert({ ...item.payload, user_id: user.id });
-    if (!error) {
-      await removePendingBet(item.id);
-      setPending((p) => p.filter((x) => x.id !== item.id));
-      router.refresh();
+    if (error) {
+      // Köade spel från före oddsvalideringen kan sakna odds och kommer
+      // aldrig gå igenom — säg det i stället för att misslyckas tyst.
+      const odds = Number(item.payload.odds);
+      alert(
+        Number.isFinite(odds) && odds >= 1.01
+          ? "Spelet kunde inte synkas. Försök igen om en stund."
+          : "Spelet saknar giltiga odds och kan inte synkas. Ta bort det och lägg in det igen."
+      );
+      return;
     }
+    await removePendingBet(item.id);
+    setPending((p) => p.filter((x) => x.id !== item.id));
+    router.refresh();
   }
 
   return (
@@ -491,10 +530,7 @@ function SwipeBetCard({
   const netto = betNetto(bet);
   const fixture = fixtureFromBet(bet);
   const isLive = isInPlayStatus(fixture?.status);
-  const date = new Date(bet.placed_at).toLocaleDateString("sv-SE", {
-    day: "2-digit",
-    month: "short",
-  });
+  const date = cardDate(betDisplayDate(bet));
 
   function clearHold() {
     if (holdTimer.current) {

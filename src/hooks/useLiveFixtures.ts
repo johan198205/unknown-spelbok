@@ -43,10 +43,12 @@ function patchFromRow(row: {
  * Prenumererar på fixtures-UPDATEs och pollar /api/fixtures/live så länge
  * minst en synlig match pågår. Servern hämtar API-Football och skriver cachen.
  * Auto-rättning vid FT styrs av FEATURES.autoSettle (avstängd i fas 1).
+ * `poll: false` (utloggade) stänger av pollningen — endpointen kräver
+ * inloggning, och Realtime räcker för att följa cachen.
  */
 export function useLiveFixtures(
   fixtureIds: number[],
-  options?: { hasLive?: boolean; onSettled?: () => void }
+  options?: { hasLive?: boolean; poll?: boolean; onSettled?: () => void }
 ): Record<number, LiveFixturePatch> {
   const key = uniqueSortedIds(fixtureIds).join(",");
   const ids = useMemo(() => (key ? key.split(",").map(Number) : []), [key]);
@@ -101,7 +103,9 @@ export function useLiveFixtures(
     isInPlayStatus(p.status)
   );
   const enablePoll =
-    ids.length > 0 && !!(options?.hasLive || hasLivePatch);
+    options?.poll !== false &&
+    ids.length > 0 &&
+    !!(options?.hasLive || hasLivePatch);
 
   useEffect(() => {
     if (!enablePoll) return;

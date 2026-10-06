@@ -505,3 +505,16 @@
     --kupong-cta-logo-h: 48px;
   }
 }
+
+/*
+  iOS Safari zoomar in på fält under 16px när man trycker i dem. Sidan får
+  numera zoomas (ingen maximumScale), så pekskärmar får 16px i fälten.
+  Utanför @layer så att regeln vinner över text-[15px]-utilities.
+*/
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

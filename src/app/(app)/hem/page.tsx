@@ -221,7 +221,7 @@ export default async function HemPage() {
         />
       </div>
 
-      <div className="grid items-start gap-[18px] min-[1080px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-[18px] min-[1080px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-[18px]">
           <section>
             <div className="mb-2.5 flex items-baseline justify-between gap-3">

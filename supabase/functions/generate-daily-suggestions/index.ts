@@ -16,6 +16,7 @@
  *   supabase functions deploy generate-daily-suggestions
  */
 
+import { withServiceRole } from "../_shared/require-service-role.ts";
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { notifySite } from "../_shared/site-notify.ts";
 import { computeFixtureSignals } from "../_shared/signal-compute.ts";
@@ -573,4 +574,4 @@ export async function handleGenerateDailySuggestions(req: Request) {
   }
 }
 
-Deno.serve(handleGenerateDailySuggestions);
+Deno.serve(withServiceRole(handleGenerateDailySuggestions));

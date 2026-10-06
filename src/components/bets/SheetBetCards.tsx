@@ -11,6 +11,7 @@ import { formatKickoffTime } from "@/lib/live-fixture";
 import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
 import { formatPick } from "@/lib/picks";
 import type { SheetDensity } from "@/lib/sheet-filters";
+import { stockholmYmd } from "@/lib/stockholm";
 import type { Bet } from "@/lib/types";
 import {
   betNetto,
@@ -64,7 +65,7 @@ export function SheetBetCards({
         const meta = [
           bet.league,
           [
-            kickoff.toLocaleDateString("sv-SE"),
+            Number.isNaN(kickoff.getTime()) ? "" : stockholmYmd(kickoff),
             time,
           ]
             .filter(Boolean)

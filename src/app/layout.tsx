@@ -68,8 +68,10 @@ export const viewport: Viewport = {
   themeColor: "#0F1420",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   colorScheme: "dark",
+  // Krävs för att env(safe-area-inset-*) ska få värden i iOS-PWA:n
+  // (statusBarStyle black-translucent lägger sidan under statusfältet).
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({

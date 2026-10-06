@@ -88,7 +88,10 @@ export function MobileAddBetFlow({
   const typedStake = Number(String(stake).replace(",", ".")) || 0;
   const stakeValue =
     prefs.mode === "units" ? fromUnits(typedStake, prefs) : typedStake;
-  const potential = stakeValue * (Number(odds || 0) - 1);
+  // Svenskt decimaltangentbord ger "1,85" — parsa som insatsen.
+  const oddsValue = Number(String(odds).replace(",", "."));
+  const oddsValid = Number.isFinite(oddsValue) && oddsValue >= 1.01;
+  const potential = oddsValid ? stakeValue * (oddsValue - 1) : 0;
   const stakePresets =
     prefs.mode === "units" ? [0.5, 1, 2, 5] : STAKE_PRESETS;
   const pickOptions = PICKS[sport] || PICKS.Fotboll;
@@ -99,10 +102,13 @@ export function MobileAddBetFlow({
       setError(stakeProblem);
       return;
     }
+    if (!oddsValid) {
+      setError("Ange giltiga odds (minst 1,01).");
+      return;
+    }
 
     setLoading(true);
     setError(null);
-    const oddsValue = Number(odds);
     const settled = settlementForFinishedPick({
       pick: pick.trim(),
       stake: stakeValue,
@@ -450,7 +456,7 @@ export function MobileAddBetFlow({
               <div className="font-mono-num text-[22px] font-semibold text-win">
                 {amount(potential)}{" "}
                 <span className="text-sm text-faint">
-                  @ {formatOdds(Number(odds) || 0)}
+                  @ {formatOdds(oddsValid ? oddsValue : 0)}
                 </span>
               </div>
             </div>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
-import { useAmount } from "@/components/DisplayPrefsProvider";
-import { compactAxisValue } from "@/lib/sheet-filters";
+import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { toUnits } from "@/lib/display";
+import { axisDateLabels, compactAxisValue } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
 import { cn, cumulativeNettoByDay } from "@/lib/utils";
 
@@ -12,12 +13,6 @@ const H = 230;
 const SCALE_MARGIN = 0.08;
 
 type Point = { x: number; value: number; date: string };
-
-/** m/d — samma format som dashboardens graf. */
-function shortDate(ts: number) {
-  const d = new Date(ts);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
 
 /**
  * Ackumulerat netto för spelboken.
@@ -33,6 +28,7 @@ export function SheetNettoChart({
   periodLabel: string;
 }) {
   const amount = useAmount();
+  const prefs = useDisplayPrefs();
   const uid = useId().replace(/:/g, "");
   const boxRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -105,16 +101,17 @@ export function SheetNettoChart({
       (p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${y(p.value).toFixed(1)}`
     )
     .join(" ");
-  const area = `${line} L${W},${H} L0,${H} Z`;
+  // Ytan stängs mot nollinjen, inte mot grafens botten: under noll ska det
+  // röda fältet vara förlusten (mellan noll och kurvan), inte resten av ytan.
+  const area = `${line} L${points[points.length - 1].x.toFixed(1)},${zeroY.toFixed(1)} L${points[0].x.toFixed(1)},${zeroY.toFixed(1)} Z`;
 
   const yTicks = Array.from({ length: 5 }, (_, i) => ({
     value: max - (span / 4) * i,
     top: (i / 4) * 100,
   }));
-  const xTicks = Array.from({ length: 4 }, (_, i) => ({
-    key: i,
-    label: shortDate(t0 + ((t1 - t0) / 3) * i),
-  }));
+  const xTicks = axisDateLabels(
+    Array.from({ length: 4 }, (_, i) => t0 + ((t1 - t0) / 3) * i)
+  ).map((label, key) => ({ key, label }));
 
   const active = hover != null ? points[hover] : null;
   const activeLeft = active ? (active.x / W) * 100 : 0;
@@ -149,7 +146,9 @@ export function SheetNettoChart({
               className="absolute right-0 -translate-y-1/2 font-mono-num text-[11px] leading-none text-faint"
               style={{ top: `${tick.top}%` }}
             >
-              {compactAxisValue(tick.value)}
+              {compactAxisValue(
+                prefs.mode === "units" ? toUnits(tick.value, prefs) : tick.value
+              )}
             </span>
           ))}
         </div>

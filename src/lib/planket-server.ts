@@ -12,6 +12,7 @@
 import { cache } from "react";
 import { getSessionUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import type { CouponLegResult, CouponStatus } from "@/lib/types";
 import {
   PLANKET_ATTACH_LIMIT,
   PLANKET_PAGE_SIZE,
@@ -239,9 +240,9 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
   const { data, error } = await supabase
     .from("coupons")
     .select(
-      `id, slug, title, stake, total_odds,
+      `id, slug, title, status, settled_at, stake, total_odds,
        bookmakers:bookmaker_id(name, logo_url, slug),
-       coupon_legs(id, sort_order, pick, odds,
+       coupon_legs(id, sort_order, pick, odds, result,
          fixtures:fixture_id(kickoff, sport, league_id, league_name, league_logo,
                              home_name, away_name))`
     )
@@ -257,6 +258,7 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
     sort_order: number;
     pick: string;
     odds: number;
+    result: CouponLegResult | null;
     fixtures: {
       kickoff: string | null;
       sport: string | null;
@@ -272,6 +274,8 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
     id: string;
     slug: string;
     title: string;
+    status: CouponStatus;
+    settled_at: string | null;
     stake: number;
     total_odds: number;
     bookmakers: { name: string; logo_url: string | null; slug: string | null } | null;
@@ -292,12 +296,15 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
             ? `${leg.fixtures.home_name} – ${leg.fixtures.away_name}`
             : raw.title,
         kickoff: leg.fixtures?.kickoff ?? null,
+        result: leg.result ?? null,
       }));
 
     map.set(raw.id, {
       id: raw.id,
       slug: raw.slug,
       title: raw.title,
+      status: raw.status,
+      settled_at: raw.settled_at ?? null,
       stake: Number(raw.stake),
       // total_odds skrivs av triggern i db/coupons.sql. Finns benen räknar
       // vi om produkten så kortet aldrig visar en summa som inte stämmer

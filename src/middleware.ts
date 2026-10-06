@@ -28,11 +28,20 @@ function isMaintenanceExempt(path: string) {
 export async function middleware(request: NextRequest) {
   const scope = scopeForPath(request.nextUrl.pathname);
 
-  /** Vidarebefordrar requesten med scope-headern satt (och aldrig från klienten). */
-  function next() {
+  /**
+   * Request-headrar som skickas vidare till sidorna. Scope och x-pathname
+   * sätts alltid här och kan därför aldrig komma från klienten. x-pathname
+   * läses av (public)/layout.tsx för att välja appskal.
+   */
+  function forwardedHeaders() {
     const headers = new Headers(request.headers);
     headers.set(AUTH_SCOPE_HEADER, scope);
-    const res = NextResponse.next({ request: { headers } });
+    headers.set("x-pathname", request.nextUrl.pathname);
+    return headers;
+  }
+
+  function next() {
+    const res = NextResponse.next({ request: { headers: forwardedHeaders() } });
     res.headers.set("x-pathname", request.nextUrl.pathname);
     return res;
   }
@@ -163,7 +172,9 @@ export async function middleware(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = MAINTENANCE_PATH;
       url.search = "";
-      const rewrite = NextResponse.rewrite(url, { request });
+      const rewrite = NextResponse.rewrite(url, {
+        request: { headers: forwardedHeaders() },
+      });
       // Behåll de uppdaterade sessionskakorna från getUser() ovan.
       for (const cookie of supabaseResponse.cookies.getAll()) {
         rewrite.cookies.set(cookie);

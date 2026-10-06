@@ -12,6 +12,7 @@
  *   supabase functions deploy poll-live
  */
 
+import { withServiceRole } from "../_shared/require-service-role.ts";
 import {
   clientForSport,
   currentScore,
@@ -283,4 +284,4 @@ export async function handlePollLive(req: Request) {
   }
 }
 
-Deno.serve(handlePollLive);
+Deno.serve(withServiceRole(handlePollLive));

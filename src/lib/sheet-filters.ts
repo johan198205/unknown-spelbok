@@ -435,3 +435,34 @@ export function compactAxisValue(value: number): string {
   }
   return Math.round(value).toLocaleString("sv-SE");
 }
+
+const AXIS_DATE = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: "Europe/Stockholm",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+/**
+ * Datumetiketter för grafernas x-axel i svensk tid: "5 okt". Året skrivs ut
+ * på första etiketten och där året byts — men bara när axeln spänner över
+ * ett årsskifte, annars blir etiketterna för breda på mobil.
+ */
+export function axisDateLabels(timestamps: number[]): string[] {
+  const parts = timestamps.map((ts) => {
+    const p = AXIS_DATE.formatToParts(ts);
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+      p.find((x) => x.type === type)?.value ?? "";
+    return {
+      day: get("day"),
+      month: get("month").replace(/\.$/, ""),
+      year: get("year"),
+    };
+  });
+  const multiYear = new Set(parts.map((p) => p.year)).size > 1;
+  return parts.map((p, i) => {
+    const label = `${p.day} ${p.month}`;
+    const showYear = multiYear && (i === 0 || parts[i - 1].year !== p.year);
+    return showYear ? `${label} ${p.year}` : label;
+  });
+}

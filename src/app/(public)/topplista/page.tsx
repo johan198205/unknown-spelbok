@@ -6,8 +6,9 @@ import { getProfile } from "@/lib/auth";
 import {
   computeStats,
   formatMoney,
-  formatRoi,
+  formatRoiOrDash,
   initialOf,
+  MIN_ROI_BETS,
   nettoColor,
 } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
@@ -15,6 +16,7 @@ import { StickySelfRank } from "@/components/pwa/StickySelfRank";
 import { TopListCard } from "@/components/topplista/TopListCard";
 import {
   betCountList,
+  compareByQualifiedRoi,
   formList,
   highestWonOddsList,
   MIN_BETS_TOTAL,
@@ -62,7 +64,7 @@ export default async function TopplistaPage() {
       href: sheet.slug ? `/s/${sheet.slug}` : null,
       ...computeStats(sheet.bets),
     }))
-    .sort((a, b) => b.roi - a.roi);
+    .sort(compareByQualifiedRoi);
   // Huvudlistan visar bara topp 10.
   const topBoard = board.slice(0, TOP_LIST_SIZE);
 
@@ -117,8 +119,14 @@ export default async function TopplistaPage() {
 
   const medal = rankColor;
 
+  // Inloggade får app-chromets <main> med px-4 runt sidan; utloggade har
+  // ingen padding i den publika layouten och behöver egen sidmarginal.
   return (
-    <div className="animate-sbfade mx-auto max-w-[1180px] px-1 py-2 lg:px-7 lg:py-10">
+    <div
+      className={`animate-sbfade mx-auto max-w-[1180px] py-2 lg:px-7 lg:py-10 ${
+        profile ? "px-1" : "px-5"
+      }`}
+    >
       <div className="mb-5 lg:mb-6">
         <h1 className="font-display text-[28px] font-semibold lg:text-[34px]">
           Topplista
@@ -166,9 +174,11 @@ export default async function TopplistaPage() {
                 {row.bets}
               </span>
               <span
-                className={`text-right font-display text-[19px] font-semibold ${nettoColor(row.roi)}`}
+                className={`text-right font-display text-[19px] font-semibold ${
+                  row.bets >= MIN_ROI_BETS ? nettoColor(row.roi) : "text-faint"
+                }`}
               >
-                {formatRoi(row.roi)}
+                {formatRoiOrDash(row.roi, row.bets)}
               </span>
               <span
                 className={`text-right font-mono-num font-semibold ${nettoColor(row.netto)}`}

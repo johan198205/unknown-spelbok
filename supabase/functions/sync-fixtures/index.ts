@@ -17,6 +17,7 @@
  *   supabase functions deploy sync-fixtures
  */
 
+import { withServiceRole } from "../_shared/require-service-role.ts";
 import {
   clientForSport,
   DEFAULT_TIMEZONE,
@@ -299,4 +300,4 @@ export async function handleSyncFixtures(req: Request) {
   }
 }
 
-Deno.serve(handleSyncFixtures);
+Deno.serve(withServiceRole(handleSyncFixtures));

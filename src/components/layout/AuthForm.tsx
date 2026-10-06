@@ -45,6 +45,8 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [error, setError] = useState<string | null>(searchParams.get("error"));
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  // Satt när kontot skapats men e-posten måste bekräftas innan inloggning.
+  const [confirmSentTo, setConfirmSentTo] = useState<string | null>(null);
 
   async function onGoogle() {
     setError(null);
@@ -79,15 +81,37 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
 
     try {
       if (mode === "register") {
-        const { error: signUpError } = await supabase.auth.signUp({
+        // Samma väg tillbaka som Google: bekräftelselänken landar i
+        // /auth/callback, som byter koden mot en session och skickar vidare.
+        const callback = new URL("/auth/callback", window.location.origin);
+        if (next !== "/hem") callback.searchParams.set("next", next);
+
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { username: username.trim() },
+            emailRedirectTo: callback.toString(),
           },
         });
         if (signUpError) throw signUpError;
+
+        // Med e-postbekräftelse påslagen svarar Supabase utan fel även när
+        // adressen redan finns, men då utan identiteter.
+        if (data.user && data.user.identities?.length === 0) {
+          throw new Error(
+            "Det finns redan ett konto med den e-postadressen. Logga in i stället."
+          );
+        }
+
         track({ event: "sign_up", method: "password" });
+
+        // Ingen session = kontot väntar på bekräftelse. Att skicka vidare
+        // hade bara studsat användaren till /login utan förklaring.
+        if (!data.session) {
+          setConfirmSentTo(email.trim());
+          return;
+        }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -166,53 +190,77 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
             <div className="h-px flex-1 bg-line-soft" />
           </div>
 
-          <form onSubmit={onSubmit} className="space-y-3.5">
-            {mode === "register" ? (
-              <Input
-                label="Användarnamn"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="t.ex. valuejagaren"
-                required
-                minLength={3}
-              />
-            ) : null}
-            <Input
-              label="E-post"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="namn@exempel.se"
-              required
-            />
-            <Input
-              label="Lösenord"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-            />
-
-            {error ? (
-              <div className="rounded-[9px] border border-[rgba(255,92,108,.35)] bg-[rgba(255,92,108,.1)] px-3 py-2.5 text-sm text-[#FF8A96]">
-                {error}
+          {confirmSentTo ? (
+            <div className="space-y-3.5">
+              <div className="rounded-[9px] border border-line-soft bg-bg-soft px-4 py-3.5 text-sm leading-relaxed">
+                <div className="mb-1 font-semibold text-text">
+                  Bekräfta din e-post
+                </div>
+                <div className="text-muted">
+                  Vi har skickat en bekräftelselänk till{" "}
+                  <span className="font-semibold text-text">{confirmSentTo}</span>.
+                  Klicka på länken i mejlet för att aktivera kontot. Hittar du
+                  det inte, titta i skräpposten.
+                </div>
               </div>
-            ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setConfirmSentTo(null)}
+              >
+                Använd en annan e-postadress
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={onSubmit} className="space-y-3.5">
+              {mode === "register" ? (
+                <Input
+                  label="Användarnamn"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="t.ex. valuejagaren"
+                  required
+                  minLength={3}
+                />
+              ) : null}
+              <Input
+                label="E-post"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="namn@exempel.se"
+                required
+              />
+              <Input
+                label="Lösenord"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+              />
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading || googleLoading}
-            >
-              {loading
-                ? "Vänta…"
-                : mode === "login"
-                  ? "Logga in"
-                  : "Skapa konto"}
-            </Button>
-          </form>
+              {error ? (
+                <div className="rounded-[9px] border border-[rgba(255,92,108,.35)] bg-[rgba(255,92,108,.1)] px-3 py-2.5 text-sm text-[#FF8A96]">
+                  {error}
+                </div>
+              ) : null}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading || googleLoading}
+              >
+                {loading
+                  ? "Vänta…"
+                  : mode === "login"
+                    ? "Logga in"
+                    : "Skapa konto"}
+              </Button>
+            </form>
+          )}
         </Panel>
         <div className="mt-[18px] text-center">
           <Link href="/">Tillbaka till startsidan</Link>

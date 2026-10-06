@@ -11,6 +11,7 @@
  * "prediktion". Det heter spel, kupong och rygga.
  */
 
+import type { CouponLegResult, CouponStatus } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 
 // -------------------------------------------------------------
@@ -124,12 +125,15 @@ export type PlanketCouponLeg = {
   sport: string | null;
   match: string;
   kickoff: string | null;
+  result: CouponLegResult | null;
 };
 
 export type PlanketCoupon = {
   id: string;
   slug: string;
   title: string;
+  status: CouponStatus;
+  settled_at: string | null;
   stake: number;
   total_odds: number;
   bookmaker_name: string | null;
@@ -408,6 +412,23 @@ export function couponMeta(legs: unknown[]) {
 /** Möjlig vinst på en kupong: insats × (totalodds − 1). */
 export function couponPossibleWin(stake: number, totalOdds: number) {
   return Math.round(stake * (totalOdds - 1));
+}
+
+/**
+ * Utfallet på en avgjord kupong. Speglar couponNetto() i lib/coupons och
+ * public.coupon_netto(): pushade ben räknas som odds 1,00.
+ */
+export function couponOutcome(
+  coupon: Pick<PlanketCoupon, "status" | "stake" | "legs">
+) {
+  if (coupon.status === "won") {
+    const odds = coupon.legs
+      .filter((l) => l.result === "WIN")
+      .reduce((product, l) => product * Number(l.odds), 1);
+    return Math.round(coupon.stake * odds - coupon.stake);
+  }
+  if (coupon.status === "lost") return -coupon.stake;
+  return 0;
 }
 
 // -------------------------------------------------------------

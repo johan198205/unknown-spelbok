@@ -6,6 +6,7 @@ import {
   sportKey,
   type BreakdownRow,
 } from "@/lib/breakdowns";
+import { stockholmDayBounds } from "@/lib/stockholm";
 
 export const STATS_PERIODS = [
   { value: "all", label: "Från start" },
@@ -136,29 +137,13 @@ function stockholmYmd(date = new Date()): string {
   }).format(date);
 }
 
-function stockholmOffsetMinutes(at: Date): number {
-  const raw =
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: "Europe/Stockholm",
-      timeZoneName: "shortOffset",
-    })
-      .formatToParts(at)
-      .find((p) => p.type === "timeZoneName")?.value || "GMT+1";
-  const m = raw.match(/GMT([+-])(\d+)(?::(\d+))?/i);
-  if (!m) return 60;
-  const sign = m[1] === "-" ? -1 : 1;
-  return sign * (Number(m[2]) * 60 + Number(m[3] || 0));
-}
-
-/** Instant when a Stockholm calendar day starts (as UTC ISO). */
+/**
+ * Instant when a Stockholm calendar day starts (as UTC ISO). Offseten tas vid
+ * midnatt, inte mitt på dagen — annars blir dygnsgränsen en timme fel på
+ * sommar- och vintertidsdygnen.
+ */
 function stockholmDayStartIso(ymd: string): string {
-  const probe = new Date(`${ymd}T12:00:00Z`);
-  const offset = stockholmOffsetMinutes(probe);
-  const sign = offset >= 0 ? "+" : "-";
-  const abs = Math.abs(offset);
-  const hh = String(Math.floor(abs / 60)).padStart(2, "0");
-  const mm = String(abs % 60).padStart(2, "0");
-  return new Date(`${ymd}T00:00:00${sign}${hh}:${mm}`).toISOString();
+  return stockholmDayBounds(ymd).from;
 }
 
 function addDaysYmd(ymd: string, days: number): string {
@@ -327,6 +312,15 @@ export function computeBreakdownsFromRows(rows: BetRow[]): SheetBreakdowns {
   };
 }
 
+/**
+ * Avrundar till två decimaler som Postgres `round(numeric, 2)`: halvtal bort
+ * från noll (-0,125 → -0,13) och aldrig -0. Annars skiljer sig JS-fallbacken
+ * från `get_bet_stats` för negativa belopp.
+ */
+function round2(n: number): number {
+  return Math.sign(n) * Math.round(Math.abs(n) * 100) / 100 || 0;
+}
+
 /** Server-side fallback when RPC saknas / misslyckas. */
 export function computeBetStatsFromRows(
   bets: BetRow[],
@@ -382,27 +376,28 @@ export function computeBetStatsFromRows(
     forluster,
     void: voidCount,
     oppna_spel: oppna,
-    oppen_risk: Math.round(oppenRisk * 100) / 100,
-    oppen_potentiell_vinst: Math.round(oppenPot * 100) / 100,
-    insats: Math.round(insats * 100) / 100,
-    vunnet: Math.round(vunnet * 100) / 100,
-    forlorat: Math.round(forlorat * 100) / 100,
-    netto: Math.round(netto * 100) / 100,
-    roi: insats > 0 ? Math.round((netto / insats) * 10000) / 100 : 0,
+    oppen_risk: round2(oppenRisk),
+    oppen_potentiell_vinst: round2(oppenPot),
+    insats: round2(insats),
+    vunnet: round2(vunnet),
+    forlorat: round2(forlorat),
+    netto: round2(netto),
+    roi: insats > 0 ? round2((netto / insats) * 100) : 0,
     unit_size: unit,
-    unitnetto: Math.round((netto / unit) * 100) / 100,
+    unitnetto: round2(netto / unit),
     vinstprocent:
-      decided > 0 ? Math.round((vinster / decided) * 10000) / 100 : 0,
+      decided > 0 ? round2((vinster / decided) * 100) : 0,
     medelodds:
-      settledCount > 0 ? Math.round((oddsSum / settledCount) * 100) / 100 : 0,
+      settledCount > 0 ? round2(oddsSum / settledCount) : 0,
     medelinsats:
-      settledCount > 0 ? Math.round((insats / settledCount) * 100) / 100 : 0,
-    medelvinst:
-      vinster > 0 ? Math.round((netto / vinster) * 100) / 100 : 0,
-    basta_spel: Math.round((basta ?? 0) * 100) / 100,
-    samsta_spel: Math.round((samsta ?? 0) * 100) / 100,
+      settledCount > 0 ? round2(insats / settledCount) : 0,
+    // Snittvinst per vinnande spel. Var tidigare netto / vinster, som blandar
+    // in förlusterna och kan bli negativt.
+    medelvinst: vinster > 0 ? round2(vunnet / vinster) : 0,
+    basta_spel: round2(basta ?? 0),
+    samsta_spel: round2(samsta ?? 0),
     snittinsats_oppna:
-      oppna > 0 ? Math.round((oppenRisk / oppna) * 100) / 100 : 0,
+      oppna > 0 ? round2(oppenRisk / oppna) : 0,
   };
 }
 

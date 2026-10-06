@@ -19,6 +19,8 @@ import { formatMoney } from "@/lib/utils";
 /** Kortets egna koordinatsystem. Allt inuti ritas i de här måtten. */
 const CARD_W = 1200;
 const CARD_H = 630;
+// Fler ben än så får inte plats på kortet; se route.tsx för delningskortet.
+const MAX_LEGS = 5;
 
 export function CouponShareModal({
   coupon,
@@ -170,6 +172,13 @@ function ShareCard({
 }) {
   const tone = COUPON_STATUS_TONE[coupon.status];
   const logo = getBookmakerLogoUrl(coupon.bookmakers?.logo_url);
+  // Samma höjdbudget som PNG:en i api/kuponger/[slug]/delningskort.
+  const overflow = coupon.legs.length > MAX_LEGS;
+  const visibleLegs = coupon.legs.slice(0, overflow ? MAX_LEGS - 1 : MAX_LEGS);
+  const hiddenLegs = coupon.legs.length - visibleLegs.length;
+  const dense = coupon.legs.length >= MAX_LEGS;
+  const crestSize = dense ? 36 : 44;
+  const legFont = dense ? 22 : 26;
 
   return (
     <div
@@ -227,45 +236,75 @@ function ShareCard({
         style={{
           fontSize: 52,
           fontWeight: 600,
-          lineHeight: 1.06,
+          lineHeight: 1.2,
           color: "#E6EAF2",
-          marginBottom: 26,
+          marginBottom: 19,
           maxWidth: 940,
+          flexShrink: 0,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         }}
       >
         {coupon.title}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: "auto" }}>
-        {coupon.legs.slice(0, 5).map((leg) => {
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: dense ? 10 : 14,
+          marginBottom: "auto",
+          minHeight: 0,
+          overflow: "hidden",
+        }}
+      >
+        {visibleLegs.map((leg) => {
           const fx = leg.fixtures;
           const home = teamLogoUrl(fx?.home_logo, fx?.home_team_id, fx?.sport);
           const away = teamLogoUrl(fx?.away_logo, fx?.away_team_id, fx?.sport);
           return (
             <div key={leg.id} style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              <Crest src={home} />
-              <Crest src={away} />
+              <Crest src={home} size={crestSize} />
+              <Crest src={away} size={crestSize} />
               <span
                 style={{
-                  fontSize: 26,
+                  fontSize: legFont,
                   color: "#C3CBDB",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   maxWidth: 400,
+                  minWidth: 0,
                 }}
               >
-                {fx?.home_name} – {fx?.away_name}
+                {fx?.home_name ?? "?"} – {fx?.away_name ?? "?"}
               </span>
-              <span style={{ fontSize: 26, fontWeight: 700, color: "#E6EAF2", whiteSpace: "nowrap" }}>
+              <span
+                style={{
+                  fontSize: legFont,
+                  fontWeight: 700,
+                  color: "#E6EAF2",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: 300,
+                  flexShrink: 0,
+                }}
+              >
                 {leg.pick}
               </span>
-              <span className="font-mono-num" style={{ marginLeft: "auto", fontSize: 28, fontWeight: 600, color: "#E6EAF2" }}>
+              <span className="font-mono-num" style={{ marginLeft: "auto", flexShrink: 0, fontSize: legFont + 2, fontWeight: 600, color: "#E6EAF2" }}>
                 {formatCouponOdds(leg.odds)}
               </span>
             </div>
           );
         })}
+        {hiddenLegs > 0 ? (
+          <span className="font-mono-num" style={{ fontSize: 20, fontWeight: 600, color: "#8A94AB" }}>
+            +{hiddenLegs} fler
+          </span>
+        ) : null}
       </div>
 
       <div
@@ -319,12 +358,12 @@ function ShareCard({
   );
 }
 
-function Crest({ src }: { src: string | null }) {
+function Crest({ src, size }: { src: string | null; size: number }) {
   return (
     <span
       style={{
-        width: 44,
-        height: 44,
+        width: size,
+        height: size,
         borderRadius: 99,
         background: "rgba(230,234,242,.08)",
         padding: 5,

@@ -48,7 +48,13 @@ export function DistributionCard({
   const amount = useAmount();
   const [tab, setTab] = useState<DistributionTab>("liga");
   const rows = groups[tab] ?? [];
-  const shown = rows.slice(0, MAX_ROWS);
+  // Raderna kommer sorterade på netto. Att bara kapa listan döljer då alla
+  // förlustgrupper, även de med flest spel. Välj i stället de grupper som har
+  // flest spel och behåll nettoordningen bland dem.
+  const kept = new Set(
+    [...rows].sort((a, b) => b.bets - a.bets).slice(0, MAX_ROWS)
+  );
+  const shown = rows.filter((r) => kept.has(r));
   const hidden = rows.length - shown.length;
   const peak = Math.max(1, ...rows.map((r) => Math.abs(r.netto)));
   const big = size === "regular";
@@ -56,7 +62,7 @@ export function DistributionCard({
   return (
     <section
       className={cn(
-        "rounded-[14px] border border-line bg-panel",
+        "min-w-0 rounded-[14px] border border-line bg-panel",
         big ? "p-[18px]" : "p-4"
       )}
     >

@@ -12,6 +12,7 @@ import type {
   SheetSortDir,
   SheetSortKey,
 } from "@/lib/sheet-filters";
+import { stockholmYmd } from "@/lib/stockholm";
 import type { Bet } from "@/lib/types";
 import { track } from "@/lib/analytics";
 import { useAmount } from "@/components/DisplayPrefsProvider";
@@ -62,7 +63,7 @@ function DateCell({ iso }: { iso: string }) {
   const date = new Date(iso);
   return (
     <div className="whitespace-nowrap font-mono-num text-[14px] text-[#C3CBDB]">
-      {date.toLocaleDateString("sv-SE")}
+      {Number.isNaN(date.getTime()) ? "" : stockholmYmd(date)}
     </div>
   );
 }

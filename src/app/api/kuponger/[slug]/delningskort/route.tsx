@@ -28,6 +28,56 @@ const MUTED = "#8A94AB";
 const FAINT = "#5D6883";
 
 /**
+ * Höjdbudget: 630 px minus 112 px padding, huvud (~70), en rad titel (~81)
+ * och fot (~115) lämnar runt 255 px åt benen. Fyra ben i normal storlek
+ * får plats; fem ritas i kompakt läge. Fler än fem: fyra kompakta ben och
+ * en rad "+N fler" i stället för att tappa resten utan att säga något.
+ */
+const MAX_LEGS = 5;
+
+/**
+ * Satori ritar inte background-image: url(...), bara <img>. Bilderna
+ * hämtas här i förväg med timeout och skickas in som data-URL:er, så en
+ * långsam eller trasig logga ger en tom ruta i stället för en bild som
+ * hänger eller kastar. Satori klarar PNG, JPEG, GIF och SVG — inte WebP
+ * eller AVIF, så de hoppas över.
+ */
+const IMAGE_TIMEOUT_MS = 3000;
+const IMAGE_MAX_BYTES = 1_500_000;
+
+async function loadImage(url: string | null): Promise<string | null> {
+  if (!url || !/^https?:\/\//i.test(url)) return null;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (!buf.length || buf.length > IMAGE_MAX_BYTES) return null;
+
+    const isPng = [0x89, 0x50, 0x4e, 0x47].every((b, i) => buf[i] === b);
+    const isJpeg = [0xff, 0xd8, 0xff].every((b, i) => buf[i] === b);
+    const isGif = [0x47, 0x49, 0x46, 0x38].every((b, i) => buf[i] === b);
+    let mime: string | null = isPng
+      ? "image/png"
+      : isJpeg
+        ? "image/jpeg"
+        : isGif
+          ? "image/gif"
+          : null;
+
+    if (!mime && /svg/i.test(res.headers.get("content-type") ?? "")) {
+      // Satori kastar på en SVG utan viewBox eller mått.
+      const text = new TextDecoder().decode(buf);
+      if (/<svg[\s\S]*?(viewBox|width=)/i.test(text)) mime = "image/svg+xml";
+    }
+    if (!mime) return null;
+
+    return `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Delningskortet som PNG, 1200 × 630.
  *
  * En serverrendering, inte en canvas i webbläsaren: lagloggorna ligger på
@@ -65,7 +115,32 @@ export async function GET(
           ? "rgba(255,92,108,.16)"
           : "rgba(255,184,77,.16)";
 
-  const bookmakerLogo = getBookmakerLogoUrl(coupon.bookmakers?.logo_url);
+  const overflow = coupon.legs.length > MAX_LEGS;
+  const visibleLegs = coupon.legs.slice(0, overflow ? MAX_LEGS - 1 : MAX_LEGS);
+  const hiddenLegs = coupon.legs.length - visibleLegs.length;
+  const dense = coupon.legs.length >= MAX_LEGS;
+  const crestSize = dense ? 36 : 44;
+  const legFont = dense ? 22 : 26;
+  const legGap = dense ? 10 : 14;
+
+  // Alla bilder hämtas parallellt; samma lag i två ben hämtas en gång.
+  const urls = new Set<string>();
+  const bookmakerUrl = getBookmakerLogoUrl(coupon.bookmakers?.logo_url);
+  if (bookmakerUrl) urls.add(bookmakerUrl);
+  for (const leg of visibleLegs) {
+    const fx = leg.fixtures;
+    const home = teamLogoUrl(fx?.home_logo, fx?.home_team_id, fx?.sport);
+    const away = teamLogoUrl(fx?.away_logo, fx?.away_team_id, fx?.sport);
+    if (home) urls.add(home);
+    if (away) urls.add(away);
+  }
+  const images = new Map(
+    await Promise.all(
+      [...urls].map(async (url) => [url, await loadImage(url)] as const)
+    )
+  );
+  const image = (url: string | null) => (url ? images.get(url) ?? null : null);
+  const bookmakerLogo = image(bookmakerUrl);
 
   return new ImageResponse(
     (
@@ -82,7 +157,14 @@ export async function GET(
           fontFamily: SANS,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 30,
+            flexShrink: 0,
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -138,10 +220,17 @@ export async function GET(
             fontFamily: DISPLAY,
             fontSize: 52,
             fontWeight: 600,
-            lineHeight: 1.06,
+            // 1,2 i stället för 1,06: overflow hidden klipper annars av
+            // nedstaplarna (g, j, y) på enradstiteln.
+            lineHeight: 1.2,
             color: TEXT,
-            marginBottom: 26,
+            marginBottom: 19,
             maxWidth: 940,
+            flexShrink: 0,
+            // En rad, alltid: en titel på två rader trycker benen över foten.
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {coupon.title}
@@ -152,37 +241,53 @@ export async function GET(
             display: "flex",
             flexDirection: "column",
             marginBottom: "auto",
+            minHeight: 0,
+            overflow: "hidden",
           }}
         >
-          {coupon.legs.slice(0, 5).map((leg) => {
+          {visibleLegs.map((leg) => {
             const fx = leg.fixtures;
             const home = teamLogoUrl(fx?.home_logo, fx?.home_team_id, fx?.sport);
             const away = teamLogoUrl(fx?.away_logo, fx?.away_team_id, fx?.sport);
             return (
               <div
                 key={leg.id}
-                style={{ display: "flex", alignItems: "center", marginBottom: 14 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: legGap,
+                  flexShrink: 0,
+                }}
               >
-                <Crest src={home} />
-                <Crest src={away} />
+                <Crest src={image(home)} size={crestSize} />
+                <Crest src={image(away)} size={crestSize} />
                 <div
                   style={{
                     display: "flex",
-                    fontSize: 26,
+                    fontSize: legFont,
                     color: "#C3CBDB",
                     maxWidth: 420,
+                    minWidth: 0,
+                    flexShrink: 1,
+                    whiteSpace: "nowrap",
                     overflow: "hidden",
+                    textOverflow: "ellipsis",
                     marginRight: 18,
                   }}
                 >
-                  {fx?.home_name ?? "?"} – {fx?.away_name ?? "?"}
+                  {`${fx?.home_name ?? "?"} – ${fx?.away_name ?? "?"}`}
                 </div>
                 <div
                   style={{
                     display: "flex",
-                    fontSize: 26,
+                    fontSize: legFont,
                     fontWeight: 700,
                     color: TEXT,
+                    maxWidth: 300,
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {leg.pick}
@@ -192,7 +297,9 @@ export async function GET(
                     display: "flex",
                     fontFamily: MONO,
                     marginLeft: "auto",
-                    fontSize: 28,
+                    paddingLeft: 18,
+                    flexShrink: 0,
+                    fontSize: legFont + 2,
                     fontWeight: 600,
                     color: TEXT,
                   }}
@@ -202,6 +309,20 @@ export async function GET(
               </div>
             );
           })}
+          {hiddenLegs > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                fontFamily: MONO,
+                fontSize: 20,
+                fontWeight: 600,
+                color: MUTED,
+                flexShrink: 0,
+              }}
+            >
+              {`+${hiddenLegs} fler`}
+            </div>
+          ) : null}
         </div>
 
         <div
@@ -210,6 +331,7 @@ export async function GET(
             alignItems: "flex-end",
             paddingTop: 30,
             borderTop: "1px solid #232B3E",
+            flexShrink: 0,
           }}
         >
           <Field
@@ -251,20 +373,24 @@ export async function GET(
             <div
               style={{
                 display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 width: 150,
                 height: 56,
                 borderRadius: 10,
                 backgroundColor: "#1B2436",
-                ...(bookmakerLogo
-                  ? {
-                      backgroundImage: `url(${bookmakerLogo})`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "center",
-                      backgroundSize: "78% auto",
-                    }
-                  : {}),
               }}
-            />
+            >
+              {bookmakerLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+                <img
+                  src={bookmakerLogo}
+                  width={117}
+                  height={40}
+                  style={{ objectFit: "contain" }}
+                />
+              ) : null}
+            </div>
             <div style={{ display: "flex", fontSize: 15, color: FAINT, marginTop: 10 }}>
               spelbok.se · 18+ · Spela ansvarsfullt
             </div>
@@ -286,26 +412,33 @@ export async function GET(
   );
 }
 
-function Crest({ src }: { src: string | null }) {
+/** src är en data-URL från loadImage, eller null för en tom cirkel. */
+function Crest({ src, size }: { src: string | null; size: number }) {
+  const inner = Math.round(size * 0.77);
   return (
     <div
       style={{
         display: "flex",
-        width: 44,
-        height: 44,
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        flexShrink: 0,
         borderRadius: 99,
         backgroundColor: "rgba(230,234,242,.08)",
         marginRight: 18,
-        ...(src
-          ? {
-              backgroundImage: `url(${src})`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: "34px 34px",
-            }
-          : {}),
       }}
-    />
+    >
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+        <img
+          src={src}
+          width={inner}
+          height={inner}
+          style={{ objectFit: "contain" }}
+        />
+      ) : null}
+    </div>
   );
 }
 

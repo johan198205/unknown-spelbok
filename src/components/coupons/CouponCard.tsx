@@ -112,15 +112,19 @@ export function CouponCard({
             <LegRow key={leg.id} leg={leg} />
           ))}
 
-          <div className="flex flex-wrap items-center border-t border-line bg-panel">
-            <SummaryCell label="Insats" value={stakeLabel} basis="120px" />
-            <SummaryCell label="Totalodds" value={oddsLabel} basis="110px" size="22px" />
+          {/*
+            Tre kolumner i ett grid i stället för fyra flexceller som bryts:
+            statusen står redan i badgen i kortets huvud, och en fjärde cell
+            hamnade ensam på en egen rad i 2-läget och på mobil.
+          */}
+          <div className="grid grid-cols-[1fr_1fr_1.3fr] border-t border-line bg-panel">
+            <SummaryCell label="Insats" value={stakeLabel} />
+            <SummaryCell label="Totalodds" value={oddsLabel} size="20px" />
             {settled ? (
               <SummaryCell
                 label="Utfall"
                 value={formatMoney(netto, "kr")}
-                basis="140px"
-                size="22px"
+                size="20px"
                 color={
                   netto > 0
                     ? "var(--win)"
@@ -133,17 +137,9 @@ export function CouponCard({
               <SummaryCell
                 label="Möjlig vinst"
                 value={formatMoney(possibleWin(coupon), "kr")}
-                basis="140px"
                 color="var(--win)"
               />
             )}
-            <SummaryCell
-              label="Status"
-              value={COUPON_STATUS_LABEL[coupon.status]}
-              basis="110px"
-              size="14px"
-              color={tone.badgeFg}
-            />
           </div>
         </div>
       </div>
@@ -177,6 +173,8 @@ export function CouponCard({
           couponId={coupon.id}
           alreadyCopied={alreadyCopied}
           loggedIn={loggedIn}
+          status={coupon.status}
+          firstKickoff={firstKickoff(coupon.legs)}
         />
         <button
           type="button"
@@ -201,7 +199,7 @@ function LegRow({ leg }: { leg: CouponLeg }) {
   const markColor = leg.result ? LEG_RESULT_COLOR[leg.result] : "#3F4A60";
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-t border-line-soft px-3.5 py-[13px] first:border-t-0">
+    <div className="flex items-center gap-3 border-t border-line-soft px-3.5 py-[13px] first:border-t-0">
       <span className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-full bg-[rgba(230,234,242,0.07)] p-[3px]">
         <LeagueLogo
           src={fx?.league_logo}
@@ -212,7 +210,13 @@ function LegRow({ leg }: { leg: CouponLeg }) {
         />
       </span>
 
-      <div className="min-w-0" style={{ flex: "1 1 210px" }}>
+      {/*
+        Raden bryts aldrig: lagblocket tar resten av bredden (basis 0) och
+        krymper, medan pick, odds och markör står i en fast grupp till höger.
+        Med flex-wrap hamnade odds och markör på en egen rad i 2-läget och
+        på mobil, och kolumnerna linjerade inte mellan benen.
+      */}
+      <div className="min-w-0" style={{ flex: "1 1 0" }}>
         {/*
           Lagnamnen får krympa och ellipsas var för sig (flex 0 1 auto,
           min-width 24px). white-space:nowrap på hela raden hade i stället
@@ -252,21 +256,26 @@ function LegRow({ leg }: { leg: CouponLeg }) {
         </div>
       </div>
 
-      <span className="text-[14.5px] font-bold" style={{ flex: "0 1 auto" }}>
-        {leg.pick}
-      </span>
-      <span
-        className="font-mono-num shrink-0 text-right text-[15px] font-semibold"
-        style={{ width: 56 }}
-      >
-        {formatCouponOdds(leg.odds)}
-      </span>
-      <span
-        className="font-mono-num shrink-0 text-center text-[11.5px] font-semibold"
-        style={{ width: 26, color: markColor }}
-      >
-        {mark}
-      </span>
+      <div className="ml-auto flex shrink-0 items-center gap-2.5 whitespace-nowrap">
+        <span
+          className="max-w-[9rem] truncate text-[14.5px] font-bold"
+          title={leg.pick}
+        >
+          {leg.pick}
+        </span>
+        <span
+          className="font-mono-num shrink-0 text-right text-[15px] font-semibold"
+          style={{ width: 44 }}
+        >
+          {formatCouponOdds(leg.odds)}
+        </span>
+        <span
+          className="font-mono-num shrink-0 text-center text-[11.5px] font-semibold"
+          style={{ width: 18, color: markColor }}
+        >
+          {mark}
+        </span>
+      </div>
     </div>
   );
 }
@@ -274,21 +283,16 @@ function LegRow({ leg }: { leg: CouponLeg }) {
 function SummaryCell({
   label,
   value,
-  basis,
   size = "18px",
   color = "var(--text)",
 }: {
   label: string;
   value: string;
-  basis: string;
   size?: string;
   color?: string;
 }) {
   return (
-    <div
-      className="min-w-0 border-l border-line-soft px-3.5 py-[13px]"
-      style={{ flex: `1 1 ${basis}` }}
-    >
+    <div className="min-w-0 border-l border-line-soft px-3 py-[13px] first:border-l-0">
       <div className={`${LABEL} mb-[5px]`}>{label}</div>
       <div
         className="font-mono-num whitespace-nowrap font-semibold"

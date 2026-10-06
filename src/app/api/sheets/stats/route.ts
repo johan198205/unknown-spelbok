@@ -11,9 +11,6 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
-  }
 
   const sheetId = request.nextUrl.searchParams.get("sheetId");
   const periodRaw = request.nextUrl.searchParams.get("period") || "all";
@@ -27,19 +24,25 @@ export async function GET(request: NextRequest) {
 
   const { data: sheet } = await supabase
     .from("sheets")
-    .select("id, user_id")
+    .select("id, user_id, is_public")
     .eq("id", sheetId)
     .maybeSingle();
 
-  if (!sheet || sheet.user_id !== user.id) {
+  // Publika spelböcker får läsas av alla, även utloggade (samma som /s/<slug>).
+  // Privata bara av ägaren — 404 så att existensen inte läcker.
+  const isOwner = !!user && sheet?.user_id === user.id;
+  if (!sheet || (!sheet.is_public && !isOwner)) {
     return NextResponse.json({ error: "Hittades inte" }, { status: 404 });
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Unit-storleken är betraktarens, inte ägarens; utloggade får 100.
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
 
   const unitSize =
     profile?.unit_size && profile.unit_size > 0 ? Number(profile.unit_size) : 100;

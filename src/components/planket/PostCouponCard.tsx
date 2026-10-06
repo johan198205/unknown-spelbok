@@ -1,9 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
+import {
+  COUPON_STATUS_LABEL,
+  COUPON_STATUS_TONE,
+  couponPath,
+} from "@/lib/coupons";
 import { formatPick } from "@/lib/picks";
 import {
   couponMeta,
+  couponOutcome,
   couponPossibleWin,
   planketKickoff,
   planketKr,
@@ -23,6 +30,9 @@ import { BookmakerLink } from "@/components/planket/PostBetCard";
  *
  * Summeringsraden har tre celler på desktop och två på mobil: möjlig
  * vinst får inte plats på 390 px utan att siffrorna bryts.
+ *
+ * En avgjord kupong visar statusbadge och utfall, aldrig möjlig vinst —
+ * samma regel som kupongkortet på /kuponger och spelinläggen på planket.
  */
 export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
   const legs = coupon.legs;
@@ -32,18 +42,42 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
     sign: true,
   });
   const bookLogo = getBookmakerLogoUrl(coupon.bookmaker_logo);
+  const settled = coupon.status !== "open";
+  const tone = COUPON_STATUS_TONE[coupon.status];
+  const netto = couponOutcome(coupon);
+  const outcome = planketKr(netto, { sign: netto !== 0 });
+  const outcomeClass =
+    netto > 0 ? "text-win" : netto < 0 ? "text-loss" : "text-text";
+  const href = couponPath(coupon.slug);
+  const badge = settled ? (
+    <span
+      className="shrink-0 rounded-[6px] px-2 py-[3px] font-mono-num text-[11px] font-semibold tracking-[0.07em]"
+      style={{ background: tone.badgeBg, color: tone.badgeFg }}
+    >
+      {COUPON_STATUS_LABEL[coupon.status]}
+    </span>
+  ) : null;
 
   return (
     <>
       {/* ---------- Desktop ---------- */}
-      <div className="mb-[13px] hidden overflow-hidden rounded-[12px] border border-line bg-[#1B2233] lg:block">
+      <div
+        className="mb-[13px] hidden overflow-hidden rounded-[12px] border border-line bg-[#1B2233] lg:block"
+        style={settled ? { borderColor: tone.border } : undefined}
+      >
         <div className="flex items-center gap-[9px] border-b border-line px-[14px] py-[11px]">
-          <span className="shrink-0 font-display text-[12.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
-            Kupong
-          </span>
-          <span className="min-w-0 flex-1 truncate font-mono-num text-[12.5px] text-[#5D6883]">
-            {couponMeta(legs)}
-          </span>
+          <Link
+            href={href}
+            className="flex min-w-0 flex-1 items-center gap-[9px] no-underline hover:no-underline"
+          >
+            <span className="shrink-0 font-display text-[12.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
+              Kupong
+            </span>
+            <span className="min-w-0 flex-1 truncate font-mono-num text-[12.5px] text-[#5D6883] hover:text-text-soft">
+              {couponMeta(legs)}
+            </span>
+          </Link>
+          {badge}
           <BookmakerLink
             href={
               coupon.bookmaker_slug
@@ -107,24 +141,44 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
               {stake}
             </div>
           </div>
-          <div className="flex-1 border-l border-line px-[14px] py-3">
-            <FieldLabel>Möjlig vinst</FieldLabel>
-            <div className="font-mono-num text-[20px] font-semibold tabular-nums text-win">
-              {win}
+          {settled ? (
+            <div className="flex-1 border-l border-line px-[14px] py-3">
+              <FieldLabel>Utfall</FieldLabel>
+              <div
+                className={`font-mono-num text-[20px] font-semibold tabular-nums ${outcomeClass}`}
+              >
+                {outcome}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex-1 border-l border-line px-[14px] py-3">
+              <FieldLabel>Möjlig vinst</FieldLabel>
+              <div className="font-mono-num text-[20px] font-semibold tabular-nums text-win">
+                {win}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* ---------- Mobil ---------- */}
-      <div className="mb-3 overflow-hidden rounded-[11px] border border-line bg-[#1B2233] lg:hidden">
+      <div
+        className="mb-3 overflow-hidden rounded-[11px] border border-line bg-[#1B2233] lg:hidden"
+        style={settled ? { borderColor: tone.border } : undefined}
+      >
         <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
-          <span className="shrink-0 font-display text-[11.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
-            Kupong
-          </span>
-          <span className="min-w-0 truncate font-mono-num text-[11.5px] text-[#5D6883]">
-            {couponMeta(legs)}
-          </span>
+          <Link
+            href={href}
+            className="flex min-w-0 flex-1 items-center gap-2 no-underline hover:no-underline"
+          >
+            <span className="shrink-0 font-display text-[11.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
+              Kupong
+            </span>
+            <span className="min-w-0 truncate font-mono-num text-[11.5px] text-[#5D6883]">
+              {couponMeta(legs)}
+            </span>
+          </Link>
+          {badge}
         </div>
 
         {legs.map((leg) => (
@@ -165,6 +219,16 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
             </div>
           </div>
         </div>
+        {settled ? (
+          <div className="flex items-baseline gap-2 border-t border-line px-3 py-2.5">
+            <FieldLabel className="mb-0 text-[9.5px]">Utfall</FieldLabel>
+            <span
+              className={`ml-auto font-mono-num text-[17px] font-semibold tabular-nums ${outcomeClass}`}
+            >
+              {outcome}
+            </span>
+          </div>
+        ) : null}
       </div>
     </>
   );

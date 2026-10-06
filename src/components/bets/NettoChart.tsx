@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useAmount } from "@/components/DisplayPrefsProvider";
-import { compactAxisValue } from "@/lib/sheet-filters";
+import { axisDateLabels, compactAxisValue } from "@/lib/sheet-filters";
 
 // Närmaste "snygga" steg (1, 2, 2,5, 5, 10 × 10^n) för y-axelns etiketter.
 function niceStep(rough: number) {
@@ -89,8 +89,13 @@ export function NettoChart({
   const line = coords
     .map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)},${c.y.toFixed(1)}`)
     .join(" ");
-  const area = `${line} L${w},${h} L0,${h} Z`;
+  // Stängs mot nollinjen, inte mot botten — se SheetNettoChart.
+  const area = `${line} L${coords[coords.length - 1].x.toFixed(1)},${zeroY.toFixed(1)} L${coords[0].x.toFixed(1)},${zeroY.toFixed(1)} Z`;
   const activePoint = active != null ? coords[active] : null;
+  const edgeDates = axisDateLabels([
+    Date.parse(points[0].date),
+    Date.parse(points[points.length - 1].date),
+  ]);
 
   function pointerToIndex(clientX: number, el: SVGSVGElement) {
     const rect = el.getBoundingClientRect();
@@ -245,22 +250,9 @@ export function NettoChart({
           ) : null}
         </svg>
         <div className="mt-1.5 flex justify-between font-mono-num text-[11px] text-faint">
-          <span>
-            {new Date(points[0].date).toLocaleDateString("sv-SE", {
-              month: "short",
-              day: "numeric",
-            })}
-          </span>
+          <span>{edgeDates[0]}</span>
           <span>ackumulerat netto</span>
-          <span>
-            {new Date(points[points.length - 1].date).toLocaleDateString(
-              "sv-SE",
-              {
-                month: "short",
-                day: "numeric",
-              }
-            )}
-          </span>
+          <span>{edgeDates[1]}</span>
         </div>
         {showSeries ? (
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">

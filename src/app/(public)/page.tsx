@@ -4,9 +4,15 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { fetchLandingPage } from "@/lib/landing-content.server";
 import { fetchSiteSettings } from "@/lib/site-settings";
-import { profileHref, rankColor } from "@/lib/toplists";
+import { compareByQualifiedRoi, profileHref, rankColor } from "@/lib/toplists";
 import { createClient } from "@/lib/supabase/server";
-import { computeStats, formatMoney, formatRoi, nettoColor } from "@/lib/utils";
+import {
+  computeStats,
+  formatMoney,
+  formatRoiOrDash,
+  MIN_ROI_BETS,
+  nettoColor,
+} from "@/lib/utils";
 import type { Bet } from "@/lib/types";
 import type { Metadata } from "next";
 
@@ -86,7 +92,7 @@ export default async function LandingPage() {
         ...stats,
       };
     })
-    .sort((a, b) => b.roi - a.roi)
+    .sort(compareByQualifiedRoi)
     .slice(0, 5);
 
   const comp = site.competitions_enabled ? competitions?.[0] : undefined;
@@ -167,10 +173,10 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1180px] px-7 pt-16">
+      <section className="mx-auto max-w-[1180px] px-5 pt-16 sm:px-7">
         <Panel className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-line px-4 py-4">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4">
+            <div className="min-w-0">
               <div className="font-display text-xl font-semibold">
                 {landing.leaderboard.title}
               </div>
@@ -182,6 +188,7 @@ export default async function LandingPage() {
               href={landing.leaderboard.ctaHref}
               variant="secondary"
               size="sm"
+              className="whitespace-nowrap"
             >
               {landing.leaderboard.ctaLabel}
             </ButtonLink>
@@ -196,8 +203,8 @@ export default async function LandingPage() {
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold">{r.name}</div>
-                  <div className="text-[12.5px] text-muted">
+                  <div className="truncate font-semibold">{r.name}</div>
+                  <div className="truncate text-[12.5px] text-muted">
                     <Link
                       href={profileHref(r.owner)}
                       className="text-muted no-underline hover:text-text hover:underline"
@@ -207,16 +214,21 @@ export default async function LandingPage() {
                     · {r.bets} spel · hitrate {r.hitrate.toFixed(0)}%
                   </div>
                 </div>
-                <span
-                  className={`font-display min-w-[72px] text-right text-[19px] font-semibold ${nettoColor(r.roi)}`}
-                >
-                  {formatRoi(r.roi)}
-                </span>
-                <span
-                  className={`min-w-[96px] text-right font-mono-num font-semibold ${nettoColor(r.netto)}`}
-                >
-                  {formatMoney(r.netto)}
-                </span>
+                {/* Under sm staplas ROI och netto så att namnkolumnen får plats. */}
+                <div className="flex shrink-0 flex-col items-end sm:flex-row sm:items-center sm:gap-3">
+                  <span
+                    className={`font-display text-right text-[19px] font-semibold sm:min-w-[72px] ${
+                      r.bets >= MIN_ROI_BETS ? nettoColor(r.roi) : "text-faint"
+                    }`}
+                  >
+                    {formatRoiOrDash(r.roi, r.bets)}
+                  </span>
+                  <span
+                    className={`text-right font-mono-num font-semibold sm:min-w-[96px] ${nettoColor(r.netto)}`}
+                  >
+                    {formatMoney(r.netto)}
+                  </span>
+                </div>
               </div>
             ))
           ) : (

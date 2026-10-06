@@ -1,5 +1,10 @@
 import type { Bet } from "./types";
-import { computeStats, currentWinStreak, formatRoi } from "./utils";
+import {
+  computeStats,
+  currentWinStreak,
+  formatRoi,
+  MIN_ROI_BETS,
+} from "./utils";
 
 export const TOP_LIST_SIZE = 10;
 /** Minsta antal avgjorda spel för att kvala in på ROI-listorna. */
@@ -42,6 +47,21 @@ export function formatCount(value: number) {
 
 export function profileHref(username: string) {
   return `/profil/${encodeURIComponent(username)}`;
+}
+
+/**
+ * ROI-ordning för huvudtopplistan och startsidan. Spelböcker med minst
+ * MIN_ROI_BETS rättade spel rankas på ROI; övriga hamnar under dem, sorterade
+ * på antal rättade spel, så att ett enda vunnet spel inte ger förstaplatsen.
+ */
+export function compareByQualifiedRoi(
+  a: { bets: number; roi: number; stake: number },
+  b: { bets: number; roi: number; stake: number }
+) {
+  const qa = a.bets >= MIN_ROI_BETS && a.stake > 0;
+  const qb = b.bets >= MIN_ROI_BETS && b.stake > 0;
+  if (qa !== qb) return qa ? -1 : 1;
+  return qa ? b.roi - a.roi : b.bets - a.bets;
 }
 
 /** Spelböcker sorterade på ROI, valfritt begränsat till spel efter `since`. */

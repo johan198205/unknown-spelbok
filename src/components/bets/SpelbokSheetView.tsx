@@ -185,6 +185,7 @@ export function SpelbokSheetView({
       hasLive: pageBets.some((b) =>
         needsLiveRefresh(b.fixtures?.status, b.fixtures?.kickoff)
       ),
+      poll: isAuthenticated,
       onSettled: () => router.refresh(),
     }
   );
@@ -362,6 +363,7 @@ export function SpelbokSheetView({
         canRygga
         onRygga={openRygga}
         hideChrome
+        liveManaged
         highlightBetId={highlightBetId}
       />
 
@@ -381,7 +383,7 @@ export function SpelbokSheetView({
         <SheetStatsPanel sheetId={sheet.id} initialStats={initialStats} />
       </div>
 
-      <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_320px]">
         <DistributionCard groups={groups} size="regular" />
         <SheetAffiliateTop3
           bets={bets}

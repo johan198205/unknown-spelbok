@@ -50,7 +50,7 @@ export async function SiteHeader({
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(11,14,20,.92)] backdrop-blur-[10px]">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(11,14,20,.92)] pt-[env(safe-area-inset-top)] backdrop-blur-[10px]">
       <div className="mx-auto flex min-w-0 max-w-[1360px] items-center gap-3 px-4 py-3 lg:gap-[22px] lg:px-5">
         <Link
           href={profile ? "/hem" : "/"}
@@ -153,13 +153,17 @@ export async function SiteHeader({
 }
 
 /**
- * Footerns kolumner. Om oss och Kontakt ska alltid finnas med. Övriga sidor
- * ligger i CMS:et (`pages` → route `/[slug]`), så titeln hämtas därifrån när
- * sidan är publicerad och faller annars tillbaka på standardetiketten.
+ * Footerns kolumner. Länkar med `cms: true` ligger i CMS:et (`pages` → route
+ * `/[slug]`) och visas bara när sidan är publicerad — annars ger de 404.
+ * Övriga är egna routes och visas alltid. Titeln hämtas från CMS:et när det
+ * finns en publicerad sida och faller annars tillbaka på standardetiketten.
  * CMS-sidor markerade `show_in_footer` som inte redan finns här hamnar under
  * Hjälp.
  */
-const FOOTER_COLUMNS = [
+const FOOTER_COLUMNS: {
+  title: string;
+  links: { href: string; label: string; cms?: boolean }[];
+}[] = [
   {
     title: "Spelbok",
     links: [
@@ -172,17 +176,17 @@ const FOOTER_COLUMNS = [
   {
     title: "Hjälp",
     links: [
-      { href: "/sa-fungerar-spelbok", label: "Så fungerar Spelbok" },
-      { href: "/faq", label: "FAQ" },
+      { href: "/sa-fungerar-spelbok", label: "Så fungerar Spelbok", cms: true },
+      { href: "/faq", label: "FAQ", cms: true },
       { href: "/kontakt", label: "Kontakt" },
     ],
   },
   {
     title: "Juridiskt",
     links: [
-      { href: "/integritetspolicy", label: "Integritetspolicy" },
-      { href: "/anvandarvillkor", label: "Användarvillkor" },
-      { href: "/cookies", label: "Cookies" },
+      { href: "/integritetspolicy", label: "Integritetspolicy", cms: true },
+      { href: "/anvandarvillkor", label: "Användarvillkor", cms: true },
+      { href: "/cookies", label: "Cookies", cms: true },
     ],
   },
 ];
@@ -201,11 +205,11 @@ export async function SiteFooter() {
   );
   const columns = FOOTER_COLUMNS.map((col) => ({
     title: col.title,
-    links: col.links.map((l) => ({
-      href: l.href,
-      label:
-        published.find((row) => `/${row.slug}` === l.href)?.title || l.label,
-    })),
+    links: col.links.flatMap((l) => {
+      const page = published.find((row) => `/${row.slug}` === l.href);
+      if (l.cms && !page) return [];
+      return [{ href: l.href, label: page?.title || l.label }];
+    }),
   }));
   columns[1].links.push(
     ...published
@@ -213,6 +217,8 @@ export async function SiteFooter() {
       .map((p) => ({ href: `/${p.slug}`, label: p.title })),
   );
   const legal = columns[2].links;
+  // En kolumn utan publicerade sidor ska inte stå kvar som tom rubrik.
+  const visibleColumns = columns.filter((col) => col.links.length > 0);
 
   return (
     <footer className="mt-auto border-t border-line-soft bg-bg-footer text-[13.5px]">
@@ -239,7 +245,7 @@ export async function SiteFooter() {
           </div>
 
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-            {columns.map((col) => (
+            {visibleColumns.map((col) => (
               <nav key={col.title} aria-label={col.title}>
                 <span className="mb-4 block text-[11px] font-semibold uppercase tracking-[0.25em] text-faint">
                   {col.title}

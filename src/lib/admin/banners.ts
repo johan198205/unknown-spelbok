@@ -45,9 +45,29 @@ function storagePathFromUrl(url: string | null) {
   return path ? decodeURIComponent(path) : null;
 }
 
+/**
+ * Banners och popups kan dela samma fil (demo-bannerna återanvänder bilder
+ * mellan placeringar). Anropas efter att raden uppdaterats eller raderats,
+ * så varje träff här är en annan rad som fortfarande behöver filen.
+ */
+async function imageStillInUse(url: string) {
+  const admin = createAdminClient();
+  const counts = await Promise.all(
+    ["banners", "popups"].map((table) =>
+      admin
+        .from(table)
+        .select("id", { count: "exact", head: true })
+        .eq("image_url", url)
+    )
+  );
+  // Osäkert svar räknas som använd: hellre en kvarglömd fil än en trasig bild.
+  return counts.some(({ count, error }) => !!error || (count ?? 0) > 0);
+}
+
 async function removeStorageImage(url: string | null) {
   const path = storagePathFromUrl(url);
-  if (!path) return;
+  if (!path || !url) return;
+  if (await imageStillInUse(url)) return;
   const { error } = await createAdminClient().storage.from(BUCKET).remove([path]);
   if (error) console.error("banner image remove failed", error.message);
 }
