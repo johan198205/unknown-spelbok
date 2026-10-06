@@ -15,4 +15,9 @@ export const FEATURES = {
    * Bell-knappen i spelboken är borttagen medan flaggan är false.
    */
   goalNotify: false,
+  /**
+   * Kuponger (sidan /kuponger och kupongbilagor på Planket). Avstängd tills
+   * vidare — speltipsen samlas på Planket. /kuponger skickar dit.
+   */
+  coupons: false,
 } as const;

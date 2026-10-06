@@ -172,7 +172,8 @@ export default async function HemPage() {
           </div>
           <div
             className={cn(
-              "font-mono-num text-[44px] font-semibold leading-[1.08] tracking-[-0.02em]",
+              // Mobil: något mindre så siffran inte tar för mycket plats.
+              "font-mono-num text-[34px] font-semibold leading-[1.08] tracking-[-0.02em] lg:text-[44px]",
               nettoColor(stats.netto)
             )}
           >
@@ -189,14 +190,15 @@ export default async function HemPage() {
         {kpis.map((k) => (
           <div
             key={k.label}
-            className="rounded-[12px] border border-line bg-panel px-[15px] py-[14px]"
+            className="min-w-0 rounded-[12px] border border-line bg-panel px-[15px] py-[14px]"
           >
             <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.13em] text-muted">
               {k.label}
             </div>
             <div
               className={cn(
-                "whitespace-nowrap font-mono-num text-[23px] font-semibold",
+                // Mindre i mobil så sexsiffriga belopp ryms i kortet.
+                "whitespace-nowrap font-mono-num text-[19px] font-semibold sm:text-[23px]",
                 k.color
               )}
             >

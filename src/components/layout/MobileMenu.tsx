@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
-import { FormattedAmount } from "@/components/FormattedAmount";
+import { NavIcon, type NavIconKey } from "@/components/layout/NavIcon";
 import { createClient } from "@/lib/supabase/client";
-import { cn, initialOf, nettoColor } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export type MobileMenuUser = {
   username: string;
@@ -15,18 +15,21 @@ export type MobileMenuUser = {
   isAdmin: boolean;
 };
 
-const LOGGED_IN_LINKS = [
-  { href: "/hem", label: "Hem" },
-  { href: "/spelbok", label: "Spreadsheets" },
-  { href: "/topplista", label: "Topplista" },
-  { href: "/installningar", label: "Profil" },
+type MenuLink = { href: string; label: string; icon: NavIconKey };
+
+// Hem nås via loggan, profilen via avataren i headern. Kuponger är
+// avstängd tills vidare (FEATURES.coupons).
+const LOGGED_IN_LINKS: MenuLink[] = [
+  { href: "/spelbok", label: "Spreadsheets", icon: "spelbok" },
+  { href: "/topplista", label: "Topplista", icon: "topplista" },
+  { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
+  { href: "/planket", label: "Planket", icon: "planket" },
 ];
 
-const LOGGED_OUT_LINKS = [
-  { href: "/kuponger", label: "Kuponger" },
-  { href: "/topplista", label: "Topplista" },
-  { href: "/spelbolag", label: "Spelbolag" },
-  { href: "/om-oss", label: "Om oss" },
+const LOGGED_OUT_LINKS: MenuLink[] = [
+  { href: "/topplista", label: "Topplista", icon: "topplista" },
+  { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
+  { href: "/om-oss", label: "Om oss", icon: "om-oss" },
 ];
 
 /**
@@ -45,6 +48,19 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
     setMenuPath(pathname);
     setOpen(false);
   }
+
+  // Sidan bakom menyn ska inte gå att scrolla medan menyn är öppen.
+  useEffect(() => {
+    if (!open) return;
+    const { body, documentElement: html } = document;
+    const prev = { body: body.style.overflow, html: html.style.overflow };
+    body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    return () => {
+      body.style.overflow = prev.body;
+      html.style.overflow = prev.html;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -101,36 +117,6 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
 
       {open ? (
         <div className="absolute inset-x-3 top-[calc(100%+8px)] z-50 overflow-hidden rounded-[14px] border border-line-strong bg-panel shadow-[0_18px_48px_rgba(0,0,0,.55)]">
-          {user ? (
-            <div className="flex items-center gap-3 border-b border-line-soft px-4 py-3.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text">
-                {user.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  initialOf(user.username)
-                )}
-              </span>
-              <div className="min-w-0">
-                <div className="truncate font-semibold text-text">
-                  {user.username}
-                </div>
-                <div
-                  className={cn(
-                    "font-mono-num text-[13px]",
-                    nettoColor(user.netto),
-                  )}
-                >
-                  <FormattedAmount value={user.netto} /> totalt
-                </div>
-              </div>
-            </div>
-          ) : null}
-
           <nav aria-label="Meny" className="flex flex-col p-1.5">
             {links.map((l) => {
               const active =
@@ -145,7 +131,13 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
                     active && "bg-panel-2",
                   )}
                 >
-                  {l.label}
+                  <span className="flex items-center gap-3">
+                    <NavIcon
+                      name={l.icon}
+                      className={cn("size-[18px] shrink-0", active ? "text-win" : "text-muted")}
+                    />
+                    {l.label}
+                  </span>
                   <span aria-hidden className="text-faint">
                     ›
                   </span>
@@ -181,44 +173,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
                 Logga ut
               </button>
             </>
-          ) : (
-            <div className="flex gap-2 border-t border-line-soft p-3">
-              <Link
-                href="/login"
-                className="flex-1 rounded-[var(--radius-btn-sm)] bg-win py-2.5 text-center text-[14px] font-bold text-win-ink no-underline hover:text-win-ink hover:no-underline"
-              >
-                Logga in
-              </Link>
-              <Link
-                href="/registrera"
-                className="flex-1 rounded-[var(--radius-btn-sm)] border border-line-strong py-2.5 text-center text-[14px] font-semibold text-text no-underline hover:text-text hover:no-underline"
-              >
-                Skapa konto
-              </Link>
-            </div>
-          )}
-
-          <div className="flex items-center gap-3 border-t border-line-soft px-4 py-3 text-[13px]">
-            <span className="rounded-[5px] border border-line-strong px-1.5 py-0.5 font-display font-semibold text-muted">
-              18+
-            </span>
-            <a
-              href="https://www.stodlinjen.se"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan no-underline hover:no-underline"
-            >
-              Stödlinjen
-            </a>
-            <a
-              href="https://www.spelpaus.se"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-cyan no-underline hover:no-underline"
-            >
-              Spelpaus
-            </a>
-          </div>
+          ) : null}
         </div>
       ) : null}
     </div>

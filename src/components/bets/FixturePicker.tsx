@@ -32,7 +32,7 @@ import {
   type DayChip,
 } from "@/lib/stockholm";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, foldText } from "@/lib/utils";
 
 type Coverage = { from: string; to: string };
 
@@ -262,17 +262,17 @@ function MatchDropdown({
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
+    const needle = foldText(q.trim());
     if (!needle) return groups;
     return groups
       .map((g) => ({
         ...g,
         rows: g.rows.filter(
           (f) =>
-            (f.home_name || "").toLowerCase().includes(needle) ||
-            (f.away_name || "").toLowerCase().includes(needle) ||
-            (f.league_name || "").toLowerCase().includes(needle) ||
-            (f.league_country || "").toLowerCase().includes(needle)
+            foldText(f.home_name || "").includes(needle) ||
+            foldText(f.away_name || "").includes(needle) ||
+            foldText(f.league_name || "").includes(needle) ||
+            foldText(f.league_country || "").includes(needle)
         ),
       }))
       .filter((g) => g.rows.length > 0);

@@ -7,15 +7,18 @@ import {
   type BestGroup,
 } from "@/lib/breakdowns";
 import { formatAmount, type DisplayPrefs } from "@/lib/display";
+import { SPORTS } from "@/lib/sports";
 import type { Bet } from "@/lib/types";
 import { cn, formatRoi } from "@/lib/utils";
 
-const SPORT_ICONS: Record<string, string> = {
-  Fotboll: "⚽",
-  Ishockey: "🏒",
-};
+const SPORT_ICONS: Record<string, string> = Object.fromEntries(
+  SPORTS.map((s) => [s.label, s.emoji])
+);
 
-/** Räknas fram ur spelen — visas bara när sport eller liga har nått minimikravet. */
+/**
+ * Räknas fram ur spelen. Boxen visas alltid; sport och liga fylls i när de
+ * har nått minimikravet, annars står det vad som återstår.
+ */
 export function BestSport({
   bets,
   prefs,
@@ -25,7 +28,6 @@ export function BestSport({
 }) {
   const sport = bestGroup(bets, sportKey);
   const league = bestGroup(bets, leagueKey);
-  if (!sport && !league) return null;
 
   const leagueLogo = league
     ? bets
@@ -37,7 +39,7 @@ export function BestSport({
   return (
     <SectionCard
       className="mb-8"
-      title="Bästa sport"
+      title={sport ? `Bästa sport: ${sport.name}` : "Bästa sport"}
       action={
         <span className="text-[12px] text-dim">
           Minst {MIN_BEST_BETS} spel · rankas på ROI
@@ -109,7 +111,7 @@ function BestRow({
           {group.name}
         </div>
         <div className="font-mono-num text-[12.5px] text-muted">
-          {group.bets} spel · hitrate {group.hitrate.toFixed(1)}%
+          {group.bets} spel · hitrate {group.hitrate.toFixed(1).replace(".", ",")}%
         </div>
       </div>
       <div className="shrink-0 text-right">

@@ -172,13 +172,31 @@ export function RoiBadge({
 /** Rund initialbricka. Samma behandling som avatarerna i headern. */
 export function Avatar({
   username,
+  src,
   size = 38,
   className,
 }: {
   username: string;
+  /** Profilbilden. Saknas den blir det initialen. */
+  src?: string | null;
   size?: number;
   className?: string;
 }) {
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        className={cn(
+          "inline-block shrink-0 rounded-full border border-line-strong object-cover",
+          className
+        )}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   return (
     <span
       aria-hidden

@@ -49,11 +49,13 @@ function AttachIcon({ color }: { color: string }) {
 
 export function PlanketComposer({
   username,
+  avatarUrl = null,
   sheets,
   bookmakers,
   onPosted,
 }: {
   username: string;
+  avatarUrl?: string | null;
   sheets: Sheet[];
   bookmakers: Bookmaker[];
   onPosted: () => void;
@@ -158,7 +160,7 @@ export function PlanketComposer({
           }}
           className="flex w-full cursor-pointer items-center gap-[11px] rounded-full border border-line bg-[#151B2B] px-[15px] py-[11px] text-left lg:hidden"
         >
-          <Avatar username={username} size={28} />
+          <Avatar username={username} src={avatarUrl} size={28} />
           <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#5D6883]">
             Skriv till Planket…
           </span>
@@ -171,6 +173,7 @@ export function PlanketComposer({
         <div className="hidden lg:block">
           <ComposerCard
             username={username}
+            avatarUrl={avatarUrl}
             sheets={sheets}
             bookmakers={bookmakers}
             body={body}
@@ -198,6 +201,7 @@ export function PlanketComposer({
   return (
     <ComposerCard
       username={username}
+      avatarUrl={avatarUrl}
       sheets={sheets}
       bookmakers={bookmakers}
       body={body}
@@ -222,6 +226,7 @@ export function PlanketComposer({
 
 function ComposerCard({
   username,
+  avatarUrl,
   sheets,
   bookmakers,
   body,
@@ -242,6 +247,7 @@ function ComposerCard({
   onSubmit,
 }: {
   username: string;
+  avatarUrl: string | null;
   sheets: Sheet[];
   bookmakers: Bookmaker[];
   body: string;
@@ -270,7 +276,7 @@ function ComposerCard({
       style={{ border: `1px solid ${focused ? "#3A4560" : "#232B3E"}` }}
     >
       <div className="flex gap-3">
-        <Avatar username={username} size={40} className="!text-base" />
+        <Avatar username={username} src={avatarUrl} size={40} className="!text-base" />
 
         <div className="min-w-0 flex-1">
           <textarea
@@ -341,12 +347,6 @@ function ComposerCard({
               active={hasBet}
               disabled={hasCoupon}
               onClick={() => setPicker(picker === "bet" ? null : "bet")}
-            />
-            <AttachButton
-              label={hasCoupon ? "Kupong bifogad" : "Bifoga kupong"}
-              active={hasCoupon}
-              disabled={hasBet}
-              onClick={() => setPicker(picker === "coupon" ? null : "coupon")}
             />
             <AttachButton
               label={imageUrl ? "Bild bifogad" : "Bifoga bild"}

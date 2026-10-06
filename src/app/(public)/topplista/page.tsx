@@ -15,9 +15,13 @@ import { StickySelfRank } from "@/components/pwa/StickySelfRank";
 import { TopListCard } from "@/components/topplista/TopListCard";
 import {
   betCountList,
+  formList,
+  highestWonOddsList,
   MIN_BETS_TOTAL,
   MIN_BETS_WEEK,
-  ryggadList,
+  MIN_WIN_STREAK,
+  profileHref,
+  rankColor,
   sheetNettoList,
   sheetRoiList,
   TOP_LIST_SIZE,
@@ -31,19 +35,12 @@ export default async function TopplistaPage() {
   const nowIso = new Date().toISOString();
 
   // Tävlingar är steg 2 och visas inte här — sidan är enbart topplistor.
-  const [{ data: sheets }, { data: ryggade }] = await Promise.all([
-    supabase
-      .from("sheets")
-      .select(
-        "id, name, slug, user_id, currency, profiles(username, avatar_url), bets(stake, payout, result, odds, placed_at)"
-      )
-      .eq("is_public", true),
-    supabase
-      .from("bets")
-      .select("copied_from_user_id")
-      .not("copied_from_user_id", "is", null)
-      .limit(5000),
-  ]);
+  const { data: sheets } = await supabase
+    .from("sheets")
+    .select(
+      "id, name, slug, user_id, currency, profiles(username, avatar_url), bets(stake, payout, result, odds, placed_at)"
+    )
+    .eq("is_public", true);
 
   const toplistSheets: ToplistSheet[] = (sheets || []).map((sheet) => ({
     id: sheet.id,
@@ -66,35 +63,8 @@ export default async function TopplistaPage() {
       ...computeStats(sheet.bets),
     }))
     .sort((a, b) => b.roi - a.roi);
-
-  // Antal ryggningar per originalspelare — namnen slås upp separat eftersom
-  // en ryggad spelare inte behöver ha en publik spelbok.
-  const ryggaCounts = new Map<string, number>();
-  for (const row of (ryggade || []) as Array<{
-    copied_from_user_id: string | null;
-  }>) {
-    const id = row.copied_from_user_id;
-    if (!id) continue;
-    ryggaCounts.set(id, (ryggaCounts.get(id) || 0) + 1);
-  }
-
-  const ryggaNames = new Map<string, string>();
-  if (ryggaCounts.size) {
-    const topIds = [...ryggaCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, TOP_LIST_SIZE)
-      .map(([id]) => id);
-    const { data: ryggaProfiles } = await supabase
-      .from("profiles")
-      .select("id, username")
-      .in("id", topIds);
-    for (const p of (ryggaProfiles || []) as Array<{
-      id: string;
-      username: string;
-    }>) {
-      ryggaNames.set(p.id, p.username);
-    }
-  }
+  // Huvudlistan visar bara topp 10.
+  const topBoard = board.slice(0, TOP_LIST_SIZE);
 
   const weekStart = +new Date(nowIso) - WEEK_MS;
   const topLists = [
@@ -126,10 +96,16 @@ export default async function TopplistaPage() {
       empty: "Inga loggade spel ännu.",
     },
     {
-      title: "Mest ryggad",
-      subtitle: "Antal gånger andra kopierat spelen",
-      entries: ryggadList(ryggaCounts, ryggaNames),
-      empty: "Inga ryggade spel ännu.",
+      title: "Topp 10 bäst form",
+      subtitle: `Raka vinster just nu · minst ${MIN_WIN_STREAK} i rad`,
+      entries: formList(toplistSheets),
+      empty: `Ingen har ${MIN_WIN_STREAK} raka vinster just nu.`,
+    },
+    {
+      title: "Topp 10 högsta vunna odds",
+      subtitle: "Högsta odds på ett vunnet spel · singel eller kombination",
+      entries: highestWonOddsList(toplistSheets),
+      empty: "Inga vunna spel ännu.",
     },
   ];
 
@@ -139,14 +115,7 @@ export default async function TopplistaPage() {
   const selfRow =
     selfIndex >= 0 ? { ...board[selfIndex], rank: selfIndex + 1 } : null;
 
-  const medal = (i: number) =>
-    i === 0
-      ? "text-[#FFD166]"
-      : i === 1
-        ? "text-[#C3CBDB]"
-        : i === 2
-          ? "text-[#E0A070]"
-          : "text-muted";
+  const medal = rankColor;
 
   return (
     <div className="animate-sbfade mx-auto max-w-[1180px] px-1 py-2 lg:px-7 lg:py-10">
@@ -176,8 +145,8 @@ export default async function TopplistaPage() {
           <span className="text-right">ROI</span>
           <span className="text-right">Netto</span>
         </div>
-        {board.length ? (
-          board.map((row, i) => (
+        {topBoard.length ? (
+          topBoard.map((row, i) => (
             <RowLink
               key={row.id}
               href={row.href}
@@ -189,7 +158,8 @@ export default async function TopplistaPage() {
               <div className="min-w-0">
                 <div className="truncate font-semibold">{row.name}</div>
                 <div className="text-[12.5px] text-muted">
-                  {row.owner} · hitrate {row.hitrate.toFixed(0)}%
+                  <OwnerLink owner={row.owner} /> · hitrate{" "}
+                  {row.hitrate.toFixed(0)}%
                 </div>
               </div>
               <span className="text-right font-mono-num text-muted">
@@ -216,8 +186,8 @@ export default async function TopplistaPage() {
       </Panel>
 
       <div className="space-y-2 lg:hidden">
-        {board.length ? (
-          board.map((row, i) => {
+        {topBoard.length ? (
+          topBoard.map((row, i) => {
             const isSelf = profile && row.userId === profile.id;
             return (
               <RowLink
@@ -232,12 +202,16 @@ export default async function TopplistaPage() {
                 >
                   {i + 1}
                 </span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold">
+                <Link
+                  href={profileHref(row.owner)}
+                  aria-label={row.owner}
+                  className="relative z-[1] flex h-9 w-9 items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold text-text no-underline hover:no-underline"
+                >
                   {initialOf(row.owner)}
-                </div>
+                </Link>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">
-                    {row.owner}
+                    <OwnerLink owner={row.owner} className="text-text" />
                     {isSelf ? " · Du" : ""}
                   </div>
                   <div className="truncate text-[12px] text-muted">
@@ -288,7 +262,11 @@ export default async function TopplistaPage() {
   );
 }
 
-// Rader utan slug (äldre spelböcker) renderas som vanliga block.
+/**
+ * Hela raden länkar till spelboken via ett osynligt lager, så att spelarens
+ * namn och avatar ovanpå kan länka till profilen (länkar får inte nästlas).
+ * Rader utan slug (äldre spelböcker) renderas som vanliga block.
+ */
 function RowLink({
   href,
   className,
@@ -300,11 +278,20 @@ function RowLink({
 }) {
   if (!href) return <div className={className}>{children}</div>;
   return (
-    <Link
-      href={href}
-      className={`${className} transition-colors hover:bg-panel-2`}
-    >
+    <div className={`relative ${className} transition-colors hover:bg-panel-2`}>
+      <Link href={href} aria-label="Till spelboken" className="absolute inset-0" />
       {children}
+    </div>
+  );
+}
+
+function OwnerLink({ owner, className }: { owner: string; className?: string }) {
+  return (
+    <Link
+      href={profileHref(owner)}
+      className={`relative z-[1] no-underline hover:underline ${className ?? "text-muted"}`}
+    >
+      {owner}
     </Link>
   );
 }

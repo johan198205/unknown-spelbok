@@ -11,6 +11,7 @@ import { leagueLogoUrl, teamLogoUrl } from "@/lib/logos";
 import { stockholmDayBounds } from "@/lib/stockholm";
 import { createClient } from "@/lib/supabase/server";
 import type { Fixture } from "@/lib/types";
+import { foldText } from "@/lib/utils";
 
 export const maxDuration = 180;
 
@@ -41,13 +42,21 @@ function searchTokens(q: string) {
     .slice(0, 4);
 }
 
+/**
+ * API-Sports skriver oftast svenska lag utan prickar (Brynas, Frolunda),
+ * medan användaren skriver Brynäs. Ordet söks därför både som det skrevs och
+ * utan diakritiska tecken.
+ */
 function tokenFilter(token: string) {
+  const variants = [...new Set([token.normalize("NFC"), foldText(token)])];
   return ["home_name", "away_name"]
-    .flatMap((col) => [
-      `${col}.ilike.${token}%`,
-      `${col}.ilike.% ${token}%`,
-      `${col}.ilike.%-${token}%`,
-    ])
+    .flatMap((col) =>
+      variants.flatMap((v) => [
+        `${col}.ilike.${v}%`,
+        `${col}.ilike.% ${v}%`,
+        `${col}.ilike.%-${v}%`,
+      ])
+    )
     .join(",");
 }
 

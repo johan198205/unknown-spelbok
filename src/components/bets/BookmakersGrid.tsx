@@ -20,7 +20,6 @@ export function BookmakersGrid({
   bookmakers: Bookmaker[];
   editorMode?: boolean;
 }) {
-  const [openId, setOpenId] = useState<string | null>(null);
   const [items, setItems] = useState(bookmakers);
   const [filter, setFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<BookSortOption>("Vårt betyg");
@@ -144,8 +143,6 @@ export function BookmakersGrid({
             data={b}
             src="spelbolag"
             editorMode={editorMode}
-            open={openId === b.id}
-            onToggleReview={() => setOpenId(openId === b.id ? null : b.id)}
             onHeroUploaded={(url, filename) => {
               setItems((prev) =>
                 prev.map((row) =>

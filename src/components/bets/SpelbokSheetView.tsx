@@ -133,6 +133,14 @@ export function SpelbokSheetView({
   const [pageState, setPageState] = useState({ key: filterKey, page: 1 });
   const page = pageState.key === filterKey ? pageState.page : 1;
   const setPage = (next: number) => setPageState({ key: filterKey, page: next });
+  /** Början av spellistan — sidbyte landar här i stället för vid pagineringen. */
+  const listTopRef = useRef<HTMLDivElement>(null);
+  const goToPage = (next: number) => {
+    setPage(next);
+    requestAnimationFrame(() =>
+      listTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+  };
 
   const sorted = useMemo(
     () => sortSheetBets(filtered, sort.key, sort.dir),
@@ -315,7 +323,7 @@ export function SpelbokSheetView({
         />
       </div>
 
-      <div className="mb-4">
+      <div ref={listTopRef} className="mb-4 scroll-mt-24">
         <SheetFilterBar
           filters={filters}
           leagues={leagues}
@@ -362,7 +370,7 @@ export function SpelbokSheetView({
           <SheetPagination
             page={currentPage}
             pageCount={pageCount}
-            onPage={setPage}
+            onPage={goToPage}
           />
         </div>
       ) : (
@@ -375,7 +383,11 @@ export function SpelbokSheetView({
 
       <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_320px]">
         <DistributionCard groups={groups} size="regular" />
-        <SheetAffiliateTop3 affiliates={affiliates} />
+        <SheetAffiliateTop3
+          bets={bets}
+          bookmakers={bookmakers}
+          affiliates={affiliates}
+        />
       </div>
     </div>
   );

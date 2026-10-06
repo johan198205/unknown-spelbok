@@ -4,6 +4,7 @@ import { formatAmount } from "@/lib/display";
 import { getDisplayPrefs } from "@/lib/display-prefs";
 import { getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { BestSport } from "@/components/profile/BestSport";
 import { StreakBadge } from "@/components/ui/StreakBadge";
 import {
@@ -45,7 +46,11 @@ export default async function PublicProfilePage({
   const sheetIds = (sheets ?? []).map((s) => s.id);
   let bets: Bet[] = [];
   if (sheetIds.length) {
-    const { data } = await supabase
+    // Bara publika spelböcker (filtrerat ovan). Matchdatan är inte läsbar
+    // för utloggade, så spelen läses med serverklienten — annars saknas
+    // sport och ligalogga i "Bästa sport" för utloggade besökare.
+    const reader = viewer ? supabase : createAdminClient();
+    const { data } = await reader
       .from("bets")
       .select("*, fixtures:fixture_id(sport, league_logo)")
       .in("sheet_id", sheetIds)

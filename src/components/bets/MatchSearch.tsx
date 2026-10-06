@@ -329,13 +329,16 @@ export function MatchSearch({
         ) : null}
       </div>
 
-      <div className="mt-2.5 flex gap-1.5 overflow-x-auto pb-1 sb-scroll">
+      {/* Filtren radbryts i stället för att scrolla i sidled — alla val ska
+          alltid synas och gå att klicka på, även i smal modal och mobil. */}
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
         {SPORT_CHIPS.map((c) => (
           <Chip key={c.label} active={sport === c.value} onClick={() => setSport(c.value)}>
             {c.label}
           </Chip>
         ))}
-        <span className="mx-1 w-px shrink-0 self-stretch bg-line" aria-hidden />
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
         {DAY_CHIPS.map((c) => (
           <Chip key={c.value} active={sameFilter(day, c.value)} onClick={() => setDay(c.value)}>
             {c.label}

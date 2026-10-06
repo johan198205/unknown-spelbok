@@ -13,6 +13,21 @@ export function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+/**
+ * Gemener utan diakritiska tecken — "Brynäs" och "brynas" blir lika.
+ * API-Sports skriver oftast svenska lagnamn utan å/ä/ö (Brynas, Frolunda),
+ * så sökningar jämför i den här formen.
+ */
+export function foldText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ø/gi, "o")
+    .replace(/æ/gi, "ae")
+    .replace(/ß/g, "ss")
+    .toLowerCase();
+}
+
 export function formatMoney(value: number, currency = "kr") {
   const sign = value > 0 ? "+" : "";
   // Hårt mellanslag före valutan — summan får aldrig brytas så "kr" hamnar

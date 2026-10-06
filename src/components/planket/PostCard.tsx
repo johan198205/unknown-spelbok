@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
 import { Avatar, RoiBadge } from "@/components/planket/Bits";
 import { PostBetCard } from "@/components/planket/PostBetCard";
@@ -15,6 +16,7 @@ import {
   REACTION_LABEL,
   canBackPost,
   postAge,
+  postBookmakerHref,
   type PlanketPost,
   type ReactionKind,
 } from "@/lib/planket";
@@ -30,12 +32,10 @@ import { cn } from "@/lib/utils";
  */
 export function PostCard({
   post,
-  onBack,
   onRemoved,
   onEdited,
 }: {
   post: PlanketPost;
-  onBack: (post: PlanketPost) => void;
   onRemoved: (postId: string) => void;
   onEdited: (postId: string, body: string) => void;
 }) {
@@ -52,7 +52,9 @@ export function PostCard({
 
   const backable = canBackPost(post);
   const isCoupon = post.attachment_type === "coupon" && post.coupon;
-  const backLabel = isCoupon ? "Rygga kupong" : "Rygga";
+  // "Rygga spelet" skickar vidare till spelbolaget via vår affiliate-länk.
+  const backHref = postBookmakerHref(post, "planket_rygga");
+  const profileHref = `/profil/${encodeURIComponent(post.author_username)}`;
 
   async function react(kind: ReactionKind) {
     const on = !mine.includes(kind);
@@ -84,8 +86,24 @@ export function PostCard({
   return (
     <article
       id={`inlagg-${post.id}`}
-      className="rounded-[14px] border border-line bg-[#151B2B] p-[14px] lg:px-[18px] lg:pb-[14px] lg:pt-4"
+      className={cn(
+        "min-w-0 rounded-[14px] border bg-[#151B2B] p-[14px] lg:px-[18px] lg:pb-[14px] lg:pt-4",
+        post.isEditorial
+          ? "border-[rgba(255,209,102,.45)] shadow-[0_0_0_1px_rgba(255,209,102,.12)]"
+          : "border-line"
+      )}
     >
+      {post.isEditorial ? (
+        <div className="mb-2.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-yellow">
+          <span aria-hidden>★</span>
+          Redaktionens spel
+          {post.pinned ? (
+            <span className="font-normal normal-case tracking-normal text-[#8A94AB]">
+              · Fäst överst
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {/* ---------- Huvud ---------- */}
       <div className="mb-[10px] flex items-start gap-2.5 lg:mb-[11px] lg:gap-[11px]">
         {/*
@@ -93,17 +111,20 @@ export function PostCard({
           storleken sätts som inline style, och att slå den med `lg:!w-[]`
           fungerar men går sönder tyst första gången någon rör Avatar.
         */}
-        <span className="lg:hidden">
-          <Avatar username={post.author_username} size={34} />
-        </span>
-        <span className="hidden lg:block">
-          <Avatar username={post.author_username} size={38} />
-        </span>
+        <Link href={profileHref} className="lg:hidden" aria-label={post.author_username}>
+          <Avatar username={post.author_username} src={post.author_avatar} size={34} />
+        </Link>
+        <Link href={profileHref} className="hidden lg:block" aria-label={post.author_username}>
+          <Avatar username={post.author_username} src={post.author_avatar} size={38} />
+        </Link>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-[7px] gap-y-1 lg:gap-x-[9px]">
-            <span className="text-[14px] font-semibold lg:text-[14.5px]">
+            <Link
+              href={profileHref}
+              className="text-[14px] font-semibold text-text no-underline hover:underline lg:text-[14.5px]"
+            >
               {post.author_username}
-            </span>
+            </Link>
             <RoiBadge
               roi={post.sheet_roi}
               settledBets={post.sheet_settled_bets}
@@ -223,33 +244,29 @@ export function PostCard({
           );
         })}
 
-        {post.attachment_type !== "none" ? (
-          <span className="ml-auto inline-flex items-center gap-2.5 lg:gap-[11px]">
-            <span className="hidden font-mono-num text-[12.5px] text-[#5D6883] lg:inline">
-              Ryggat av {post.back_count}
-            </span>
-            <button
-              type="button"
-              disabled={post.backedByMe || !backable}
-              onClick={() => onBack(post)}
-              className={cn(
-                "rounded-[9px] px-[15px] py-2 text-[13px] font-bold lg:px-[17px] lg:text-[13.5px]",
-                post.backedByMe || !backable
-                  ? "cursor-not-allowed border border-line-strong bg-[#1B2233] text-[#5D6883]"
-                  : "cursor-pointer border border-[rgba(102,227,138,.45)] bg-[rgba(102,227,138,.14)] text-win hover:bg-[rgba(102,227,138,.22)]"
-              )}
+        {post.attachment_type !== "none" && backHref ? (
+          backable ? (
+            <a
+              href={backHref}
+              target="_blank"
+              rel="noopener sponsored nofollow"
+              className="ml-auto inline-flex items-center rounded-[9px] border border-[rgba(102,227,138,.45)] bg-[rgba(102,227,138,.14)] px-[15px] py-2 text-[13px] font-bold text-win no-underline hover:bg-[rgba(102,227,138,.22)] hover:no-underline lg:px-[17px] lg:text-[13.5px]"
             >
-              {post.backedByMe
-                ? "Ryggat"
-                : backable
-                  ? backLabel
-                  : "Avspark passerad"}
-            </button>
-          </span>
+              Rygga spelet
+            </a>
+          ) : (
+            <span className="ml-auto rounded-[9px] border border-line-strong bg-[#1B2233] px-[15px] py-2 text-[13px] font-bold text-[#5D6883] lg:px-[17px] lg:text-[13.5px]">
+              {isSettledAttachment(post) ? "Avgjort" : "Avspark passerad"}
+            </span>
+          )
         ) : null}
       </div>
 
-      <PostThread postId={post.id} />
+      <PostThread postId={post.id} initialCount={post.reply_count} />
     </article>
   );
+}
+
+function isSettledAttachment(post: PlanketPost) {
+  return post.attachment_type === "bet" && !!post.bet_result && post.bet_result !== "open";
 }

@@ -340,6 +340,10 @@
     font-family: var(--font-barlow), Helvetica, sans-serif;
     font-size: var(--text-body);
     min-height: 100vh;
+    /* Skyddsnät: sidan ska aldrig gå att dra i sidled i mobil. Orsakerna
+       (headern som inte fick krympa m.fl.) är åtgärdade i komponenterna —
+       clip i stället för hidden så att position: sticky fortsätter fungera. */
+    overflow-x: clip;
   }
 
   a {

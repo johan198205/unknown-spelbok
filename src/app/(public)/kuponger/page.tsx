@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { FEATURES } from "@/lib/features";
 import type { Metadata } from "next";
 import { CouponsView } from "@/components/coupons/CouponsView";
 import { AdSlot } from "@/components/ui/AdSlot";
@@ -15,6 +17,9 @@ export const metadata: Metadata = {
 };
 
 export default async function KupongerPage() {
+  // Kuponger är avstängd tills vidare — speltipsen samlas på Planket.
+  // Planket kräver inloggning, så utloggade skickas till startsidan.
+  if (!FEATURES.coupons) redirect((await getSessionUser()) ? "/planket" : "/");
   const supabase = await createClient();
 
   const [coupons, user, editorMode, copied, { data: bookmakers }] =

@@ -362,6 +362,7 @@ export type Database = {
       bookmakers: {
         Row: {
           active: boolean
+          age_limit: number
           badge: string | null
           bonus: string | null
           bonus2_label: string | null
@@ -395,6 +396,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          age_limit?: number
           badge?: string | null
           bonus?: string | null
           bonus2_label?: string | null
@@ -428,6 +430,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          age_limit?: number
           badge?: string | null
           bonus?: string | null
           bonus2_label?: string | null

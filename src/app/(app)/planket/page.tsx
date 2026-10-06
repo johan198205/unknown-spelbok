@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Avatar } from "@/components/planket/Bits";
 import { PlanketFeed } from "@/components/planket/PlanketFeed";
 import { PlanketSidebar } from "@/components/planket/PlanketSidebar";
-import { ResponsibleBox } from "@/components/planket/ResponsibleBox";
 import { getProfile } from "@/lib/auth";
 import { fetchPlanketPage } from "@/lib/planket-server";
 import { createClient } from "@/lib/supabase/server";
@@ -54,36 +53,33 @@ export default async function PlanketPage() {
         <h1 className="font-display text-[19px] font-semibold uppercase tracking-[0.08em]">
           Planket
         </h1>
-        {profile ? <Avatar username={profile.username} size={32} /> : null}
+        {profile ? <Avatar username={profile.username} src={profile.avatar_url} size={32} /> : null}
       </div>
 
+      <h1 className="mb-4 hidden font-display text-[26px] font-semibold uppercase tracking-[0.06em] lg:block">
+        Planket
+      </h1>
+
       {/*
-        Två fasta kolumner med 24 px mellanrum, båda uppifrån.
+        Två fasta kolumner med 24 px mellanrum. Rubriken ligger ovanför båda,
+        så första bannern börjar i linje med första rutan i flödet.
 
         Flödet fyller samma bredd som övriga sidor (layoutens 1360 px) och
         högerkolumnen är en banner bred (160 px) från lg.
         Högerkolumnen är annonsyta (160×600, se PlanketSidebar).
       */}
-      <div className="flex w-full items-start gap-6">
+      <div className="flex w-full gap-6">
         <div className="w-full min-w-0 flex-1">
-          <h1 className="mb-4 hidden font-display text-[26px] font-semibold uppercase tracking-[0.06em] lg:block">
-            Planket
-          </h1>
 
           <PlanketFeed
             initialPosts={page.posts}
             initialCursor={page.nextCursor}
             initialHasMore={page.hasMore}
             username={profile?.username ?? null}
+            avatarUrl={profile?.avatar_url ?? null}
             sheets={sheets}
             bookmakers={bookmakers}
             isAuthenticated={!!profile}
-            /*
-              Ansvarsrutan är alltid synlig, aldrig bakom en flik. Den
-              ligger sist i flödet på alla bredder — högerkolumnen är
-              annonsyta.
-            */
-            footer={<ResponsibleBox />}
           />
         </div>
 

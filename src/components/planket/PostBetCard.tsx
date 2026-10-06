@@ -8,9 +8,11 @@ import {
   planketKickoff,
   planketKr,
   planketOdds,
+  postBookmakerHref,
   settledOutcome,
   type PlanketPost,
 } from "@/lib/planket";
+import { cn } from "@/lib/utils";
 import {
   BookmakerPlate,
   FieldLabel,
@@ -49,6 +51,7 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
   const outcome = settledOutcome(post);
   const bookLogo = getBookmakerLogoUrl(post.bet_bookmaker_logo);
   const border = betBorderColor(post.bet_result);
+  const bookHref = postBookmakerHref(post);
 
   return (
     <>
@@ -118,14 +121,14 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
                 {stake}
               </div>
             </div>
-            <span className="ml-auto">
+            <BookmakerLink href={bookHref} className="ml-auto">
               <BookmakerPlate
                 name={post.bet_bookmaker_name}
                 logoUrl={bookLogo}
                 width={76}
                 height={32}
               />
-            </span>
+            </BookmakerLink>
           </div>
 
           {outcome ? (
@@ -183,12 +186,14 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
         </div>
 
         <div className="mt-[11px] flex items-center gap-2.5 border-t border-line pt-[10px]">
-          <BookmakerPlate
-            name={post.bet_bookmaker_name}
-            logoUrl={bookLogo}
-            width={64}
-            height={26}
-          />
+          <BookmakerLink href={bookHref}>
+            <BookmakerPlate
+              name={post.bet_bookmaker_name}
+              logoUrl={bookLogo}
+              width={64}
+              height={26}
+            />
+          </BookmakerLink>
           {outcome ? (
             <span
               className="ml-auto font-mono-num text-[14.5px] font-semibold tabular-nums"
@@ -200,5 +205,28 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
         </div>
       </div>
     </>
+  );
+}
+
+/** Spelbolagsloggan länkar alltid vidare via vår affiliate-länk. */
+export function BookmakerLink({
+  href,
+  className,
+  children,
+}: {
+  href: string | null;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (!href) return <span className={className}>{children}</span>;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener sponsored nofollow"
+      className={cn("inline-flex no-underline transition-opacity hover:opacity-85", className)}
+    >
+      {children}
+    </a>
   );
 }

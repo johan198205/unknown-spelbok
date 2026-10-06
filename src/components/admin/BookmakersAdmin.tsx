@@ -73,6 +73,8 @@ type Draft = {
   terms: string;
   terms_url: string;
   extra_disclaimer: string;
+  /** "18" eller "21" — ansvarsradens åldersgräns. */
+  age_limit: string;
   usp: string;
   review: string;
   plus: string[];
@@ -109,6 +111,7 @@ function toDraft(b: BookmakerRow): Draft {
     terms: b.terms ?? "",
     terms_url: b.terms_url ?? "",
     extra_disclaimer: b.extra_disclaimer ?? "",
+    age_limit: String(b.age_limit ?? 18),
     usp: b.usp ?? "",
     review: b.review ?? "",
     plus: b.plus ?? [],
@@ -144,6 +147,7 @@ function newDraft(rank: number): Draft {
     terms: "",
     terms_url: "",
     extra_disclaimer: "",
+    age_limit: "18",
     usp: "",
     review: "",
     plus: [],
@@ -325,6 +329,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
         terms: draft.terms,
         terms_url: draft.terms_url,
         extra_disclaimer: draft.extra_disclaimer,
+        age_limit: Number(draft.age_limit) || 18,
         usp: draft.usp,
         review: draft.review,
         plus: draft.plus,
@@ -684,6 +689,18 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
             länk.
           </p>
           <div className="mt-3">
+            <Field label="Åldersgräns">
+              <select
+                value={draft.age_limit}
+                onChange={(e) => patch({ age_limit: e.target.value })}
+                className={inputClass}
+              >
+                <option value="18">18+</option>
+                <option value="21">21+</option>
+              </select>
+            </Field>
+          </div>
+          <div className="mt-3">
             <Field label="Extra disclaimer">
               <textarea
                 value={draft.extra_disclaimer}
@@ -815,6 +832,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               terms: draft.terms || null,
               terms_url: draft.terms_url || null,
               extra_disclaimer: draft.extra_disclaimer || null,
+              age_limit: Number(draft.age_limit) || 18,
               review: draft.review || null,
               plus: draft.plus,
               minus: draft.minus,

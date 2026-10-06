@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   medalColor,
   missingSummary,
@@ -59,12 +60,21 @@ export function CompetitionBoard({
             >
               {entry.rank ?? "–"}
             </span>
-            <span className="font-display flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-pill)] border border-line-strong bg-panel-2 text-[13px] font-semibold">
+            <Link
+              href={`/profil/${encodeURIComponent(entry.username)}`}
+              aria-label={entry.username}
+              className="font-display flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-pill)] border border-line-strong bg-panel-2 text-[13px] font-semibold text-text no-underline hover:no-underline"
+            >
               {initialOf(entry.username)}
-            </span>
+            </Link>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13.5px] font-semibold">
-                {entry.username}
+                <Link
+                  href={`/profil/${encodeURIComponent(entry.username)}`}
+                  className="text-text no-underline hover:underline"
+                >
+                  {entry.username}
+                </Link>
                 {isSelf ? " · Du" : ""}
               </div>
               {entry.qualified ? null : (

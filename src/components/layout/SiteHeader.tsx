@@ -4,6 +4,7 @@ import { PublicNav } from "@/components/layout/PublicNav";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
 import { SignOutButton } from "@/components/layout/SignOutButton";
 import { MobileMenu } from "@/components/layout/MobileMenu";
+import type { NavIconKey } from "@/components/layout/NavIcon";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getProfile } from "@/lib/auth";
 import { FormattedAmount } from "@/components/FormattedAmount";
@@ -36,26 +37,25 @@ export async function SiteHeader({
   const site = await fetchSiteSettings(supabase);
   const unread = profile ? await getUnreadNotificationCount() : 0;
 
-  const appNav = [
-    { href: "/hem", label: "Hem" },
-    { href: "/spelbok", label: "Spelbok" },
-    { href: "/planket", label: "Planket" },
-    { href: "/kuponger", label: "Kuponger" },
+  // Hem nås via loggan och profilen via namnet/avataren uppe till höger.
+  // Kuponger är avstängd tills vidare (FEATURES.coupons).
+  const appNav: { href: string; label: string; icon: NavIconKey }[] = [
+    { href: "/spelbok", label: "Spelbok", icon: "spelbok" },
+    { href: "/planket", label: "Planket", icon: "planket" },
     ...(site.competitions_enabled
-      ? [{ href: "/tavlingar", label: "Tävlingar" }]
+      ? [{ href: "/tavlingar", label: "Tävlingar", icon: "tavlingar" as const }]
       : []),
-    { href: "/topplista", label: "Topplistor" },
-    { href: "/spelbolag", label: "Spelbolag" },
-    { href: "/installningar", label: "Profil" },
+    { href: "/topplista", label: "Topplistor", icon: "topplista" },
+    { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
   ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(11,14,20,.92)] backdrop-blur-[10px]">
-      <div className="mx-auto flex max-w-[1360px] items-center gap-[22px] px-5 py-3">
+      <div className="mx-auto flex min-w-0 max-w-[1360px] items-center gap-3 px-4 py-3 lg:gap-[22px] lg:px-5">
         <Link
           href={profile ? "/hem" : "/"}
           title="Till startsidan"
-          className="font-display text-[19px] font-bold tracking-[0.14em] text-text no-underline hover:text-text hover:no-underline"
+          className="shrink-0 font-display text-[19px] font-bold tracking-[0.14em] text-text no-underline hover:text-text hover:no-underline"
         >
           SPELBOK
         </Link>
@@ -69,37 +69,50 @@ export async function SiteHeader({
           )}
         </div>
 
-        <div className="ml-auto flex items-center gap-2.5">
+        <div className="ml-auto flex min-w-0 items-center gap-2 lg:gap-2.5">
           {profile ? (
             <>
               <span
-                className={`font-mono-num text-[13px] font-semibold lg:hidden ${nettoColor(netto)}`}
+                className={`min-w-0 truncate font-mono-num text-[13px] font-semibold lg:hidden ${nettoColor(netto)}`}
               >
                 <FormattedAmount value={netto} />
               </span>
               <DisplayModeToggle className="hidden lg:flex" />
-              <div className="hidden text-right lg:block">
-                <div className="text-sm font-semibold text-text">
+              {/* Namn och avatar är vägen till profilen — ingen egen menyflik. */}
+              <Link
+                href="/installningar"
+                title="Din profil"
+                className="hidden text-right no-underline hover:no-underline lg:block"
+              >
+                <div className="text-sm font-semibold text-text hover:underline">
                   {profile.username}
                 </div>
                 {/* Mockup: netto i header är muted mono, inte grön/röd */}
                 <div className="font-mono-num text-xs text-muted">
                   <FormattedAmount value={netto} />
                 </div>
-              </div>
-              {profile.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatar_url}
-                  alt=""
-                  className="h-[34px] w-[34px] rounded-full border border-line-strong object-cover max-lg:order-2"
-                />
-              ) : (
-                <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text max-lg:order-2">
-                  {initialOf(profile.username)}
-                </div>
-              )}
-              <div className="max-lg:order-1">
+              </Link>
+              {/* Mobil: saldo → profilbild → notisklocka → meny. */}
+              <Link
+                href="/installningar"
+                aria-label="Din profil"
+                title="Din profil"
+                className="shrink-0 no-underline hover:no-underline max-lg:order-1"
+              >
+                {profile.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profile.avatar_url}
+                    alt=""
+                    className="h-[34px] w-[34px] rounded-full border border-line-strong object-cover"
+                  />
+                ) : (
+                  <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display font-semibold text-text">
+                    {initialOf(profile.username)}
+                  </div>
+                )}
+              </Link>
+              <div className="max-lg:order-2">
                 <NotificationBell userId={profile.id} initialUnread={unread} />
               </div>
               {profile.role === "admin" ? (
@@ -150,7 +163,7 @@ const FOOTER_COLUMNS = [
   {
     title: "Spelbok",
     links: [
-      { href: "/kuponger", label: "Kuponger" },
+      { href: "/planket", label: "Planket" },
       { href: "/topplista", label: "Topplista" },
       { href: "/spelbolag", label: "Spelbolag" },
       { href: "/om-oss", label: "Om oss" },

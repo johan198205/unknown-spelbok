@@ -15,6 +15,7 @@ import {
   starRowDataUri,
   wageringParts,
 } from "@/lib/bookmakers";
+import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,7 @@ export type BookmakerCardData = {
   terms: string | null;
   terms_url?: string | null;
   extra_disclaimer?: string | null;
+  age_limit?: number | null;
   review: string | null;
   plus: string[] | null;
   minus: string[] | null;
@@ -46,9 +48,6 @@ export type BookmakerCardData = {
   fast_payout?: boolean;
   tags?: string[] | null;
 };
-
-const STODLINJEN = "https://stodlinjen.se";
-const SPELPAUS = "https://spelpaus.se";
 
 function StarRow({ rating }: { rating: number | null }) {
   return (
@@ -153,8 +152,6 @@ export function BookmakerCard({
   src,
   preview = false,
   editorMode = false,
-  open,
-  onToggleReview,
   onHeroUploaded,
   className,
 }: {
@@ -162,15 +159,9 @@ export function BookmakerCard({
   src?: string;
   preview?: boolean;
   editorMode?: boolean;
-  open?: boolean;
-  onToggleReview?: () => void;
   onHeroUploaded?: (url: string, filename: string) => void;
   className?: string;
 }) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isOpen = open ?? internalOpen;
-  const toggle = onToggleReview ?? (() => setInternalOpen((v) => !v));
-
   const brand = displayText(data.brand_color) || "#1B2436";
   const goHref = `/go/${data.slug}${src ? `?src=${src}` : ""}`;
   const isTop = data.rank === 1;
@@ -183,9 +174,6 @@ export function BookmakerCard({
   const bonus2Label = displayText(data.bonus2_label);
   const bonus2Value = displayText(data.bonus2_value);
   const showBonus2 = !!bonus2Label && !!bonus2Value && !!bonus2Kind(bonus2Label);
-  const terms = displayText(data.terms);
-  const termsUrl = displayText(data.terms_url);
-  const hasMore = !!terms || !!termsUrl;
 
   const fallbackBg = {
     backgroundColor: brand,
@@ -310,67 +298,7 @@ export function BookmakerCard({
       ) : null}
 
       <div className="mt-4 border-t border-black/[.07] px-[18px] pb-4 pt-[13px]">
-        <div className="flex items-start gap-2.5">
-          <div
-            className={cn(
-              "min-w-0 flex-1 text-left text-[12.5px] leading-[1.55] text-[#5B6472]",
-              !isOpen && "line-clamp-1"
-            )}
-          >
-            18+, Spela ansvarsfullt,{" "}
-            <a
-              href={STODLINJEN}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-[#2C6FD6] no-underline hover:underline"
-            >
-              stödlinjen
-            </a>
-            ,{" "}
-            <a
-              href={SPELPAUS}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-[#2C6FD6] no-underline hover:underline"
-            >
-              spelpaus
-            </a>
-            .{terms ? ` ${terms}` : ""}
-            {termsUrl ? (
-              <>
-                {" – "}
-                <a
-                  href={termsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow"
-                  className="font-bold text-[#2C6FD6] no-underline hover:underline"
-                >
-                  Regler &amp; villkor gäller
-                </a>
-              </>
-            ) : null}
-          </div>
-          {hasMore ? (
-            <button
-              type="button"
-              onClick={toggle}
-              aria-expanded={isOpen}
-              aria-label={isOpen ? "Visa mindre" : "Visa hela texten"}
-              className="-mr-1.5 -mt-1 inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-[#8A93A3] hover:text-[#5B6472]"
-            >
-              <svg
-                viewBox="0 0 12 8"
-                className={cn(
-                  "h-2 w-3 transition-transform duration-200",
-                  isOpen && "rotate-180"
-                )}
-                aria-hidden
-              >
-                <path d="M0 0h12L6 8z" fill="currentColor" />
-              </svg>
-            </button>
-          ) : null}
-        </div>
+        <BookmakerDisclaimer bookmaker={data} tone="light" className="text-left text-[12px]" />
       </div>
     </div>
   );

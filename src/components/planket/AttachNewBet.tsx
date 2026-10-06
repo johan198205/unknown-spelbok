@@ -330,7 +330,7 @@ export function AttachNewBet({
           <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5D6883]">
             Bolag
           </div>
-          <div className="flex gap-1.5 overflow-x-auto sb-scroll pb-0.5">
+          <div className="flex flex-wrap gap-1.5">
             {bookmakers.map((b) => {
               const logo = getBookmakerLogoUrl(b.logo_url);
               return (

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
 import { nettoColor } from "@/lib/utils";
-import type { TopListEntry } from "@/lib/toplists";
+import { rankColor, type TopListEntry } from "@/lib/toplists";
 
 export function TopListCard({
   title,
@@ -30,8 +30,10 @@ export function TopListCard({
               key={entry.id}
               className="flex items-baseline gap-2 border-b border-[#171E2C] py-2 text-[13.5px] last:border-0"
             >
-              <span className="w-5 shrink-0 text-right font-mono-num text-[12px] text-dim">
-                {i + 1}.
+              <span
+                className={`w-5 shrink-0 text-right font-display text-[14px] font-semibold ${rankColor(i)}`}
+              >
+                {i + 1}
               </span>
               <span className="min-w-0 flex-1">
                 {entry.href ? (
@@ -42,9 +44,18 @@ export function TopListCard({
                   <span className="block truncate">{entry.label}</span>
                 )}
                 {entry.sublabel ? (
-                  <span className="block truncate text-[11.5px] text-dim">
-                    {entry.sublabel}
-                  </span>
+                  entry.sublabelHref ? (
+                    <Link
+                      href={entry.sublabelHref}
+                      className="block truncate text-[11.5px] text-dim no-underline hover:text-text hover:underline"
+                    >
+                      {entry.sublabel}
+                    </Link>
+                  ) : (
+                    <span className="block truncate text-[11.5px] text-dim">
+                      {entry.sublabel}
+                    </span>
+                  )
                 ) : null}
               </span>
               <span

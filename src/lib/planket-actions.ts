@@ -21,6 +21,7 @@ import {
   fetchAttachableCoupons,
   fetchPlanketPage,
 } from "@/lib/planket-server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type Fail = { ok: false; error: string; code?: "auth" | "duplicate" | "rate" };
@@ -124,19 +125,42 @@ export async function createPostReply(
   return { ok: true };
 }
 
+/** Tar bort ett eget svar. RLS ("radera eget reply") släpper bara egna. */
+export async function deletePostReply(
+  replyId: string
+): Promise<{ ok: true } | Fail> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("post_replies")
+    .delete()
+    .eq("id", replyId)
+    .eq("author_id", user.id)
+    .select("id");
+  if (error) return toFailure(error.message, "Kunde inte ta bort svaret.");
+  if (!data?.length) return { ok: false, error: "Svaret hittades inte." };
+  revalidatePath(PLANKET_PATH);
+  return { ok: true };
+}
+
 export type PostReplyRow = {
   id: string;
   body: string;
   created_at: string;
   author_username: string;
   author_avatar: string | null;
+  /** Är betraktaren författare? Styr Ta bort-knappen. */
+  isAuthor: boolean;
 };
 
 export async function listPostReplies(postId: string): Promise<PostReplyRow[]> {
   const supabase = await createClient();
+  const user = await getSessionUser();
   const { data, error } = await supabase
     .from("post_replies")
-    .select("id, body, created_at, profiles:author_id(username, avatar_url)")
+    .select("id, body, created_at, author_id, profiles:author_id(username, avatar_url)")
     .eq("post_id", postId)
     .order("created_at", { ascending: true })
     .limit(100);
@@ -158,6 +182,7 @@ export async function listPostReplies(postId: string): Promise<PostReplyRow[]> {
         (profile as { username?: string } | null)?.username || "användare",
       author_avatar:
         (profile as { avatar_url?: string | null } | null)?.avatar_url ?? null,
+      isAuthor: !!user && row.author_id === user.id,
     };
   });
 }
@@ -192,14 +217,26 @@ export async function deletePost(postId: string) {
   const user = await getSessionUser();
   if (!user) return { ok: false as const, error: "Du måste vara inloggad." };
 
+  // Ägarskapet kontrolleras med användarens egen klient (RLS). Själva
+  // raderingen går via serverklienten: läspolicyn döljer rader med
+  // deleted_at, och Postgres kräver att den uppdaterade raden fortfarande
+  // är läsbar — annars "new row violates row-level security policy".
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: own } = await supabase
+    .from("posts")
+    .select("id")
+    .eq("id", postId)
+    .eq("author_id", user.id)
+    .maybeSingle();
+  if (!own) return { ok: false as const, error: "Inlägget hittades inte." };
+
+  const { error } = await createAdminClient()
     .from("posts")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", postId)
     .eq("author_id", user.id);
 
-  if (error) return { ok: false as const, error: error.message };
+  if (error) return { ok: false as const, error: "Kunde inte ta bort inlägget." };
 
   revalidatePath(PLANKET_PATH);
   return { ok: true as const };

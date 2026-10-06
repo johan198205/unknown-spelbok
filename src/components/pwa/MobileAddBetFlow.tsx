@@ -354,7 +354,7 @@ export function MobileAddBetFlow({
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Bolag
               </div>
-              <div className="flex gap-2 overflow-x-auto sb-scroll pb-1">
+              <div className="flex flex-wrap gap-2">
                 {bookmakers.map((b) => {
                   const logo = getBookmakerLogoUrl(b.logo_url);
                   return (

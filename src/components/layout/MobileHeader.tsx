@@ -19,31 +19,26 @@ export async function MobileHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(15,20,32,.92)] px-4 py-3 backdrop-blur-[10px] lg:hidden">
-      <div className="flex items-center gap-3">
+      {/* min-w-0 hela vägen: ett långt saldo får krympa i stället för att
+          trycka ut headern bredare än skärmen (sidledsscroll i mobil). */}
+      <div className="flex min-w-0 items-center gap-3">
         <Link
           href="/hem"
-          className="font-display text-[17px] font-bold tracking-[0.14em] text-text no-underline"
+          className="shrink-0 font-display text-[17px] font-bold tracking-[0.14em] text-text no-underline"
         >
           SPELBOK
         </Link>
-        <div className="ml-auto flex items-center gap-2.5">
+        <div className="ml-auto flex min-w-0 items-center gap-2">
           <span
-            className={`font-mono-num text-[13px] font-semibold ${nettoColor(netto)}`}
+            className={`min-w-0 truncate font-mono-num text-[13px] font-semibold ${nettoColor(netto)}`}
           >
             <FormattedAmount value={netto} />
           </span>
-          {profile ? (
-            <NotificationBell
-              userId={profile.id}
-              initialUnread={unread}
-              /* Mobilheadern ligger på #0F1420, inte sidans #0B0E14. */
-              badgeBorder="#0F1420"
-            />
-          ) : null}
+          {/* Ordning: saldo → profilbild → notisklocka → meny. */}
           {username ? (
             <Link
               href="/installningar"
-              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold text-text no-underline"
+              className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold text-text no-underline"
               aria-label="Profil"
             >
               {profile?.avatar_url ? (
@@ -57,6 +52,14 @@ export async function MobileHeader({
                 initialOf(username)
               )}
             </Link>
+          ) : null}
+          {profile ? (
+            <NotificationBell
+              userId={profile.id}
+              initialUnread={unread}
+              /* Mobilheadern ligger på #0F1420, inte sidans #0B0E14. */
+              badgeBorder="#0F1420"
+            />
           ) : null}
           <MobileMenu
             user={

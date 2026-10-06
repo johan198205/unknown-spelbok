@@ -1,8 +1,10 @@
+import Link from "next/link";
 import Image from "next/image";
 import { ButtonLink } from "@/components/ui/Button";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { fetchLandingPage } from "@/lib/landing-content.server";
 import { fetchSiteSettings } from "@/lib/site-settings";
+import { profileHref, rankColor } from "@/lib/toplists";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, formatMoney, formatRoi, nettoColor } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
@@ -190,13 +192,19 @@ export default async function LandingPage() {
                 key={r.id}
                 className="flex items-center gap-3 border-b border-[#171E2C] px-[18px] py-3"
               >
-                <span className="font-display w-[26px] text-lg font-semibold text-muted">
+                <span className={`font-display w-[26px] text-lg font-semibold ${rankColor(i)}`}>
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold">{r.name}</div>
                   <div className="text-[12.5px] text-muted">
-                    {r.owner} · {r.bets} spel · hitrate {r.hitrate.toFixed(0)}%
+                    <Link
+                      href={profileHref(r.owner)}
+                      className="text-muted no-underline hover:text-text hover:underline"
+                    >
+                      {r.owner}
+                    </Link>{" "}
+                    · {r.bets} spel · hitrate {r.hitrate.toFixed(0)}%
                   </div>
                 </div>
                 <span

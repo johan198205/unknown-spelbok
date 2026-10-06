@@ -33,6 +33,7 @@ export type BookmakerInput = {
   terms: string | null;
   terms_url: string | null;
   extra_disclaimer: string | null;
+  age_limit?: number | null;
   usp: string | null;
   review: string | null;
   plus: string[];
@@ -207,6 +208,7 @@ export async function saveBookmaker(input: BookmakerInput): Promise<SaveResult> 
     terms: textOrNull(input.terms),
     terms_url: textOrNull(input.terms_url),
     extra_disclaimer: textOrNull(input.extra_disclaimer),
+    age_limit: input.age_limit ? Math.round(input.age_limit) : 18,
     usp: textOrNull(input.usp),
     review: textOrNull(input.review),
     plus: cleanList(input.plus),
@@ -228,11 +230,26 @@ export async function saveBookmaker(input: BookmakerInput): Promise<SaveResult> 
       : null;
 
   if (input.id) {
-    const { error } = await supabase
+    const row = wantedRank ? { ...payload, rank: wantedRank } : payload;
+    let { error } = await supabase
       .from("bookmakers")
-      .update(wantedRank ? { ...payload, rank: wantedRank } : payload)
+      .update(row)
       .eq("id", input.id);
-    if (error) return { ok: false, error: writeError(error) };
+    // Innan db/bookmaker-age-limit.sql är körd finns inte kolumnen. Med
+    // standardgränsen 18 sparas resten ändå; 21+ kräver migreringen.
+    if (error && /age_limit/.test(error.message) && payload.age_limit === 18) {
+      const { age_limit: _skip, ...rest } = row;
+      void _skip;
+      ({ error } = await supabase.from("bookmakers").update(rest).eq("id", input.id));
+    }
+    if (error) {
+      return {
+        ok: false,
+        error: /age_limit/.test(error.message)
+          ? "Åldersgränsen kräver db/bookmaker-age-limit.sql — kör den i Supabase först."
+          : writeError(error),
+      };
+    }
 
     await logAdmin("bookmaker.updated", `spelbolag ${name}`, {
       id: input.id,

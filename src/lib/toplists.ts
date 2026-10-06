@@ -1,10 +1,12 @@
 import type { Bet } from "./types";
-import { computeStats, formatRoi } from "./utils";
+import { computeStats, currentWinStreak, formatRoi } from "./utils";
 
 export const TOP_LIST_SIZE = 10;
 /** Minsta antal avgjorda spel för att kvala in på ROI-listorna. */
 export const MIN_BETS_TOTAL = 3;
 export const MIN_BETS_WEEK = 2;
+/** Minsta antal raka vinster för att komma med på formlistan. */
+export const MIN_WIN_STREAK = 3;
 /** Fönster för "senaste veckan". */
 export const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -12,6 +14,8 @@ export type TopListEntry = {
   id: string;
   label: string;
   sublabel?: string | null;
+  /** Sublabel är spelarens namn → länk till profilen. */
+  sublabelHref?: string | null;
   href?: string | null;
   display: string;
   /** "netto" färgar värdet grönt/rött, "plain" lämnar det neutralt. */
@@ -36,7 +40,7 @@ export function formatCount(value: number) {
   return value.toLocaleString("sv-SE");
 }
 
-function profileHref(username: string) {
+export function profileHref(username: string) {
   return `/profil/${encodeURIComponent(username)}`;
 }
 
@@ -62,6 +66,7 @@ export function sheetRoiList(
         id: sheet.id,
         label: sheet.name,
         sublabel: sheet.owner,
+        sublabelHref: profileHref(sheet.owner),
         href: sheet.slug ? `/s/${sheet.slug}` : null,
         display: formatRoi(stats.roi),
         tone: "netto" as const,
@@ -94,27 +99,76 @@ export function betCountList(sheets: ToplistSheet[]): TopListEntry[] {
   );
 }
 
-/** Tipsare sorterade på hur många gånger deras spel ryggats av andra. */
-export function ryggadList(
-  counts: Map<string, number>,
-  usernames: Map<string, string>
-): TopListEntry[] {
+/** Spelarens spel ur alla hens publika spelböcker. */
+function betsByUser(sheets: ToplistSheet[]) {
+  const byUser = new Map<string, { owner: string; bets: Bet[] }>();
+  for (const sheet of sheets) {
+    const entry = byUser.get(sheet.userId) ?? { owner: sheet.owner, bets: [] };
+    entry.bets.push(...sheet.bets);
+    byUser.set(sheet.userId, entry);
+  }
+  return byUser;
+}
+
+/**
+ * Bäst aktuell form: antal raka vinster bakåt från det senaste avgjorda
+ * spelet, över spelarens alla publika spelböcker. Minst tre raka för att
+ * komma med — tio raka går före sju raka.
+ */
+export function formList(sheets: ToplistSheet[]): TopListEntry[] {
   return take(
-    [...counts.entries()]
-      .filter(([id, count]) => count > 0 && usernames.has(id))
-      .sort((a, b) => b[1] - a[1])
-      .map(([id, count]) => {
-        const owner = usernames.get(id) as string;
-        return {
-          id,
-          label: owner,
-          href: profileHref(owner),
-          display: formatCount(count),
-          tone: "plain" as const,
-          value: count,
-        };
-      })
+    [...betsByUser(sheets).entries()]
+      .map(([id, v]) => ({ id, owner: v.owner, streak: currentWinStreak(v.bets) }))
+      .filter((r) => r.streak >= MIN_WIN_STREAK)
+      .sort((a, b) => b.streak - a.streak)
+      .map((r) => ({
+        id: r.id,
+        label: r.owner,
+        href: profileHref(r.owner),
+        display: `${r.streak} raka`,
+        tone: "plain" as const,
+        value: r.streak,
+      }))
   );
+}
+
+/**
+ * Högsta vunna odds: spelarens högsta odds på ett vunnet spel, singel eller
+ * kombination — oddset på spelet är redan det sammanlagda.
+ */
+export function highestWonOddsList(sheets: ToplistSheet[]): TopListEntry[] {
+  return take(
+    [...betsByUser(sheets).entries()]
+      .map(([id, v]) => ({
+        id,
+        owner: v.owner,
+        odds: Math.max(
+          0,
+          ...v.bets.filter((b) => b.result === "win").map((b) => Number(b.odds) || 0)
+        ),
+      }))
+      .filter((r) => r.odds > 1)
+      .sort((a, b) => b.odds - a.odds)
+      .map((r) => ({
+        id: r.id,
+        label: r.owner,
+        href: profileHref(r.owner),
+        display: r.odds.toLocaleString("sv-SE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
+        tone: "plain" as const,
+        value: r.odds,
+      }))
+  );
+}
+
+/** Plats 1–3 i guld, silver och brons — samma på alla topplistor. */
+export function rankColor(index: number) {
+  if (index === 0) return "text-[#FFD166]";
+  if (index === 1) return "text-[#C3CBDB]";
+  if (index === 2) return "text-[#E0A070]";
+  return "text-muted";
 }
 
 /** Spelböcker sorterade på netto (störst vinst i kronor). */
@@ -133,6 +187,7 @@ export function sheetNettoList(
         id: sheet.id,
         label: sheet.name,
         sublabel: sheet.owner,
+        sublabelHref: profileHref(sheet.owner),
         href: sheet.slug ? `/s/${sheet.slug}` : null,
         display: `${stats.netto > 0 ? "+" : ""}${Math.round(
           stats.netto

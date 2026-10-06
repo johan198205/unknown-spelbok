@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CouponCard } from "@/components/coupons/CouponCard";
 import { CouponSidebar } from "@/components/coupons/CouponSidebar";
 import { getSessionUser } from "@/lib/auth";
@@ -50,6 +51,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function KupongPage({ params }: Props) {
+  // Kuponger är avstängd tills vidare — speltipsen samlas på Planket.
+  // Planket kräver inloggning, så utloggade skickas till startsidan.
+  if (!FEATURES.coupons) redirect((await getSessionUser()) ? "/planket" : "/");
   const { slug } = await params;
   const supabase = await createClient();
 

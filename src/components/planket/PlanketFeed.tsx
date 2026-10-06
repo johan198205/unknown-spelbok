@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BackSheet } from "@/components/planket/BackSheet";
 import { PlanketComposer } from "@/components/planket/PlanketComposer";
 import { PostCard } from "@/components/planket/PostCard";
 import {
@@ -10,13 +9,8 @@ import {
   loadMorePosts,
   refreshFeed,
 } from "@/lib/planket-actions";
-import {
-  PLANKET_FILTERS,
-  type PlanketFilter,
-  type PlanketPost,
-} from "@/lib/planket";
+import type { PlanketFilter, PlanketPost } from "@/lib/planket";
 import type { Bookmaker, Sheet } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 /** Så ofta flödet frågar efter nya inlägg. */
 const POLL_MS = 45_000;
@@ -26,28 +20,27 @@ export function PlanketFeed({
   initialCursor,
   initialHasMore,
   username,
+  avatarUrl = null,
   sheets,
   bookmakers,
   isAuthenticated,
-  footer,
 }: {
   initialPosts: PlanketPost[];
   initialCursor: string | null;
   initialHasMore: boolean;
   username: string | null;
+  avatarUrl?: string | null;
   sheets: Sheet[];
   bookmakers: Bookmaker[];
   isAuthenticated: boolean;
-  /** Ansvarsrutan på mobil — ligger sist i flödet, inte i en sidokolumn. */
-  footer?: React.ReactNode;
 }) {
-  const [filter, setFilter] = useState<PlanketFilter>("alla");
+  // Ett enda flöde — filterchipparna är borttagna.
+  const filter: PlanketFilter = "alla";
   const [posts, setPosts] = useState(initialPosts);
   const [cursor, setCursor] = useState(initialCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
   const [newCount, setNewCount] = useState(0);
-  const [backing, setBacking] = useState<PlanketPost | null>(null);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   // Tidsstämpeln vi jämför mot när vi frågar efter nya inlägg. Sätts om
@@ -70,16 +63,6 @@ export function PlanketFeed({
     },
     []
   );
-
-  // ---------- Filterbyte ----------
-  async function pickFilter(next: PlanketFilter) {
-    if (next === filter) return;
-    setFilter(next);
-    setLoading(true);
-    const page = await refreshFeed(next);
-    setLoading(false);
-    replaceFeed(page);
-  }
 
   // ---------- Polling för bannern ----------
   useEffect(() => {
@@ -135,17 +118,13 @@ export function PlanketFeed({
     replaceFeed(page);
   }
 
-  function onBackClick(post: PlanketPost) {
-    if (!isAuthenticated) return;
-    setBacking(post);
-  }
-
   return (
     <>
       <div className="flex flex-col gap-3 lg:gap-[14px]">
         {isAuthenticated && username ? (
           <PlanketComposer
             username={username}
+            avatarUrl={avatarUrl}
             sheets={sheets}
             bookmakers={bookmakers}
             onPosted={() => void afterPost()}
@@ -182,56 +161,34 @@ export function PlanketFeed({
           </button>
         ) : null}
 
-        {/*
-          Chipparna scrollar vågrätt på mobil. flex-none på varje chip och
-          gömd scrollbar — utan flex-none krymper de i stället för att rada
-          upp sig, och raden bryter.
-        */}
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sb-scroll lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
-          {PLANKET_FILTERS.map((chip) => {
-            const active = chip.key === filter;
-            return (
-              <button
-                key={chip.key}
-                type="button"
-                aria-pressed={active}
-                onClick={() => void pickFilter(chip.key)}
-                className={cn(
-                  "flex-none cursor-pointer whitespace-nowrap rounded-full border px-[15px] py-2 text-[13.5px] font-semibold",
-                  active
-                    ? "border-[rgba(102,227,138,.45)] bg-[rgba(102,227,138,.14)] text-win"
-                    : "border-line-strong bg-transparent text-[#C3CBDB] hover:border-[#3A4560]"
-                )}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
-
         {posts.length === 0 && !loading ? (
           <div className="rounded-[14px] border border-line bg-[#151B2B] px-5 py-10 text-center text-[14px] text-muted">
             Inget här ännu. Posta först.
           </div>
         ) : null}
 
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onBack={onBackClick}
-            onRemoved={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
-            onEdited={(id, body) =>
-              setPosts((prev) =>
-                prev.map((p) =>
-                  p.id === id
-                    ? { ...p, body, edited_at: new Date().toISOString() }
-                    : p
+        {/*
+          Två inlägg i bredd från lg; skrivrutan ovanför tar hela bredden.
+          items-start: ett kort med öppen tråd ska inte sträcka grannen.
+        */}
+        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2 lg:gap-[14px]">
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onRemoved={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+              onEdited={(id, body) =>
+                setPosts((prev) =>
+                  prev.map((p) =>
+                    p.id === id
+                      ? { ...p, body, edited_at: new Date().toISOString() }
+                      : p
+                  )
                 )
-              )
-            }
-          />
-        ))}
+              }
+            />
+          ))}
+        </div>
 
         <div ref={sentinelRef} aria-hidden className="h-px" />
 
@@ -241,25 +198,7 @@ export function PlanketFeed({
           </div>
         ) : null}
 
-        {footer}
       </div>
-
-      {backing ? (
-        <BackSheet
-          post={backing}
-          sheets={sheets}
-          onClose={() => setBacking(null)}
-          onBacked={(id) =>
-            setPosts((prev) =>
-              prev.map((p) =>
-                p.id === id
-                  ? { ...p, backedByMe: true, back_count: p.back_count + 1 }
-                  : p
-              )
-            )
-          }
-        />
-      ) : null}
     </>
   );
 }

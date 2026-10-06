@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getProfile, getSessionUser } from "@/lib/auth";
 import { getDisplayPrefs } from "@/lib/display-prefs";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { SpelbokSheetView } from "@/components/bets/SpelbokSheetView";
 import { AdSlot } from "@/components/ui/AdSlot";
 import {
@@ -69,17 +70,23 @@ export default async function PublicSheetPage({
       : Promise.resolve({ data: [] as Sheet[] }),
   ]);
 
+  // Matchdata (fixtures) och lagkatalogen är bara läsbara för inloggade.
+  // Utloggade fick därför null i joinen: inga lagloggor, fel datum och
+  // avgjorda spel som stod kvar som öppna. Spelboken är verifierat publik
+  // ovan, så dess spel läses med serverklienten oavsett betraktare.
+  const reader = user ? supabase : createAdminClient();
+
   let bets: Bet[] = [];
-  const query = await supabase
+  const query = await reader
     .from("bets")
     .select(
-      "*, bookmakers(id, name, slug, logo_url, brand_color, tracking_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, extra, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo)"
+      "*, bookmakers(id, name, slug, logo_url, brand_color, tracking_url), fixtures:fixture_id(fixture_id, kickoff, status, elapsed, extra, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
     )
     .eq("sheet_id", sheet.id)
     .order("placed_at", { ascending: false });
 
   if (query.error) {
-    const fallback = await supabase
+    const fallback = await reader
       .from("bets")
       .select(
         "*, bookmakers(id, name, slug, logo_url, brand_color, tracking_url), fixtures:fixture_id(fixture_id, kickoff, status, home_score, away_score, home_logo, away_logo, home_team_id, away_team_id, home_name, away_name, sport, league_id, league_logo, league_name)"
@@ -97,7 +104,7 @@ export default async function PublicSheetPage({
     fixtures: asOne(bet.fixtures),
   }));
   // Manuella och importerade spel får lagloggor uppslagna på lagnamn.
-  bets = await attachManualLogos(supabase, bets);
+  bets = await attachManualLogos(reader, bets);
 
   // Unit-storleken är betraktarens, inte ägarens — se kommentaren vid
   // owner-hämtningen ovan. Statistik-RPC:n behöver den i klartext.

@@ -11,6 +11,7 @@ import {
   type PlanketCoupon,
 } from "@/lib/planket";
 import { BookmakerPlate, FieldLabel, LeagueCrest } from "@/components/planket/Bits";
+import { BookmakerLink } from "@/components/planket/PostBetCard";
 
 /**
  * Kupongkortet i ett inlägg — variant C.
@@ -43,12 +44,20 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
           <span className="min-w-0 flex-1 truncate font-mono-num text-[12.5px] text-[#5D6883]">
             {couponMeta(legs)}
           </span>
-          <BookmakerPlate
-            name={coupon.bookmaker_name}
-            logoUrl={bookLogo}
-            width={66}
-            height={28}
-          />
+          <BookmakerLink
+            href={
+              coupon.bookmaker_slug
+                ? `/go/${encodeURIComponent(coupon.bookmaker_slug)}?src=planket`
+                : null
+            }
+          >
+            <BookmakerPlate
+              name={coupon.bookmaker_name}
+              logoUrl={bookLogo}
+              width={66}
+              height={28}
+            />
+          </BookmakerLink>
         </div>
 
         {legs.map((leg) => (

@@ -134,6 +134,8 @@ export type PlanketCoupon = {
   total_odds: number;
   bookmaker_name: string | null;
   bookmaker_logo: string | null;
+  /** Slug för affiliate-länken /go/{slug}. */
+  bookmaker_slug: string | null;
   legs: PlanketCouponLeg[];
 };
 
@@ -146,7 +148,27 @@ export type PlanketPost = PlanketPostRow & {
   backedByMe: boolean;
   /** Är betraktaren författare? Styr Redigera/Ta bort i ···-menyn. */
   isAuthor: boolean;
+  /** Spelbolagets slug för affiliate-länken /go/{slug}. */
+  bet_bookmaker_slug: string | null;
+  /** Antal svar i tråden. */
+  reply_count: number;
+  /** Postat av redaktionen (admin) — guldram och "Redaktionens spel". */
+  isEditorial: boolean;
+  /** Redaktionens öppna spel fästs högst upp tills spelet är avgjort. */
+  pinned: boolean;
 };
+
+/**
+ * Affiliate-länken för inläggets spelbolag, eller null om bolaget saknas.
+ * Samma /go-länk som resten av sajten — klicket loggas där.
+ */
+export function postBookmakerHref(post: PlanketPost, src = "planket") {
+  const slug =
+    post.attachment_type === "coupon"
+      ? post.coupon?.bookmaker_slug
+      : post.bet_bookmaker_slug;
+  return slug ? `/go/${encodeURIComponent(slug)}?src=${src}` : null;
+}
 
 export const REACTION_KINDS = ["fire", "thumb"] as const;
 export type ReactionKind = (typeof REACTION_KINDS)[number];

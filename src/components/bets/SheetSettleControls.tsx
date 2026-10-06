@@ -87,14 +87,17 @@ export function SheetSettleControls({
 
   if (!canEdit) {
     return (
-      <span
-        className={cn(
-          "inline-block rounded-[7px] px-[11px] py-1.5 font-mono-num text-[11.5px] font-semibold tracking-[0.06em]",
-          resultTone(bet.result).bg,
-          resultTone(bet.result).fg
-        )}
-      >
-        {resultLabel(bet.result)}
+      <span className="inline-flex items-center whitespace-nowrap">
+        {showLock ? <SheetLockIcon value={bet.logged_before_kickoff} /> : null}
+        <span
+          className={cn(
+            "inline-block rounded-[7px] px-[11px] py-1.5 font-mono-num text-[11.5px] font-semibold tracking-[0.06em]",
+            resultTone(bet.result).bg,
+            resultTone(bet.result).fg
+          )}
+        >
+          {resultLabel(bet.result)}
+        </span>
       </span>
     );
   }

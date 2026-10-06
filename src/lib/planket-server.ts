@@ -68,6 +68,11 @@ export async function fetchPlanketPage({
   const supabase = await createClient();
   const user = await getSessionUser();
 
+  // Redaktionens öppna spel ligger fästa överst och hoppas över i det
+  // vanliga flödet, så de aldrig syns två gånger.
+  const pinnedRows = await fetchPinnedRows();
+  const pinnedIds = new Set(pinnedRows.map((r) => r.id));
+
   let query = supabase
     .from("planket_posts")
     .select(POST_COLUMNS)
@@ -75,6 +80,10 @@ export async function fetchPlanketPage({
     // En rad extra: finns den vet vi att det finns mer att hämta utan
     // ett separat count-anrop.
     .limit(limit + 1);
+
+  if (pinnedIds.size) {
+    query = query.not("id", "in", `(${[...pinnedIds].join(",")})`);
+  }
 
   if (filter === "spel") query = query.eq("attachment_type", "bet");
   else if (filter === "kuponger") query = query.eq("attachment_type", "coupon");
@@ -95,7 +104,9 @@ export async function fetchPlanketPage({
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
 
-  const posts = await decoratePosts(page, user?.id ?? null);
+  // De fästa följer bara med första sidan.
+  const pinned = cursor ? [] : pinnedRows;
+  const posts = await decoratePosts([...pinned, ...page], user?.id ?? null, pinnedIds);
 
   return {
     posts,
@@ -104,13 +115,46 @@ export async function fetchPlanketPage({
   };
 }
 
+/** Admin-konton. Deras inlägg är redaktionens. */
+const fetchAdminIds = cache(async function fetchAdminIds() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("profiles").select("id").eq("role", "admin");
+  return (data ?? []).map((r) => r.id as string);
+});
+
+/**
+ * Redaktionens spel som fortfarande är öppna (ej avgjorda), nyast först.
+ * När spelet rättas släpper det och blir ett vanligt inlägg i flödet.
+ */
+async function fetchPinnedRows(): Promise<PlanketPostRow[]> {
+  const adminIds = await fetchAdminIds();
+  if (!adminIds.length) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("planket_posts")
+    .select(POST_COLUMNS)
+    .in("author_id", adminIds)
+    .eq("attachment_type", "bet")
+    .eq("bet_result", "open")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (error) {
+    console.error("planket: kunde inte läsa redaktionens spel", error.message);
+    return [];
+  }
+  return (data ?? []) as unknown as PlanketPostRow[];
+}
+
 /**
  * Fyller på med det som inte får plats i vyn: kupongernas ben, och
  * betraktarens egna reaktioner och ryggningar.
  */
 async function decoratePosts(
   rows: PlanketPostRow[],
-  userId: string | null
+  userId: string | null,
+  pinnedIds: Set<string> = new Set()
 ): Promise<PlanketPost[]> {
   if (!rows.length) return [];
 
@@ -119,8 +163,13 @@ async function decoratePosts(
   const couponIds = [
     ...new Set(rows.map((r) => r.coupon_id).filter((id): id is string => !!id)),
   ];
+  const bookmakerIds = [
+    ...new Set(
+      rows.map((r) => r.bet_bookmaker_id).filter((id): id is string => !!id)
+    ),
+  ];
 
-  const [coupons, reactions, backs] = await Promise.all([
+  const [coupons, reactions, backs, replies, slugs, adminIds] = await Promise.all([
     fetchCoupons(couponIds),
     userId
       ? supabase
@@ -136,7 +185,22 @@ async function decoratePosts(
           .eq("user_id", userId)
           .in("post_id", postIds)
       : Promise.resolve({ data: [] as { post_id: string }[] }),
+    // Svarsantalet — räknas här så det syns direkt och efter omladdning.
+    supabase.from("post_replies").select("post_id").in("post_id", postIds),
+    bookmakerIds.length
+      ? supabase.from("bookmakers").select("id, slug").in("id", bookmakerIds)
+      : Promise.resolve({ data: [] as { id: string; slug: string }[] }),
+    fetchAdminIds(),
   ]);
+
+  const replyCount = new Map<string, number>();
+  for (const row of replies.data ?? []) {
+    replyCount.set(row.post_id, (replyCount.get(row.post_id) ?? 0) + 1);
+  }
+  const slugById = new Map(
+    (slugs.data ?? []).map((b) => [b.id as string, b.slug as string])
+  );
+  const admins = new Set(adminIds);
 
   const mine = new Map<string, ReactionKind[]>();
   for (const row of reactions.data ?? []) {
@@ -154,6 +218,12 @@ async function decoratePosts(
     myReactions: mine.get(row.id) ?? [],
     backedByMe: backed.has(row.id),
     isAuthor: !!userId && row.author_id === userId,
+    bet_bookmaker_slug: row.bet_bookmaker_id
+      ? (slugById.get(row.bet_bookmaker_id) ?? null)
+      : null,
+    reply_count: replyCount.get(row.id) ?? 0,
+    isEditorial: admins.has(row.author_id),
+    pinned: pinnedIds.has(row.id),
   }));
 }
 
@@ -170,7 +240,7 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
     .from("coupons")
     .select(
       `id, slug, title, stake, total_odds,
-       bookmakers:bookmaker_id(name, logo_url),
+       bookmakers:bookmaker_id(name, logo_url, slug),
        coupon_legs(id, sort_order, pick, odds,
          fixtures:fixture_id(kickoff, sport, league_id, league_name, league_logo,
                              home_name, away_name))`
@@ -204,7 +274,7 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
     title: string;
     stake: number;
     total_odds: number;
-    bookmakers: { name: string; logo_url: string | null } | null;
+    bookmakers: { name: string; logo_url: string | null; slug: string | null } | null;
     coupon_legs: LegRow[];
   }>) {
     const legs: PlanketCouponLeg[] = [...(raw.coupon_legs ?? [])]
@@ -235,6 +305,7 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
       total_odds: legs.length ? couponTotalOdds(legs) : Number(raw.total_odds),
       bookmaker_name: raw.bookmakers?.name ?? null,
       bookmaker_logo: raw.bookmakers?.logo_url ?? null,
+      bookmaker_slug: raw.bookmakers?.slug ?? null,
       legs,
     });
   }
