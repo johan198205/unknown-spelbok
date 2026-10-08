@@ -43,12 +43,18 @@ function searchTokens(q: string) {
 }
 
 /**
- * API-Sports skriver oftast svenska lag utan prickar (Brynas, Frolunda),
- * medan användaren skriver Brynäs. Ordet söks därför både som det skrevs och
- * utan diakritiska tecken.
+ * API-Sports är inte konsekvent: Brynas och Farjestad saknar prickar medan
+ * Frölunda, Timrå och Skellefteå har kvar dem. Ordet söks därför som det
+ * skrevs och i en vikt form där a, o, e och u är jokrar (_ i ilike), så att
+ * "frolunda" hittar Frölunda och "brynäs" hittar Brynas. Jokrarna kan ge
+ * enstaka falska träffar — de rensas bort av matchesTokens efteråt.
  */
+function wildcardVowels(token: string) {
+  return foldText(token).replace(/[aoeu]/g, "_");
+}
+
 function tokenFilter(token: string) {
-  const variants = [...new Set([token.normalize("NFC"), foldText(token)])];
+  const variants = [...new Set([token.normalize("NFC"), wildcardVowels(token)])];
   return ["home_name", "away_name"]
     .flatMap((col) =>
       variants.flatMap((v) => [
@@ -58,6 +64,20 @@ function tokenFilter(token: string) {
       ])
     )
     .join(",");
+}
+
+/** Varje ord ska börja ett ord i något av lagnamnen, jämfört utan prickar */
+function matchesTokens(
+  row: { home_name: string | null; away_name: string | null },
+  tokens: string[]
+) {
+  const words = [row.home_name, row.away_name]
+    .flatMap((name) => foldText(name ?? "").split(/[\s-]+/))
+    .filter(Boolean);
+  return tokens.every((token) => {
+    const folded = foldText(token);
+    return words.some((word) => word.startsWith(folded));
+  });
 }
 
 function venueFromRaw(raw: unknown) {
@@ -263,7 +283,10 @@ export async function GET(request: NextRequest) {
       !!(date && !planLimited && !ids.length) &&
       !(await isFixtureDayReady(date, fillSports[0]));
     const rows = data ?? [];
-    const fixtures = rows.map(withLogos);
+    const tokens = searchTokens(q);
+    const fixtures = (
+      tokens.length ? rows.filter((row) => matchesTokens(row, tokens)) : rows
+    ).map(withLogos);
     return NextResponse.json(
       {
         fixtures,
