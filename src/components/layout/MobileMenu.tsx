@@ -49,16 +49,17 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
     setOpen(false);
   }
 
-  // Sidan bakom menyn ska inte gå att scrolla medan menyn är öppen.
+  // Sidan bakom menyn ska inte gå att scrolla medan menyn är öppen. Bara
+  // body låses: får även html overflow hidden blir body en egen
+  // scrollbehållare, den sticky headern hoppar upp till sidans topp och
+  // menyn hamnar utom synhåll för den som scrollat ner.
   useEffect(() => {
     if (!open) return;
-    const { body, documentElement: html } = document;
-    const prev = { body: body.style.overflow, html: html.style.overflow };
+    const { body } = document;
+    const prev = body.style.overflow;
     body.style.overflow = "hidden";
-    html.style.overflow = "hidden";
     return () => {
-      body.style.overflow = prev.body;
-      html.style.overflow = prev.html;
+      body.style.overflow = prev;
     };
   }, [open]);
 
