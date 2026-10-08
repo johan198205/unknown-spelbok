@@ -11,6 +11,7 @@ import {
 } from "@/lib/planket-actions";
 import type { PlanketFilter, PlanketPost } from "@/lib/planket";
 import type { Bookmaker, Sheet } from "@/lib/types";
+import { useIsDesktop } from "@/lib/hooks/useIsDesktop";
 
 /** Så ofta flödet frågar efter nya inlägg. */
 const POLL_MS = 45_000;
@@ -118,6 +119,27 @@ export function PlanketFeed({
     replaceFeed(page);
   }
 
+  const isDesktop = useIsDesktop();
+
+  function renderPost(post: PlanketPost) {
+    return (
+      <PostCard
+        key={post.id}
+        post={post}
+        onRemoved={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+        onEdited={(id, body) =>
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === id
+                ? { ...p, body, edited_at: new Date().toISOString() }
+                : p
+            )
+          )
+        }
+      />
+    );
+  }
+
   return (
     <>
       <div className="flex flex-col gap-3 lg:gap-[14px]">
@@ -168,27 +190,25 @@ export function PlanketFeed({
         ) : null}
 
         {/*
-          Två inlägg i bredd från lg; skrivrutan ovanför tar hela bredden.
-          items-start: ett kort med öppen tråd ska inte sträcka grannen.
+          Två spalter i murverk från lg: varannan post i varje spalt, så att
+          korten staplas tätt utan att ett högt kort lämnar hål bredvid sig.
+          Läsordningen blir fortfarande vänster–höger, nyast överst, och
+          ett kort byter aldrig spalt när en tråd öppnas eller fler laddas.
+          Skrivrutan ovanför tar hela bredden.
         */}
-        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2 lg:gap-[14px]">
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onRemoved={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
-              onEdited={(id, body) =>
-                setPosts((prev) =>
-                  prev.map((p) =>
-                    p.id === id
-                      ? { ...p, body, edited_at: new Date().toISOString() }
-                      : p
-                  )
-                )
-              }
-            />
-          ))}
-        </div>
+        {isDesktop ? (
+          <div className="flex items-start gap-[14px]">
+            {[0, 1].map((col) => (
+              <div key={col} className="flex min-w-0 flex-1 flex-col gap-[14px]">
+                {posts
+                  .filter((_, i) => i % 2 === col)
+                  .map(renderPost)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">{posts.map(renderPost)}</div>
+        )}
 
         <div ref={sentinelRef} aria-hidden className="h-px" />
 
