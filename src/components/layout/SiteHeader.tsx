@@ -40,7 +40,7 @@ export async function SiteHeader({
   // Hem nås via loggan och profilen via namnet/avataren uppe till höger.
   // Kuponger är avstängd tills vidare (FEATURES.coupons).
   const appNav: { href: string; label: string; icon: NavIconKey }[] = [
-    { href: "/spelbok", label: "Spelbok", icon: "spelbok" },
+    { href: "/spelbok", label: "Spreadsheet", icon: "spelbok" },
     { href: "/planket", label: "Planket", icon: "planket" },
     ...(site.competitions_enabled
       ? [{ href: "/tavlingar", label: "Tävlingar", icon: "tavlingar" as const }]
@@ -50,7 +50,7 @@ export async function SiteHeader({
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(11,14,20,.92)] pt-[env(safe-area-inset-top)] backdrop-blur-[10px]">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(10,10,11,.92)] pt-[env(safe-area-inset-top)] backdrop-blur-[10px]">
       <div className="mx-auto flex min-w-0 max-w-[1360px] items-center gap-3 px-4 py-3 lg:gap-[22px] lg:px-5">
         <Link
           href={profile ? "/hem" : "/"}
@@ -87,8 +87,8 @@ export async function SiteHeader({
                 <div className="text-sm font-semibold text-text hover:underline">
                   {profile.username}
                 </div>
-                {/* Mockup: netto i header är muted mono, inte grön/röd */}
-                <div className="font-mono-num text-xs text-muted">
+                {/* Samma färg som i mobilen: grönt plus, rött minus. */}
+                <div className={`font-mono-num text-xs ${nettoColor(netto)}`}>
                   <FormattedAmount value={netto} />
                 </div>
               </Link>

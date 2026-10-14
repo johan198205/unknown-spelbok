@@ -5,6 +5,7 @@ import { Calendar, Search } from "lucide-react";
 import type { PickerFixture } from "@/components/bets/FixturePicker";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { SPORTS } from "@/lib/picks";
 import { SPORT_LABELS } from "@/lib/sports";
 import { isFinishedStatus, isInPlayStatus } from "@/lib/live-fixture";
 import {
@@ -138,8 +139,8 @@ function ResultRow({
       className={cn(
         "w-full rounded-[10px] border px-3 py-2.5 text-left transition",
         highlighted
-          ? "border-blue/60 bg-[#1F293C]"
-          : "border-line bg-bg-soft hover:bg-[#1F293C]"
+          ? "border-blue/60 bg-[#26262a]"
+          : "border-line bg-bg-soft hover:bg-[#26262a]"
       )}
     >
       <div className="mb-2 flex items-center gap-1.5 text-[12px] text-muted">
@@ -408,6 +409,90 @@ export function MatchSearch({
           namn eller ange matchen manuellt.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+const MANUAL_DAY_CHIPS: Array<{ offset: number; label: string }> = [
+  { offset: -1, label: "Igår" },
+  { offset: 0, label: "Idag" },
+  { offset: 1, label: "Imorgon" },
+];
+
+/**
+ * Sport och datum för en manuellt inlagd match, med samma knappar som
+ * matchsöket i stället för en datumslider i sidled. En manuell match behöver
+ * ett bestämt datum — därför Igår/Idag/Imorgon plus valfritt datum i stället
+ * för sökets "Alla dagar" och "Denna vecka".
+ */
+export function ManualMatchFilters({
+  sport,
+  onSportChange,
+  ymd,
+  onYmdChange,
+}: {
+  sport: string;
+  onSportChange: (sport: string) => void;
+  ymd: string;
+  onYmdChange: (ymd: string) => void;
+}) {
+  const today = stockholmYmd();
+  const quick = MANUAL_DAY_CHIPS.map((c) => ({
+    ...c,
+    ymd: addStockholmDays(today, c.offset),
+  }));
+  const isCustom = !quick.some((c) => c.ymd === ymd);
+  const customLabel = isCustom
+    ? new Date(`${ymd}T12:00:00Z`).toLocaleDateString("sv-SE", {
+        day: "numeric",
+        month: "short",
+        timeZone: "UTC",
+      })
+    : "Datum";
+
+  return (
+    <div>
+      <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
+        Sport
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {SPORTS.map((s) => (
+          <Chip key={s} active={sport === s} onClick={() => onSportChange(s)}>
+            {s}
+          </Chip>
+        ))}
+      </div>
+      <div className="mb-1.5 mt-3 text-[11px] uppercase tracking-[0.1em] text-muted">
+        Datum
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {quick.map((c) => (
+          <Chip key={c.label} active={c.ymd === ymd} onClick={() => onYmdChange(c.ymd)}>
+            {c.label}
+          </Chip>
+        ))}
+        <label
+          className={cn(
+            "relative flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition",
+            isCustom
+              ? "border-win/60 bg-win/10 text-win"
+              : "border-line bg-bg-soft text-text hover:border-line-hover"
+          )}
+        >
+          <Calendar className="size-3.5" strokeWidth={2.25} aria-hidden />
+          {customLabel}
+          <input
+            type="date"
+            value={ymd}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (/^\d{4}-\d{2}-\d{2}$/.test(next)) onYmdChange(next);
+            }}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label="Välj datum"
+          />
+        </label>
+      </div>
     </div>
   );
 }

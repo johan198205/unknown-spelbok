@@ -298,4 +298,4 @@ function Field({
 }
 
 const fieldClass =
-  "w-full rounded-[10px] border border-line bg-[#0F1420] px-3.5 py-[13px] text-[15px] text-text outline-none placeholder:text-[#5D6883] focus:border-line-hover disabled:opacity-60";
+  "w-full rounded-[10px] border border-line bg-[#111113] px-3.5 py-[13px] text-[15px] text-text outline-none placeholder:text-[#5D6883] focus:border-line-hover disabled:opacity-60";

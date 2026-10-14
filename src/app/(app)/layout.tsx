@@ -13,8 +13,23 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const profile = await getProfile();
+
+  // Middleware släpper bara in utloggade på Planket. De får samma ram som
+  // övriga publika sidor — ingen bottenmeny med "Lägg nytt spel".
+  if (!profile) {
+    return (
+      <>
+        <SiteHeader variant="public" />
+        <main className="mx-auto w-full max-w-[1360px] flex-1 px-4 py-4 pb-8 lg:px-5 lg:py-6 lg:pb-6">
+          {children}
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
+
   // Bokföring, inte rendering — kör efter svaret så navigeringen inte väntar.
-  if (profile) after(() => touchLastSeen(profile));
+  after(() => touchLastSeen(profile));
   const supabase = await createClient();
 
   let netto = 0;

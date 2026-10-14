@@ -3,26 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
-import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
-import { ManualMatchLabel } from "@/components/bets/TeamPair";
-import { BetRowActions } from "@/components/bets/BetRowActions";
 import {
   LoggedBeforeKickoffBadge,
-  LoggedBeforeKickoffIcon,
+  SheetLockIcon,
 } from "@/components/bets/LoggedBeforeKickoff";
+import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
+import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
   fixtureFromBet,
-  isFinishedStatus,
   isInPlayStatus,
   needsLiveRefresh,
 } from "@/lib/live-fixture";
 import { formatPick } from "@/lib/picks";
 import { canRyggaBet } from "@/lib/rygga";
 import type { Bet, BetResult } from "@/lib/types";
-import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
 import { settleOutcome, track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
@@ -39,12 +36,12 @@ import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
 import { stockholmYmd } from "@/lib/stockholm";
 import {
   betNetto,
+  betPossibleWin,
   cn,
   formatOdds,
   formatRoi,
   nettoColor,
   payoutForResult,
-  resultLabel,
   resultTone,
   computeStats,
 } from "@/lib/utils";
@@ -63,14 +60,6 @@ const FILTERS: Array<{ id: string; label: string }> = [
   { id: "void", label: "Void" },
   { id: "halfwin", label: "Halvvinst" },
   { id: "halfloss", label: "Halvförlust" },
-];
-
-const SHEET_ACTIONS: Array<{ result: BetResult; label: string }> = [
-  { result: "win", label: "Vann" },
-  { result: "loss", label: "Förlorade" },
-  { result: "void", label: "Void" },
-  { result: "halfwin", label: "Halvvinst" },
-  { result: "halfloss", label: "Halvförlust" },
 ];
 
 /** Samma fyra rättningar som i desktoptabellen — inte bara vann/förlorade. */
@@ -110,11 +99,14 @@ function cardDate(iso: string) {
   });
 }
 
+/**
+ * Märket i kortets huvud. Bara synkstatus för offline-köade spel — matchens
+ * status (minut, FT) står i matchsektionen och rättningen i knapparna.
+ */
 function statusBadge(bet: DisplayBet): {
   label: string;
   className: string;
-  live?: boolean;
-} {
+} | null {
   if (bet._pendingStatus === "error") {
     return {
       label: "Kunde inte synkas",
@@ -127,27 +119,7 @@ function statusBadge(bet: DisplayBet): {
       className: "bg-yellow/15 text-yellow border-yellow/40",
     };
   }
-  if (bet.result === "open" && isInPlayStatus(bet.fixtures?.status)) {
-    return {
-      label: "Live",
-      className: "bg-live/15 text-live border-live/45",
-      live: true,
-    };
-  }
-  if (bet.result === "open") {
-    return {
-      label: "Orättat",
-      className: "bg-blue/15 text-blue border-blue/45",
-    };
-  }
-  return {
-    label:
-      (bet.result === "win" || bet.result === "loss") &&
-      isFinishedStatus(bet.fixtures?.status)
-        ? "FT"
-        : resultLabel(bet.result),
-    className: `${resultTone(bet.result).bg} ${resultTone(bet.result).fg} ${resultTone(bet.result).border}`,
-  };
+  return null;
 }
 
 export function MobileBetCards({
@@ -365,7 +337,7 @@ export function MobileBetCards({
             {[
               { label: "Netto", value: amount(stats.netto), color: nettoColor(stats.netto) },
               { label: "ROI", value: formatRoi(stats.roi), color: nettoColor(stats.roi) },
-              { label: "Hitrate", value: `${stats.hitrate.toFixed(0)}%`, color: "text-text" },
+              { label: "Vinstprocent", value: `${stats.hitrate.toFixed(0)}%`, color: "text-text" },
               { label: "Spel", value: String(stats.bets), color: "text-text" },
             ].map((k) => (
               <div
@@ -419,7 +391,6 @@ export function MobileBetCards({
             onOpenSheet={() => setSheetBet(bet)}
             onRetry={() => retryPending(bet)}
             onRygga={onRygga ? () => onRygga(bet) : undefined}
-            onRemove={() => void remove(bet)}
           />
         ))}
         {!filtered.length ? (
@@ -446,20 +417,6 @@ export function MobileBetCards({
               </div>
             ) : null}
             <div className="grid gap-2">
-              {canEdit && !sheetBet._pending
-                ? SHEET_ACTIONS.map((a) => (
-                    <button
-                      key={a.result}
-                      type="button"
-                      disabled={!online || !!sheetBet._pending}
-                      title={!online ? "Kräver uppkoppling" : undefined}
-                      onClick={() => setResult(sheetBet, a.result)}
-                      className="rounded-[10px] border border-line bg-panel-2 px-4 py-3 text-left font-semibold disabled:opacity-40"
-                    >
-                      {a.label}
-                    </button>
-                  ))
-                : null}
               {canRygga &&
               onRygga &&
               !sheetBet._pending &&
@@ -472,7 +429,7 @@ export function MobileBetCards({
                   }}
                   className="rounded-[10px] border border-line bg-panel-2 px-4 py-3 text-left font-semibold"
                 >
-                  Rygga spel
+                  Kopiera spel
                 </button>
               ) : null}
               {canEdit || sheetBet._pending ? (
@@ -507,7 +464,6 @@ function SwipeBetCard({
   onOpenSheet,
   onRetry,
   onRygga,
-  onRemove,
   highlight = false,
 }: {
   bet: DisplayBet;
@@ -519,7 +475,6 @@ function SwipeBetCard({
   onOpenSheet: () => void;
   onRetry: () => void;
   onRygga?: () => void;
-  onRemove?: () => void;
 }) {
   const amount = useAmount();
   const x = useMotionValue(0);
@@ -528,9 +483,12 @@ function SwipeBetCard({
   const holdTimer = useRef<number | null>(null);
   const badge = statusBadge(bet);
   const netto = betNetto(bet);
+  const settled = bet.result !== "open";
   const fixture = fixtureFromBet(bet);
   const isLive = isInPlayStatus(fixture?.status);
   const date = cardDate(betDisplayDate(bet));
+  const hasMenu =
+    canEdit || !!bet._pending || (canRygga && !!onRygga && canRyggaBet(bet));
 
   function clearHold() {
     if (holdTimer.current) {
@@ -590,50 +548,41 @@ function SwipeBetCard({
           highlight && "animate-sbrowpulse"
         )}
       >
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">
-            {bet.league ? (
-              <>
-                <LeagueLogo
-                  src={betLeagueLogo(bet)}
-                  leagueId={bet.league_id ?? bet.fixtures?.league_id}
-                  sport={bet.sport ?? bet.fixtures?.sport}
-                  name={bet.league}
-                  size={18}
-                />
-                <span className="min-w-0 truncate">
-                  {bet.league} · {date}
-                </span>
-              </>
-            ) : (
-              <span>Match · {date}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <BetRowActions
-              bet={bet}
-              canEdit={canEdit}
-              canRygga={canRygga}
-              onRygga={onRygga}
-              onRemove={onRemove}
-              hoverReveal={false}
-            />
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-[6px] border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
-                badge.className
-              )}
-            >
-              {badge.live ? (
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
-              ) : null}
-              {badge.label}
+        {/* 1. Liga och datum ihop; långa liganamn bryts i stället för att
+            kapas. Låset (och menyn) uppe till höger. */}
+        <div className="flex items-start gap-2">
+          {bet.league ? (
+            <span className="mt-px inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-[rgba(230,234,242,0.07)] p-[2px]">
+              <LeagueLogo
+                src={betLeagueLogo(bet)}
+                leagueId={bet.league_id ?? bet.fixtures?.league_id}
+                sport={bet.sport ?? bet.fixtures?.sport}
+                name={bet.league}
+                size={18}
+              />
             </span>
-            {canEdit || bet._pending || (canRygga && canRyggaBet(bet)) ? (
+          ) : null}
+          <span className="line-clamp-2 min-w-0 flex-1 break-words pt-0.5 text-[12.5px] leading-snug text-[#8A94AB]">
+            {bet.league ? `${bet.league} · ${date}` : `Match · ${date}`}
+          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {badge ? (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-[6px] border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
+                  badge.className
+                )}
+              >
+                {badge.label}
+              </span>
+            ) : null}
+            <SheetLockIcon value={bet.logged_before_kickoff} className="mr-0" />
+            {hasMenu ? (
               <button
                 type="button"
+                onPointerDown={(event) => event.stopPropagation()}
                 onClick={onOpenSheet}
-                className="px-1 text-muted"
+                className="-mr-1 px-1 text-[18px] leading-none text-muted"
                 aria-label="Fler alternativ"
               >
                 ⋯
@@ -642,34 +591,55 @@ function SwipeBetCard({
           </div>
         </div>
 
-        {fixture ? (
-          <FixtureMatch fixture={fixture} stacked logoSize={20} />
-        ) : (
-          <ManualMatchLabel
-            match={bet.match}
-            logos={bet.manual_logos}
-            stacked
-            size={20}
-          />
-        )}
-        <div className="mt-1 flex items-center gap-1.5 text-[15px] font-bold">
-          <span className="inline-flex w-3.5 shrink-0 justify-center">
-            <LoggedBeforeKickoffIcon value={bet.logged_before_kickoff} />
-          </span>
-          {formatPick(bet.pick)}
+        {/* 2. Matchen i en egen sektion: loggor, lag och resultat. */}
+        <div className="mt-2.5">
+          <SheetMatchCell bet={bet} density="result" variant="card" />
         </div>
-        <div className="mt-2 flex items-center gap-2 font-mono-num text-[12.5px] text-muted">
-          <BookmakerLogo
-            logoPath={bet.bookmakers?.logo_url}
-            name={bet.bookmakers?.name}
-            placeholder
-            size={18}
-            maxWidth={68}
-          />
-          <span>
-            {Number(bet.stake).toLocaleString("sv-SE")} ·{" "}
-            {formatOdds(Number(bet.odds))}
-          </span>
+
+        {/* 3. Spel i full bredd, insats och odds i egna fält under. */}
+        <div className="mt-2.5 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5">
+          <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+            Spel
+          </div>
+          <div className="break-words text-[16px] font-bold leading-snug">
+            {formatPick(bet.pick)}
+          </div>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
+            <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+              Insats
+            </div>
+            <div className="whitespace-nowrap font-mono-num text-[14px] font-semibold tabular-nums">
+              {amount(Number(bet.stake), { sign: false })}
+            </div>
+          </div>
+          <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
+            <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+              Odds
+            </div>
+            <div className="font-mono-num text-[14px] font-semibold tabular-nums">
+              {formatOdds(Number(bet.odds))}
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Resultat och spelbolag, sedan statusknapparna. */}
+        <div className="mt-3 flex items-end gap-3 border-t border-line-soft pt-3">
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
+              {settled ? "Resultat" : "Möjlig vinst"}
+            </div>
+            <span
+              className={cn(
+                "whitespace-nowrap font-mono-num text-[19px] font-semibold tabular-nums",
+                settled ? nettoColor(netto) : "text-[#C3CBDB]"
+              )}
+            >
+              {amount(settled ? netto : betPossibleWin(bet))}
+            </span>
+          </div>
+          <BookmakerPlate bet={bet} width={80} height={34} branded />
         </div>
 
         {canEdit && online && !bet._pending ? (
@@ -699,12 +669,6 @@ function SwipeBetCard({
                 </button>
               );
             })}
-          </div>
-        ) : null}
-
-        {bet.result !== "open" ? (
-          <div className={`mt-2 font-mono-num text-[22px] font-semibold ${nettoColor(netto)}`}>
-            {amount(netto)}
           </div>
         ) : null}
 

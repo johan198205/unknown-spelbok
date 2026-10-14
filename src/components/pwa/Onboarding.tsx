@@ -13,7 +13,7 @@ const SLIDES = [
   },
   {
     title: "Följ din utveckling",
-    body: "Se ackumulerat netto, ROI och hitrate växa över tid.",
+    body: "Se ackumulerat netto, ROI och vinstprocent växa över tid.",
     visual: "chart",
   },
   {

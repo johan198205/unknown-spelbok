@@ -49,14 +49,26 @@ export type BookmakerCardData = {
   tags?: string[] | null;
 };
 
-function StarRow({ rating }: { rating: number | null }) {
+function StarRow({
+  rating,
+  compact,
+}: {
+  rating: number | null;
+  compact?: boolean;
+}) {
   return (
     <span
       title={ratingTitle(rating)}
-      className="absolute right-3 top-3 z-[3] flex cursor-help items-center"
+      className={cn(
+        "absolute right-3 top-3 z-[3] flex cursor-help items-center",
+        compact && "max-sm:right-2 max-sm:top-2"
+      )}
     >
       <span
-        className="block h-4 w-[84px] bg-contain bg-right bg-no-repeat"
+        className={cn(
+          "block h-4 w-[84px] bg-contain bg-right bg-no-repeat",
+          compact && "max-sm:h-3 max-sm:w-[62px]"
+        )}
         style={{ backgroundImage: `url("${starRowDataUri(rating)}")` }}
         aria-hidden
       />
@@ -154,6 +166,7 @@ export function BookmakerCard({
   editorMode = false,
   onHeroUploaded,
   className,
+  compactOnMobile = false,
 }: {
   data: BookmakerCardData;
   src?: string;
@@ -161,8 +174,14 @@ export function BookmakerCard({
   editorMode?: boolean;
   onHeroUploaded?: (url: string, filename: string) => void;
   className?: string;
+  /**
+   * Två kort i bredd på mobil: allt skalas ner under sm så att kortet
+   * fortfarande känns luftigt i halva skärmbredden.
+   */
+  compactOnMobile?: boolean;
 }) {
-  const brand = displayText(data.brand_color) || "#1B2436";
+  const c = compactOnMobile;
+  const brand = displayText(data.brand_color) || "#212124";
   const goHref = `/go/${data.slug}${src ? `?src=${src}` : ""}`;
   const isTop = data.rank === 1;
   const heroUrl = getBookmakerHeroUrl(data.hero_url);
@@ -201,7 +220,10 @@ export function BookmakerCard({
       )}
     >
       <div
-        className="relative h-[150px] overflow-hidden rounded-t-[15px]"
+        className={cn(
+          "relative h-[150px] overflow-hidden rounded-t-[15px]",
+          c && "max-sm:h-[92px]"
+        )}
         style={heroUrl ? undefined : fallbackBg}
       >
         {heroUrl ? (
@@ -220,23 +242,42 @@ export function BookmakerCard({
           />
         ) : null}
 
-        <span className="pointer-events-none absolute left-3 top-3 z-[3] flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(247,248,251,.94)] font-display text-[15px] font-bold text-[#1A1F2B]">
+        <span
+          className={cn(
+            "pointer-events-none absolute left-3 top-3 z-[3] flex h-7 w-7 items-center justify-center rounded-lg bg-[rgba(247,248,251,.94)] font-display text-[15px] font-bold text-[#1A1F2B]",
+            c && "max-sm:left-2 max-sm:top-2 max-sm:h-6 max-sm:w-6 max-sm:text-[13px]"
+          )}
+        >
           {data.rank}
         </span>
-        <StarRow rating={data.rating} />
+        <StarRow rating={data.rating} compact={c} />
       </div>
 
-      <div className="relative z-[2] -mt-[17px] flex h-[34px] items-center justify-center gap-2">
+      <div
+        className={cn(
+          "relative z-[2] -mt-[17px] flex h-[34px] items-center justify-center gap-2",
+          c && "max-sm:-mt-[13px] max-sm:h-[26px] max-sm:gap-1"
+        )}
+      >
         {badge ? (
           <span
-            className="whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,.28)]"
+            className={cn(
+              "whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,.28)]",
+              c && "max-sm:px-2.5 max-sm:py-1 max-sm:text-[11px]"
+            )}
             style={{ background: isTop ? "#1B4F8A" : "#2C3A52" }}
           >
             {badge}
           </span>
         ) : null}
         {pay ? (
-          <span className="inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-black/[.08] bg-white px-3.5 py-[7px] text-[13px] font-semibold text-[#12171F] shadow-[0_4px_14px_rgba(0,0,0,.18)]">
+          <span
+            className={cn(
+              "inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-black/[.08] bg-white px-3.5 py-[7px] text-[13px] font-semibold text-[#12171F] shadow-[0_4px_14px_rgba(0,0,0,.18)]",
+              // Två chips får inte plats i ett halvbrett kort — märket vinner.
+              c && (badge ? "max-sm:hidden" : "max-sm:px-2.5 max-sm:py-1 max-sm:text-[11px]")
+            )}
+          >
             <span
               className="block size-4 bg-contain bg-center bg-no-repeat"
               style={{ backgroundImage: `url("${PAYMENT_MARKS[pay]}")` }}
@@ -247,13 +288,28 @@ export function BookmakerCard({
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col justify-center px-[18px] pb-5 pt-4 text-center">
+      <div
+        className={cn(
+          "flex flex-1 flex-col justify-center px-[18px] pb-5 pt-4 text-center",
+          c && "max-sm:px-2.5 max-sm:pb-3 max-sm:pt-2.5"
+        )}
+      >
         {bonusLine ? (
-          <div className="text-[19px] font-bold leading-snug text-[#12171F]">
+          <div
+            className={cn(
+              "text-[19px] font-bold leading-snug text-[#12171F]",
+              c && "max-sm:text-[14.5px]"
+            )}
+          >
             {bonusLine}
           </div>
         ) : null}
-        <div className="mt-[5px] text-[14px] text-[#5B6472]">
+        <div
+          className={cn(
+            "mt-[5px] text-[14px] text-[#5B6472]",
+            c && "max-sm:text-[11.5px]"
+          )}
+        >
           {wager.value == null ? (
             wager.label
           ) : (
@@ -264,7 +320,12 @@ export function BookmakerCard({
           )}
         </div>
         {showBonus2 ? (
-          <div className="mx-auto mt-[11px] inline-flex items-baseline gap-[7px] rounded-full border border-black/[.07] bg-[#F0F2F7] px-[13px] py-1.5">
+          <div
+            className={cn(
+              "mx-auto mt-[11px] inline-flex items-baseline gap-[7px] rounded-full border border-black/[.07] bg-[#F0F2F7] px-[13px] py-1.5",
+              c && "max-sm:mt-2 max-sm:flex-col max-sm:items-center max-sm:gap-0 max-sm:rounded-[10px] max-sm:px-2 max-sm:py-1"
+            )}
+          >
             <span className="text-[10.5px] font-bold uppercase tracking-[0.13em] text-[#5B6472]">
               {bonus2Label}
             </span>
@@ -276,7 +337,7 @@ export function BookmakerCard({
       </div>
 
       {data.tracking_url ? (
-        <div className="px-[18px]">
+        <div className={cn("px-[18px]", c && "max-sm:px-2.5")}>
           {preview ? (
             <span className="block rounded-full bg-[#2F8B4F] px-[18px] py-[15px] text-center text-[17px] font-bold text-white">
               Till {data.name || "spelbolaget"}
@@ -289,7 +350,10 @@ export function BookmakerCard({
               onClick={() =>
                 track({ event: "affiliate_click", bookmaker: data.slug })
               }
-              className="block rounded-full bg-[#2F8B4F] px-[18px] py-[15px] text-center text-[17px] font-bold text-white no-underline transition-colors hover:bg-[#26703F] hover:text-white hover:no-underline"
+              className={cn(
+                "block rounded-full bg-[#2F8B4F] px-[18px] py-[15px] text-center text-[17px] font-bold text-white no-underline transition-colors hover:bg-[#26703F] hover:text-white hover:no-underline",
+                c && "max-sm:px-2 max-sm:py-2.5 max-sm:text-[13.5px]"
+              )}
             >
               Till {data.name || "spelbolaget"}
             </a>
@@ -297,8 +361,17 @@ export function BookmakerCard({
         </div>
       ) : null}
 
-      <div className="mt-4 border-t border-black/[.07] px-[18px] pb-4 pt-[13px]">
-        <BookmakerDisclaimer bookmaker={data} tone="light" className="text-left text-[12px]" />
+      <div
+        className={cn(
+          "mt-4 border-t border-black/[.07] px-[18px] pb-4 pt-[13px]",
+          c && "max-sm:mt-3 max-sm:px-2 max-sm:pb-2.5 max-sm:pt-2"
+        )}
+      >
+        <BookmakerDisclaimer
+          bookmaker={data}
+          tone="light"
+          className={cn("text-left text-[12px]", c && "max-sm:text-[10.5px]")}
+        />
       </div>
     </div>
   );

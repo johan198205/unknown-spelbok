@@ -196,7 +196,7 @@ export function CouponCard({
 function LegRow({ leg }: { leg: CouponLeg }) {
   const fx = leg.fixtures;
   const mark = leg.result ? LEG_RESULT_MARK[leg.result] : "–";
-  const markColor = leg.result ? LEG_RESULT_COLOR[leg.result] : "#3F4A60";
+  const markColor = leg.result ? LEG_RESULT_COLOR[leg.result] : "#4a4a52";
 
   return (
     <div className="flex items-center gap-3 border-t border-line-soft px-3.5 py-[13px] first:border-t-0">

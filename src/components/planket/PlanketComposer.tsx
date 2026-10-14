@@ -158,7 +158,7 @@ export function PlanketComposer({
             setExpanded(true);
             window.setTimeout(() => areaRef.current?.focus(), 0);
           }}
-          className="flex w-full cursor-pointer items-center gap-[11px] rounded-full border border-line bg-[#151B2B] px-[15px] py-[11px] text-left lg:hidden"
+          className="flex w-full cursor-pointer items-center gap-[11px] rounded-full border border-line bg-[#161618] px-[15px] py-[11px] text-left lg:hidden"
         >
           <Avatar username={username} src={avatarUrl} size={28} />
           <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#5D6883]">
@@ -272,8 +272,8 @@ function ComposerCard({
 
   return (
     <div
-      className="rounded-[14px] bg-[#151B2B] p-4"
-      style={{ border: `1px solid ${focused ? "#3A4560" : "#232B3E"}` }}
+      className="rounded-[14px] bg-[#161618] p-4"
+      style={{ border: `1px solid ${focused ? "#46464d" : "#2a2a2e"}` }}
     >
       <div className="flex gap-3">
         <Avatar username={username} src={avatarUrl} size={40} className="!text-base" />
@@ -303,7 +303,7 @@ function ComposerCard({
               <button
                 type="button"
                 onClick={onClearImage}
-                className="absolute right-2 top-2 cursor-pointer rounded-full border border-line bg-[#151B2B] px-2 py-1 text-[12px] text-muted"
+                className="absolute right-2 top-2 cursor-pointer rounded-full border border-line bg-[#161618] px-2 py-1 text-[12px] text-muted"
               >
                 Ta bort bild
               </button>
@@ -370,7 +370,7 @@ function ComposerCard({
                 "rounded-[9px] px-5 py-2.5 text-[14px] font-bold",
                 canPost
                   ? "cursor-pointer border border-win bg-win text-win-ink hover:brightness-105"
-                  : "cursor-not-allowed border border-line-strong bg-[#1B2233] text-[#5D6883]"
+                  : "cursor-not-allowed border border-line-strong bg-[#1e1e21] text-[#5D6883]"
               )}
             >
               {busy ? "Postar…" : "Posta"}
@@ -403,8 +403,8 @@ function AttachButton({
         active
           ? "cursor-pointer border-[rgba(102,227,138,.4)] bg-[rgba(102,227,138,.12)] text-win"
           : disabled
-            ? "cursor-not-allowed border-line-strong bg-[#1B2233] text-[#5D6883] opacity-60"
-            : "cursor-pointer border-line-strong bg-[#1B2233] text-[#C3CBDB] hover:border-[#3A4560] hover:text-text"
+            ? "cursor-not-allowed border-line-strong bg-[#1e1e21] text-[#5D6883] opacity-60"
+            : "cursor-pointer border-line-strong bg-[#1e1e21] text-[#C3CBDB] hover:border-[#46464d] hover:text-text"
       )}
     >
       <AttachIcon color={active ? "#66E38A" : disabled ? "#5D6883" : "#8A94AB"} />
@@ -427,13 +427,13 @@ function AttachmentPreview({
   const isBet = attachment.type === "bet";
 
   return (
-    <div className="relative mt-3 rounded-[11px] border border-line-strong bg-[#1B2233] px-[14px] py-3">
+    <div className="relative mt-3 rounded-[11px] border border-line-strong bg-[#1e1e21] px-[14px] py-3">
       <button
         type="button"
         title="Ta bort bilagan"
         aria-label="Ta bort bilagan"
         onClick={onRemove}
-        className="absolute right-[9px] top-[9px] flex h-6 w-6 cursor-pointer items-center justify-center rounded-[7px] border border-line-strong bg-[#0F1420] text-[14px] leading-none text-[#8A94AB] hover:border-[#3A4560] hover:text-text"
+        className="absolute right-[9px] top-[9px] flex h-6 w-6 cursor-pointer items-center justify-center rounded-[7px] border border-line-strong bg-[#111113] text-[14px] leading-none text-[#8A94AB] hover:border-[#46464d] hover:text-text"
       >
         ×
       </button>

@@ -17,6 +17,7 @@ import {
   DEFAULT_LANDING,
   serializeLandingContent,
 } from "@/lib/landing-content";
+import { INTRO_PAGES, serializePageIntro } from "@/lib/page-intro";
 import { slugify } from "@/lib/utils";
 import type { Page } from "@/lib/types";
 
@@ -48,6 +49,7 @@ const RESERVED_SLUGS = [
   "login",
   "offline",
   "om-oss",
+  "planket",
   "profil",
   "registrera",
   "spelbok",
@@ -94,6 +96,16 @@ const CORE_PAGES: Array<{
       "Hör av dig till Spelbok — support, press, annonsering och samarbeten.",
     show_in_footer: true,
   },
+  // Rubrik + intro (och SEO-text) för undersidorna. Egna routes — CMS:et
+  // bär bara texten, se lib/page-intro.ts.
+  ...Object.entries(INTRO_PAGES).map(([slug, def]) => ({
+    slug,
+    title: def.title,
+    content: serializePageIntro(def.defaults),
+    seo_title: def.seo_title,
+    seo_description: def.seo_description,
+    show_in_footer: false,
+  })),
 ];
 
 /**

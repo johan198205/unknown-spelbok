@@ -28,6 +28,15 @@ export function resolvePick(
     return awayScore > homeScore ? "win" : "loss";
   }
 
+  // "Båda lagen gör mål: Ja" / "Båda lagen gör minst 2 mål: Nej" m.fl.
+  const btts = /^båda lagen (?:gör )?(?:minst (\d+) )?mål(?::| –| -)?\s*(ja|nej)?$/.exec(raw);
+  if (btts) {
+    const min = Number(btts[1] ?? 1);
+    const both = homeScore >= min && awayScore >= min;
+    const wantYes = btts[2] !== "nej";
+    return both === wantYes ? "win" : "loss";
+  }
+
   const total = homeScore + awayScore;
   const line = /^(över|over|ö|o|under|u)\s*(\d+(?:\.\d+)?)(?:\s*mål)?$/.exec(raw);
   if (line) {

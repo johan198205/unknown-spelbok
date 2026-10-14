@@ -26,6 +26,9 @@ export type TopListEntry = {
   /** "netto" färgar värdet grönt/rött, "plain" lämnar det neutralt. */
   tone: "netto" | "plain";
   value: number;
+  /** Spelaren bakom raden — avataren visas bredvid placeringen. */
+  owner: string;
+  ownerAvatar: string | null;
 };
 
 export type ToplistSheet = {
@@ -33,6 +36,7 @@ export type ToplistSheet = {
   name: string;
   slug: string | null;
   owner: string;
+  ownerAvatar: string | null;
   userId: string;
   bets: Bet[];
 };
@@ -87,6 +91,8 @@ export function sheetRoiList(
         label: sheet.name,
         sublabel: sheet.owner,
         sublabelHref: profileHref(sheet.owner),
+        owner: sheet.owner,
+        ownerAvatar: sheet.ownerAvatar,
         href: sheet.slug ? `/s/${sheet.slug}` : null,
         display: formatRoi(stats.roi),
         tone: "netto" as const,
@@ -97,9 +103,16 @@ export function sheetRoiList(
 
 /** Tipsare sorterade på antal loggade spel i publika spelböcker. */
 export function betCountList(sheets: ToplistSheet[]): TopListEntry[] {
-  const byUser = new Map<string, { owner: string; count: number }>();
+  const byUser = new Map<
+    string,
+    { owner: string; avatar: string | null; count: number }
+  >();
   for (const sheet of sheets) {
-    const entry = byUser.get(sheet.userId) ?? { owner: sheet.owner, count: 0 };
+    const entry = byUser.get(sheet.userId) ?? {
+      owner: sheet.owner,
+      avatar: sheet.ownerAvatar,
+      count: 0,
+    };
     entry.count += sheet.bets.length;
     byUser.set(sheet.userId, entry);
   }
@@ -112,6 +125,8 @@ export function betCountList(sheets: ToplistSheet[]): TopListEntry[] {
         id,
         label: v.owner,
         href: profileHref(v.owner),
+        owner: v.owner,
+        ownerAvatar: v.avatar,
         display: formatCount(v.count),
         tone: "plain" as const,
         value: v.count,
@@ -121,9 +136,16 @@ export function betCountList(sheets: ToplistSheet[]): TopListEntry[] {
 
 /** Spelarens spel ur alla hens publika spelböcker. */
 function betsByUser(sheets: ToplistSheet[]) {
-  const byUser = new Map<string, { owner: string; bets: Bet[] }>();
+  const byUser = new Map<
+    string,
+    { owner: string; avatar: string | null; bets: Bet[] }
+  >();
   for (const sheet of sheets) {
-    const entry = byUser.get(sheet.userId) ?? { owner: sheet.owner, bets: [] };
+    const entry = byUser.get(sheet.userId) ?? {
+      owner: sheet.owner,
+      avatar: sheet.ownerAvatar,
+      bets: [],
+    };
     entry.bets.push(...sheet.bets);
     byUser.set(sheet.userId, entry);
   }
@@ -138,13 +160,20 @@ function betsByUser(sheets: ToplistSheet[]) {
 export function formList(sheets: ToplistSheet[]): TopListEntry[] {
   return take(
     [...betsByUser(sheets).entries()]
-      .map(([id, v]) => ({ id, owner: v.owner, streak: currentWinStreak(v.bets) }))
+      .map(([id, v]) => ({
+        id,
+        owner: v.owner,
+        avatar: v.avatar,
+        streak: currentWinStreak(v.bets),
+      }))
       .filter((r) => r.streak >= MIN_WIN_STREAK)
       .sort((a, b) => b.streak - a.streak)
       .map((r) => ({
         id: r.id,
         label: r.owner,
         href: profileHref(r.owner),
+        owner: r.owner,
+        ownerAvatar: r.avatar,
         display: `${r.streak} raka`,
         tone: "plain" as const,
         value: r.streak,
@@ -162,6 +191,7 @@ export function highestWonOddsList(sheets: ToplistSheet[]): TopListEntry[] {
       .map(([id, v]) => ({
         id,
         owner: v.owner,
+        avatar: v.avatar,
         odds: Math.max(
           0,
           ...v.bets.filter((b) => b.result === "win").map((b) => Number(b.odds) || 0)
@@ -173,6 +203,8 @@ export function highestWonOddsList(sheets: ToplistSheet[]): TopListEntry[] {
         id: r.id,
         label: r.owner,
         href: profileHref(r.owner),
+        owner: r.owner,
+        ownerAvatar: r.avatar,
         display: r.odds.toLocaleString("sv-SE", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -208,6 +240,8 @@ export function sheetNettoList(
         label: sheet.name,
         sublabel: sheet.owner,
         sublabelHref: profileHref(sheet.owner),
+        owner: sheet.owner,
+        ownerAvatar: sheet.ownerAvatar,
         href: sheet.slug ? `/s/${sheet.slug}` : null,
         display: `${stats.netto > 0 ? "+" : ""}${Math.round(
           stats.netto

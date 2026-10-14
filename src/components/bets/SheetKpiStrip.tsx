@@ -47,7 +47,7 @@ export function SheetKpiStrip({
       color:
         stats.bets >= MIN_ROI_BETS ? nettoColor(stats.roi) : "text-faint",
     },
-    { label: "Hitrate", value: formatPercent(stats.hitrate), basis: 126 },
+    { label: "Vinstprocent", value: formatPercent(stats.hitrate), basis: 126 },
     { label: "Spel", value: String(betCount), basis: 96 },
     {
       label: "Omsättning",

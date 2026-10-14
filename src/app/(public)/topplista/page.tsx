@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { PageBodyContent, PageIntro } from "@/components/content/PageIntro";
+import { Avatar } from "@/components/planket/Bits";
 import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState, Panel } from "@/components/ui/Panel";
 import { createClient } from "@/lib/supabase/server";
@@ -7,7 +9,6 @@ import {
   computeStats,
   formatMoney,
   formatRoiOrDash,
-  initialOf,
   MIN_ROI_BETS,
   nettoColor,
 } from "@/lib/utils";
@@ -51,6 +52,9 @@ export default async function TopplistaPage() {
     owner:
       (sheet.profiles as unknown as { username: string } | null)?.username ||
       "Okänd",
+    ownerAvatar:
+      (sheet.profiles as unknown as { avatar_url: string | null } | null)
+        ?.avatar_url ?? null,
     userId: sheet.user_id as string,
     bets: (sheet.bets || []) as Bet[],
   }));
@@ -60,6 +64,7 @@ export default async function TopplistaPage() {
       id: sheet.id,
       name: sheet.name,
       owner: sheet.owner,
+      ownerAvatar: sheet.ownerAvatar,
       userId: sheet.userId,
       href: sheet.slug ? `/s/${sheet.slug}` : null,
       ...computeStats(sheet.bets),
@@ -127,12 +132,7 @@ export default async function TopplistaPage() {
         profile ? "px-1" : "px-5"
       }`}
     >
-      <div className="mb-5 lg:mb-6">
-        <h1 className="font-display text-[28px] font-semibold lg:text-[34px]">
-          Topplista
-        </h1>
-        <p className="text-muted">Alla publika spreadsheets</p>
-      </div>
+      <PageIntro slug="topplista" className="mb-5 lg:mb-6" />
 
       <AdSlot
         format="970x90"
@@ -158,16 +158,25 @@ export default async function TopplistaPage() {
             <RowLink
               key={row.id}
               href={row.href}
-              className="grid grid-cols-[40px_1fr_80px_100px_100px] items-center gap-3 border-b border-[#171E2C] px-5 py-3"
+              className="grid grid-cols-[40px_1fr_80px_100px_100px] items-center gap-3 border-b border-[#1c1c1f] px-5 py-3"
             >
               <span className={`font-display text-lg font-semibold ${medal(i)}`}>
                 {i + 1}
               </span>
-              <div className="min-w-0">
-                <div className="truncate font-semibold">{row.name}</div>
-                <div className="text-[12.5px] text-muted">
-                  <OwnerLink owner={row.owner} /> · hitrate{" "}
-                  {row.hitrate.toFixed(0)}%
+              <div className="flex min-w-0 items-center gap-3">
+                <Link
+                  href={profileHref(row.owner)}
+                  aria-label={row.owner}
+                  className="relative z-[1] shrink-0 no-underline hover:no-underline"
+                >
+                  <Avatar username={row.owner} src={row.ownerAvatar} size={30} />
+                </Link>
+                <div className="min-w-0">
+                  <div className="truncate font-semibold">{row.name}</div>
+                  <div className="text-[12.5px] text-muted">
+                    <OwnerLink owner={row.owner} /> · vinstprocent{" "}
+                    {row.hitrate.toFixed(0)}%
+                  </div>
                 </div>
               </div>
               <span className="text-right font-mono-num text-muted">
@@ -215,9 +224,9 @@ export default async function TopplistaPage() {
                 <Link
                   href={profileHref(row.owner)}
                   aria-label={row.owner}
-                  className="relative z-[1] flex h-9 w-9 items-center justify-center rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold text-text no-underline hover:no-underline"
+                  className="relative z-[1] shrink-0 no-underline hover:no-underline"
                 >
-                  {initialOf(row.owner)}
+                  <Avatar username={row.owner} src={row.ownerAvatar} size={36} />
                 </Link>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">
@@ -260,6 +269,8 @@ export default async function TopplistaPage() {
           ))}
         </div>
       </section>
+
+      <PageBodyContent slug="topplista" className="mb-16" />
 
       {selfRow && selfIndex >= 5 ? (
         <StickySelfRank

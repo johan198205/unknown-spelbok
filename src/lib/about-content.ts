@@ -43,7 +43,7 @@ export const DEFAULT_ABOUT: AboutContent = {
     {
       n: "01",
       title: "Siffrorna ljuger inte, det gör minnet",
-      body: "Netto, ROI och hitrate räknas ut ur varje enskilt spel. Ingen kan runda upp, glömma en förlust eller välja period.",
+      body: "Netto, ROI och vinstprocent räknas ut ur varje enskilt spel. Ingen kan runda upp, glömma en förlust eller välja period.",
     },
     {
       n: "02",

@@ -1,4 +1,3 @@
-import { formatNumber } from "./utils";
 
 /**
  * Visningsläge och valuta för belopp. Allt som visar pengar i appen går genom
@@ -101,8 +100,12 @@ export function formatAmount(
   const sign = opts?.sign === false ? "" : value > 0 ? "+" : "";
 
   if (prefs.mode === "units") {
-    // Hårt mellanslag: "u" får aldrig hamna på egen rad i en trång kolumn.
-    return `${sign}${formatNumber(toUnits(value, prefs), 2)} u`;
+    // "u" sitter ihop med talet (1u, 2,5u, 10u) och kan därför aldrig
+    // hamna på egen rad i en trång kolumn. Nollor efter kommat skrivs inte ut.
+    return `${sign}${toUnits(value, prefs).toLocaleString("sv-SE", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}u`;
   }
 
   return `${sign}${value.toLocaleString("sv-SE", {

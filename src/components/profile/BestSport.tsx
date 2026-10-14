@@ -111,7 +111,7 @@ function BestRow({
           {group.name}
         </div>
         <div className="font-mono-num text-[12.5px] text-muted">
-          {group.bets} spel · hitrate {group.hitrate.toFixed(1).replace(".", ",")}%
+          {group.bets} spel · vinstprocent {group.hitrate.toFixed(1).replace(".", ",")}%
         </div>
       </div>
       <div className="shrink-0 text-right">

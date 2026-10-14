@@ -142,7 +142,7 @@ export function starRowDataUri(rating: number | null | undefined): string {
   let base = "";
   let fill = "";
   for (let i = 0; i < 5; i++) {
-    base += `<polygon points="${pts}" transform="translate(${i * 21},0)" fill="#2A3346"/>`;
+    base += `<polygon points="${pts}" transform="translate(${i * 21},0)" fill="#333338"/>`;
     fill += `<polygon points="${pts}" transform="translate(${i * 21},0)" fill="#FFD166"/>`;
   }
   const w = (value / 5) * 104;
@@ -189,7 +189,7 @@ export const BOOK_FILTER_PILLS = [
 
 export type BookFilterPill = (typeof BOOK_FILTER_PILLS)[number];
 
-export type BookSortOption = "Vårt betyg" | "Högst bonus" | "A–Ö";
+export type BookSortOption = "Vårt betyg" | "Högst bonus";
 
 export function bookmakerMatchesFilter(
   b: {

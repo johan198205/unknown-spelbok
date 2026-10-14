@@ -86,9 +86,8 @@ export async function middleware(request: NextRequest) {
   const isApp =
     path.startsWith("/hem") ||
     path.startsWith("/spelbok") ||
-    // Planket är inloggat läge: vyn planket_posts bär spel ur privata
-    // spelböcker och är därför bara läsbar för authenticated.
-    path.startsWith("/planket") ||
+    // Planket går att läsa utan konto (servern läser flödet, se
+    // planketReader). Att posta, reagera och kommentera kräver inloggning.
     path.startsWith("/statistik") ||
     path.startsWith("/tavlingar") ||
     path.startsWith("/installningar");

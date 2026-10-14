@@ -315,7 +315,7 @@ export function UsersAdminView({
       ) : null}
 
       {confirm ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(5,7,12,.7)] p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(4,4,5,.7)] p-4">
           <div className="w-full max-w-md rounded-[14px] border border-line bg-panel p-5 shadow-[0_40px_90px_rgba(0,0,0,.65)]">
             <div className="font-display text-[18px] font-semibold uppercase tracking-[0.05em]">
               {confirm.type === "role"
@@ -391,7 +391,7 @@ function UserSlideOver({
   const p = data?.profile;
 
   return (
-    <div className="fixed inset-0 z-[70] flex justify-end bg-[rgba(5,7,12,.55)]">
+    <div className="fixed inset-0 z-[70] flex justify-end bg-[rgba(4,4,5,.55)]">
       <button
         type="button"
         className="flex-1 border-0 bg-transparent"

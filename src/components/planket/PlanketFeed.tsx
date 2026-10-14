@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { PlanketComposer } from "@/components/planket/PlanketComposer";
 import { PostCard } from "@/components/planket/PostCard";
@@ -15,6 +22,8 @@ import { useIsDesktop } from "@/lib/hooks/useIsDesktop";
 
 /** Så ofta flödet frågar efter nya inlägg. */
 const POLL_MS = 45_000;
+/** Mobil: en annons efter vart femte inlägg. */
+const AD_EVERY = 5;
 
 export function PlanketFeed({
   initialPosts,
@@ -25,6 +34,7 @@ export function PlanketFeed({
   sheets,
   bookmakers,
   isAuthenticated,
+  feedAds = [],
 }: {
   initialPosts: PlanketPost[];
   initialCursor: string | null;
@@ -34,6 +44,8 @@ export function PlanketFeed({
   sheets: Sheet[];
   bookmakers: Bookmaker[];
   isAuthenticated: boolean;
+  /** Annonserna som roteras in i mobilflödet. Desktop har högerkolumnen. */
+  feedAds?: ReactNode[];
 }) {
   // Ett enda flöde — filterchipparna är borttagna.
   const filter: PlanketFilter = "alla";
@@ -126,6 +138,7 @@ export function PlanketFeed({
       <PostCard
         key={post.id}
         post={post}
+        canInteract={isAuthenticated}
         onRemoved={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
         onEdited={(id, body) =>
           setPosts((prev) =>
@@ -152,11 +165,19 @@ export function PlanketFeed({
             onPosted={() => void afterPost()}
           />
         ) : (
-          <div className="rounded-[14px] border border-line bg-[#151B2B] p-4 text-[14.5px] text-[#C3CBDB]">
+          <div className="rounded-[14px] border border-line bg-[#161618] p-4 text-[14.5px] text-[#C3CBDB]">
             <Link href="/registrera" className="font-semibold text-win">
               Skapa ett konto
             </Link>{" "}
-            för att posta och rygga på Planket.
+            för att posta, reagera och kommentera på Planket. Har du redan
+            ett?{" "}
+            <Link
+              href={`/login?next=${encodeURIComponent("/planket")}`}
+              className="font-semibold text-win"
+            >
+              Logga in
+            </Link>
+            .
           </div>
         )}
 
@@ -184,7 +205,7 @@ export function PlanketFeed({
         ) : null}
 
         {posts.length === 0 && !loading ? (
-          <div className="rounded-[14px] border border-line bg-[#151B2B] px-5 py-10 text-center text-[14px] text-muted">
+          <div className="rounded-[14px] border border-line bg-[#161618] px-5 py-10 text-center text-[14px] text-muted">
             Inget här ännu. Posta först.
           </div>
         ) : null}
@@ -207,7 +228,30 @@ export function PlanketFeed({
             ))}
           </div>
         ) : (
-          <div className="flex flex-col gap-3">{posts.map(renderPost)}</div>
+          <div className="flex flex-col gap-3">
+            {posts.map((post, i) => {
+              const n = i + 1;
+              const ad =
+                feedAds.length && n % AD_EVERY === 0 && n < posts.length
+                  ? feedAds[(n / AD_EVERY - 1) % feedAds.length]
+                  : null;
+              return (
+                <Fragment key={post.id}>
+                  {renderPost(post)}
+                  {ad ? (
+                    // Smalare än korten och märkt, så annonsen inte läses
+                    // som ett inlägg.
+                    <div className="mx-auto w-full max-w-[300px] py-1">
+                      <div className="mb-1 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5D6883]">
+                        Annons
+                      </div>
+                      {ad}
+                    </div>
+                  ) : null}
+                </Fragment>
+              );
+            })}
+          </div>
         )}
 
         <div ref={sentinelRef} aria-hidden className="h-px" />

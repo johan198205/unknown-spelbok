@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AboutSectionsEditor } from "@/components/admin/AboutSectionsEditor";
 import { ContactSectionsEditor } from "@/components/admin/ContactSectionsEditor";
+import { IntroSectionsEditor } from "@/components/admin/IntroSectionsEditor";
 import { LandingSectionsEditor } from "@/components/admin/LandingSectionsEditor";
 import { Switch } from "@/components/ui/Switch";
 import { deletePage, publishPage, savePage, type PageDraft } from "@/lib/admin/pages";
@@ -25,6 +26,13 @@ import {
   serializeLandingContent,
   type LandingContent,
 } from "@/lib/landing-content";
+import {
+  INTRO_PAGES,
+  introFromPageContent,
+  isIntroPageSlug,
+  serializePageIntro,
+  type PageIntroContent,
+} from "@/lib/page-intro";
 import { cn, slugify } from "@/lib/utils";
 import type { Page } from "@/lib/types";
 
@@ -55,7 +63,8 @@ export function PageEditor({ page }: { page: Page }) {
   const isLanding = page.slug === "startsida";
   const isAbout = page.slug === "om-oss";
   const isContact = page.slug === "kontakt";
-  const isStructured = isLanding || isAbout || isContact;
+  const introSlug = isIntroPageSlug(page.slug) ? page.slug : null;
+  const isStructured = isLanding || isAbout || isContact || !!introSlug;
   const lockedSlug = isStructured;
 
   const [draft, setDraft] = useState<PageDraft>(() => {
@@ -79,9 +88,21 @@ export function PageEditor({ page }: { page: Page }) {
       initial.content = serializeContactContent(
         contactFromPageContent(page.content)
       );
+    } else if (isIntroPageSlug(page.slug)) {
+      initial.content = serializePageIntro(
+        introFromPageContent(page.content, INTRO_PAGES[page.slug].defaults)
+      );
     }
     return initial;
   });
+  const [intro, setIntro] = useState<PageIntroContent>(() =>
+    introFromPageContent(
+      page.content,
+      isIntroPageSlug(page.slug)
+        ? INTRO_PAGES[page.slug].defaults
+        : { show: true, headline: "", intro: "", body: "" }
+    )
+  );
   const [landing, setLanding] = useState<LandingContent>(() =>
     landingFromPageContent(page.content)
   );
@@ -109,6 +130,11 @@ export function PageEditor({ page }: { page: Page }) {
   function patchAbout(next: AboutContent) {
     setAbout(next);
     setDraft((d) => ({ ...d, content: serializeAboutContent(next) }));
+  }
+
+  function patchIntro(next: PageIntroContent) {
+    setIntro(next);
+    setDraft((d) => ({ ...d, content: serializePageIntro(next) }));
   }
 
   function patchContact(next: ContactContent) {
@@ -273,7 +299,17 @@ export function PageEditor({ page }: { page: Page }) {
           </p>
         ) : null}
 
-        {isLanding ? (
+        {introSlug ? (
+          <p className="mb-3 rounded-[10px] border border-cyan/30 bg-cyan/10 px-3.5 py-2.5 text-[13px] text-text-soft">
+            Driver rubriken och introt på{" "}
+            <strong>{INTRO_PAGES[introSlug].path}</strong>. Sidans innehåll i
+            övrigt kommer från appen. Titeln är sidans namn i admin och footern.
+          </p>
+        ) : null}
+
+        {introSlug ? (
+          <IntroSectionsEditor value={intro} onChange={patchIntro} />
+        ) : isLanding ? (
           <LandingSectionsEditor value={landing} onChange={patchLanding} />
         ) : isAbout ? (
           <AboutSectionsEditor value={about} onChange={patchAbout} />
@@ -406,7 +442,13 @@ export function PageEditor({ page }: { page: Page }) {
 
           {published ? (
             <a
-              href={draft.slug === "startsida" ? "/" : `/${draft.slug}`}
+              href={
+                draft.slug === "startsida"
+                  ? "/"
+                  : introSlug
+                    ? INTRO_PAGES[introSlug].path
+                    : `/${draft.slug}`
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2.5 block text-center text-[13px] font-semibold"
@@ -531,7 +573,7 @@ export function PageEditor({ page }: { page: Page }) {
       </div>
 
       {confirmDelete ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(5,7,12,.7)] p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(4,4,5,.7)] p-4">
           <div className="w-full max-w-md rounded-[14px] border border-line bg-panel p-5 shadow-[0_40px_90px_rgba(0,0,0,.65)]">
             <div className="font-display text-[18px] font-semibold uppercase tracking-[0.05em]">
               Radera sida?

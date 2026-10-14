@@ -97,7 +97,7 @@ export function CouponShareModal({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-[92] flex items-start justify-center overflow-auto bg-[rgba(5,7,12,.78)] px-4 py-10 backdrop-blur-[4px]"
+      className="fixed inset-0 z-[92] flex items-start justify-center overflow-auto bg-[rgba(4,4,5,.78)] px-4 py-10 backdrop-blur-[4px]"
     >
       <div className="w-full max-w-[760px]">
         <div className="mb-3.5 flex items-center justify-between gap-3">
@@ -189,7 +189,7 @@ function ShareCard({
         display: "flex",
         flexDirection: "column",
         background:
-          "radial-gradient(circle at 82% 8%, #1A2336, #0B0E14 62%)",
+          "radial-gradient(circle at 82% 8%, #1f1f22, #0a0a0b 62%)",
         ...style,
       }}
     >
@@ -313,7 +313,7 @@ function ShareCard({
           alignItems: "flex-end",
           gap: 52,
           paddingTop: 30,
-          borderTop: "1px solid #232B3E",
+          borderTop: "1px solid #2a2a2e",
         }}
       >
         <Field label="Insats" value={formatMoney(Number(coupon.stake), "kr").replace("+", "")} size={32} />
@@ -342,7 +342,7 @@ function ShareCard({
               width: 150,
               height: 56,
               borderRadius: 10,
-              backgroundColor: "#1B2436",
+              backgroundColor: "#212124",
               backgroundImage: logo ? `url(${JSON.stringify(logo)})` : undefined,
               backgroundRepeat: "no-repeat",
               backgroundPosition: "center",

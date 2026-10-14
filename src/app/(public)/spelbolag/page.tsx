@@ -1,5 +1,5 @@
 import { BookmakersGrid } from "@/components/bets/BookmakersGrid";
-import { AdSlot } from "@/components/ui/AdSlot";
+import { PageBodyContent, PageIntro } from "@/components/content/PageIntro";
 import { isEditor } from "@/lib/coupons-server";
 import { createClient } from "@/lib/supabase/server";
 import type { Bookmaker } from "@/lib/types";
@@ -13,19 +13,13 @@ export default async function SpelbolagPage() {
 
   const bookmakers = (data || []) as Bookmaker[];
 
+  // Ingen HTML-banner här: sidan är själva spelbolagslistan. Kort intro
+  // överst, den längre SEO-texten efter listan.
   return (
-    <div className="animate-sbfade mx-auto max-w-[1180px] px-7 py-10">
-      <div className="mb-[18px] text-center">
-        <h1 className="font-display mb-1.5 text-[34px] font-semibold">
-          Topplista: Sveriges bästa spelbolag 2026
-        </h1>
-        <div className="text-[14.5px] text-muted">
-          <span className="font-bold text-text">{bookmakers.length}</span>{" "}
-          jämförda spelbolag
-        </div>
-      </div>
-      <AdSlot format="970x90" placement="spelbolag" className="mb-5" />
+    <div className="animate-sbfade mx-auto max-w-[1180px] px-4 py-6 sm:px-7 sm:py-10">
+      <PageIntro slug="spelbolag" align="center" className="mb-[18px]" />
       <BookmakersGrid bookmakers={bookmakers} editorMode={editorMode} />
+      <PageBodyContent slug="spelbolag" className="mt-12" />
     </div>
   );
 }

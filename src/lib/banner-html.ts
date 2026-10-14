@@ -25,7 +25,7 @@ export const BANNER_HTML_RESIZE_TYPE = "spelbok-banner-resize";
  * från föräldern, och webbläsare målar ofta iframer vita trots transparent —
  * därför speglar vi sidans bakgrund explicit.
  */
-export const BANNER_HTML_PAGE_BG = "#0b0e14";
+export const BANNER_HTML_PAGE_BG = "#0a0a0b";
 
 /**
  * Snutten körs i ett eget dokument. `<base target="_blank">` gör att alla

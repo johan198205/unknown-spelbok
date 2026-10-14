@@ -43,23 +43,9 @@ export function LoggedBeforeKickoffIcon({
   return null;
 }
 
-const SHEET_LOCK = {
-  locked: {
-    icon: "🔒",
-    title: "Låst spel - detta spel bokfördes före matchstart.",
-    bg: "bg-[rgba(102,227,138,.14)]",
-    fg: "text-win",
-  },
-  open: {
-    icon: "🔓",
-    title: "Olåst spel - detta spel bokfördes efter matchstart.",
-    bg: "bg-[rgba(255,184,77,.14)]",
-    fg: "text-amber",
-  },
-} as const;
-
 /**
- * Låsikonen i spelbokens Rättning-kolumn och kortvy.
+ * Låsikonen i spelbokens Rättning-kolumn och kortvy. Samma hänglås som i
+ * mobilen: grönt för låst spel, gult för olåst.
  *
  * Värdet kommer från serverns `logged_before_kickoff` (created_at < kickoff) —
  * komponenten räknar aldrig själv.
@@ -72,19 +58,19 @@ export function SheetLockIcon({
   className?: string;
 }) {
   if (value !== true && value !== false) return null;
-  const spec = value ? SHEET_LOCK.locked : SHEET_LOCK.open;
+  const title = value ? COPY.before : COPY.after;
+  const Icon = value ? Lock : LockOpen;
   return (
     <span
-      title={spec.title}
-      aria-label={spec.title}
+      title={title}
+      aria-label={title}
       className={cn(
-        "mr-2 inline-flex size-[22px] shrink-0 cursor-help items-center justify-center rounded-full align-middle text-[12px] leading-none",
-        spec.bg,
-        spec.fg,
+        "mr-2 inline-flex shrink-0 cursor-help items-center justify-center align-middle",
+        value ? "text-win" : "text-yellow",
         className
       )}
     >
-      <span aria-hidden>{spec.icon}</span>
+      <Icon className="size-4" strokeWidth={2.25} aria-hidden />
     </span>
   );
 }

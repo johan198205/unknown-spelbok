@@ -351,7 +351,7 @@ function ImportBetsModal({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-[rgba(5,7,12,.72)] px-4 py-10 backdrop-blur-[4px]"
+      className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-[rgba(4,4,5,.72)] px-4 py-10 backdrop-blur-[4px]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -758,7 +758,7 @@ function PreviewStep({
                 <tr
                   key={id}
                   className={cn(
-                    "border-b border-[#171E2C]",
+                    "border-b border-[#1c1c1f]",
                     disabled ? "text-faint" : "text-[#C3CBDB]"
                   )}
                 >

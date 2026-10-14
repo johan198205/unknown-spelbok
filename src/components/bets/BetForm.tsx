@@ -13,12 +13,10 @@ import type { Bet, BetResult, Bookmaker, Fixture, Sheet } from "@/lib/types";
 import {
   LEAGUES,
   PICK_GROUPS,
-  SPORTS,
   formatPick,
   leaguesForSport,
 } from "@/lib/picks";
-import { DayStrip } from "@/components/bets/FixturePicker";
-import { MatchSearch } from "@/components/bets/MatchSearch";
+import { ManualMatchFilters, MatchSearch } from "@/components/bets/MatchSearch";
 import { FixtureMatch } from "@/components/bets/FixtureMatch";
 import { BetRowActions } from "@/components/bets/BetRowActions";
 import { LoggedBeforeKickoffIcon } from "@/components/bets/LoggedBeforeKickoff";
@@ -250,6 +248,7 @@ export function BetForm({
 
   function goManual() {
     setMatchMode("manual");
+    setSport((s) => s || "Fotboll");
     setFixtureId(null);
     setChosenFixture(null);
     setChosenKickoff(null);
@@ -379,7 +378,7 @@ export function BetForm({
 
       {open ? (
         <div
-          className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-[rgba(5,7,12,.72)] px-4 py-10 backdrop-blur-[4px]"
+          className="fixed inset-0 z-[90] flex items-start justify-center overflow-auto bg-[rgba(4,4,5,.72)] px-4 py-10 backdrop-blur-[4px]"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) close();
           }}
@@ -502,47 +501,39 @@ export function BetForm({
               {matchMode === "manual" ? (
                 <>
                   <div className="sm:col-span-2">
-                    <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-                      Datum
-                    </div>
-                    <DayStrip ymd={ymd} onChange={setYmd} />
-                  </div>
-                  <div className="sm:col-span-2 flex items-center justify-between">
-                    <div className="text-[11px] uppercase tracking-[0.1em] text-muted">
-                      Manuell match · inget fixture_id
-                    </div>
+                    <ManualMatchFilters
+                      sport={sport}
+                      onSportChange={(s) => {
+                        if (s === sport) return;
+                        setSport(s);
+                        setLeague("");
+                        setLeagueId(null);
+                        setLeagueLogo(null);
+                        setPick("");
+                      }}
+                      ymd={ymd}
+                      onYmdChange={setYmd}
+                    />
                     <button
                       type="button"
                       onClick={goSearch}
-                      className="text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
+                      className="mt-3 text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
                     >
                       Sök match i stället
                     </button>
                   </div>
-                  <SearchDropdown
-                    label="Sport"
-                    value={sport}
-                    placeholder="Välj sport …"
-                    searchPlaceholder="Sök sport …"
-                    options={SPORTS.map((s) => ({ value: s, label: s }))}
-                    onChange={(s) => {
-                      setSport(s);
-                      setLeague("");
-                      setLeagueId(null);
-                      setLeagueLogo(null);
-                      setPick("");
-                    }}
-                  />
-                  <SearchDropdown
-                    label="Liga"
-                    value={league}
-                    placeholder="Välj liga …"
-                    searchPlaceholder="Sök liga …"
-                    options={leagueOptions}
-                    allowCustom
-                    customPlaceholder="t.ex. Serie A"
-                    onChange={applyLeagueChoice}
-                  />
+                  <div className="sm:col-span-2">
+                    <SearchDropdown
+                      label="Liga"
+                      value={league}
+                      placeholder="Välj liga …"
+                      searchPlaceholder="Sök liga …"
+                      options={leagueOptions}
+                      allowCustom
+                      customPlaceholder="t.ex. Serie A"
+                      onChange={applyLeagueChoice}
+                    />
+                  </div>
                   <div className="sm:col-span-2">
                     <Input
                       label="Match"
@@ -562,7 +553,7 @@ export function BetForm({
                 searchPlaceholder="Sök spel …"
                 groups={pickGroups}
                 allowCustom
-                customPlaceholder="t.ex. Ö1.5 mål 2:a halvlek"
+                customPlaceholder="t.ex. Över 1.5 mål 2:a halvlek"
                 boldValue
                 onChange={setPick}
               />
@@ -692,11 +683,11 @@ export function BetRow({
   return (
     <tr
       className={cn(
-        "group/row border-b border-[#171E2C] transition-colors hover:bg-[#1A2233]",
+        "group/row border-b border-[#1c1c1f] transition-colors hover:bg-[#1f1f22]",
         isLive
           ? "bg-live/[0.07] hover:bg-live/[0.11]"
           : isPending
-            ? "bg-[#151C2B]"
+            ? "bg-[#17171a]"
             : undefined
       )}
     >

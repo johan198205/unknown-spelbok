@@ -37,7 +37,7 @@ import {
 import type { Bet, Sheet } from "@/lib/types";
 import { attachManualLogos } from "@/lib/manual-logos";
 
-/** Under den här gränsen är ROI och hitrate brus — säg det i stället för att dölja det. */
+/** Under den här gränsen är ROI och vinstprocent brus — säg det i stället för att dölja det. */
 const THIN_SAMPLE = 20;
 
 /** Lagloggor från kopplad fixture, annars initialer ur matchsträngen. */
@@ -143,7 +143,7 @@ export default async function HemPage() {
       note: stats.bets < THIN_SAMPLE ? "litet underlag" : null,
     },
     {
-      label: "Hitrate",
+      label: "Vinstprocent",
       value: formatPercent(stats.hitrate),
       color: "text-text",
       note: stats.bets < THIN_SAMPLE ? `${stats.bets} rättade` : null,

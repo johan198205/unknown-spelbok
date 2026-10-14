@@ -7,7 +7,7 @@ import { Avatar, RoiBadge } from "@/components/planket/Bits";
 import { PostBetCard } from "@/components/planket/PostBetCard";
 import { PostCouponCard } from "@/components/planket/PostCouponCard";
 import { PostMenu } from "@/components/planket/PostMenu";
-import { PostThread } from "@/components/planket/PostThread";
+import { PLANKET_LOGIN_HREF, PostThread } from "@/components/planket/PostThread";
 import { editPost, toggleReaction } from "@/lib/planket-actions";
 import {
   PLANKET_MAX_BODY,
@@ -34,10 +34,13 @@ export function PostCard({
   post,
   onRemoved,
   onEdited,
+  canInteract = true,
 }: {
   post: PlanketPost;
   onRemoved: (postId: string) => void;
   onEdited: (postId: string, body: string) => void;
+  /** Utloggade läser flödet men måste logga in för att reagera och svara. */
+  canInteract?: boolean;
 }) {
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
@@ -87,7 +90,7 @@ export function PostCard({
     <article
       id={`inlagg-${post.id}`}
       className={cn(
-        "min-w-0 rounded-[14px] border bg-[#151B2B] p-[14px] lg:px-[18px] lg:pb-[14px] lg:pt-4",
+        "min-w-0 rounded-[14px] border bg-[#161618] p-[14px] lg:px-[18px] lg:pb-[14px] lg:pt-4",
         post.isEditorial
           ? "border-[rgba(255,209,102,.45)] shadow-[0_0_0_1px_rgba(255,209,102,.12)]"
           : "border-line"
@@ -156,14 +159,16 @@ export function PostCard({
             </span>
           </div>
         </div>
-        <PostMenu
-          post={post}
-          onEdit={() => {
-            setDraft(post.body);
-            setEditing(true);
-          }}
-          onDeleted={() => onRemoved(post.id)}
-        />
+        {canInteract ? (
+          <PostMenu
+            post={post}
+            onEdit={() => {
+              setDraft(post.body);
+              setEditing(true);
+            }}
+            onDeleted={() => onRemoved(post.id)}
+          />
+        ) : null}
       </div>
 
       {/* ---------- Brödtext ---------- */}
@@ -174,7 +179,7 @@ export function PostCard({
             maxLength={PLANKET_MAX_BODY}
             rows={4}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full resize-y rounded-[10px] border border-line-hover bg-[#0F1420] p-3 text-[15px] leading-[1.6] text-text outline-none"
+            className="w-full resize-y rounded-[10px] border border-line-hover bg-[#111113] p-3 text-[15px] leading-[1.6] text-text outline-none"
           />
           <div className="mt-2 flex items-center gap-2">
             <button
@@ -188,7 +193,7 @@ export function PostCard({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="cursor-pointer rounded-[9px] border border-line-strong bg-[#1B2233] px-4 py-2 text-[13.5px] font-semibold text-[#C3CBDB]"
+              className="cursor-pointer rounded-[9px] border border-line-strong bg-[#1e1e21] px-4 py-2 text-[13.5px] font-semibold text-[#C3CBDB]"
             >
               Avbryt
             </button>
@@ -208,7 +213,7 @@ export function PostCard({
         <img
           src={post.image_url}
           alt=""
-          className="mb-3 max-h-[420px] w-full rounded-[12px] border border-line object-contain bg-[#0F1420]"
+          className="mb-3 max-h-[420px] w-full rounded-[12px] border border-line object-contain bg-[#111113]"
         />
       ) : null}
 
@@ -220,6 +225,24 @@ export function PostCard({
       <div className="flex items-center gap-[7px] border-t border-line-soft pt-[10px] lg:gap-2 lg:pt-[11px]">
         {REACTION_KINDS.map((kind) => {
           const active = mine.includes(kind);
+          if (!canInteract) {
+            return (
+              <Link
+                key={kind}
+                href={PLANKET_LOGIN_HREF}
+                aria-label={`${REACTION_LABEL[kind]} – logga in för att reagera`}
+                title="Logga in för att reagera"
+                className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-[#1e1e21] px-[11px] py-[7px] text-[13px] text-[#C3CBDB] no-underline hover:border-[#46464d] hover:no-underline lg:gap-[7px] lg:px-3 lg:text-[13.5px]"
+              >
+                <span aria-hidden className="text-[13px] lg:text-[14px]">
+                  {REACTION_ICON[kind]}
+                </span>
+                <span className="font-mono-num text-[12px] tabular-nums lg:text-[12.5px]">
+                  {counts[kind]}
+                </span>
+              </Link>
+            );
+          }
           return (
             <button
               key={kind}
@@ -231,7 +254,7 @@ export function PostCard({
                 "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-[11px] py-[7px] text-[13px] transition-colors lg:gap-[7px] lg:px-3 lg:text-[13.5px]",
                 active
                   ? "border border-[rgba(255,209,102,.4)] bg-[rgba(255,209,102,.12)] text-yellow"
-                  : "border border-line-strong bg-[#1B2233] text-[#C3CBDB] hover:border-[#3A4560]"
+                  : "border border-line-strong bg-[#1e1e21] text-[#C3CBDB] hover:border-[#46464d]"
               )}
             >
               <span aria-hidden className="text-[13px] lg:text-[14px]">
@@ -255,14 +278,18 @@ export function PostCard({
               Rygga spelet
             </a>
           ) : (
-            <span className="ml-auto rounded-[9px] border border-line-strong bg-[#1B2233] px-[15px] py-2 text-[13px] font-bold text-[#5D6883] lg:px-[17px] lg:text-[13.5px]">
+            <span className="ml-auto rounded-[9px] border border-line-strong bg-[#1e1e21] px-[15px] py-2 text-[13px] font-bold text-[#5D6883] lg:px-[17px] lg:text-[13.5px]">
               {isSettledAttachment(post) ? "Avgjort" : "Avspark passerad"}
             </span>
           )
         ) : null}
       </div>
 
-      <PostThread postId={post.id} initialCount={post.reply_count} />
+      <PostThread
+        postId={post.id}
+        initialCount={post.reply_count}
+        canReply={canInteract}
+      />
     </article>
   );
 }

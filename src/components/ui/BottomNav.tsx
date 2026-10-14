@@ -74,15 +74,9 @@ function IconBank({ filled }: { filled?: boolean }) {
 const TABS = [
   {
     href: "/spelbok",
-    label: "Böcker",
+    label: "Spreadsheet",
     match: (p: string) => p.startsWith("/spelbok"),
     Icon: IconBooks,
-  },
-  {
-    href: "/planket",
-    label: "Planket",
-    match: (p: string) => p.startsWith("/planket"),
-    Icon: IconPlanket,
   },
   {
     href: "/topplista",
@@ -90,6 +84,12 @@ const TABS = [
     match: (p: string) =>
       p.startsWith("/topplista") || p.startsWith("/tavlingar"),
     Icon: IconBoard,
+  },
+  {
+    href: "/planket",
+    label: "Planket",
+    match: (p: string) => p.startsWith("/planket"),
+    Icon: IconPlanket,
   },
   {
     href: "/spelbolag",
@@ -143,12 +143,12 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(15,20,32,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(17,17,19,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
       aria-label="Huvudnavigering"
     >
       {/*
-        Fem kolumner med plusknappen exakt i mitten: Böcker, Planket, [+],
-        Topplista, Spelbolag. Startsidan nås via loggan och profilen via
+        Fem kolumner med plusknappen exakt i mitten: Spreadsheet, Topplista,
+        [+], Planket, Spelbolag. Startsidan nås via loggan och profilen via
         profilbilden i headern.
       */}
       <div className="grid grid-cols-5 items-end px-1">

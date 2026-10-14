@@ -147,7 +147,7 @@ export function SheetBetCards({
                   {amount(Number(bet.stake), { sign: false })}
                 </div>
               </div>
-              <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2 text-right">
+              <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
                 <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
                   Odds
                 </div>

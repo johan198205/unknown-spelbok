@@ -20,13 +20,14 @@ type MenuLink = { href: string; label: string; icon: NavIconKey };
 // Hem nås via loggan, profilen via avataren i headern. Kuponger är
 // avstängd tills vidare (FEATURES.coupons).
 const LOGGED_IN_LINKS: MenuLink[] = [
-  { href: "/spelbok", label: "Spreadsheets", icon: "spelbok" },
+  { href: "/spelbok", label: "Spreadsheet", icon: "spelbok" },
   { href: "/topplista", label: "Topplista", icon: "topplista" },
   { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
   { href: "/planket", label: "Planket", icon: "planket" },
 ];
 
 const LOGGED_OUT_LINKS: MenuLink[] = [
+  { href: "/planket", label: "Planket", icon: "planket" },
   { href: "/topplista", label: "Topplista", icon: "topplista" },
   { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
   { href: "/om-oss", label: "Om oss", icon: "om-oss" },

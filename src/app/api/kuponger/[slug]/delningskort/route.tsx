@@ -151,9 +151,9 @@ export async function GET(
           display: "flex",
           flexDirection: "column",
           padding: "56px 60px",
-          backgroundColor: "#0B0E14",
+          backgroundColor: "#0a0a0b",
           backgroundImage:
-            "radial-gradient(circle at 82% 8%, #1A2336, #0B0E14 62%)",
+            "radial-gradient(circle at 82% 8%, #1f1f22, #0a0a0b 62%)",
           fontFamily: SANS,
         }}
       >
@@ -330,7 +330,7 @@ export async function GET(
             display: "flex",
             alignItems: "flex-end",
             paddingTop: 30,
-            borderTop: "1px solid #232B3E",
+            borderTop: "1px solid #2a2a2e",
             flexShrink: 0,
           }}
         >
@@ -378,7 +378,7 @@ export async function GET(
                 width: 150,
                 height: 56,
                 borderRadius: 10,
-                backgroundColor: "#1B2436",
+                backgroundColor: "#212124",
               }}
             >
               {bookmakerLogo ? (

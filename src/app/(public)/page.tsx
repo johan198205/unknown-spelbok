@@ -197,7 +197,7 @@ export default async function LandingPage() {
             board.map((r, i) => (
               <div
                 key={r.id}
-                className="flex items-center gap-3 border-b border-[#171E2C] px-[18px] py-3"
+                className="flex items-center gap-3 border-b border-[#1c1c1f] px-[18px] py-3"
               >
                 <span className={`font-display w-[26px] text-lg font-semibold ${rankColor(i)}`}>
                   {i + 1}
@@ -211,7 +211,7 @@ export default async function LandingPage() {
                     >
                       {r.owner}
                     </Link>{" "}
-                    · {r.bets} spel · hitrate {r.hitrate.toFixed(0)}%
+                    · {r.bets} spel · vinstprocent {r.hitrate.toFixed(0)}%
                   </div>
                 </div>
                 {/* Under sm staplas ROI och netto så att namnkolumnen får plats. */}

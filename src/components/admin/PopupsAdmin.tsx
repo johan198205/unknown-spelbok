@@ -353,7 +353,7 @@ export function PopupsAdmin({ items }: { items: PopupRow[] }) {
       )}
 
       {draft ? (
-        <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-auto bg-[rgba(5,7,12,.7)] p-4 backdrop-blur-[4px] sm:p-11">
+        <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-auto bg-[rgba(4,4,5,.7)] p-4 backdrop-blur-[4px] sm:p-11">
           <div className="animate-sbfade w-full max-w-[680px] rounded-[var(--radius-sheet)] border border-line-strong bg-panel p-5 shadow-[var(--shadow-modal)]">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-display text-[21px] font-semibold uppercase tracking-[0.04em]">
@@ -671,7 +671,7 @@ export function PopupsAdmin({ items }: { items: PopupRow[] }) {
       ) : null}
 
       {confirmDelete ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(5,7,12,.7)] p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[rgba(4,4,5,.7)] p-4">
           <div className="w-full max-w-md rounded-[var(--radius-card-lg)] border border-line bg-panel p-5 shadow-[var(--shadow-modal)]">
             <h2 className="font-display text-[18px] font-semibold uppercase tracking-[0.05em]">
               Radera popup?

@@ -35,16 +35,16 @@ type Column = {
   bredvid varandra i sin egen kolumn.
 
   Matchkolumnen bär långa lagnamn och får därför mest plats. Ligakolumnen
-  trunkerar med title-tooltip när namnet inte ryms — hellre det än att
-  "Frigg Oslo FK W" bryts mitt i.
+  bryter långa namn över högst tre rader och kapar först därefter med "…".
+  Insatsen följer SEK/Units precis som Netto och måste rymma "10 000 kr".
 */
 const COLUMNS: Column[] = [
   { key: "date", label: "Datum", width: "w-[7%]" },
-  { key: "match", label: "Match", width: "w-[26%]" },
+  { key: "match", label: "Match", width: "w-[24%]" },
   { key: "league", label: "Liga", width: "w-[11%]" },
   { key: "pick", label: "Spel", width: "w-[9%]" },
   { key: "bookmaker", label: "Bolag", width: "w-[7%]" },
-  { key: "stake", label: "Insats", width: "w-[6%]", align: "right" },
+  { key: "stake", label: "Insats", width: "w-[8%]", align: "right" },
   { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
   { key: "result", label: "Rättning", width: "w-[13%]", align: "right" },
   /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
@@ -81,7 +81,7 @@ export function LeagueCell({ bet }: { bet: Bet }) {
           size={22}
         />
       </span>
-      <span className="min-w-0 truncate text-[15px] leading-snug">
+      <span className="line-clamp-3 min-w-0 break-words text-[14px] leading-snug">
         {bet.league}
       </span>
     </span>
@@ -119,7 +119,7 @@ export function BookmakerPlate({
       </BookmakerLink>
     );
   }
-  const brand = bet.bookmakers.brand_color?.trim() || "#1B2436";
+  const brand = bet.bookmakers.brand_color?.trim() || "#212124";
   return (
     <BookmakerLink bet={bet}>
       <span
@@ -240,7 +240,7 @@ export function SheetBetsTable({
               <tr
                 key={bet.id}
                 className={cn(
-                  "group/row border-b border-rowline transition-colors even:bg-row-alt hover:bg-[#1A2233]",
+                  "group/row border-b border-rowline transition-colors even:bg-row-alt hover:bg-[#1f1f22]",
                   bet.id === highlightBetId && "animate-sbrowpulse"
                 )}
               >
@@ -259,8 +259,8 @@ export function SheetBetsTable({
                 <td className="px-3.5 py-3 align-middle">
                   <BookmakerPlate bet={bet} />
                 </td>
-                <td className="px-3.5 py-3 text-right align-middle font-mono-num">
-                  {Number(bet.stake).toLocaleString("sv-SE")}
+                <td className="whitespace-nowrap px-3.5 py-3 text-right align-middle font-mono-num">
+                  {amount(Number(bet.stake), { sign: false })}
                 </td>
                 <td className="px-3.5 py-3 text-right align-middle font-mono-num font-semibold">
                   {formatOdds(Number(bet.odds))}

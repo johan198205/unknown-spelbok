@@ -18,7 +18,7 @@ export async function MobileHeader({
   const unread = profile ? await getUnreadNotificationCount() : 0;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(15,20,32,.92)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-[10px] lg:hidden">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(17,17,19,.92)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-[10px] lg:hidden">
       {/* min-w-0 hela vägen: ett långt saldo får krympa i stället för att
           trycka ut headern bredare än skärmen (sidledsscroll i mobil). */}
       <div className="flex min-w-0 items-center gap-3">
@@ -57,8 +57,8 @@ export async function MobileHeader({
             <NotificationBell
               userId={profile.id}
               initialUnread={unread}
-              /* Mobilheadern ligger på #0F1420, inte sidans #0B0E14. */
-              badgeBorder="#0F1420"
+              /* Mobilheadern ligger på #111113, inte sidans #0a0a0b. */
+              badgeBorder="#111113"
             />
           ) : null}
           <MobileMenu

@@ -368,7 +368,7 @@ export function postAge(iso: string, now = Date.now()) {
 export function betBorderColor(result: string | null | undefined) {
   if (result === "win" || result === "halfwin") return "rgba(102,227,138,.4)";
   if (result === "loss" || result === "halfloss") return "rgba(232,105,122,.35)";
-  return "#232B3E";
+  return "#2a2a2e";
 }
 
 export function isSettledBet(result: string | null | undefined) {

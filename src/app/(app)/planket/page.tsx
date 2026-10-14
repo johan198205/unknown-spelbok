@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { Avatar } from "@/components/planket/Bits";
+import { PageBodyContent, PageIntro } from "@/components/content/PageIntro";
 import { PlanketFeed } from "@/components/planket/PlanketFeed";
 import { PlanketSidebar } from "@/components/planket/PlanketSidebar";
+import { BannerCreative, hasCreative } from "@/components/ui/AdSlot";
+import { getBannersForPlacement } from "@/lib/banners";
 import { getProfile } from "@/lib/auth";
 import { fetchPlanketPage } from "@/lib/planket-server";
 import { createClient } from "@/lib/supabase/server";
@@ -21,7 +23,7 @@ export default async function PlanketPage() {
   const profile = await getProfile();
   const supabase = await createClient();
 
-  const [page, sheetRows, bookRows] = await Promise.all([
+  const [page, sheetRows, bookRows, feedBanners] = await Promise.all([
     fetchPlanketPage(),
     profile
       ? supabase
@@ -38,27 +40,21 @@ export default async function PlanketPage() {
           .order("rank")
           .order("name")
       : Promise.resolve({ data: [] as Bookmaker[] }),
+    fetchFeedBanners(),
   ]);
+
+  // Mobilens annonser i flödet, renderade här på servern och lämnade till
+  // flödet som färdiga noder.
+  const feedAds = feedBanners.map((banner) => (
+    <BannerCreative key={banner.id} banner={banner} placement="planket" />
+  ));
 
   const sheets = (sheetRows.data ?? []) as Sheet[];
   const bookmakers = (bookRows.data ?? []) as Bookmaker[];
 
   return (
     <>
-      {/*
-        Mobilens sidhuvud. Appens globala MobileHeader visar SPELBOK och
-        klockan; den här säger vilken sida man står på.
-      */}
-      <div className="-mx-4 mb-3 flex items-center justify-between border-b border-line-soft px-4 pb-3 lg:hidden">
-        <h1 className="font-display text-[19px] font-semibold uppercase tracking-[0.08em]">
-          Planket
-        </h1>
-        {profile ? <Avatar username={profile.username} src={profile.avatar_url} size={32} /> : null}
-      </div>
-
-      <h1 className="mb-4 hidden font-display text-[26px] font-semibold uppercase tracking-[0.06em] lg:block">
-        Planket
-      </h1>
+      <PageIntro slug="planket" className="mb-4" />
 
       {/*
         Två fasta kolumner med 24 px mellanrum. Rubriken ligger ovanför båda,
@@ -80,11 +76,26 @@ export default async function PlanketPage() {
             sheets={sheets}
             bookmakers={bookmakers}
             isAuthenticated={!!profile}
+            feedAds={feedAds}
           />
         </div>
 
         <PlanketSidebar />
       </div>
+
+      <PageBodyContent slug="planket" className="mt-10" />
     </>
   );
+}
+
+/**
+ * 300×250 på placeringen Planket. Tills sådana lagts in under
+ * /admin/banners lånas startsidans 300×250, så flödet aldrig står utan.
+ */
+async function fetchFeedBanners() {
+  const own = (await getBannersForPlacement("planket", "300x250")).filter(
+    hasCreative
+  );
+  if (own.length) return own;
+  return (await getBannersForPlacement("home", "300x250")).filter(hasCreative);
 }

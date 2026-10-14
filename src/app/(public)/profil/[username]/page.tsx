@@ -111,7 +111,7 @@ export default async function PublicProfilePage({
           { label: "Spel", value: String(stats.bets) },
           { label: "Netto", value: formatAmount(stats.netto, prefs) },
           { label: "ROI", value: formatRoi(stats.roi) },
-          { label: "Hitrate", value: `${stats.hitrate.toFixed(0)}%` },
+          { label: "Vinstprocent", value: `${stats.hitrate.toFixed(0)}%` },
         ].map((k) => (
           <div
             key={k.label}

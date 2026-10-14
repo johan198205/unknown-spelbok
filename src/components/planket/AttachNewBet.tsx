@@ -206,7 +206,7 @@ export function AttachNewBet({
 
   return (
     <div className="space-y-3.5 p-3">
-      <div className="rounded-[10px] border border-line bg-[#151B2B] p-3">
+      <div className="rounded-[10px] border border-line bg-[#161618] p-3">
         <div className="mb-2 flex items-center gap-2">
           <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[12px] text-[#8A94AB]">
             {league ? (
@@ -272,7 +272,7 @@ export function AttachNewBet({
                 "cursor-pointer rounded-[8px] border px-2.5 py-1.5 text-[12.5px] font-semibold",
                 pick === p
                   ? "border-[rgba(102,227,138,.4)] bg-[rgba(102,227,138,.12)] text-win"
-                  : "border-line-strong bg-[#1B2233] text-[#C3CBDB] hover:border-[#3A4560]"
+                  : "border-line-strong bg-[#1e1e21] text-[#C3CBDB] hover:border-[#46464d]"
               )}
             >
               {p}
@@ -282,8 +282,8 @@ export function AttachNewBet({
         <input
           value={pick}
           onChange={(e) => setPick(e.target.value)}
-          placeholder="Eget tipp…"
-          className="mt-2 w-full rounded-[9px] border border-line-strong bg-[#1B2233] px-3 py-2.5 text-[14px] text-text outline-none focus:border-[#3A4560]"
+          placeholder="Eget spel…"
+          className="mt-2 w-full rounded-[9px] border border-line-strong bg-[#1e1e21] px-3 py-2.5 text-[14px] text-text outline-none focus:border-[#46464d]"
         />
       </div>
 
@@ -296,7 +296,7 @@ export function AttachNewBet({
             inputMode="decimal"
             value={odds}
             onChange={(e) => setOdds(e.target.value)}
-            className="w-full rounded-[9px] border border-line-strong bg-[#1B2233] px-3 py-2.5 font-mono-num text-[16px] font-semibold outline-none focus:border-[#3A4560]"
+            className="w-full rounded-[9px] border border-line-strong bg-[#1e1e21] px-3 py-2.5 font-mono-num text-[16px] font-semibold outline-none focus:border-[#46464d]"
           />
         </div>
         <div>
@@ -307,7 +307,7 @@ export function AttachNewBet({
             inputMode="decimal"
             value={stake}
             onChange={(e) => setStake(e.target.value)}
-            className="w-full rounded-[9px] border border-line-strong bg-[#1B2233] px-3 py-2.5 font-mono-num text-[16px] font-semibold outline-none focus:border-[#3A4560]"
+            className="w-full rounded-[9px] border border-line-strong bg-[#1e1e21] px-3 py-2.5 font-mono-num text-[16px] font-semibold outline-none focus:border-[#46464d]"
           />
         </div>
       </div>
@@ -318,7 +318,7 @@ export function AttachNewBet({
             key={n}
             type="button"
             onClick={() => setStake(String(n))}
-            className="flex-1 cursor-pointer rounded-[8px] border border-line-strong bg-[#1B2233] py-1.5 font-mono-num text-[12px] font-semibold text-[#8A94AB] hover:border-[#3A4560] hover:text-text"
+            className="flex-1 cursor-pointer rounded-[8px] border border-line-strong bg-[#1e1e21] py-1.5 font-mono-num text-[12px] font-semibold text-[#8A94AB] hover:border-[#46464d] hover:text-text"
           >
             {n}
           </button>
@@ -342,7 +342,7 @@ export function AttachNewBet({
                     "inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[12.5px] font-semibold",
                     bookmakerId === b.id
                       ? "border-[rgba(102,227,138,.4)] bg-[rgba(102,227,138,.12)] text-win"
-                      : "border-line-strong bg-[#1B2233] text-[#8A94AB]"
+                      : "border-line-strong bg-[#1e1e21] text-[#8A94AB]"
                   )}
                 >
                   {logo ? (
@@ -367,7 +367,7 @@ export function AttachNewBet({
         <select
           value={sheetId}
           onChange={(e) => setSheetId(e.target.value)}
-          className="w-full rounded-[9px] border border-line-strong bg-[#1B2233] px-3 py-2.5 text-[14px] text-text"
+          className="w-full rounded-[9px] border border-line-strong bg-[#1e1e21] px-3 py-2.5 text-[14px] text-text"
         >
           {sheets.map((s) => (
             <option key={s.id} value={s.id}>
@@ -377,7 +377,7 @@ export function AttachNewBet({
         </select>
       ) : null}
 
-      <div className="rounded-[9px] border border-line-soft bg-[#151B2B] px-3 py-2.5">
+      <div className="rounded-[9px] border border-line-soft bg-[#161618] px-3 py-2.5">
         <div className="text-[11.5px] text-[#5D6883]">Möjlig vinst</div>
         <div className="font-mono-num text-[17px] font-semibold text-win">
           {amount(potential)}{" "}
@@ -408,7 +408,7 @@ export function AttachNewBet({
         className={cn(
           "w-full rounded-[9px] px-4 py-2.5 text-[14px] font-bold",
           loading || !pick.trim()
-            ? "cursor-not-allowed border border-line-strong bg-[#1B2233] text-[#5D6883]"
+            ? "cursor-not-allowed border border-line-strong bg-[#1e1e21] text-[#5D6883]"
             : "cursor-pointer border border-win bg-win text-win-ink hover:brightness-105"
         )}
       >

@@ -7,29 +7,29 @@
 
 :root {
   /* Surfaces */
-  --bg: #0b0e14;
-  --bg-deep: #07090e;
-  --bg-soft: #0f1420;
-  --bg-footer: #0a0d13;
-  --sidebar: #0b0e17;
-  --panel: #131826;
-  --panel-2: #1b2436;
-  --panel-elevated: #171d2e;
-  --shimmer: #161c2b;
-  --row-alt: #151b29;
-  --rowline: #171e2c;
-  --hover: #161d2c;
-  --hover2: #1f293c;
-  --dropdown-hover: #1f293c;
-  --bar-bg: rgba(15, 20, 32, 0.94);
+  --bg: #0a0a0b;
+  --bg-deep: #050506;
+  --bg-soft: #111113;
+  --bg-footer: #08080a;
+  --sidebar: #0a0a0b;
+  --panel: #161618;
+  --panel-2: #212124;
+  --panel-elevated: #1a1a1d;
+  --shimmer: #18181b;
+  --row-alt: #141416;
+  --rowline: #1c1c1f;
+  --hover: #1a1a1d;
+  --hover2: #26262a;
+  --dropdown-hover: #26262a;
+  --bar-bg: rgba(17,17,19, 0.94);
   --dim: #8e99b0;
 
   /* Borders */
-  --line: #232b3e;
-  --line-soft: #1c2333;
-  --line-row: #1b2233;
-  --line-strong: #2a3346;
-  --line-hover: #3a4560;
+  --line: #2a2a2e;
+  --line-soft: #222225;
+  --line-row: #1e1e21;
+  --line-strong: #333338;
+  --line-hover: #46464d;
 
   /* Text */
   --text: #e6eaf2;
@@ -76,14 +76,14 @@
 
   /* Badge */
   --badge-pub-bg: rgba(102, 227, 138, 0.14);
-  --badge-priv-bg: #1b2436;
+  --badge-priv-bg: #212124;
   --badge-auto-bg: rgba(76, 141, 255, 0.14);
 
   /* Ad slot stripes */
-  --ad-a: #101623;
-  --ad-b: #131a2a;
-  --ad-a-app: #111725;
-  --ad-b-app: #151c2c;
+  --ad-a: #121214;
+  --ad-b: #161618;
+  --ad-a-app: #131315;
+  --ad-b-app: #17171a;
 
   /* Radius scale (from dc) */
   --radius-badge: 6px;

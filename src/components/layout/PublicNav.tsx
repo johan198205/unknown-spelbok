@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 /** Kuponger är avstängd tills vidare (FEATURES.coupons). */
 const ITEMS: { href: string; label: string; icon: NavIconKey }[] = [
+  { href: "/planket", label: "Planket", icon: "planket" },
   { href: "/topplista", label: "Topplista", icon: "topplista" },
   { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
   { href: "/om-oss", label: "Om oss", icon: "om-oss" },

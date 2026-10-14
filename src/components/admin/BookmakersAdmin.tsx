@@ -631,7 +631,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               <input
                 value={draft.brand_color}
                 onChange={(e) => patch({ brand_color: e.target.value })}
-                placeholder="#1B2436"
+                placeholder="#212124"
                 className={cn(monoInputClass, "text-[12.5px]")}
               />
             </Field>

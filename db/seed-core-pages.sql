@@ -27,7 +27,7 @@ from (
     "primaryCta": { "label": "Börja bokföra gratis", "href": "/registrera" },
     "secondaryCta": { "label": "Se ett publikt spreadsheet", "href": "/topplista" },
     "image": "/mockups/spelbok-devices.png",
-    "imageAlt": "Spelbok på laptop och mobil — dashboard med netto, ROI, hitrate och bokförda spel."
+    "imageAlt": "Spelbok på laptop och mobil — dashboard med netto, ROI, vinstprocent och bokförda spel."
   },
   "howItWorks": {
     "title": "Så funkar det",
@@ -50,9 +50,9 @@ from (
       {
         "no": "03",
         "title": "Läs av sanningen",
-        "body": "Netto, ROI och hitrate räknas om direkt. Jämför dig i topplistorna.",
+        "body": "Netto, ROI och vinstprocent räknas om direkt. Jämför dig i topplistorna.",
         "img": "/img/sa-funkar-det/statistik.png",
-        "alt": "Statistikvyn med netto, ROI, hitrate och grafen över ackumulerat netto."
+        "alt": "Statistikvyn med netto, ROI, vinstprocent och grafen över ackumulerat netto."
       }
     ]
   },
@@ -87,7 +87,7 @@ from (
     {
       "n": "01",
       "title": "Siffrorna ljuger inte, det gör minnet",
-      "body": "Netto, ROI och hitrate räknas ut ur varje enskilt spel. Ingen kan runda upp, glömma en förlust eller välja period."
+      "body": "Netto, ROI och vinstprocent räknas ut ur varje enskilt spel. Ingen kan runda upp, glömma en förlust eller välja period."
     },
     {
       "n": "02",

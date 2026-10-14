@@ -57,7 +57,7 @@ export const DEFAULT_LANDING: LandingContent = {
     secondaryCta: { label: "Se ett publikt spreadsheet", href: "/topplista" },
     image: "/mockups/spelbok-devices.png",
     imageAlt:
-      "Spelbok på laptop och mobil — dashboard med netto, ROI, hitrate och bokförda spel.",
+      "Spelbok på laptop och mobil — dashboard med netto, ROI, vinstprocent och bokförda spel.",
   },
   howItWorks: {
     title: "Så funkar det",
@@ -80,9 +80,9 @@ export const DEFAULT_LANDING: LandingContent = {
       {
         no: "03",
         title: "Läs av sanningen",
-        body: "Netto, ROI och hitrate räknas om direkt. Jämför dig i topplistorna.",
+        body: "Netto, ROI och vinstprocent räknas om direkt. Jämför dig i topplistorna.",
         img: "/img/sa-funkar-det/statistik.png",
-        alt: "Statistikvyn med netto, ROI, hitrate och grafen över ackumulerat netto.",
+        alt: "Statistikvyn med netto, ROI, vinstprocent och grafen över ackumulerat netto.",
       },
     ],
   },

@@ -175,7 +175,7 @@ export function NotificationPanel({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-[92] flex justify-end bg-[rgba(5,7,12,.6)]"
+      className="fixed inset-0 z-[92] flex justify-end bg-[rgba(4,4,5,.6)]"
     >
       <div
         role="dialog"

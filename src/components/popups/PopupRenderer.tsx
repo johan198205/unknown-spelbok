@@ -212,7 +212,7 @@ export function PopupRenderer({
       aria-modal="true"
       aria-label={visible.title || "Erbjudande"}
       onClick={close}
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-[rgba(5,7,12,.72)] p-4 backdrop-blur-[3px] sm:items-center"
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-[rgba(4,4,5,.72)] p-4 backdrop-blur-[3px] sm:items-center"
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -222,7 +222,7 @@ export function PopupRenderer({
           type="button"
           onClick={close}
           aria-label="Stäng"
-          className="absolute right-3 top-3 z-10 flex size-[30px] items-center justify-center rounded-full border border-line-strong bg-[rgba(15,20,32,.75)] text-[17px] leading-none text-muted backdrop-blur-[2px] transition hover:text-text"
+          className="absolute right-3 top-3 z-10 flex size-[30px] items-center justify-center rounded-full border border-line-strong bg-[rgba(17,17,19,.75)] text-[17px] leading-none text-muted backdrop-blur-[2px] transition hover:text-text"
         >
           ×
         </button>

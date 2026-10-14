@@ -262,7 +262,7 @@ function ProofLightbox({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      className="fixed inset-0 z-[94] flex items-center justify-center bg-[rgba(5,7,12,.82)] px-4 py-10 backdrop-blur-[4px]"
+      className="fixed inset-0 z-[94] flex items-center justify-center bg-[rgba(4,4,5,.82)] px-4 py-10 backdrop-blur-[4px]"
     >
       <div className="w-full max-w-[420px]">
         <div className="mb-3 flex items-start justify-between gap-3">

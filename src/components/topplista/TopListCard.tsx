@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Avatar } from "@/components/planket/Bits";
 import { Panel } from "@/components/ui/Panel";
 import { nettoColor } from "@/lib/utils";
-import { rankColor, type TopListEntry } from "@/lib/toplists";
+import { profileHref, rankColor, type TopListEntry } from "@/lib/toplists";
 
 export function TopListCard({
   title,
@@ -28,13 +29,20 @@ export function TopListCard({
           {entries.map((entry, i) => (
             <li
               key={entry.id}
-              className="flex items-baseline gap-2 border-b border-[#171E2C] py-2 text-[13.5px] last:border-0"
+              className="flex items-center gap-2 border-b border-[#1c1c1f] py-2 text-[13.5px] last:border-0"
             >
               <span
                 className={`w-5 shrink-0 text-right font-display text-[14px] font-semibold ${rankColor(i)}`}
               >
                 {i + 1}
               </span>
+              <Link
+                href={profileHref(entry.owner)}
+                aria-label={entry.owner}
+                className="shrink-0 no-underline hover:no-underline"
+              >
+                <Avatar username={entry.owner} src={entry.ownerAvatar} size={24} />
+              </Link>
               <span className="min-w-0 flex-1">
                 {entry.href ? (
                   <Link href={entry.href} className="block truncate">

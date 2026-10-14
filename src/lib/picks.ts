@@ -20,96 +20,38 @@ export const LEAGUES: Record<string, Sport> = {
 export type PickGroup = { label: string; options: string[] };
 
 export const PICK_GROUPS: Record<string, PickGroup[]> = {
+  // Fotbollens snabbval är medvetet få och generella — varje val ska gå att
+  // förstå direkt. Allt annat skrivs in som eget spel.
   Fotboll: [
-    {
-      label: "Matchresultat",
-      options: [
-        "1",
-        "X",
-        "2",
-        "1X",
-        "X2",
-        "12",
-        "Hemma DNB",
-        "Borta DNB",
-      ],
-    },
-    {
-      label: "Handikapp",
-      options: [
-        "Hemma -1",
-        "Hemma -1.5",
-        "Hemma -2",
-        "Borta +1",
-        "Borta +1.5",
-        "Borta +2",
-        "Asiatiskt 0",
-        "Asiatiskt -0.25",
-        "Asiatiskt -0.75",
-      ],
-    },
+    { label: "Matchresultat", options: ["1", "X", "2"] },
     {
       label: "Mål – totalen",
       options: [
-        "Ö1.5",
-        "U1.5",
-        "Ö2.5",
-        "U2.5",
-        "Ö3.5",
-        "U3.5",
-        "Ö4.5",
-        "U4.5",
-        "Båda lagen mål",
-        "Båda lagen mål – nej",
+        "Över 2.5 mål",
+        "Under 2.5 mål",
+        "Över 3.5 mål",
+        "Under 3.5 mål",
+        "Över 4.5 mål",
+        "Under 4.5 mål",
+        "Över 5.5 mål",
+        "Under 5.5 mål",
       ],
     },
     {
-      label: "Halvlek",
+      label: "Båda lagen",
       options: [
-        "Ö0.5 mål 1:a halvlek",
-        "Ö1.5 mål 1:a halvlek",
-        "U1.5 mål 1:a halvlek",
-        "Ö1.5 mål 2:a halvlek",
-        "U1.5 mål 2:a halvlek",
-        "Hemma vinner 1:a halvlek",
-        "Borta vinner 2:a halvlek",
+        "Båda lagen gör mål: Ja",
+        "Båda lagen gör mål: Nej",
+        "Båda lagen gör minst 2 mål: Ja",
+        "Båda lagen gör minst 2 mål: Nej",
       ],
     },
     {
-      label: "Laget – mål",
-      options: [
-        "Hemma Ö1.5",
-        "Hemma U1.5",
-        "Borta Ö1.5",
-        "Borta U1.5",
-        "Hemma håller nollan",
-        "Borta håller nollan",
-      ],
+      label: "Halvlekar",
+      options: ["Mål i båda halvlekarna: Ja", "Mål i båda halvlekarna: Nej"],
     },
-    {
-      label: "Hörnor",
-      options: [
-        "Ö8.5 hörnor",
-        "Ö9.5 hörnor",
-        "Ö10.5 hörnor",
-        "U9.5 hörnor",
-        "U10.5 hörnor",
-        "Hemma flest hörnor",
-        "Borta flest hörnor",
-      ],
-    },
-    {
-      label: "Kort",
-      options: ["Ö3.5 kort", "Ö4.5 kort", "U4.5 kort", "Rött kort i matchen"],
-    },
-    {
-      label: "Målskytt",
-      options: [
-        "Målskytt när som helst",
-        "Första målskytt",
-        "Målskytt 2+ mål",
-      ],
-    },
+    { label: "Hörnor", options: ["Över 9.5 hörnor", "Under 9.5 hörnor"] },
+    { label: "Kort", options: ["Över 4.5 kort", "Under 4.5 kort"] },
   ],
   Ishockey: [
     {

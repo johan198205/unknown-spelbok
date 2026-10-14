@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Bookmaker, Sheet } from "@/lib/types";
-import { PICKS, SPORTS, STAKE_PRESETS } from "@/lib/picks";
+import { PICKS, STAKE_PRESETS } from "@/lib/picks";
 import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { enqueuePendingBet } from "@/lib/offline-queue";
-import { DayStrip, type PickerFixture } from "@/components/bets/FixturePicker";
-import { MatchSearch } from "@/components/bets/MatchSearch";
+import { type PickerFixture } from "@/components/bets/FixturePicker";
+import { ManualMatchFilters, MatchSearch } from "@/components/bets/MatchSearch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { ManualMatchLabel, MatchStack } from "@/components/bets/TeamPair";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
@@ -245,12 +245,12 @@ export function MobileAddBetFlow({
               </>
             ) : (
               <div className="space-y-3">
-                <div>
-                  <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-                    Datum
-                  </div>
-                  <DayStrip ymd={ymd} onChange={setYmd} />
-                </div>
+                <ManualMatchFilters
+                  sport={sport}
+                  onSportChange={setSport}
+                  ymd={ymd}
+                  onYmdChange={setYmd}
+                />
                 <input
                   value={match}
                   onChange={(e) => setMatch(e.target.value)}
@@ -263,15 +263,6 @@ export function MobileAddBetFlow({
                   placeholder="Liga"
                   className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3 text-[15px] outline-none"
                 />
-                <select
-                  value={sport}
-                  onChange={(e) => setSport(e.target.value)}
-                  className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3 text-[15px]"
-                >
-                  {SPORTS.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
                 <button
                   type="button"
                   disabled={!match.trim()}
@@ -353,7 +344,7 @@ export function MobileAddBetFlow({
             <input
               value={pick}
               onChange={(e) => setPick(e.target.value)}
-              placeholder="Eget tipp…"
+              placeholder="Eget spel…"
               className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3.5 text-[16px] outline-none"
             />
             <div>

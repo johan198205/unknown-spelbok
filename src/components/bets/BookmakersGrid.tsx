@@ -11,7 +11,7 @@ import { saveBookmakerHero } from "@/lib/admin/bookmakers";
 import type { Bookmaker } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const SORT_OPTIONS: BookSortOption[] = ["Vårt betyg", "Högst bonus", "A–Ö"];
+const SORT_OPTIONS: BookSortOption[] = ["Vårt betyg", "Högst bonus"];
 
 export function BookmakersGrid({
   bookmakers,
@@ -21,8 +21,10 @@ export function BookmakersGrid({
   editorMode?: boolean;
 }) {
   const [items, setItems] = useState(bookmakers);
+  // Inget filter och ingen sortering från start: listan visas i den
+  // ordning redaktionen satt (rank) tills besökaren själv väljer något.
   const [filter, setFilter] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<BookSortOption>("Vårt betyg");
+  const [sortBy, setSortBy] = useState<BookSortOption | null>(null);
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
@@ -41,31 +43,25 @@ export function BookmakersGrid({
 
   const pills = useMemo(() => availableBookFilters(items), [items]);
 
-  useEffect(() => {
-    if (filter && !pills.includes(filter as (typeof pills)[number])) {
-      setFilter(pills[0] ?? null);
-    } else if (!filter && pills.length) {
-      setFilter(pills[0]);
-    }
-  }, [pills, filter]);
+  const activeFilter =
+    filter && pills.includes(filter as (typeof pills)[number]) ? filter : null;
 
   const filtered = useMemo(() => {
-    const active = filter ?? pills[0];
-    let list = active
-      ? items.filter((b) => bookmakerMatchesFilter(b, active))
+    let list = activeFilter
+      ? items.filter((b) => bookmakerMatchesFilter(b, activeFilter))
       : items.slice();
 
     list = list.slice().sort((a, b) => {
       if (sortBy === "Högst bonus") {
-        return (b.bonus_value ?? 0) - (a.bonus_value ?? 0);
+        return (b.bonus_value ?? 0) - (a.bonus_value ?? 0) || a.rank - b.rank;
       }
-      if (sortBy === "A–Ö") {
-        return a.name.localeCompare(b.name, "sv");
+      if (sortBy === "Vårt betyg") {
+        return (b.rating ?? 0) - (a.rating ?? 0) || a.rank - b.rank;
       }
-      return (b.rating ?? 0) - (a.rating ?? 0);
+      return a.rank - b.rank;
     });
     return list;
-  }, [items, filter, sortBy, pills]);
+  }, [items, activeFilter, sortBy]);
 
   if (!bookmakers.length) {
     return (
@@ -80,19 +76,22 @@ export function BookmakersGrid({
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2.5">
-        <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+        {/* Mobil kör bara rullgardinen till höger. Ett klick på en aktiv
+            knapp släpper filtret igen. */}
+        <div className="hidden min-w-0 flex-1 flex-wrap gap-2 lg:flex">
           {pills.map((p) => {
-            const on = filter === p;
+            const on = activeFilter === p;
             return (
               <button
                 key={p}
                 type="button"
-                onClick={() => setFilter(p)}
+                aria-pressed={on}
+                onClick={() => setFilter(on ? null : p)}
                 className={cn(
                   "rounded-full border px-4 py-2.5 text-sm font-semibold transition",
                   on
                     ? "border-[rgba(102,227,138,.45)] bg-[rgba(102,227,138,.14)] text-[#66E38A]"
-                    : "border-[#232B3E] bg-[#131826] text-[#C3CBDB] hover:border-[#3A4560]"
+                    : "border-[#2a2a2e] bg-[#161618] text-[#C3CBDB] hover:border-[#46464d]"
                 )}
               >
                 {p}
@@ -101,33 +100,39 @@ export function BookmakersGrid({
           })}
         </div>
 
-        <div ref={sortRef} className="relative">
+        <div ref={sortRef} className="relative ml-auto">
           <button
             type="button"
             onClick={() => setSortOpen((v) => !v)}
-            className="inline-flex items-center gap-2.5 rounded-full border border-[#232B3E] bg-[#131826] px-4 py-2.5 text-sm font-semibold text-[#E6EAF2]"
+            className="inline-flex items-center gap-2.5 rounded-full border border-[#2a2a2e] bg-[#161618] px-4 py-2.5 text-sm font-semibold text-[#E6EAF2]"
           >
-            <span>Filter: {sortBy}</span>
+            <span>{sortBy ? `Filter: ${sortBy}` : "Filter"}</span>
             <span className="text-[11px] text-[#5D6883]">▾</span>
           </button>
           {sortOpen ? (
-            <div className="absolute right-0 top-full z-20 mt-2 min-w-[190px] rounded-[11px] border border-[#2A3346] bg-[#171D2E] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.6)]">
+            <div className="absolute right-0 top-full z-20 mt-2 min-w-[190px] rounded-[11px] border border-[#333338] bg-[#1a1a1d] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.6)]">
               {SORT_OPTIONS.map((o) => (
                 <button
                   key={o}
                   type="button"
                   onClick={() => {
-                    setSortBy(o);
+                    // Samma val igen = tillbaka till standardordningen.
+                    setSortBy(o === sortBy ? null : o);
                     setSortOpen(false);
                   }}
                   className={cn(
                     "w-full rounded-[7px] border-0 px-2.5 py-[9px] text-left text-[13.5px]",
                     o === sortBy
-                      ? "bg-[#1F293C] text-[#E6EAF2]"
-                      : "bg-transparent text-[#C3CBDB] hover:bg-[#1F293C]"
+                      ? "bg-[#26262a] text-[#E6EAF2]"
+                      : "bg-transparent text-[#C3CBDB] hover:bg-[#26262a]"
                   )}
                 >
                   {o}
+                  {o === sortBy ? (
+                    <span className="float-right text-[#5D6883]" aria-hidden>
+                      ✕
+                    </span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -136,11 +141,12 @@ export function BookmakersGrid({
       </div>
 
 
-      <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 items-stretch gap-2.5 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((b) => (
           <BookmakerCard
             key={b.id}
             data={b}
+            compactOnMobile
             src="spelbolag"
             editorMode={editorMode}
             onHeroUploaded={(url, filename) => {

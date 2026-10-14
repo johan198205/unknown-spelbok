@@ -16,13 +16,19 @@ import { cn } from "@/lib/utils";
 /**
  * Tråd under ett inlägg. Länkar i text renderas som ren text (anti-spam).
  */
+/** Dit utloggade skickas när de vill reagera eller kommentera. */
+export const PLANKET_LOGIN_HREF = `/login?next=${encodeURIComponent("/planket")}`;
+
 export function PostThread({
   postId,
   initialCount = 0,
+  canReply = true,
 }: {
   postId: string;
   /** Antal svar från servern — syns innan tråden öppnats. */
   initialCount?: number;
+  /** Utloggade läser tråden men får en inloggningslänk i stället för svarsrutan. */
+  canReply?: boolean;
 }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -101,7 +107,7 @@ export function PostThread({
               >
                 <Avatar username={r.author_username} src={r.author_avatar} size={28} />
               </Link>
-              <div className="min-w-0 flex-1 rounded-[10px] border border-line-soft bg-[#1B2233] px-3 py-2">
+              <div className="min-w-0 flex-1 rounded-[10px] border border-line-soft bg-[#1e1e21] px-3 py-2">
                 <div className="mb-1 flex items-baseline gap-2">
                   <Link
                     href={`/profil/${encodeURIComponent(r.author_username)}`}
@@ -131,29 +137,42 @@ export function PostThread({
             </div>
           ))}
 
-          <div className="flex gap-2">
-            <textarea
-              value={draft}
-              maxLength={PLANKET_MAX_BODY}
-              rows={2}
-              placeholder="Skriv ett svar… (länkar är inte klickbara)"
-              onChange={(e) => setDraft(e.target.value)}
-              className="min-w-0 flex-1 resize-none rounded-[10px] border border-line bg-bg-soft px-3 py-2 text-[14px] text-text outline-none focus:border-line-hover"
-            />
-            <button
-              type="button"
-              disabled={pending || !draft.trim()}
-              onClick={submit}
-              className={cn(
-                "self-end rounded-[9px] px-4 py-2 text-[13.5px] font-bold",
-                draft.trim() && !pending
-                  ? "cursor-pointer bg-win text-win-ink"
-                  : "cursor-not-allowed bg-[#1B2233] text-[#5D6883]"
-              )}
-            >
-              {pending ? "…" : "Svara"}
-            </button>
-          </div>
+          {canReply ? (
+            <div className="flex gap-2">
+              <textarea
+                value={draft}
+                maxLength={PLANKET_MAX_BODY}
+                rows={2}
+                placeholder="Skriv ett svar… (länkar är inte klickbara)"
+                onChange={(e) => setDraft(e.target.value)}
+                className="min-w-0 flex-1 resize-none rounded-[10px] border border-line bg-bg-soft px-3 py-2 text-[14px] text-text outline-none focus:border-line-hover"
+              />
+              <button
+                type="button"
+                disabled={pending || !draft.trim()}
+                onClick={submit}
+                className={cn(
+                  "self-end rounded-[9px] px-4 py-2 text-[13.5px] font-bold",
+                  draft.trim() && !pending
+                    ? "cursor-pointer bg-win text-win-ink"
+                    : "cursor-not-allowed bg-[#1e1e21] text-[#5D6883]"
+                )}
+              >
+                {pending ? "…" : "Svara"}
+              </button>
+            </div>
+          ) : (
+            <p className="text-[13px] text-[#8A94AB]">
+              <Link href={PLANKET_LOGIN_HREF} className="font-semibold text-win">
+                Logga in
+              </Link>{" "}
+              eller{" "}
+              <Link href="/registrera" className="font-semibold text-win">
+                skapa ett konto
+              </Link>{" "}
+              för att kommentera.
+            </p>
+          )}
         </div>
       ) : null}
     </div>

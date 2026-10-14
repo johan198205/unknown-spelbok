@@ -11,6 +11,7 @@
 
 import { cache } from "react";
 import { getSessionUser } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { CouponLegResult, CouponStatus } from "@/lib/types";
 import {
@@ -24,6 +25,23 @@ import {
   type PlanketPostRow,
   type ReactionKind,
 } from "@/lib/planket";
+
+/**
+ * Klienten som läser flödet. Planket går att läsa utan konto, men vyerna
+ * (planket_posts m.fl.) är bara öppna för authenticated i databasen. För en
+ * utloggad besökare läser servern därför samma vyer med service role.
+ * Bara läsningar går den vägen — allt som skriver kräver inloggning och
+ * användarens egen klient (se planket-actions.ts).
+ */
+export async function planketReader() {
+  const user = await getSessionUser();
+  if (user) return createClient();
+  try {
+    return createAdminClient();
+  } catch {
+    return createClient();
+  }
+}
 
 const POST_COLUMNS = `
   id, author_id, body, attachment_type, bet_id, coupon_id, created_at, edited_at,
@@ -66,7 +84,7 @@ export async function fetchPlanketPage({
   cursor?: string | null;
   limit?: number;
 } = {}): Promise<PlanketPage> {
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const user = await getSessionUser();
 
   // Redaktionens öppna spel ligger fästa överst och hoppas över i det
@@ -118,7 +136,7 @@ export async function fetchPlanketPage({
 
 /** Admin-konton. Deras inlägg är redaktionens. */
 const fetchAdminIds = cache(async function fetchAdminIds() {
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const { data } = await supabase.from("profiles").select("id").eq("role", "admin");
   return (data ?? []).map((r) => r.id as string);
 });
@@ -131,7 +149,7 @@ async function fetchPinnedRows(): Promise<PlanketPostRow[]> {
   const adminIds = await fetchAdminIds();
   if (!adminIds.length) return [];
 
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const { data, error } = await supabase
     .from("planket_posts")
     .select(POST_COLUMNS)
@@ -159,7 +177,7 @@ async function decoratePosts(
 ): Promise<PlanketPost[]> {
   if (!rows.length) return [];
 
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const postIds = rows.map((r) => r.id);
   const couponIds = [
     ...new Set(rows.map((r) => r.coupon_id).filter((id): id is string => !!id)),
@@ -236,7 +254,7 @@ async function fetchCoupons(ids: string[]): Promise<Map<string, PlanketCoupon>> 
   const map = new Map<string, PlanketCoupon>();
   if (!ids.length) return map;
 
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const { data, error } = await supabase
     .from("coupons")
     .select(
@@ -338,7 +356,7 @@ export type TopBackedRow = {
 };
 
 export const fetchTopBacked = cache(async function fetchTopBacked(limit = 3) {
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const { data, error } = await supabase
     .from("planket_top_backed")
     .select(
@@ -362,7 +380,7 @@ export type ActiveUser = {
 export const fetchActiveUsers = cache(async function fetchActiveUsers(
   limit = 6
 ) {
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const { data, error, count } = await supabase
     .from("planket_active_users")
     .select("id, username, avatar_url", { count: "exact" })
@@ -562,7 +580,7 @@ export async function fetchAttachableCoupons(
  * eget inlägg.
  */
 export async function countNewPosts(sinceIso: string, filter: PlanketFilter) {
-  const supabase = await createClient();
+  const supabase = await planketReader();
   const user = await getSessionUser();
 
   let query = supabase

@@ -248,7 +248,7 @@ export function BookmakerPlate({
   return (
     <span
       title={name || undefined}
-      className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[7px] border border-line-strong bg-[#0F1420]"
+      className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[7px] border border-line-strong bg-[#111113]"
       style={{ width, height }}
     >
       {logoUrl ? (

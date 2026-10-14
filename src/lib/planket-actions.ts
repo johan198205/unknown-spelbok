@@ -20,6 +20,7 @@ import {
   fetchAttachableBets,
   fetchAttachableCoupons,
   fetchPlanketPage,
+  planketReader,
 } from "@/lib/planket-server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -156,7 +157,8 @@ export type PostReplyRow = {
 };
 
 export async function listPostReplies(postId: string): Promise<PostReplyRow[]> {
-  const supabase = await createClient();
+  // Svaren går att läsa utan konto, precis som flödet.
+  const supabase = await planketReader();
   const user = await getSessionUser();
   const { data, error } = await supabase
     .from("post_replies")
