@@ -4,9 +4,24 @@
     {
       "name": "spelbok-dev",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev", "--webpack"],
+      "runtimeArgs": [
+        "next",
+        "dev",
+        "--webpack"
+      ],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "spelbok-prod",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "next",
+        "start",
+        "-p",
+        "3100"
+      ],
+      "port": 3100
     }
   ]
 }
