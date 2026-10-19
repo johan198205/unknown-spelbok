@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { copyCouponToSheet } from "@/lib/coupon-actions";
 import type { CouponStatus } from "@/lib/types";
@@ -34,6 +35,7 @@ export function CopyCouponButton({
   firstKickoff: string | null;
 }) {
   const router = useRouter();
+  const t = useT();
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
   const [copied, setCopied] = useState(alreadyCopied);
@@ -49,7 +51,7 @@ export function CopyCouponButton({
   if (copied) {
     return (
       <button type="button" disabled className={BASE}>
-        Redan bokförd
+        {t("kuponger.copy.alreadyCopied")}
       </button>
     );
   }
@@ -57,7 +59,7 @@ export function CopyCouponButton({
   if (status !== "open" || started) {
     return (
       <button type="button" disabled className={BASE}>
-        {status !== "open" ? "Avgjord" : "Avspark passerad"}
+        {status !== "open" ? t("kuponger.copy.settled") : t("kuponger.copy.started")}
       </button>
     );
   }
@@ -65,7 +67,7 @@ export function CopyCouponButton({
   if (!loggedIn) {
     return (
       <Link href="/registrera" className={BASE}>
-        Kopiera till min spelbok
+        {t("kuponger.copy.button")}
       </Link>
     );
   }
@@ -74,14 +76,14 @@ export function CopyCouponButton({
     startTransition(async () => {
       const result = await copyCouponToSheet(couponId);
       toast(result.message);
-      if (result.ok || result.message === "Redan bokförd") setCopied(true);
+      if (result.ok || (!result.ok && result.alreadyCopied)) setCopied(true);
       if (result.ok) router.refresh();
     });
   }
 
   return (
     <button type="button" disabled={pending} onClick={copy} className={BASE}>
-      {pending ? "Bokför…" : "Kopiera till min spelbok"}
+      {pending ? t("kuponger.copy.pending") : t("kuponger.copy.button")}
     </button>
   );
 }

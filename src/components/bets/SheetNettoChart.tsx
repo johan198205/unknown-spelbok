@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useRef, useState } from "react";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import { toUnits } from "@/lib/display";
 import { axisDateLabels, compactAxisValue } from "@/lib/sheet-filters";
 import type { Bet } from "@/lib/types";
@@ -27,6 +28,7 @@ export function SheetNettoChart({
   bets: Bet[];
   periodLabel: string;
 }) {
+  const t = useT();
   const amount = useAmount();
   const prefs = useDisplayPrefs();
   const uid = useId().replace(/:/g, "");
@@ -71,10 +73,10 @@ export function SheetNettoChart({
   const header = (
     <div className="mb-3.5 flex flex-wrap items-baseline justify-between gap-3">
       <h2 className="font-display text-[17px] font-semibold uppercase tracking-[0.09em]">
-        Ackumulerat netto
+        {t("spelbok.chart.title")}
       </h2>
       <span className="font-mono-num text-[12.5px] text-faint">
-        {settledCount} rättade spel · {periodLabel}
+        {t("spelbok.chart.meta", { count: settledCount, period: periodLabel })}
       </span>
     </div>
   );
@@ -86,7 +88,7 @@ export function SheetNettoChart({
         <div className="relative flex h-[230px] items-center justify-center">
           <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-line-hover" />
           <p className="relative z-[1] bg-panel px-3 text-[13px] text-muted">
-            Grafen fylls när du sätter resultat.
+            {t("spelbok.chart.empty")}
           </p>
         </div>
       </section>
@@ -165,7 +167,7 @@ export function SheetNettoChart({
               preserveAspectRatio="none"
               className="block h-full w-full"
               role="img"
-              aria-label="Ackumulerat netto över tid"
+              aria-label={t("spelbok.chart.aria")}
             >
               <defs>
                 {/*
@@ -281,8 +283,8 @@ export function SheetNettoChart({
           </div>
 
           <div className="mt-2 flex justify-between font-mono-num text-[11px] text-faint">
-            {xTicks.map((t) => (
-              <span key={t.key}>{t.label}</span>
+            {xTicks.map((tick) => (
+              <span key={tick.key}>{tick.label}</span>
             ))}
           </div>
         </div>

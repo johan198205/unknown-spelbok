@@ -1,6 +1,7 @@
 "use client";
 
 import { useAmount } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import type { BetStats } from "@/lib/types";
 import {
   MIN_ROI_BETS,
@@ -24,6 +25,7 @@ export function SheetKpiStrip({
   stats: BetStats;
   betCount: number;
 }) {
+  const t = useT();
   const amount = useAmount();
 
   const cells: Array<{
@@ -34,29 +36,29 @@ export function SheetKpiStrip({
     color?: string;
   }> = [
     {
-      label: "Netto",
+      label: t("spelbok.kpi.netto"),
       value: amount(stats.netto),
       basis: 200,
       big: true,
       color: nettoColor(stats.netto),
     },
     {
-      label: "ROI",
+      label: t("spelbok.kpi.roi"),
       value: formatRoiOrDash(stats.roi, stats.bets),
       basis: 126,
       color:
         stats.bets >= MIN_ROI_BETS ? nettoColor(stats.roi) : "text-faint",
     },
-    { label: "Vinstprocent", value: formatPercent(stats.hitrate), basis: 126 },
-    { label: "Spel", value: String(betCount), basis: 96 },
+    { label: t("spelbok.kpi.hitrate"), value: formatPercent(stats.hitrate), basis: 126 },
+    { label: t("spelbok.kpi.bets"), value: String(betCount), basis: 96 },
     {
-      label: "Omsättning",
+      label: t("spelbok.kpi.turnover"),
       value: amount(stats.stake, { sign: false }),
       basis: 158,
     },
-    { label: "Snittodds", value: formatNumber(stats.avgOdds, 2), basis: 126 },
+    { label: t("spelbok.kpi.avgOdds"), value: formatNumber(stats.avgOdds, 2), basis: 126 },
     {
-      label: "Snittinsats",
+      label: t("spelbok.kpi.avgStake"),
       value: amount(Math.round(stats.avgStake), { sign: false }),
       basis: 148,
     },

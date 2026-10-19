@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { MatchSides } from "@/components/bets/TeamPair";
 import { Badge } from "@/components/ui/Badge";
+import { useT } from "@/components/TextsProvider";
 import { kickoffLabel, topReasons, type DailySuggestion } from "@/lib/suggestions";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export function SuggestionCard({
   onOpen: () => void;
   onDismiss: () => void;
 }) {
+  const t = useT();
   const reasons = topReasons(suggestion);
   const sport = suggestion.sport === "hockey" ? "Ishockey" : "Fotboll";
 
@@ -38,7 +40,10 @@ export function SuggestionCard({
       <button
         type="button"
         onClick={onDismiss}
-        aria-label={`Dölj ${suggestion.home_team} – ${suggestion.away_team}`}
+        aria-label={t("forslag.card.dismissAria", {
+          home: suggestion.home_team,
+          away: suggestion.away_team,
+        })}
         className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full text-faint transition-colors hover:bg-panel-2 hover:text-text"
       >
         <X className="size-3.5" strokeWidth={2.5} />
@@ -65,10 +70,10 @@ export function SuggestionCard({
           */}
           <span
             className="ml-auto shrink-0 font-mono-num text-[11px] text-faint"
-            title="Matchpoäng: hur väl matchen stämmer med din spelhistorik (0–100)"
+            title={t("forslag.card.scoreTitle")}
           >
             {Math.round(Number(suggestion.match_score))}
-            <span className="text-[9.5px]">/100</span>
+            <span className="text-[9.5px]">{t("forslag.card.scoreSuffix")}</span>
           </span>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useT } from "@/components/TextsProvider";
 import { sendPopupEvent } from "@/lib/popup-events";
 import {
   isExternalUrl,
@@ -42,6 +43,7 @@ export function PopupRenderer({
   popups: Popup[];
   authed: boolean;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -210,7 +212,7 @@ export function PopupRenderer({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={visible.title || "Erbjudande"}
+      aria-label={visible.title || t("popups.dialog.fallbackLabel")}
       onClick={close}
       className="fixed inset-0 z-[120] flex items-end justify-center bg-[rgba(4,4,5,.72)] p-4 backdrop-blur-[3px] sm:items-center"
     >
@@ -221,7 +223,7 @@ export function PopupRenderer({
         <button
           type="button"
           onClick={close}
-          aria-label="Stäng"
+          aria-label={t("popups.dialog.close")}
           className="absolute right-3 top-3 z-10 flex size-[30px] items-center justify-center rounded-full border border-line-strong bg-[rgba(17,17,19,.75)] text-[17px] leading-none text-muted backdrop-blur-[2px] transition hover:text-text"
         >
           ×

@@ -9,6 +9,7 @@ import {
   type ImportRow,
   type ImportSource,
 } from "@/lib/import/types";
+import { createT, type TFunction } from "@/lib/texts";
 
 /** Gemensam validering och uppslag för /api/import-rutterna. */
 
@@ -27,25 +28,28 @@ function asString(value: unknown, max = 300): string {
   return typeof value === "string" ? value.slice(0, max) : "";
 }
 
-export function parseImportBody(body: unknown): ImportRequestBody {
+export function parseImportBody(
+  body: unknown,
+  t: TFunction = createT({})
+): ImportRequestBody {
   if (!body || typeof body !== "object") {
-    throw new ImportRequestError("Trasig data.");
+    throw new ImportRequestError(t("import.request.broken"));
   }
   const raw = body as Record<string, unknown>;
 
   if (!Array.isArray(raw.rows) || !raw.rows.length) {
-    throw new ImportRequestError("Inga spel hittades i filen.");
+    throw new ImportRequestError(t("import.request.noRows"));
   }
   if (raw.rows.length > MAX_IMPORT_ROWS) {
-    throw new ImportRequestError(`Max ${MAX_IMPORT_ROWS} rader per import.`);
+    throw new ImportRequestError(t("import.request.tooManyRows", { max: MAX_IMPORT_ROWS }));
   }
   if (!raw.mapping || typeof raw.mapping !== "object") {
-    throw new ImportRequestError("Kolumnmappning saknas.");
+    throw new ImportRequestError(t("import.request.noMapping"));
   }
 
   const rows: ImportRow[] = raw.rows.map((row) => {
     if (!row || typeof row !== "object") {
-      throw new ImportRequestError("Trasig data.");
+      throw new ImportRequestError(t("import.request.broken"));
     }
     const out: ImportRow = {};
     for (const [key, value] of Object.entries(row as Record<string, unknown>)) {
@@ -64,7 +68,7 @@ export function parseImportBody(body: unknown): ImportRequestBody {
       continue;
     }
     if (typeof field !== "string" || !allowed.has(field)) {
-      throw new ImportRequestError("Ogiltig kolumnmappning.");
+      throw new ImportRequestError(t("import.request.badMapping"));
     }
     mapping[header] = field as ImportField;
   }
@@ -72,14 +76,12 @@ export function parseImportBody(body: unknown): ImportRequestBody {
   const mapped = new Set(Object.values(mapping));
   const missing = REQUIRED_IMPORT_FIELDS.filter((field) => !mapped.has(field));
   if (missing.length) {
-    throw new ImportRequestError(
-      "Match, Odds och Insats måste vara mappade innan import."
-    );
+    throw new ImportRequestError(t("import.request.missingRequired"));
   }
 
   const fileHash = asString(raw.file_hash, 64);
   if (!/^[a-f0-9]{6,64}$/i.test(fileHash)) {
-    throw new ImportRequestError("Trasig data.");
+    throw new ImportRequestError(t("import.request.broken"));
   }
 
   const unitRaw = Number(raw.unit_value);

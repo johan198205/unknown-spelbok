@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
 import { setDisplayPrefs } from "@/lib/display-actions";
+import { useT } from "@/components/TextsProvider";
 import {
   CURRENCIES,
+  currencyLabel,
   currencySuffix,
   formatAmount,
   isCurrencyCode,
@@ -16,6 +18,7 @@ import {
 } from "@/lib/display";
 
 export function DisplayPrefsForm({ prefs }: { prefs: DisplayPrefs }) {
+  const t = useT();
   const router = useRouter();
   const [currency, setCurrency] = useState<CurrencyCode>(prefs.currency);
   const [unitSize, setUnitSize] = useState(String(prefs.unitSize));
@@ -28,7 +31,7 @@ export function DisplayPrefsForm({ prefs }: { prefs: DisplayPrefs }) {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validUnit) {
-      setMessage({ ok: false, text: "Unit-storleken måste vara större än 0." });
+      setMessage({ ok: false, text: t("installningar.errors.unitSize") });
       return;
     }
 
@@ -41,14 +44,14 @@ export function DisplayPrefsForm({ prefs }: { prefs: DisplayPrefs }) {
       setMessage({ ok: false, text: res.error });
       return;
     }
-    setMessage({ ok: true, text: "Sparat." });
+    setMessage({ ok: true, text: t("installningar.display.saved") });
     router.refresh();
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Select
-        label="Valuta"
+        label={t("installningar.display.currency")}
         value={currency}
         onChange={(e) =>
           isCurrencyCode(e.target.value) && setCurrency(e.target.value)
@@ -56,28 +59,29 @@ export function DisplayPrefsForm({ prefs }: { prefs: DisplayPrefs }) {
       >
         {CURRENCIES.map((c) => (
           <option key={c.code} value={c.code}>
-            {c.code} — {c.label}
+            {c.code} — {currencyLabel(c.code, t)}
           </option>
         ))}
       </Select>
       <p className="-mt-1 text-[13px] text-muted">
-        Valutan är en etikett på dina belopp. Inga summor räknas om — 250 är
-        250 oavsett vilken valuta du väljer.
+        {t("installningar.display.currencyNote")}
       </p>
 
       <Input
-        label={`1 unit i ${currencySuffix(currency)}`}
+        label={t("installningar.display.unitLabel", {
+          currency: currencySuffix(currency),
+        })}
         value={unitSize}
         onChange={(e) => setUnitSize(e.target.value)}
         inputMode="decimal"
         required
       />
       <p className="-mt-1 text-[13px] text-muted">
-        Max {MAX_UNITS_PER_BET} units per spel
+        {t("installningar.display.maxUnits", { max: MAX_UNITS_PER_BET })}
         {validUnit ? (
           <>
             {" "}
-            — högsta insats blir{" "}
+            {t("installningar.display.maxStake")}{" "}
             <span className="font-mono-num text-text">
               {formatAmount(
                 parsedUnit * MAX_UNITS_PER_BET,
@@ -85,10 +89,10 @@ export function DisplayPrefsForm({ prefs }: { prefs: DisplayPrefs }) {
                 { sign: false }
               )}
             </span>
-            .
+            {t("installningar.display.period")}
           </>
         ) : (
-          "."
+          t("installningar.display.period")
         )}
       </p>
 
@@ -99,7 +103,7 @@ export function DisplayPrefsForm({ prefs }: { prefs: DisplayPrefs }) {
       ) : null}
 
       <Button type="submit" disabled={loading}>
-        {loading ? "Sparar…" : "Spara"}
+        {loading ? t("installningar.display.saving") : t("installningar.display.save")}
       </Button>
     </form>
   );

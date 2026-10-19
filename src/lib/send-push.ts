@@ -3,6 +3,8 @@ import { FEATURES } from "@/lib/features";
 import { formatPick } from "@/lib/picks";
 import { chunkArray } from "@/lib/push";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getT } from "@/lib/texts/server";
+import type { TFunction } from "@/lib/texts";
 import { formatMoney, resultLabel } from "@/lib/utils";
 import type { BetResult } from "@/lib/types";
 import type { PushSubscriptionRow } from "@/lib/types";
@@ -219,19 +221,26 @@ async function settleNotifyAllowed(userIds: string[]) {
   );
 }
 
-function settleTitle(result: BetResult) {
-  if (result === "win" || result === "halfwin") return "Spel rättat ✅";
-  if (result === "void") return "Spel rättat ↩️";
-  return "Spel rättat ❌";
+function settleTitle(result: BetResult, t: TFunction) {
+  if (result === "win" || result === "halfwin") return t("notiser.push.settledWin");
+  if (result === "void") return t("notiser.push.settledVoid");
+  return t("notiser.push.settledLoss");
 }
 
-function settleBody(bet: SettledBet) {
+function settleBody(bet: SettledBet, t: TFunction) {
   const result = bet.result as BetResult;
   const netto = Number(bet.payout ?? 0) - Number(bet.stake);
   if (result === "void") {
-    return `${bet.match} · ${formatPick(bet.pick)} · insatsen återbetalas`;
+    return t("notiser.push.settledBodyVoid", {
+      match: bet.match,
+      pick: formatPick(bet.pick),
+    });
   }
-  return `${bet.match} · ${formatPick(bet.pick)} · ${formatMoney(netto)}`;
+  return t("notiser.push.settledBody", {
+    match: bet.match,
+    pick: formatPick(bet.pick),
+    netto: formatMoney(netto),
+  });
 }
 
 export async function notifySettledBets(betIds: string[]) {
@@ -261,6 +270,7 @@ export async function notifySettledBets(betIds: string[]) {
   );
   if (!fresh.length) return;
 
+  const t = await getT();
   const allowed = await settleNotifyAllowed([
     ...new Set(fresh.map((b) => b.user_id)),
   ]);
@@ -278,15 +288,20 @@ export async function notifySettledBets(betIds: string[]) {
       if (list.length === 1) {
         const bet = list[0];
         return sendPushToUsers([userId], {
-          title: settleTitle(bet.result as BetResult),
-          body: settleBody(bet),
+          title: settleTitle(bet.result as BetResult, t),
+          body: settleBody(bet, t),
           url: "/spelbok",
         });
       }
       return sendPushToUsers([userId], {
-        title: `${list.length} spel rättade`,
+        title: t("notiser.push.settledMany", { count: list.length }),
         body: list
-          .map((b) => `${resultLabel(b.result as BetResult)}: ${b.match}`)
+          .map((b) =>
+            t("notiser.push.settledManyItem", {
+              result: resultLabel(b.result as BetResult, t),
+              match: b.match,
+            })
+          )
           .join(" · "),
         url: "/spelbok",
       });
@@ -317,15 +332,16 @@ export async function notifyDailySuggestions(
     byCount.set(entry.count, list);
   }
 
+  const t = await getT();
   let sent = 0;
   let failed = 0;
   for (const [count, userIds] of byCount) {
     const result = await sendPushToUsers(userIds, {
-      title: "Dagens matcher för dig",
+      title: t("notiser.push.suggestionsTitle"),
       body:
         count === 1
-          ? "1 match matchar din spelstil idag"
-          : `${count} matcher matchar din spelstil idag`,
+          ? t("notiser.push.suggestionsBody.one", { count })
+          : t("notiser.push.suggestionsBody.other", { count }),
       url: "/hem",
     });
     sent += result.sent;
@@ -379,9 +395,15 @@ export async function notifyGoals(args: {
   const userIds = (await watchersFor([args.fixtureId])).get(args.fixtureId) ?? [];
   if (!userIds.length) return;
 
+  const t = await getT();
   const result = await sendPushToUsers(userIds, {
-    title: "Mål ⚽",
-    body: `${args.homeName} ${args.homeScore}–${args.awayScore} ${args.awayName}`,
+    title: t("notiser.push.goalTitle"),
+    body: t("notiser.push.goalBody", {
+      home: args.homeName,
+      homeScore: args.homeScore,
+      awayScore: args.awayScore,
+      away: args.awayName,
+    }),
     url: "/spelbok",
   });
   console.log(
@@ -416,14 +438,20 @@ export async function notifyFulltime(matches: FinishedMatch[]) {
   if (!fresh.length) return { sent: 0 };
 
   const watchers = await watchersFor(fresh.map((m) => m.fixtureId));
+  const t = await getT();
   let sent = 0;
 
   for (const match of fresh) {
     const userIds = watchers.get(match.fixtureId) ?? [];
     if (!userIds.length) continue;
     const result = await sendPushToUsers(userIds, {
-      title: "Slutsignal 🏁",
-      body: `${match.homeName} ${match.homeScore}–${match.awayScore} ${match.awayName} · Slut`,
+      title: t("notiser.push.fulltimeTitle"),
+      body: t("notiser.push.fulltimeBody", {
+        home: match.homeName,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
+        away: match.awayName,
+      }),
       url: "/spelbok",
     });
     sent += result.sent;
@@ -488,6 +516,7 @@ export async function notifySettleReminders(
   if (!byUserAndFixture.size) return { sent: 0 };
 
   const nameById = new Map(matches.map((m) => [m.fixtureId, m]));
+  const t = await getT();
   let sent = 0;
 
   for (const [key, count] of byUserAndFixture) {
@@ -495,10 +524,13 @@ export async function notifySettleReminders(
     const match = nameById.get(Number(fixtureRaw));
     if (!match) continue;
     const result = await sendPushToUsers([userId], {
-      title: "Dags att rätta 📝",
-      body: `${match.homeName}–${match.awayName} är slut · ${count} ${
-        count === 1 ? "orättat spel" : "orättade spel"
-      }`,
+      title: t("notiser.push.reminderTitle"),
+      body: t(
+        count === 1
+          ? "notiser.push.reminderBody.one"
+          : "notiser.push.reminderBody.other",
+        { home: match.homeName, away: match.awayName, count }
+      ),
       url: "/spelbok",
     });
     sent += result.sent;

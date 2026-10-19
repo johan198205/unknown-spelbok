@@ -1,3 +1,8 @@
+import { createT, type TFunction, type TextKey } from "./texts";
+
+/** Standardtexterna, för anrop som inte skickar med t. */
+const DEFAULT_T = createT({});
+
 const LOGO_BUCKET = "bookmaker-logos";
 /** Äldre uppladdningar ligger kvar i bucketen `logos`. */
 const LEGACY_BUCKET = "logos";
@@ -108,27 +113,33 @@ export function bonus2Kind(
   return null;
 }
 
-export function formatBonusLine(data: {
-  bonus?: string | null;
-  bonus_value?: number | null;
-}): string | null {
+export function formatBonusLine(
+  data: {
+    bonus?: string | null;
+    bonus_value?: number | null;
+  },
+  t: TFunction = DEFAULT_T
+): string | null {
   const bonus = displayText(data.bonus);
   if (bonus) return bonus;
   if (data.bonus_value != null && data.bonus_value > 0) {
-    return `${data.bonus_value.toLocaleString("sv-SE")} kr`;
+    return `${data.bonus_value.toLocaleString("sv-SE")} ${t("spelbolag.unit.kr")}`;
   }
   return null;
 }
 
-export function wageringParts(wagering: string | null | undefined): {
+export function wageringParts(
+  wagering: string | null | undefined,
+  t: TFunction = DEFAULT_T
+): {
   label: string;
   value: string | null;
 } {
   const raw = displayText(wagering);
   if (!raw || raw === "–" || raw === "-" || raw.toLowerCase() === "inget") {
-    return { label: "Inget omsättningskrav", value: null };
+    return { label: t("spelbolag.card.noWagering"), value: null };
   }
-  return { label: "Omsättningskrav:", value: raw };
+  return { label: t("spelbolag.card.wagering"), value: raw };
 }
 
 /**
@@ -157,10 +168,13 @@ export function starRowDataUri(rating: number | null | undefined): string {
   );
 }
 
-export function ratingTitle(rating: number | null | undefined): string {
+export function ratingTitle(
+  rating: number | null | undefined,
+  t: TFunction = DEFAULT_T
+): string {
   const value = Math.max(0, Math.min(5, rating ?? 0));
   const short = value.toFixed(1).replace(".", ",");
-  return `${short} av 5 — vägt på odds, utbud, betalningar och support.`;
+  return t("spelbolag.card.ratingTitle", { rating: short });
 }
 
 /** Betalningsmärken — samma SVG:er som i design/marks.js. */
@@ -189,7 +203,27 @@ export const BOOK_FILTER_PILLS = [
 
 export type BookFilterPill = (typeof BOOK_FILTER_PILLS)[number];
 
+/**
+ * Filtrens etiketter. Id:t ovan matchar spelbolagens taggar i databasen
+ * och får inte ändras; bara det som visas är redigerbart.
+ */
+export const BOOK_FILTER_LABEL: Record<BookFilterPill, TextKey> = {
+  Populära: "spelbolag.filter.popular",
+  "Nya spelbolag": "spelbolag.filter.new",
+  Bonus: "spelbolag.filter.bonus",
+  "Free bets": "spelbolag.filter.freeBets",
+  "Snabba uttag": "spelbolag.filter.fastPayout",
+  "Med Swish": "spelbolag.filter.swish",
+  Livebetting: "spelbolag.filter.live",
+  "Odds boost": "spelbolag.filter.oddsBoost",
+};
+
 export type BookSortOption = "Vårt betyg" | "Högst bonus";
+
+export const BOOK_SORT_LABEL: Record<BookSortOption, TextKey> = {
+  "Vårt betyg": "spelbolag.sort.rating",
+  "Högst bonus": "spelbolag.sort.bonus",
+};
 
 export function bookmakerMatchesFilter(
   b: {

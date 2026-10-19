@@ -1,12 +1,16 @@
 "use client";
 
+import { useT } from "@/components/TextsProvider";
+import type { TextKey } from "@/lib/texts";
 import type { BetResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Mark = {
-  label: string;
+  /** Intern id — texten som visas kommer från `label`-nyckeln. */
+  mark: "W" | "L" | "P" | "V";
+  label: TextKey;
   result: BetResult;
-  title: string;
+  title: TextKey;
   activeBg: string;
   activeFg: string;
   activeBorder: string;
@@ -19,33 +23,37 @@ type Mark = {
  */
 const MARKS: Mark[] = [
   {
-    label: "W",
+    mark: "W",
+    label: "common.resultButtons.win",
     result: "win",
-    title: "WIN",
+    title: "common.resultButtons.winTitle",
     activeBg: "bg-[var(--win-soft-16)]",
     activeFg: "text-win",
     activeBorder: "border-[var(--win-border)]",
   },
   {
-    label: "L",
+    mark: "L",
+    label: "common.resultButtons.loss",
     result: "loss",
-    title: "LOSS",
+    title: "common.resultButtons.lossTitle",
     activeBg: "bg-[var(--loss-soft-16)]",
     activeFg: "text-loss",
     activeBorder: "border-[var(--loss-border)]",
   },
   {
-    label: "P",
+    mark: "P",
+    label: "common.resultButtons.push",
     result: "void",
-    title: "PUSH",
+    title: "common.resultButtons.pushTitle",
     activeBg: "bg-[var(--yellow-soft)]",
     activeFg: "text-yellow",
     activeBorder: "border-[var(--yellow-border)]",
   },
   {
-    label: "V",
+    mark: "V",
+    label: "common.resultButtons.void",
     result: "void",
-    title: "VOID",
+    title: "common.resultButtons.voidTitle",
     activeBg: "bg-[rgba(138,148,171,0.16)]",
     activeFg: "text-muted",
     activeBorder: "border-[rgba(138,148,171,0.4)]",
@@ -66,21 +74,23 @@ export function ResultButtons({
   /** Which void-button lights up when result is void */
   voidAs?: "push" | "void";
 }) {
+  const t = useT();
+
   return (
     <div className={cn("inline-flex flex-wrap gap-1", className)}>
       {MARKS.map((m) => {
         let showActive = value === m.result && value !== "open";
         if (m.result === "void" && value === "void") {
           showActive =
-            (voidAs === "push" && m.label === "P") ||
-            (voidAs === "void" && m.label === "V");
+            (voidAs === "push" && m.mark === "P") ||
+            (voidAs === "void" && m.mark === "V");
         }
 
         return (
           <button
-            key={m.label}
+            key={m.mark}
             type="button"
-            title={m.title}
+            title={t(m.title)}
             disabled={disabled || !onChange}
             onClick={() => {
               if (!onChange) return;
@@ -93,7 +103,7 @@ export function ResultButtons({
                 : "border-line-strong bg-transparent text-faint"
             )}
           >
-            {m.label}
+            {t(m.label)}
           </button>
         );
       })}

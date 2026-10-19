@@ -7,13 +7,21 @@ import {
   type BreakdownRow,
 } from "@/lib/breakdowns";
 import { stockholmDayBounds } from "@/lib/stockholm";
+import { createT, type TextKey } from "@/lib/texts";
 
+const DEFAULT_T = createT({});
+
+function statsPeriod<const V extends string>(value: V, key: TextKey) {
+  return { value, key, label: DEFAULT_T(key) };
+}
+
+/** `label` är standardtexten; visa `t(period.key)` där ett t finns. */
 export const STATS_PERIODS = [
-  { value: "all", label: "Från start" },
-  { value: "year", label: "Detta år" },
-  { value: "month", label: "Denna månad" },
-  { value: "week", label: "Denna vecka" },
-  { value: "today", label: "Idag" },
+  statsPeriod("all", "terms.statsPeriod.all"),
+  statsPeriod("year", "terms.statsPeriod.year"),
+  statsPeriod("month", "terms.statsPeriod.month"),
+  statsPeriod("week", "terms.statsPeriod.week"),
+  statsPeriod("today", "terms.statsPeriod.today"),
 ] as const;
 
 export type StatsPeriod = (typeof STATS_PERIODS)[number]["value"];

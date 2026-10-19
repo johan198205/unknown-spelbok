@@ -2,28 +2,37 @@
 
 import { useEffect, useState } from "react";
 import { animate, motion, useMotionValue } from "framer-motion";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey } from "@/lib/texts";
 
 const KEY = "spelbok.onboarding.done";
 
-const SLIDES = [
+const SLIDES: { title: TextKey; body: TextKey; visual: string }[] = [
   {
-    title: "Logga dina spel",
-    body: "Svep för att sätta resultat och håll koll på varje tipp i spelkorten.",
+    title: "pwa.onboarding.slide1.title",
+    body: "pwa.onboarding.slide1.body",
     visual: "card",
   },
   {
-    title: "Följ din utveckling",
-    body: "Se ackumulerat netto, ROI och vinstprocent växa över tid.",
+    title: "pwa.onboarding.slide2.title",
+    body: "pwa.onboarding.slide2.body",
     visual: "chart",
   },
   {
-    title: "Tävla mot andra",
-    body: "Jämför dig i topplistorna mot andra publika spelböcker.",
+    title: "pwa.onboarding.slide3.title",
+    body: "pwa.onboarding.slide3.body",
     visual: "board",
   },
 ];
 
+const BOARD_ROWS: TextKey[] = [
+  "pwa.onboarding.demo.row1",
+  "pwa.onboarding.demo.row2",
+  "pwa.onboarding.demo.row3",
+];
+
 export function Onboarding() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const x = useMotionValue(0);
@@ -54,7 +63,7 @@ export function Onboarding() {
     <div className="fixed inset-0 z-[80] flex flex-col bg-bg-soft lg:hidden">
       <div className="flex justify-end px-4 pt-4">
         <button type="button" onClick={finish} className="text-sm font-semibold text-muted">
-          Hoppa över
+          {t("pwa.onboarding.skip")}
         </button>
       </div>
 
@@ -76,10 +85,14 @@ export function Onboarding() {
           {slide.visual === "card" ? (
             <div className="w-[78%] rounded-[12px] border border-line bg-panel-2 p-3 text-left">
               <div className="text-[10px] uppercase tracking-[0.12em] text-faint">
-                Premier League
+                {t("pwa.onboarding.demo.league")}
               </div>
-              <div className="mt-1 text-sm font-semibold">Liverpool – Arsenal</div>
-              <div className="mt-1 font-bold text-win">Ö2.5</div>
+              <div className="mt-1 text-sm font-semibold">
+                {t("pwa.onboarding.demo.match")}
+              </div>
+              <div className="mt-1 font-bold text-win">
+                {t("pwa.onboarding.demo.pick")}
+              </div>
             </div>
           ) : null}
           {slide.visual === "chart" ? (
@@ -94,19 +107,19 @@ export function Onboarding() {
           ) : null}
           {slide.visual === "board" ? (
             <div className="w-[78%] space-y-2 text-left">
-              {["1 · Anna +12%", "2 · Du +8%", "3 · Erik +3%"].map((row) => (
+              {BOARD_ROWS.map((row) => (
                 <div
                   key={row}
                   className="rounded-[8px] border border-line bg-panel-2 px-3 py-2 text-sm"
                 >
-                  {row}
+                  {t(row)}
                 </div>
               ))}
             </div>
           ) : null}
         </div>
-        <h2 className="font-display text-[28px] font-semibold">{slide.title}</h2>
-        <p className="mt-3 max-w-sm text-[15px] text-muted">{slide.body}</p>
+        <h2 className="font-display text-[28px] font-semibold">{t(slide.title)}</h2>
+        <p className="mt-3 max-w-sm text-[15px] text-muted">{t(slide.body)}</p>
       </motion.div>
 
       <div className="flex items-center justify-between px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
@@ -126,7 +139,9 @@ export function Onboarding() {
           }}
           className="rounded-[12px] bg-win px-5 py-2.5 text-sm font-bold text-win-ink"
         >
-          {index >= SLIDES.length - 1 ? "Kom igång" : "Nästa"}
+          {index >= SLIDES.length - 1
+            ? t("pwa.onboarding.start")
+            : t("pwa.onboarding.next")}
         </button>
       </div>
     </div>

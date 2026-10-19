@@ -9,6 +9,7 @@ import {
 } from "@/lib/import/server";
 import type { ImportCommitResponse } from "@/lib/import/types";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 import { leagueByName, leagueLogoUrl, normalizeTeamName } from "@/lib/logos";
 
 export const runtime = "nodejs";
@@ -21,18 +22,18 @@ const CHUNK = 250;
  * mappning, aldrig färdiga spel.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+    return NextResponse.json({ error: t("import.api.notLoggedIn") }, { status: 401 });
   }
 
   const limit = rateLimit(`import-commit:${user.id}`, 5, 60_000);
   if (!limit.allowed) {
     return NextResponse.json(
-      { error: "För många försök. Vänta en stund." },
+      { error: t("import.api.rateLimited") },
       { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
     );
   }
@@ -41,10 +42,10 @@ export async function POST(request: Request) {
 
   let body;
   try {
-    body = parseImportBody(raw);
+    body = parseImportBody(raw, t);
   } catch (error) {
     const message =
-      error instanceof ImportRequestError ? error.message : "Trasig data.";
+      error instanceof ImportRequestError ? error.message : t("import.request.broken");
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
       : []
   );
   if (!selected.size) {
-    return NextResponse.json({ error: "Inga spel valda." }, { status: 400 });
+    return NextResponse.json({ error: t("import.api.noneSelected") }, { status: 400 });
   }
 
   const sheetId = typeof raw.sheet_id === "string" ? raw.sheet_id : "";
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!sheet || sheet.user_id !== user.id) {
     return NextResponse.json(
-      { error: "Spelboken hittades inte." },
+      { error: t("import.api.sheetNotFound") },
       { status: 400 }
     );
   }
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
     unitValue: body.unit_value,
     source: body.import_source,
     bookmakerIndex,
+    t,
   });
 
   // Ligan slås upp på namnet så att ligaloggan följer med importen:
@@ -150,7 +152,7 @@ export async function POST(request: Request) {
     });
 
   if (!inserts.length) {
-    return NextResponse.json({ error: "Inga giltiga spel valda." }, { status: 400 });
+    return NextResponse.json({ error: t("import.api.noValidSelected") }, { status: 400 });
   }
 
   let imported = 0;
@@ -172,14 +174,13 @@ export async function POST(request: Request) {
       ) {
         return NextResponse.json(
           {
-            error:
-              "Importfunktionen kräver migrationen db/import-migration.sql.",
+            error: t("import.api.migrationMissing"),
           },
           { status: 500 }
         );
       }
       return NextResponse.json(
-        { error: error.message || "Kunde inte spara spelen." },
+        { error: error.message || t("import.api.saveFailed") },
         { status: 500 }
       );
     }

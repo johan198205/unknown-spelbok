@@ -11,6 +11,7 @@ import {
   isAllowedImageMime,
 } from "@/lib/import/vision";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,18 +22,18 @@ export const maxDuration = 60;
  * — bilden sparas aldrig.
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+    return NextResponse.json({ error: t("import.api.notLoggedIn") }, { status: 401 });
   }
 
   const minute = rateLimit(`import-image:${user.id}`, 3, 60_000);
   if (!minute.allowed) {
     return NextResponse.json(
-      { error: "För många bildtolkningar. Vänta en stund." },
+      { error: t("import.api.imageRateLimited") },
       { status: 429, headers: { "Retry-After": String(minute.retryAfter) } }
     );
   }
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   if (!daily.allowed) {
     return NextResponse.json(
       {
-        error: `Max ${DAILY_IMAGE_IMPORT_LIMIT} bildtolkningar per dygn. Försök igen imorgon.`,
+        error: t("import.api.imageDailyLimit", { max: DAILY_IMAGE_IMPORT_LIMIT }),
       },
       { status: 429, headers: { "Retry-After": String(daily.retryAfter) } }
     );
@@ -55,13 +56,13 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
-    return NextResponse.json({ error: "Trasig data." }, { status: 400 });
+    return NextResponse.json({ error: t("import.request.broken") }, { status: 400 });
   }
 
   const mime = typeof body.mime === "string" ? body.mime.trim() : "";
   if (!isAllowedImageMime(mime)) {
     return NextResponse.json(
-      { error: "Endast JPEG, PNG eller WebP." },
+      { error: t("import.image.wrongType") },
       { status: 400 }
     );
   }
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
   const base64 =
     typeof body.image_base64 === "string" ? body.image_base64.trim() : "";
   if (!base64) {
-    return NextResponse.json({ error: "Bilden saknas." }, { status: 400 });
+    return NextResponse.json({ error: t("import.api.imageMissing") }, { status: 400 });
   }
 
   // Tillåt data-URL-prefix om klienten skickar det.
@@ -83,15 +84,15 @@ export async function POST(request: Request) {
   try {
     bytes = Buffer.from(rawB64, "base64");
   } catch {
-    return NextResponse.json({ error: "Ogiltig bilddata." }, { status: 400 });
+    return NextResponse.json({ error: t("import.api.imageInvalid") }, { status: 400 });
   }
 
   if (!bytes.length) {
-    return NextResponse.json({ error: "Bilden är tom." }, { status: 400 });
+    return NextResponse.json({ error: t("import.api.imageEmpty") }, { status: 400 });
   }
   if (bytes.length > MAX_IMPORT_IMAGE_BYTES) {
     return NextResponse.json(
-      { error: "Bilden är för stor (max 5 MB)." },
+      { error: t("import.image.tooLarge") },
       { status: 400 }
     );
   }
@@ -101,11 +102,12 @@ export async function POST(request: Request) {
       bytes,
       mime,
       filename,
+      t,
     });
 
     if (!result.rows.length) {
       return NextResponse.json(
-        { error: "Inga spel kunde läsas från bilden." },
+        { error: t("import.vision.noticeNoBets") },
         { status: 422 }
       );
     }
@@ -120,15 +122,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: missingKey
-            ? "AI-import är inte konfigurerad."
-            : error.message || "Kunde inte tolka bilden.",
+            ? t("import.api.aiNotConfigured")
+            : error.message || t("import.image.failed"),
         },
         { status: missingKey ? 503 : 502 }
       );
     }
     console.error("import/from-image", error);
     return NextResponse.json(
-      { error: "Kunde inte tolka bilden." },
+      { error: t("import.image.failed") },
       { status: 502 }
     );
   }

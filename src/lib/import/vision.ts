@@ -10,6 +10,7 @@ import {
   type ImportFromImageResponse,
   type ImportRow,
 } from "@/lib/import/types";
+import { createT, type TFunction } from "@/lib/texts";
 
 /**
  * AI-bildtolkning för import. Server-only — nyckeln lämnar aldrig noden.
@@ -110,7 +111,7 @@ function rawToRow(raw: RawBet): ImportRow {
   };
 }
 
-function extractJsonObject(text: string): unknown {
+function extractJsonObject(text: string, t: TFunction): unknown {
   const trimmed = text.trim();
   try {
     return JSON.parse(trimmed);
@@ -120,18 +121,21 @@ function extractJsonObject(text: string): unknown {
     if (start >= 0 && end > start) {
       return JSON.parse(trimmed.slice(start, end + 1));
     }
-    throw new ImportVisionError("AI returnerade ogiltig JSON");
+    throw new ImportVisionError(t("import.vision.invalidJson"));
   }
 }
 
-export function parseVisionBets(text: string): ImportRow[] {
-  const parsed = extractJsonObject(text);
+export function parseVisionBets(
+  text: string,
+  t: TFunction = createT({})
+): ImportRow[] {
+  const parsed = extractJsonObject(text, t);
   if (!parsed || typeof parsed !== "object") {
-    throw new ImportVisionError("AI returnerade ogiltig JSON");
+    throw new ImportVisionError(t("import.vision.invalidJson"));
   }
   const bets = (parsed as { bets?: unknown }).bets;
   if (!Array.isArray(bets)) {
-    throw new ImportVisionError("AI returnerade inga spel");
+    throw new ImportVisionError(t("import.vision.noBets"));
   }
 
   const rows: ImportRow[] = [];
@@ -149,7 +153,10 @@ export async function extractBetsFromImage(args: {
   bytes: Buffer;
   mime: AllowedImportImageMime;
   filename: string;
+  /** Texterna för fel och notiser. Utan den används standardtexterna. */
+  t?: TFunction;
 }): Promise<ImportFromImageResponse> {
+  const t = args.t ?? createT({});
   const response = await client().messages.create({
     model: MODEL,
     max_tokens: MAX_TOKENS,
@@ -176,7 +183,7 @@ export async function extractBetsFromImage(args: {
   });
 
   if (response.stop_reason === "refusal") {
-    throw new ImportVisionError("Modellen avböjde att tolka bilden");
+    throw new ImportVisionError(t("import.vision.refused"));
   }
 
   const text = response.content
@@ -186,15 +193,15 @@ export async function extractBetsFromImage(args: {
     .trim();
 
   if (!text) {
-    throw new ImportVisionError("Tomt svar från AI");
+    throw new ImportVisionError(t("import.vision.empty"));
   }
 
-  const rows = parseVisionBets(text);
+  const rows = parseVisionBets(text, t);
   const notices: string[] = [];
   if (!rows.length) {
-    notices.push("Inga spel kunde läsas från bilden.");
+    notices.push(t("import.vision.noticeNoBets"));
   } else if (rows.length >= MAX_IMPORT_ROWS) {
-    notices.push(`Max ${MAX_IMPORT_ROWS} rader — överskjutande rader hoppades över.`);
+    notices.push(t("import.vision.noticeTruncated", { max: MAX_IMPORT_ROWS }));
   }
 
   const mapping: ColumnMapping = { ...IMAGE_COLUMN_MAPPING };

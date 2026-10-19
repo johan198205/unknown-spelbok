@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 import { BookmakerLogo } from "@/components/bets/BookmakerLogo";
+import { useT } from "@/components/TextsProvider";
 import { track } from "@/lib/analytics";
 import type { AffiliateTopRow } from "@/lib/bet-stats";
 import type { Bet, Bookmaker } from "@/lib/types";
@@ -59,6 +60,7 @@ export function SheetAffiliateTop3({
   /** Rankade bolag — fyller på när spelboken har färre än tre bolag. */
   affiliates: AffiliateTopRow[];
 }) {
+  const t = useT();
   const top = useMemo(
     () => topBookmakers(bets, bookmakers, affiliates),
     [bets, bookmakers, affiliates]
@@ -67,12 +69,12 @@ export function SheetAffiliateTop3({
   return (
     <section className="rounded-[14px] border border-line bg-panel p-[18px]">
       <h2 className="mb-3 font-display text-[15px] font-semibold uppercase tracking-[0.09em]">
-        Topp 3 spelbolag
+        {t("spelbok.affiliates.title")}
       </h2>
 
       {!top.length ? (
         <p className="py-6 text-center text-[13px] text-muted">
-          Inga spelbolag just nu.
+          {t("spelbok.affiliates.empty")}
         </p>
       ) : (
         <div className="space-y-2">
@@ -83,7 +85,7 @@ export function SheetAffiliateTop3({
               target="_blank"
               rel="noopener sponsored nofollow"
               onClick={() => track({ event: "affiliate_click", bookmaker: bm.slug })}
-              aria-label={`${bm.name} – till spelbolaget`}
+              aria-label={t("spelbok.affiliates.linkAria", { name: bm.name })}
               className="group flex items-center gap-2.5 rounded-[11px] border border-line bg-bg-soft px-[11px] py-[9px] text-text no-underline transition-colors hover:border-line-hover hover:no-underline"
             >
               <span
@@ -105,7 +107,9 @@ export function SheetAffiliateTop3({
               </span>
               <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
                 {bm.bonus_value
-                  ? `${bm.bonus_value.toLocaleString("sv-SE")} kr`
+                  ? t("spelbok.affiliates.bonusValue", {
+                      amount: bm.bonus_value.toLocaleString("sv-SE"),
+                    })
                   : bm.bonus || bm.name}
               </span>
               <ChevronRight

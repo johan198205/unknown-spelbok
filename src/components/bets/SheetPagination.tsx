@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/TextsProvider";
 import { cn } from "@/lib/utils";
 
 /** Sidnummer runt den aktiva sidan, med ellips när listan är lång. */
@@ -26,6 +27,7 @@ export function SheetPagination({
   pageCount: number;
   onPage: (page: number) => void;
 }) {
+  const t = useT();
   if (pageCount <= 1) return null;
 
   const base =
@@ -33,7 +35,7 @@ export function SheetPagination({
 
   return (
     <nav
-      aria-label="Sidor"
+      aria-label={t("spelbok.pagination.aria")}
       className="flex flex-wrap items-center justify-center gap-1.5"
     >
       <button
@@ -42,7 +44,7 @@ export function SheetPagination({
         disabled={page <= 1}
         className={cn(base, "text-muted hover:text-text")}
       >
-        Föregående
+        {t("spelbok.pagination.prev")}
       </button>
       {pageItems(page, pageCount).map((item, i) =>
         item === "…" ? (
@@ -75,7 +77,7 @@ export function SheetPagination({
         disabled={page >= pageCount}
         className={cn(base, "text-muted hover:text-text")}
       >
-        Nästa
+        {t("spelbok.pagination.next")}
       </button>
     </nav>
   );

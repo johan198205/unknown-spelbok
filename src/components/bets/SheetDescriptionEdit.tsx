@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/components/TextsProvider";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,7 @@ export function SheetDescriptionEdit({
   description: string | null;
   canEdit: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function SheetDescriptionEdit({
       .eq("id", sheetId);
     setSaving(false);
     if (error) {
-      alert(error.message || "Kunde inte spara beskrivningen");
+      alert(error.message || t("spelbok.description.saveFailed"));
       return;
     }
     setDraft(null);
@@ -67,7 +69,7 @@ export function SheetDescriptionEdit({
             setEditing(false);
           }
         }}
-        placeholder="Beskriv din spelbok…"
+        placeholder={t("spelbok.description.placeholder")}
         maxLength={200}
         className="ml-1 min-w-[180px] flex-1 rounded border border-line bg-bg-soft px-2 py-0.5 text-[14px] text-text outline-none focus:border-blue"
       />
@@ -78,7 +80,7 @@ export function SheetDescriptionEdit({
 
   if (!canEdit) {
     return (
-      <span className="text-muted">{text || "Ingen beskrivning."}</span>
+      <span className="text-muted">{text || t("spelbok.description.none")}</span>
     );
   }
 
@@ -95,9 +97,9 @@ export function SheetDescriptionEdit({
           ? "text-muted hover:text-text"
           : "text-faint italic hover:text-muted"
       )}
-      title="Klicka för att redigera beskrivning"
+      title={t("spelbok.description.editTitle")}
     >
-      {text || "Lägg till beskrivning…"}
+      {text || t("spelbok.description.add")}
     </button>
   );
 }

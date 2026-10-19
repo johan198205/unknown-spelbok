@@ -28,6 +28,7 @@ import {
   type NotificationType,
 } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createT, type TFunction } from "@/lib/texts";
 import { formatPercent } from "@/lib/utils";
 import type { Competition, LeaderboardRow } from "@/lib/types";
 
@@ -35,6 +36,16 @@ const INSERT_BATCH = 500;
 
 /** Avsparksnotisen går ut när matchen är närmare än så här. */
 const KICKOFF_WINDOW_MIN = 15;
+
+/*
+  Texterna i notiserna är redigerbara i admin → Texter. Modulen körs också
+  av scripts/notify-idempotens.ts utanför Next, där getT inte fungerar —
+  därför tar jobben emot t från Next-anroparen och faller annars tillbaka
+  på standardtexterna.
+*/
+function textsOr(t?: TFunction) {
+  return t ?? createT({});
+}
 
 export type NotificationDraft = {
   user_id: string;
@@ -210,8 +221,9 @@ export async function recordGoalNotifications(args: {
   homeScore: number;
   awayScore: number;
   elapsed?: number | null;
-}) {
+}, t?: TFunction) {
   if (!FEATURES.goalNotify) return 0;
+  const tt = textsOr(t);
 
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -232,16 +244,26 @@ export async function recordGoalNotifications(args: {
   if (!bets.length) return 0;
 
   const score = `${args.homeScore}–${args.awayScore}`;
-  const minute = args.elapsed != null ? `${args.elapsed}'` : "matchen";
+  const minute =
+    args.elapsed != null
+      ? tt("notiser.events.goal.minute", { minute: args.elapsed })
+      : tt("notiser.events.goal.minuteUnknown");
 
   const drafts: NotificationDraft[] = bets.map((bet) => ({
     user_id: bet.user_id,
     type: "goal",
-    title: `Mål i ${args.homeName} – ${args.awayName}`,
+    title: tt("notiser.events.goal.title", {
+      home: args.homeName,
+      away: args.awayName,
+    }),
     body:
       args.elapsed != null
-        ? `Ställning ${score} i ${minute}. Ditt spel: ${formatPick(bet.pick)}.`
-        : `Ställning ${score}. Ditt spel: ${formatPick(bet.pick)}.`,
+        ? tt("notiser.events.goal.bodyMinute", {
+            score,
+            minute,
+            pick: formatPick(bet.pick),
+          })
+        : tt("notiser.events.goal.body", { score, pick: formatPick(bet.pick) }),
     // Ställningen i nyckeln — nästa mål ger en ny rad, samma mål inte.
     dedupe_key: `goal:${bet.id}:${args.homeScore}-${args.awayScore}`,
     target_type: "sheet",
@@ -258,7 +280,11 @@ export async function recordGoalNotifications(args: {
 // tre körningar täcker det även om ett anrop faller bort — dedupe_key
 // utan tid ser till att bara den första ger en rad.
 // -------------------------------------------------------------
-export async function recordKickoffNotifications(now = Date.now()) {
+export async function recordKickoffNotifications(
+  now = Date.now(),
+  t?: TFunction
+) {
+  const tt = textsOr(t);
   const admin = createAdminClient();
   const cutoff = new Date(now + KICKOFF_WINDOW_MIN * 60_000).toISOString();
 
@@ -293,8 +319,19 @@ export async function recordKickoffNotifications(now = Date.now()) {
       {
         user_id: bet.user_id,
         type: "kickoff" as const,
-        title: `Avspark om ${minutes} min`,
-        body: `${teams.label}${league ? ` · ${league}` : ""}. Ditt spel: ${formatPick(bet.pick)} @ ${odds}.`,
+        title: tt("notiser.events.kickoff.title", { minutes }),
+        body: league
+          ? tt("notiser.events.kickoff.bodyLeague", {
+              match: teams.label,
+              league,
+              pick: formatPick(bet.pick),
+              odds,
+            })
+          : tt("notiser.events.kickoff.body", {
+              match: teams.label,
+              pick: formatPick(bet.pick),
+              odds,
+            }),
         dedupe_key: `kickoff:${bet.id}`,
         target_type: "bet" as const,
         target_id: bet.id,
@@ -314,7 +351,11 @@ export async function recordKickoffNotifications(now = Date.now()) {
 //
 // PUSH och VOID ger ingen notis — det finns inget utfall att berätta om.
 // -------------------------------------------------------------
-export async function recordSettledNotifications(betIds: string[]) {
+export async function recordSettledNotifications(
+  betIds: string[],
+  t?: TFunction
+) {
+  const tt = textsOr(t);
   const ids = [...new Set(betIds.filter(Boolean))];
   if (!ids.length) return 0;
 
@@ -344,8 +385,15 @@ export async function recordSettledNotifications(betIds: string[]) {
     return {
       user_id: bet.user_id,
       type: won ? ("settled_win" as const) : ("settled_loss" as const),
-      title: `${won ? "Vunnet spel" : "Förlorat spel"} · ${formatPick(bet.pick)}`,
-      body: `${teams.label} är rättad.${league ? ` ${league}.` : ""}`,
+      title: tt("notiser.events.settled.title", {
+        outcome: won
+          ? tt("notiser.events.settled.win")
+          : tt("notiser.events.settled.loss"),
+        pick: formatPick(bet.pick),
+      }),
+      body: league
+        ? tt("notiser.events.settled.bodyLeague", { match: teams.label, league })
+        : tt("notiser.events.settled.body", { match: teams.label }),
       dedupe_key: `settle:${bet.id}`,
       amount: Math.round(netto * 100) / 100,
       amount_kind: "netto" as const,
@@ -371,7 +419,8 @@ export async function recordCouponNotifications(coupon: {
   title: string;
   legs: number;
   totalOdds: number;
-}) {
+}, t?: TFunction) {
+  const tt = textsOr(t);
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("notification_settings")
@@ -390,11 +439,11 @@ export async function recordCouponNotifications(coupon: {
   const drafts: NotificationDraft[] = userIds.map((userId) => ({
     user_id: userId,
     type: "coupon",
-    title: `Ny kupong: ${coupon.title}`,
+    title: tt("notiser.events.coupon.title", { title: coupon.title }),
     body:
       coupon.legs === 1
-        ? `Singel · totalodds ${odds}`
-        : `${coupon.legs} spel · totalodds ${odds}`,
+        ? tt("notiser.events.coupon.bodySingle", { odds })
+        : tt("notiser.events.coupon.bodyMulti", { legs: coupon.legs, odds }),
     dedupe_key: `coupon:${coupon.id}`,
     target_type: "coupon",
     target_id: coupon.id,
@@ -423,7 +472,8 @@ export async function recordPopupNotification(args: {
   title: string;
   body: string;
   href: string | null;
-}) {
+}, t?: TFunction) {
+  const tt = textsOr(t);
   const title = args.title.trim();
   const body = args.body.trim();
   if (!title && !body) return 0;
@@ -434,7 +484,7 @@ export async function recordPopupNotification(args: {
       type: "popup",
       // En bildpopup saknar rubrik. Notisen måste ändå ha en — annars
       // står det en tom rad i panelen.
-      title: title || "Nytt erbjudande",
+      title: title || tt("notiser.events.popup.fallbackTitle"),
       body,
       dedupe_key: `popup:${args.popupId}`,
       href: args.href,
@@ -451,7 +501,11 @@ export async function recordPopupNotification(args: {
 // comp:{id}:{placering} är unik per användare, så en oförändrad
 // placering skrivs aldrig om. Ingen extra historiktabell behövs.
 // -------------------------------------------------------------
-export async function recordCompetitionNotifications(now = Date.now()) {
+export async function recordCompetitionNotifications(
+  now = Date.now(),
+  t?: TFunction
+) {
+  const tt = textsOr(t);
   const admin = createAdminClient();
   const nowIso = new Date(now).toISOString();
 
@@ -494,16 +548,22 @@ export async function recordCompetitionNotifications(now = Date.now()) {
 
   const drafts: NotificationDraft[] = [];
   for (const comp of comps) {
-    const entries = rankBoard(byComp.get(comp.id) ?? [], comp);
+    const entries = rankBoard(byComp.get(comp.id) ?? [], comp, tt);
     const ranked = entries.filter((e) => e.rank !== null);
     for (const entry of ranked) {
       drafts.push({
         user_id: entry.user_id,
         type: "competition",
-        title: `Plats ${entry.rank} i ${comp.name}`,
+        title: tt("notiser.events.competition.title", {
+          rank: entry.rank,
+          name: comp.name,
+        }),
         // Topplistan rankar konton, inte enskilda spelböcker — därför
         // "Du", inte ett spelboksnamn som inte är det som mäts.
-        body: `Du ligger på ROI ${formatPercent(entry.roi)} bland ${ranked.length} deltagare.`,
+        body: tt("notiser.events.competition.body", {
+          roi: formatPercent(entry.roi),
+          count: ranked.length,
+        }),
         dedupe_key: `comp:${comp.id}:${entry.rank}`,
         amount: Math.round(entry.roi * 10) / 10,
         amount_kind: "roi",

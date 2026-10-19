@@ -17,6 +17,7 @@ import {
 } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
 
 function rowToNotification(row: Record<string, unknown>): AppNotification | null {
   if (typeof row.id !== "string" || !isNotificationType(row.type)) return null;
@@ -64,6 +65,7 @@ export function NotificationBell({
   badgeBorder?: string;
   className?: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(initialUnread);
@@ -280,9 +282,11 @@ export function NotificationBell({
           setOpen((v) => !v);
           setTab("alla");
         }}
-        title="Notiser"
+        title={t("notiser.bell.title")}
         aria-label={
-          unread ? `Notiser, ${unread} olästa` : "Notiser"
+          unread
+            ? t("notiser.bell.ariaLabelUnread", { count: unread })
+            : t("notiser.bell.ariaLabel")
         }
         aria-expanded={open}
         className={cn(
@@ -306,7 +310,7 @@ export function NotificationBell({
               border: `2px solid ${badgeBorder}`,
             }}
           >
-            {unread > 9 ? "9+" : unread}
+            {unread > 9 ? t("notiser.bell.badgeOverflow") : unread}
           </span>
         ) : null}
       </button>

@@ -10,6 +10,7 @@ import {
 } from "@/components/bets/LoggedBeforeKickoff";
 import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
+import { useT } from "@/components/TextsProvider";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import {
   applyLiveToBet,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/live-fixture";
 import { formatPick } from "@/lib/picks";
 import { canRyggaBet } from "@/lib/rygga";
+import type { TextKey, TFunction } from "@/lib/texts";
 import type { Bet, BetResult } from "@/lib/types";
 import { settleOutcome, track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
@@ -52,22 +54,22 @@ type DisplayBet = Bet & {
   _pendingId?: string;
 };
 
-const FILTERS: Array<{ id: string; label: string }> = [
-  { id: "all", label: "Alla" },
-  { id: "open", label: "Öppna" },
-  { id: "win", label: "Vinst" },
-  { id: "loss", label: "Förlust" },
-  { id: "void", label: "Void" },
-  { id: "halfwin", label: "Halvvinst" },
-  { id: "halfloss", label: "Halvförlust" },
+const FILTERS: Array<{ id: string; label: TextKey }> = [
+  { id: "all", label: "spelbok.mobile.filter.all" },
+  { id: "open", label: "spelbok.mobile.filter.open" },
+  { id: "win", label: "spelbok.mobile.filter.win" },
+  { id: "loss", label: "spelbok.mobile.filter.loss" },
+  { id: "void", label: "spelbok.mobile.filter.void" },
+  { id: "halfwin", label: "spelbok.mobile.filter.halfwin" },
+  { id: "halfloss", label: "spelbok.mobile.filter.halfloss" },
 ];
 
 /** Samma fyra rättningar som i desktoptabellen — inte bara vann/förlorade. */
-const QUICK_RESULTS: Array<{ result: BetResult; label: string }> = [
-  { result: "win", label: "Vann" },
-  { result: "loss", label: "Förlorade" },
-  { result: "void", label: "Void" },
-  { result: "open", label: "Öppen" },
+const QUICK_RESULTS: Array<{ result: BetResult; label: TextKey }> = [
+  { result: "win", label: "spelbok.mobile.settle.win" },
+  { result: "loss", label: "spelbok.mobile.settle.loss" },
+  { result: "void", label: "spelbok.mobile.settle.void" },
+  { result: "open", label: "spelbok.mobile.settle.open" },
 ];
 
 function quickResultTone(result: BetResult) {
@@ -103,19 +105,22 @@ function cardDate(iso: string) {
  * Märket i kortets huvud. Bara synkstatus för offline-köade spel — matchens
  * status (minut, FT) står i matchsektionen och rättningen i knapparna.
  */
-function statusBadge(bet: DisplayBet): {
+function statusBadge(
+  bet: DisplayBet,
+  t: TFunction
+): {
   label: string;
   className: string;
 } | null {
   if (bet._pendingStatus === "error") {
     return {
-      label: "Kunde inte synkas",
+      label: t("spelbok.mobile.badge.syncFailed"),
       className: "bg-loss/15 text-loss border-loss/40",
     };
   }
   if (bet._pending) {
     return {
-      label: "Väntar på synk",
+      label: t("spelbok.mobile.badge.pending"),
       className: "bg-yellow/15 text-yellow border-yellow/40",
     };
   }
@@ -144,6 +149,7 @@ export function MobileBetCards({
   /** Kortet en notis pekade ut. Pulsar i två sekunder, sedan null. */
   highlightBetId?: string | null;
 }) {
+  const t = useT();
   const amount = useAmount();
   const router = useRouter();
   const online = useOnlineStatus();
@@ -274,7 +280,7 @@ export function MobileBetCards({
         delete next[bet.id];
         return next;
       });
-      alert(error.message || "Kunde inte sätta resultat");
+      alert(error.message || t("spelbok.settle.failed"));
       return;
     }
     const outcome = settleOutcome(result);
@@ -291,7 +297,7 @@ export function MobileBetCards({
       return;
     }
     if (!online) return;
-    if (!confirm("Ta bort spelet?")) return;
+    if (!confirm(t("spelbok.remove.confirm"))) return;
     const supabase = createClient();
     await supabase.from("bets").delete().eq("id", bet.id);
     setSheetBet(null);
@@ -307,7 +313,7 @@ export function MobileBetCards({
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      alert("Du måste vara inloggad för att synka spelet.");
+      alert(t("spelbok.mobile.sync.loginRequired"));
       return;
     }
     const { error } = await supabase
@@ -319,8 +325,8 @@ export function MobileBetCards({
       const odds = Number(item.payload.odds);
       alert(
         Number.isFinite(odds) && odds >= 1.01
-          ? "Spelet kunde inte synkas. Försök igen om en stund."
-          : "Spelet saknar giltiga odds och kan inte synkas. Ta bort det och lägg in det igen."
+          ? t("spelbok.mobile.sync.failed")
+          : t("spelbok.mobile.sync.invalidOdds")
       );
       return;
     }
@@ -335,10 +341,10 @@ export function MobileBetCards({
         <>
           <div className="mb-3 flex gap-2 overflow-x-auto sb-scroll snap-x snap-mandatory pb-1">
             {[
-              { label: "Netto", value: amount(stats.netto), color: nettoColor(stats.netto) },
-              { label: "ROI", value: formatRoi(stats.roi), color: nettoColor(stats.roi) },
-              { label: "Vinstprocent", value: `${stats.hitrate.toFixed(0)}%`, color: "text-text" },
-              { label: "Spel", value: String(stats.bets), color: "text-text" },
+              { label: t("spelbok.kpi.netto"), value: amount(stats.netto), color: nettoColor(stats.netto) },
+              { label: t("spelbok.kpi.roi"), value: formatRoi(stats.roi), color: nettoColor(stats.roi) },
+              { label: t("spelbok.kpi.hitrate"), value: `${stats.hitrate.toFixed(0)}%`, color: "text-text" },
+              { label: t("spelbok.kpi.bets"), value: String(stats.bets), color: "text-text" },
             ].map((k) => (
               <div
                 key={k.label}
@@ -367,7 +373,7 @@ export function MobileBetCards({
                     : "border-line bg-panel text-muted"
                 )}
               >
-                {f.label}
+                {t(f.label)}
               </button>
             ))}
           </div>
@@ -375,7 +381,9 @@ export function MobileBetCards({
       ) : null}
 
       {syncing ? (
-        <div className="mb-2 text-center text-[12px] text-muted">Synkar offline-kö…</div>
+        <div className="mb-2 text-center text-[12px] text-muted">
+          {t("spelbok.mobile.syncing")}
+        </div>
       ) : null}
 
       <div className="space-y-3">
@@ -395,7 +403,7 @@ export function MobileBetCards({
         ))}
         {!filtered.length ? (
           <div className="rounded-[12px] border border-line bg-panel px-4 py-10 text-center text-muted">
-            Inga spel ännu.
+            {t("spelbok.mobile.empty")}
           </div>
         ) : null}
       </div>
@@ -405,7 +413,7 @@ export function MobileBetCards({
           <button
             type="button"
             className="absolute inset-0"
-            aria-label="Stäng"
+            aria-label={t("spelbok.mobile.menu.close")}
             onClick={() => setSheetBet(null)}
           />
           <div className="relative w-full rounded-t-[15px] border-t border-line bg-panel px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
@@ -429,7 +437,7 @@ export function MobileBetCards({
                   }}
                   className="rounded-[10px] border border-line bg-panel-2 px-4 py-3 text-left font-semibold"
                 >
-                  Kopiera spel
+                  {t("spelbok.mobile.menu.copy")}
                 </button>
               ) : null}
               {canEdit || sheetBet._pending ? (
@@ -438,13 +446,13 @@ export function MobileBetCards({
                   disabled={!online && !sheetBet._pending}
                   title={
                     !online && !sheetBet._pending
-                      ? "Kräver uppkoppling"
+                      ? t("spelbok.mobile.menu.needsOnline")
                       : undefined
                   }
                   onClick={() => remove(sheetBet)}
                   className="rounded-[10px] border border-loss/40 bg-loss/10 px-4 py-3 text-left font-semibold text-loss disabled:opacity-40"
                 >
-                  Ta bort
+                  {t("spelbok.mobile.menu.remove")}
                 </button>
               ) : null}
             </div>
@@ -476,12 +484,13 @@ function SwipeBetCard({
   onRetry: () => void;
   onRygga?: () => void;
 }) {
+  const t = useT();
   const amount = useAmount();
   const x = useMotionValue(0);
   const winOpacity = useTransform(x, [0, 120], [0, 1]);
   const lossOpacity = useTransform(x, [0, -120], [0, 1]);
   const holdTimer = useRef<number | null>(null);
-  const badge = statusBadge(bet);
+  const badge = statusBadge(bet, t);
   const netto = betNetto(bet);
   const settled = bet.result !== "open";
   const fixture = fixtureFromBet(bet);
@@ -503,13 +512,13 @@ function SwipeBetCard({
         style={{ opacity: winOpacity }}
         className="pointer-events-none absolute inset-0 flex items-center justify-start bg-win/90 px-5 font-display text-2xl font-bold text-win-ink"
       >
-        VINST
+        {t("spelbok.mobile.swipe.win")}
       </motion.div>
       <motion.div
         style={{ opacity: lossOpacity }}
         className="pointer-events-none absolute inset-0 flex items-center justify-end bg-loss/90 px-5 font-display text-2xl font-bold text-white"
       >
-        FÖRLUST
+        {t("spelbok.mobile.swipe.loss")}
       </motion.div>
 
       <motion.div
@@ -563,7 +572,9 @@ function SwipeBetCard({
             </span>
           ) : null}
           <span className="line-clamp-2 min-w-0 flex-1 break-words pt-0.5 text-[12.5px] leading-snug text-[#8A94AB]">
-            {bet.league ? `${bet.league} · ${date}` : `Match · ${date}`}
+            {bet.league
+              ? t("spelbok.mobile.card.leagueDate", { league: bet.league, date })
+              : t("spelbok.mobile.card.matchDate", { date })}
           </span>
           <div className="flex shrink-0 items-center gap-1.5">
             {badge ? (
@@ -583,7 +594,7 @@ function SwipeBetCard({
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={onOpenSheet}
                 className="-mr-1 px-1 text-[18px] leading-none text-muted"
-                aria-label="Fler alternativ"
+                aria-label={t("spelbok.mobile.card.more")}
               >
                 ⋯
               </button>
@@ -599,7 +610,7 @@ function SwipeBetCard({
         {/* 3. Spel i full bredd, insats och odds i egna fält under. */}
         <div className="mt-2.5 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5">
           <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-            Spel
+            {t("spelbok.cards.pick")}
           </div>
           <div className="break-words text-[16px] font-bold leading-snug">
             {formatPick(bet.pick)}
@@ -608,7 +619,7 @@ function SwipeBetCard({
         <div className="mt-2 grid grid-cols-2 gap-2">
           <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
             <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-              Insats
+              {t("spelbok.cards.stake")}
             </div>
             <div className="whitespace-nowrap font-mono-num text-[14px] font-semibold tabular-nums">
               {amount(Number(bet.stake), { sign: false })}
@@ -616,7 +627,7 @@ function SwipeBetCard({
           </div>
           <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
             <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-              Odds
+              {t("spelbok.cards.odds")}
             </div>
             <div className="font-mono-num text-[14px] font-semibold tabular-nums">
               {formatOdds(Number(bet.odds))}
@@ -628,7 +639,9 @@ function SwipeBetCard({
         <div className="mt-3 flex items-end gap-3 border-t border-line-soft pt-3">
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-              {settled ? "Resultat" : "Möjlig vinst"}
+              {settled
+                ? t("spelbok.cards.result")
+                : t("spelbok.cards.possibleWin")}
             </div>
             <span
               className={cn(
@@ -645,12 +658,12 @@ function SwipeBetCard({
         {canEdit && online && !bet._pending ? (
           <div
             role="group"
-            aria-label="Rättning"
+            aria-label={t("spelbok.settle.groupAria")}
             className="mt-3 grid grid-cols-4 gap-1.5"
           >
             {QUICK_RESULTS.map(({ result, label }) => {
               const active = bet.result === result;
-              const t = quickResultTone(result);
+              const tone = quickResultTone(result);
               return (
                 <button
                   key={result}
@@ -661,11 +674,11 @@ function SwipeBetCard({
                   className={cn(
                     "truncate rounded-[8px] border py-2 text-[12px] font-semibold transition",
                     active
-                      ? `${t.bg} ${t.fg} ${t.border}`
+                      ? `${tone.bg} ${tone.fg} ${tone.border}`
                       : "border-line text-muted"
                   )}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               );
             })}
@@ -679,7 +692,7 @@ function SwipeBetCard({
             disabled={!online}
             className="mt-2 text-sm font-semibold text-loss underline disabled:opacity-40"
           >
-            Försök igen
+            {t("spelbok.mobile.sync.retry")}
           </button>
         ) : null}
       </motion.div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { useT } from "@/components/TextsProvider";
 import { useClockTick } from "@/hooks/useClockTick";
 import {
   fixtureClock,
@@ -55,11 +56,12 @@ export function LiveMatchCard({
   className?: string;
   logoSize?: number;
 }) {
+  const t = useT();
   const live = isInPlayStatus(fixture.status);
   const finished = isFinishedStatus(fixture.status);
   const showScore = live || finished;
   const now = useClockTick(isTickingStatus(fixture.status));
-  const clock = fixtureClock(fixture, now);
+  const clock = fixtureClock(fixture, now, t);
   const clockColor = finished
     ? "text-faint"
     : live

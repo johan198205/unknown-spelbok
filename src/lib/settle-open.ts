@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolvePick, type Settlement } from "@/lib/settle-pick";
 import { recordSettledNotifications } from "@/lib/notify-events";
 import { notifySettledBets } from "@/lib/send-push";
+import { getT } from "@/lib/texts/server";
 
 type BetRow = {
   id: string;
@@ -152,7 +153,9 @@ export async function settleOpenBets(
       notifySettledBets(settledIds).catch((err) =>
         console.error("push vid rättning", err)
       ),
-      recordSettledNotifications(settledIds).catch((err) =>
+      getT()
+        .then((t) => recordSettledNotifications(settledIds, t))
+        .catch((err) =>
         console.error("notis vid rättning", err)
       ),
     ]);

@@ -8,6 +8,8 @@ import {
 } from "@/lib/breakdowns";
 import { formatAmount, type DisplayPrefs } from "@/lib/display";
 import { SPORTS } from "@/lib/sports";
+import type { TFunction } from "@/lib/texts";
+import { getT } from "@/lib/texts/server";
 import type { Bet } from "@/lib/types";
 import { cn, formatRoi } from "@/lib/utils";
 
@@ -19,13 +21,14 @@ const SPORT_ICONS: Record<string, string> = Object.fromEntries(
  * Räknas fram ur spelen. Boxen visas alltid; sport och liga fylls i när de
  * har nått minimikravet, annars står det vad som återstår.
  */
-export function BestSport({
+export async function BestSport({
   bets,
   prefs,
 }: {
   bets: Bet[];
   prefs: DisplayPrefs;
 }) {
+  const t = await getT();
   const sport = bestGroup(bets, sportKey);
   const league = bestGroup(bets, leagueKey);
 
@@ -39,19 +42,24 @@ export function BestSport({
   return (
     <SectionCard
       className="mb-8"
-      title={sport ? `Bästa sport: ${sport.name}` : "Bästa sport"}
+      title={
+        sport
+          ? t("profil.best.titleWithSport", { sport: sport.name })
+          : t("profil.best.title")
+      }
       action={
         <span className="text-[12px] text-dim">
-          Minst {MIN_BEST_BETS} spel · rankas på ROI
+          {t("profil.best.criteria", { min: MIN_BEST_BETS })}
         </span>
       }
     >
       <div className="grid gap-3 sm:grid-cols-2">
         {sport ? (
           <BestRow
-            label="Sport"
+            label={t("profil.best.sport")}
             group={sport}
             prefs={prefs}
+            t={t}
             icon={
               <span className="text-2xl" aria-hidden>
                 {SPORT_ICONS[sport.name] ?? sport.name.slice(0, 2).toUpperCase()}
@@ -59,13 +67,14 @@ export function BestSport({
             }
           />
         ) : (
-          <Pending label="Sport" />
+          <Pending label={t("profil.best.sport")} t={t} />
         )}
         {league ? (
           <BestRow
-            label="Liga"
+            label={t("profil.best.league")}
             group={league}
             prefs={prefs}
+            t={t}
             icon={
               leagueLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -78,7 +87,7 @@ export function BestSport({
             }
           />
         ) : (
-          <Pending label="Liga" />
+          <Pending label={t("profil.best.league")} t={t} />
         )}
       </div>
     </SectionCard>
@@ -90,11 +99,13 @@ function BestRow({
   group,
   prefs,
   icon,
+  t,
 }: {
   label: string;
   group: BestGroup;
   prefs: DisplayPrefs;
   icon: React.ReactNode;
+  t: TFunction;
 }) {
   const tone = group.netto > 0 ? "text-win" : group.netto < 0 ? "text-loss" : "text-text";
 
@@ -111,7 +122,10 @@ function BestRow({
           {group.name}
         </div>
         <div className="font-mono-num text-[12.5px] text-muted">
-          {group.bets} spel · vinstprocent {group.hitrate.toFixed(1).replace(".", ",")}%
+          {t("profil.best.stats", {
+            count: group.bets,
+            hitrate: group.hitrate.toFixed(1).replace(".", ","),
+          })}
         </div>
       </div>
       <div className="shrink-0 text-right">
@@ -126,10 +140,10 @@ function BestRow({
   );
 }
 
-function Pending({ label }: { label: string }) {
+function Pending({ label, t }: { label: string; t: TFunction }) {
   return (
     <div className="flex items-center rounded-[12px] border border-dashed border-line p-3.5 text-[13px] text-muted">
-      {label}: kvalificeras vid {MIN_BEST_BETS} satta spel
+      {t("profil.best.pending", { label, min: MIN_BEST_BETS })}
     </div>
   );
 }

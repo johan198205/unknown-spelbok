@@ -18,7 +18,9 @@ import {
   Trophy,
   Users,
   type LucideIcon,
-  SlidersHorizontal,} from "lucide-react";
+  SlidersHorizontal,
+  Type,
+} from "lucide-react";
 import { cn, initialOf } from "@/lib/utils";
 import { adminSignOut } from "@/lib/admin/admin-auth";
 
@@ -35,6 +37,7 @@ const NAV: {
   { href: "/admin/banners", label: "Banners", icon: ImageIcon },
   { href: "/admin/popups", label: "Popups", icon: MessageSquare },
   { href: "/admin/sidor", label: "Sidor", icon: FileText },
+  { href: "/admin/texter", label: "Texter", icon: Type },
   { href: "/admin/tavlingar", label: "Tävlingar", icon: Trophy },
   { href: "/admin/statistik", label: "Statistik", icon: BarChart3 },
   { href: "/admin/api-usage", label: "API-förbrukning", icon: Gauge },

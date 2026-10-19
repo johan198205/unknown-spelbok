@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BookmakerCard } from "@/components/bets/BookmakerCard";
+import { useT } from "@/components/TextsProvider";
 import {
+  BOOK_FILTER_LABEL,
+  BOOK_SORT_LABEL,
   availableBookFilters,
   bookmakerMatchesFilter,
   type BookSortOption,
@@ -20,6 +23,7 @@ export function BookmakersGrid({
   bookmakers: Bookmaker[];
   editorMode?: boolean;
 }) {
+  const t = useT();
   const [items, setItems] = useState(bookmakers);
   // Inget filter och ingen sortering från start: listan visas i den
   // ordning redaktionen satt (rank) tills besökaren själv väljer något.
@@ -66,9 +70,9 @@ export function BookmakersGrid({
   if (!bookmakers.length) {
     return (
       <div className="rounded-[12px] border border-line bg-panel px-6 py-12 text-center text-muted">
-        Inga spelbolag ännu. Kör{" "}
+        {t("spelbolag.list.emptyBefore")}{" "}
         <code className="font-mono-num text-cyan">npm run import:bookmakers</code>{" "}
-        efter att du satt miljövariablerna.
+        {t("spelbolag.list.emptyAfter")}
       </div>
     );
   }
@@ -94,7 +98,7 @@ export function BookmakersGrid({
                     : "border-[#2a2a2e] bg-[#161618] text-[#C3CBDB] hover:border-[#46464d]"
                 )}
               >
-                {p}
+                {t(BOOK_FILTER_LABEL[p])}
               </button>
             );
           })}
@@ -106,7 +110,11 @@ export function BookmakersGrid({
             onClick={() => setSortOpen((v) => !v)}
             className="inline-flex items-center gap-2.5 rounded-full border border-[#2a2a2e] bg-[#161618] px-4 py-2.5 text-sm font-semibold text-[#E6EAF2]"
           >
-            <span>{sortBy ? `Filter: ${sortBy}` : "Filter"}</span>
+            <span>
+              {sortBy
+                ? t("spelbolag.sort.active", { sort: t(BOOK_SORT_LABEL[sortBy]) })
+                : t("spelbolag.sort.button")}
+            </span>
             <span className="text-[11px] text-[#5D6883]">▾</span>
           </button>
           {sortOpen ? (
@@ -127,7 +135,7 @@ export function BookmakersGrid({
                       : "bg-transparent text-[#C3CBDB] hover:bg-[#26262a]"
                   )}
                 >
-                  {o}
+                  {t(BOOK_SORT_LABEL[o])}
                   {o === sortBy ? (
                     <span className="float-right text-[#5D6883]" aria-hidden>
                       ✕

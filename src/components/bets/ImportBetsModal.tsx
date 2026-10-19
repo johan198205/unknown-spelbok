@@ -13,7 +13,7 @@ import {
   ALLOWED_IMPORT_IMAGE_MIMES,
   DEFAULT_UNIT_VALUE,
   IMPORT_FIELDS,
-  IMPORT_FIELD_LABELS,
+  IMPORT_FIELD_LABEL_KEYS,
   MAX_IMPORT_IMAGE_BYTES,
   REQUIRED_IMPORT_FIELDS,
   type ColumnMapping,
@@ -27,17 +27,19 @@ import {
   type PreviewRow,
 } from "@/lib/import/types";
 import { cn, formatOdds } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey, TFunction } from "@/lib/texts";
 
 type Step = "file" | "map" | "preview";
 type FileMode = "excel" | "image";
 
-const RESULT_LABELS: Record<NonNullable<ImportedBet["result"]>, string> = {
-  win: "Vinst",
-  loss: "Förlust",
-  void: "Void",
-  halfwin: "Halv vinst",
-  halfloss: "Halv förlust",
-  pending: "Orättat",
+const RESULT_LABELS: Record<NonNullable<ImportedBet["result"]>, TextKey> = {
+  win: "import.preview.result.win",
+  loss: "import.preview.result.loss",
+  void: "import.preview.result.void",
+  halfwin: "import.preview.result.halfwin",
+  halfloss: "import.preview.result.halfloss",
+  pending: "import.preview.result.pending",
 };
 
 const IMAGE_ACCEPT = ALLOWED_IMPORT_IMAGE_MIMES.join(",");
@@ -66,24 +68,25 @@ function formatDate(iso: string | null) {
   return new Date(iso).toLocaleDateString("sv-SE");
 }
 
-function readFileAsBase64(file: File): Promise<string> {
+function readFileAsBase64(file: File, t: TFunction): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result;
       if (typeof result !== "string") {
-        reject(new Error("Kunde inte läsa bilden."));
+        reject(new Error(t("import.image.unreadable")));
         return;
       }
       const comma = result.indexOf(",");
       resolve(comma >= 0 ? result.slice(comma + 1) : result);
     };
-    reader.onerror = () => reject(new Error("Kunde inte läsa bilden."));
+    reader.onerror = () => reject(new Error(t("import.image.unreadable")));
     reader.readAsDataURL(file);
   });
 }
 
 export function ImportBetsButton({ sheetId }: { sheetId: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -94,7 +97,7 @@ export function ImportBetsButton({ sheetId }: { sheetId: string }) {
         onClick={() => setOpen(true)}
       >
         <Upload className="size-4" strokeWidth={2.25} />
-        Importera
+        {t("import.button")}
       </Button>
       {open ? (
         <ImportBetsModal sheetId={sheetId} onClose={() => setOpen(false)} />
@@ -112,6 +115,7 @@ function ImportBetsModal({
 }) {
   const router = useRouter();
   const { toast } = useToast();
+  const t = useT();
 
   const [step, setStep] = useState<Step>("file");
   const [fileMode, setFileMode] = useState<FileMode>("excel");
@@ -176,7 +180,7 @@ function ImportBetsModal({
       error?: string;
     };
     if (!res.ok) {
-      throw new Error(json.error || "Kunde inte förhandsgranska.");
+      throw new Error(json.error || t("import.error.preview"));
     }
     setParsed(nextParsed);
     setMapping(nextMapping);
@@ -198,7 +202,7 @@ function ImportBetsModal({
     setError(null);
     setBusy(true);
     try {
-      const result = await parseBetFile(file);
+      const result = await parseBetFile(file, t);
       setParsed(result);
       setMapping(detectColumns(result.headers));
       setImportSource("file");
@@ -206,7 +210,7 @@ function ImportBetsModal({
       setStep("map");
     } catch (e) {
       setError(
-        e instanceof ImportParseError ? e.message : "Filen kunde inte läsas."
+        e instanceof ImportParseError ? e.message : t("import.parse.unreadable")
       );
     } finally {
       setBusy(false);
@@ -221,17 +225,17 @@ function ImportBetsModal({
     if (
       !(ALLOWED_IMPORT_IMAGE_MIMES as readonly string[]).includes(mime)
     ) {
-      setError("Endast JPEG, PNG eller WebP.");
+      setError(t("import.image.wrongType"));
       return;
     }
     if (file.size > MAX_IMPORT_IMAGE_BYTES) {
-      setError("Bilden är för stor (max 5 MB).");
+      setError(t("import.image.tooLarge"));
       return;
     }
 
     setBusy(true);
     try {
-      const image_base64 = await readFileAsBase64(file);
+      const image_base64 = await readFileAsBase64(file, t);
       const res = await fetch("/api/import/from-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -245,7 +249,7 @@ function ImportBetsModal({
         error?: string;
       };
       if (!res.ok) {
-        setError(json.error || "Kunde inte tolka bilden.");
+        setError(json.error || t("import.image.failed"));
         return;
       }
 
@@ -259,7 +263,7 @@ function ImportBetsModal({
       await applyPreview(nextParsed, json.mapping, "image");
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Kunde inte tolka bilden."
+        e instanceof Error ? e.message : t("import.image.failed")
       );
     } finally {
       setBusy(false);
@@ -274,7 +278,7 @@ function ImportBetsModal({
       await applyPreview(parsed, mapping, importSource);
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Kunde inte förhandsgranska filen."
+        e instanceof Error ? e.message : t("import.error.previewFile")
       );
     } finally {
       setBusy(false);
@@ -304,18 +308,21 @@ function ImportBetsModal({
         error?: string;
       };
       if (!res.ok) {
-        setError(json.error || "Kunde inte spara spelen.");
+        setError(json.error || t("import.error.commit"));
         return;
       }
       onClose();
       toast(
         json.skipped
-          ? `${json.imported} spel importerade · ${json.skipped} hoppades över`
-          : `${json.imported} spel importerade`
+          ? t("import.toast.importedSkipped", {
+              imported: json.imported,
+              skipped: json.skipped,
+            })
+          : t("import.toast.imported", { imported: json.imported })
       );
       router.refresh();
     } catch {
-      setError("Kunde inte spara spelen.");
+      setError(t("import.error.commit"));
     } finally {
       setBusy(false);
     }
@@ -343,11 +350,11 @@ function ImportBetsModal({
   const subtitle =
     step === "file"
       ? fileMode === "excel"
-        ? "Ladda upp en Excel- eller CSV-fil med dina spel."
-        : "Ladda upp en skärmdump av en speltabell eller kupong från spelbolag."
+        ? t("import.subtitle.excel")
+        : t("import.subtitle.image")
       : step === "map"
-        ? "Kontrollera att kolumnerna hamnat rätt."
-        : "Välj vilka spel som ska importeras.";
+        ? t("import.subtitle.map")
+        : t("import.subtitle.preview");
 
   return (
     <div
@@ -368,14 +375,14 @@ function ImportBetsModal({
               id="import-bets-title"
               className="font-display text-[22px] font-semibold"
             >
-              Importera spel
+              {t("import.title")}
             </h3>
             <p className="mt-0.5 text-[13px] text-muted">{subtitle}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Stäng"
+            aria-label={t("import.close")}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line-strong text-lg text-muted hover:text-text"
           >
             ×
@@ -430,21 +437,23 @@ function ImportBetsModal({
                 onClick={() => void loadPreview()}
                 title={
                   missingRequired.length
-                    ? `Mappa ${missingRequired
-                        .map((f) => IMPORT_FIELD_LABELS[f])
-                        .join(", ")}`
+                    ? t("import.map.missingTitle", {
+                        fields: missingRequired
+                          .map((f) => t(IMPORT_FIELD_LABEL_KEYS[f]))
+                          .join(", "),
+                      })
                     : undefined
                 }
               >
-                {busy ? "Läser…" : "Fortsätt"}
+                {busy ? t("import.map.reading") : t("import.map.continue")}
               </Button>
               {missingRequired.length ? (
                 <span className="text-[13px] text-muted">
-                  Mappa{" "}
-                  {missingRequired
-                    .map((f) => IMPORT_FIELD_LABELS[f])
-                    .join(", ")}{" "}
-                  för att gå vidare.
+                  {t("import.map.missingHint", {
+                    fields: missingRequired
+                      .map((f) => t(IMPORT_FIELD_LABEL_KEYS[f]))
+                      .join(", "),
+                  })}
                 </span>
               ) : null}
             </>
@@ -456,7 +465,9 @@ function ImportBetsModal({
               disabled={busy || !selected.size}
               onClick={() => void commit()}
             >
-              {busy ? "Importerar…" : `Importera ${selected.size} spel`}
+              {busy
+                ? t("import.preview.importing")
+                : t("import.preview.submit", { count: selected.size })}
             </Button>
           ) : null}
 
@@ -467,7 +478,7 @@ function ImportBetsModal({
               disabled={busy}
               onClick={goBack}
             >
-              Tillbaka
+              {t("import.back")}
             </Button>
           ) : null}
 
@@ -477,7 +488,7 @@ function ImportBetsModal({
             disabled={busy}
             onClick={onClose}
           >
-            Avbryt
+            {t("import.cancel")}
           </Button>
         </div>
       </div>
@@ -498,6 +509,7 @@ function FileStep({
   onExcelFile: (file: File | null | undefined) => void;
   onImageFile: (file: File | null | undefined) => void;
 }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -511,12 +523,12 @@ function FileStep({
       <div
         className="mb-3 inline-flex rounded-[10px] border border-line-strong bg-bg-soft p-1"
         role="tablist"
-        aria-label="Importtyp"
+        aria-label={t("import.tabs.label")}
       >
         {(
           [
-            { id: "excel", label: "Excel / CSV" },
-            { id: "image", label: "Bild" },
+            { id: "excel", label: t("import.tabs.excel") },
+            { id: "image", label: t("import.tabs.image") },
           ] as const
         ).map((tab) => (
           <button
@@ -558,16 +570,16 @@ function FileStep({
         <div className="text-[15px] text-text">
           {busy
             ? mode === "image"
-              ? "AI tolkar bilden…"
-              : "Läser filen…"
+              ? t("import.drop.imageBusy")
+              : t("import.drop.fileBusy")
             : mode === "image"
-              ? "Dra hit en bild eller välj den nedan"
-              : "Dra hit din fil eller välj den nedan"}
+              ? t("import.drop.image")
+              : t("import.drop.file")}
         </div>
         <div className="text-[12.5px] text-muted">
           {mode === "image"
-            ? "JPEG, PNG eller WebP · max 5 MB · skärmdump av tabell eller kupong"
-            : ".xlsx eller .csv · max 2 MB · max 1000 rader"}
+            ? t("import.drop.imageLimits")
+            : t("import.drop.fileLimits")}
         </div>
         <input
           ref={inputRef}
@@ -585,16 +597,16 @@ function FileStep({
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          {mode === "image" ? "Välj bild" : "Välj fil"}
+          {mode === "image" ? t("import.drop.chooseImage") : t("import.drop.chooseFile")}
         </Button>
       </div>
       {mode === "excel" ? (
         <button
           type="button"
-          onClick={() => void downloadImportTemplate()}
+          onClick={() => void downloadImportTemplate(t)}
           className="mt-3 text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
         >
-          Ladda ner mall ›
+          {t("import.template.download")}
         </button>
       ) : null}
     </div>
@@ -610,6 +622,7 @@ function MapStep({
   mapping: ColumnMapping;
   onChange: (header: string, field: ImportField | "ignore") => void;
 }) {
+  const t = useT();
   const samples = useMemo(() => {
     const out: Record<string, string> = {};
     for (const header of parsed.headers) {
@@ -641,7 +654,10 @@ function MapStep({
         </div>
       ))}
       <div className="mb-2.5 text-[13px] text-muted">
-        {parsed.filename} · {parsed.rows.length} rader
+        {t("import.map.fileSummary", {
+          filename: parsed.filename,
+          count: parsed.rows.length,
+        })}
       </div>
       <div className="max-h-[46vh] space-y-2 overflow-auto sb-scroll pr-1">
         {parsed.headers.map((header) => (
@@ -664,14 +680,14 @@ function MapStep({
               }
               className="w-[170px] shrink-0 py-2"
             >
-              <option value="ignore">Ignorera</option>
+              <option value="ignore">{t("import.map.ignore")}</option>
               {IMPORT_FIELDS.map((field) => {
                 const owner = takenBy.get(field);
                 const taken = owner != null && owner !== header;
                 return (
                   <option key={field} value={field} disabled={taken}>
-                    {IMPORT_FIELD_LABELS[field]}
-                    {taken ? " (upptagen)" : ""}
+                    {t(IMPORT_FIELD_LABEL_KEYS[field])}
+                    {taken ? t("import.map.taken") : ""}
                   </option>
                 );
               })}
@@ -702,12 +718,13 @@ function PreviewStep({
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const t = useT();
   return (
     <div>
       {unitDetected ? (
         <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-[10px] border border-blue/35 bg-blue/5 px-3 py-2.5">
           <span className="text-[13px] text-text">
-            Insatserna ser ut att vara units. 1 unit =
+            {t("import.preview.unitPrompt")}
           </span>
           <input
             type="number"
@@ -719,19 +736,30 @@ function PreviewStep({
             }
             className="w-[90px] rounded-[9px] border border-line bg-bg-soft px-2.5 py-1.5 font-mono-num text-[14px] text-text outline-none focus:border-blue"
           />
-          <span className="text-[13px] text-text">kr</span>
+          <span className="text-[13px] text-text">{t("import.preview.unitCurrency")}</span>
         </div>
       ) : null}
 
       <div className="mb-2 font-mono-num text-[13px] text-muted">
-        {selected.size} av {rows.length} valda
+        {t("import.preview.selectedCount", {
+          selected: selected.size,
+          total: rows.length,
+        })}
       </div>
 
       <div className="max-h-[46vh] overflow-auto sb-scroll rounded-[10px] border border-line">
         <table className="w-full min-w-[680px] border-collapse text-[13px]">
           <thead>
             <tr>
-              {["", "Datum", "Match", "Spel", "Odds", "Insats", "Resultat"].map(
+              {[
+                "",
+                t("import.preview.col.date"),
+                t("import.preview.col.match"),
+                t("import.preview.col.pick"),
+                t("import.preview.col.odds"),
+                t("import.preview.col.stake"),
+                t("import.preview.col.result"),
+              ].map(
                 (label, i) => (
                   <th
                     key={label || i}
@@ -769,7 +797,9 @@ function PreviewStep({
                       checked={selected.has(id)}
                       disabled={disabled}
                       onChange={() => onToggle(id)}
-                      aria-label={`Importera ${row.bet.match_label ?? "rad"}`}
+                      aria-label={t("import.preview.rowCheckbox", {
+                        match: row.bet.match_label ?? t("import.preview.rowFallback"),
+                      })}
                     />
                   </td>
                   <td className="whitespace-nowrap px-2.5 py-2 font-mono-num">
@@ -781,18 +811,18 @@ function PreviewStep({
                         {row.bet.match_label || "—"}
                       </span>
                       {isSoft ? (
-                        <span title="Möjlig dubblett" className="shrink-0">
+                        <span title={t("import.preview.softDuplicate")} className="shrink-0">
                           <TriangleAlert
                             className="size-3.5 text-blue"
                             strokeWidth={2.25}
-                            aria-label="Möjlig dubblett"
+                            aria-label={t("import.preview.softDuplicate")}
                           />
                         </span>
                       ) : null}
                     </span>
                     {isDuplicate ? (
                       <div className="text-[11.5px] text-faint">
-                        Redan importerad
+                        {t("import.preview.duplicate")}
                       </div>
                     ) : row.reason ? (
                       <div className="text-[11.5px] text-loss">{row.reason}</div>
@@ -817,7 +847,7 @@ function PreviewStep({
                       disabled ? "text-faint" : resultClass(row.bet.result)
                     )}
                   >
-                    {row.bet.result ? RESULT_LABELS[row.bet.result] : "—"}
+                    {row.bet.result ? t(RESULT_LABELS[row.bet.result]) : "—"}
                   </td>
                 </tr>
               );

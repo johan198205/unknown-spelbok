@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import {
-  COUPON_STATUS_LABEL,
   COUPON_STATUS_TONE,
   couponNetto,
+  couponStatusLabel,
   couponUrl,
   formatCouponOdds,
   isSettled,
@@ -29,6 +30,7 @@ export function CouponShareModal({
   coupon: Coupon;
   onClose: () => void;
 }) {
+  const t = useT();
   const { toast } = useToast();
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
@@ -77,7 +79,7 @@ export function CouponShareModal({
       link.click();
       URL.revokeObjectURL(objectUrl);
     } catch {
-      toast("Kunde inte skapa bilden. Försök igen.");
+      toast(t("kuponger.share.downloadFailed"));
     } finally {
       setBusy(false);
     }
@@ -86,9 +88,9 @@ export function CouponShareModal({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(url);
-      toast("Länk kopierad");
+      toast(t("kuponger.card.linkCopied"));
     } catch {
-      toast("Kunde inte kopiera länken");
+      toast(t("kuponger.card.linkCopyFailed"));
     }
   }
 
@@ -103,16 +105,16 @@ export function CouponShareModal({
         <div className="mb-3.5 flex items-center justify-between gap-3">
           <div>
             <div className="font-display text-[22px] font-semibold uppercase tracking-[0.04em] text-text">
-              Delningskort
+              {t("kuponger.share.title")}
             </div>
             <div className="text-[13.5px] text-muted">
-              1200 × 630 px · Facebook och Open Graph
+              {t("kuponger.share.subtitle")}
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Stäng"
+            aria-label={t("kuponger.share.close")}
             className="size-9 cursor-pointer rounded-[9px] border border-line-strong bg-panel text-[17px] text-muted hover:text-text"
           >
             ×
@@ -141,14 +143,14 @@ export function CouponShareModal({
             onClick={() => void download()}
             className="cursor-pointer rounded-[10px] bg-win px-5 py-[13px] text-[15px] font-bold text-win-ink disabled:opacity-60"
           >
-            {busy ? "Renderar…" : "Ladda ner PNG"}
+            {busy ? t("kuponger.share.rendering") : t("kuponger.share.download")}
           </button>
           <button
             type="button"
             onClick={() => void copyLink()}
             className="cursor-pointer rounded-[10px] border border-line-strong bg-panel px-[18px] py-[13px] text-[15px] font-semibold text-text hover:border-line-hover"
           >
-            Kopiera länk
+            {t("kuponger.share.copyLink")}
           </button>
           <span className="ml-auto truncate font-mono-num text-[12.5px] text-faint">
             {url}
@@ -170,6 +172,7 @@ function ShareCard({
   netto: number;
   style?: React.CSSProperties;
 }) {
+  const t = useT();
   const tone = COUPON_STATUS_TONE[coupon.status];
   const logo = getBookmakerLogoUrl(coupon.bookmakers?.logo_url);
   // Samma höjdbudget som PNG:en i api/kuponger/[slug]/delningskort.
@@ -195,7 +198,7 @@ function ShareCard({
     >
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 30 }}>
         <span className="font-display" style={{ fontWeight: 700, fontSize: 30, letterSpacing: "0.2em", color: "#E6EAF2" }}>
-          SPELBOK
+          {t("kuponger.shareCard.brand")}
         </span>
         {coupon.kicker ? (
           <span
@@ -227,7 +230,7 @@ function ShareCard({
             color: tone.badgeFg,
           }}
         >
-          {COUPON_STATUS_LABEL[coupon.status]}
+          {couponStatusLabel(coupon.status, t)}
         </span>
       </div>
 
@@ -302,7 +305,7 @@ function ShareCard({
         })}
         {hiddenLegs > 0 ? (
           <span className="font-mono-num" style={{ fontSize: 20, fontWeight: 600, color: "#8A94AB" }}>
-            +{hiddenLegs} fler
+            {t("kuponger.shareCard.moreLegs", { count: hiddenLegs })}
           </span>
         ) : null}
       </div>
@@ -316,20 +319,20 @@ function ShareCard({
           borderTop: "1px solid #2a2a2e",
         }}
       >
-        <Field label="Insats" value={formatMoney(Number(coupon.stake), "kr").replace("+", "")} size={32} />
-        <Field label="Totalodds" value={formatCouponOdds(coupon.total_odds)} size={46} color="#66E38A" />
+        <Field label={t("kuponger.card.stake")} value={formatMoney(Number(coupon.stake), t("kuponger.unit.kr")).replace("+", "")} size={32} />
+        <Field label={t("kuponger.card.totalOdds")} value={formatCouponOdds(coupon.total_odds)} size={46} color="#66E38A" />
         {/* Ett avgjort kort får aldrig delas med en vinstsiffra. */}
         {settled ? (
           <Field
-            label="Utfall"
-            value={formatMoney(netto, "kr")}
+            label={t("kuponger.card.outcome")}
+            value={formatMoney(netto, t("kuponger.unit.kr"))}
             size={32}
             color={netto > 0 ? "#66E38A" : netto < 0 ? "#FF5C6C" : "#E6EAF2"}
           />
         ) : (
           <Field
-            label="Möjlig vinst"
-            value={formatMoney(possibleWin(coupon), "kr")}
+            label={t("kuponger.card.possibleWin")}
+            value={formatMoney(possibleWin(coupon), t("kuponger.unit.kr"))}
             size={32}
             color="#66E38A"
           />
@@ -350,7 +353,7 @@ function ShareCard({
             }}
           />
           <div style={{ fontSize: 15, color: "#5D6883", marginTop: 10 }}>
-            spelbok.se · 18+ · Spela ansvarsfullt
+            {t("kuponger.shareCard.footer")}
           </div>
         </div>
       </div>

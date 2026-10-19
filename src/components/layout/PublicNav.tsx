@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon, type NavIconKey } from "@/components/layout/NavIcon";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 /** Kuponger är avstängd tills vidare (FEATURES.coupons). */
-const ITEMS: { href: string; label: string; icon: NavIconKey }[] = [
-  { href: "/planket", label: "Planket", icon: "planket" },
-  { href: "/topplista", label: "Topplista", icon: "topplista" },
-  { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
-  { href: "/om-oss", label: "Om oss", icon: "om-oss" },
+const ITEMS: { href: string; label: TextKey; icon: NavIconKey }[] = [
+  { href: "/planket", label: "header.publicNav.planket", icon: "planket" },
+  { href: "/topplista", label: "header.publicNav.topplista", icon: "topplista" },
+  { href: "/spelbolag", label: "header.publicNav.spelbolag", icon: "spelbolag" },
+  { href: "/om-oss", label: "header.publicNav.omOss", icon: "om-oss" },
 ];
 
 /**
@@ -18,11 +20,12 @@ const ITEMS: { href: string; label: string; icon: NavIconKey }[] = [
  * panelbakgrund, så gäster ser samma signal som i designprototypen.
  */
 export function PublicNav() {
+  const t = useT();
   const pathname = usePathname();
 
   return (
     <nav
-      aria-label="Huvudmeny"
+      aria-label={t("header.publicNav.label")}
       className="flex flex-1 items-center gap-0.5 overflow-x-auto sb-scroll"
     >
       {ITEMS.map((item) => {
@@ -44,7 +47,7 @@ export function PublicNav() {
               name={item.icon}
               className={cn("size-4 shrink-0", active ? "text-win" : "text-[#5D6883]")}
             />
-            {item.label}
+            {t(item.label)}
           </Link>
         );
       })}

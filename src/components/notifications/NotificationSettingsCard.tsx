@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import { setNotificationSetting } from "@/lib/notification-actions";
 import {
-  CATEGORY_LABELS,
+  CATEGORY_LABEL_KEYS,
   NOTIFICATION_SETTINGS_CATEGORIES,
   type NotificationSettings,
 } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
 
 function Toggle({
   on,
@@ -54,6 +55,7 @@ export function NotificationSettingsCard({
 }: {
   settings: NotificationSettings;
 }) {
+  const t = useT();
   const [values, setValues] = useState(settings);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -74,23 +76,23 @@ export function NotificationSettingsCard({
   return (
     <div className="rounded-[14px] border border-line bg-panel p-[18px]">
       <h2 className="font-display text-[15px] font-semibold uppercase tracking-[0.09em] text-text">
-        Notiser
+        {t("notiser.settings.title")}
       </h2>
 
       {/* Kolumnetiketterna står över togglarna, en gång — inte per rad. */}
       <div className="mt-3 flex items-center justify-end gap-3">
         <span className="w-[46px] text-center text-[11px] text-[#5D6883]">
-          I appen
+          {t("notiser.settings.colInApp")}
         </span>
         <span className="w-[46px] text-center text-[11px] text-[#5D6883]">
-          Mejl
+          {t("notiser.settings.colEmail")}
         </span>
       </div>
 
       {NOTIFICATION_SETTINGS_CATEGORIES.map((category) => {
         const inApp = `${category}_in_app` as keyof NotificationSettings;
         const email = `${category}_email` as keyof NotificationSettings;
-        const label = CATEGORY_LABELS[category];
+        const label = t(CATEGORY_LABEL_KEYS[category]);
         return (
           <div
             key={category}
@@ -102,13 +104,13 @@ export function NotificationSettingsCard({
             <Toggle
               on={values[inApp]}
               disabled={pending}
-              label={`${label} i appen`}
+              label={t("notiser.settings.toggleInApp", { label })}
               onToggle={() => toggle(inApp)}
             />
             <Toggle
               on={values[email]}
               disabled={pending}
-              label={`${label} via mejl`}
+              label={t("notiser.settings.toggleEmail", { label })}
               onToggle={() => toggle(email)}
             />
           </div>
@@ -116,7 +118,7 @@ export function NotificationSettingsCard({
       })}
 
       <p className="mt-1 text-[11.5px] text-[#5D6883]">
-        Mejl skickas som mest en gång i timmen, samlat.
+        {t("notiser.settings.footnote")}
       </p>
 
       {error ? <p className="mt-2 text-[13px] text-loss">{error}</p> : null}

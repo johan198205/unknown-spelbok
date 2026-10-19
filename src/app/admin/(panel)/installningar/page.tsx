@@ -51,6 +51,7 @@ const ACTION_LABELS: Record<string, string> = {
   "settings.competitions_toggled": "Tävlingar på/av",
   "settings.notify_updated": "Notiser sparade",
   "settings.tracking_updated": "Spårning sparad",
+  "texts.updated": "Texter sparade",
 };
 
 function actionLabel(action: string) {

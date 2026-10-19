@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SheetLockIcon } from "@/components/bets/LoggedBeforeKickoff";
+import { useT } from "@/components/TextsProvider";
 import { createClient } from "@/lib/supabase/client";
 import { settleOutcome, track } from "@/lib/analytics";
+import type { TextKey } from "@/lib/texts";
 import type { Bet, BetResult } from "@/lib/types";
 import { cn, resultLabel, resultTone } from "@/lib/utils";
 
@@ -14,11 +16,27 @@ import { cn, resultLabel, resultTone } from "@/lib/utils";
  * W(in) · L(oss) · P(ush, samma som void i den här appen) · V(äntar, dvs.
  * öppet spel). Fyra lägen, samma fyra som resten av appen kan sätta.
  */
-const CHOICES: Array<{ value: BetResult; short: string; label: string }> = [
-  { value: "win", short: "W", label: "Vinst" },
-  { value: "loss", short: "L", label: "Förlust" },
-  { value: "void", short: "P", label: "Push / void" },
-  { value: "open", short: "V", label: "Väntar (orättat)" },
+const CHOICES: Array<{ value: BetResult; short: TextKey; label: TextKey }> = [
+  {
+    value: "win",
+    short: "spelbok.settle.winShort",
+    label: "spelbok.settle.win",
+  },
+  {
+    value: "loss",
+    short: "spelbok.settle.lossShort",
+    label: "spelbok.settle.loss",
+  },
+  {
+    value: "void",
+    short: "spelbok.settle.voidShort",
+    label: "spelbok.settle.void",
+  },
+  {
+    value: "open",
+    short: "spelbok.settle.openShort",
+    label: "spelbok.settle.open",
+  },
 ];
 
 function choiceTone(result: BetResult) {
@@ -41,6 +59,7 @@ export function SheetSettleControls({
   size?: "table" | "card";
   showLock?: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
 
   /*
@@ -77,7 +96,7 @@ export function SheetSettleControls({
     setSaving(false);
     if (error) {
       setPicked(null);
-      alert(error.message || "Kunde inte sätta resultat");
+      alert(error.message || t("spelbok.settle.failed"));
       return;
     }
     const outcome = settleOutcome(result);
@@ -96,7 +115,7 @@ export function SheetSettleControls({
             resultTone(bet.result).fg
           )}
         >
-          {resultLabel(bet.result)}
+          {resultLabel(bet.result, t)}
         </span>
       </span>
     );
@@ -112,7 +131,7 @@ export function SheetSettleControls({
       {showLock ? <SheetLockIcon value={bet.logged_before_kickoff} /> : null}
       <span
         role="group"
-        aria-label="Rättning"
+        aria-label={t("spelbok.settle.groupAria")}
         className={cn("flex", card ? "min-w-0 w-full gap-[5px]" : "gap-1")}
       >
         {CHOICES.map(({ value, short, label }) => {
@@ -125,8 +144,8 @@ export function SheetSettleControls({
               type="button"
               onClick={() => void setResult(value)}
               disabled={saving && !active}
-              title={label}
-              aria-label={label}
+              title={t(label)}
+              aria-label={t(label)}
               aria-pressed={active}
               aria-busy={waiting || undefined}
               className={cn(
@@ -142,7 +161,7 @@ export function SheetSettleControls({
                 waiting && "animate-sbshimmer"
               )}
             >
-              {short}
+              {t(short)}
             </button>
           );
         })}

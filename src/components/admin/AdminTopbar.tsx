@@ -17,6 +17,7 @@ const TITLES: Record<string, string> = {
   "/admin/spelbolag": "Spelbolag",
   "/admin/banners": "Banners",
   "/admin/sidor": "Sidor",
+  "/admin/texter": "Texter",
   "/admin/tavlingar": "Tävlingar",
   "/admin/statistik": "Statistik",
   "/admin/sattling": "Sättling och matchdata",

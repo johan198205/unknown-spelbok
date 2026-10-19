@@ -24,6 +24,8 @@ import {
 } from "@/lib/planket-server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { TFunction } from "@/lib/texts";
+import { getT } from "@/lib/texts/server";
 
 type Fail = { ok: false; error: string; code?: "auth" | "duplicate" | "rate" };
 
@@ -31,11 +33,17 @@ type Fail = { ok: false; error: string; code?: "auth" | "duplicate" | "rate" };
  * Rate limit-triggern kastar 'planket_rate_limit:{minuter}'. Översätt till
  * meddelandet användaren ska läsa — aldrig råtexten från databasen.
  */
-function toFailure(message: string | null | undefined, fallback: string): Fail {
+function toFailure(
+  message: string | null | undefined,
+  fallback: string,
+  t: TFunction
+): Fail {
   const minutes = parseRateLimit(message);
-  if (minutes) return { ok: false, error: rateLimitMessage(minutes), code: "rate" };
+  if (minutes) {
+    return { ok: false, error: rateLimitMessage(minutes, t), code: "rate" };
+  }
   if (message && /duplicate|unique/i.test(message)) {
-    return { ok: false, error: "Det där är redan gjort.", code: "duplicate" };
+    return { ok: false, error: t("planket.errors.duplicate"), code: "duplicate" };
   }
   return { ok: false, error: message?.trim() || fallback };
 }
@@ -56,12 +64,12 @@ export type CreatePostInput = {
 export async function createPost(
   input: CreatePostInput
 ): Promise<{ ok: true; postId: string } | Fail> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false, error: t("planket.errors.auth"), code: "auth" };
 
   const body = input.body.trim();
   if (body.length > PLANKET_MAX_BODY) {
-    return { ok: false, error: `Max ${PLANKET_MAX_BODY} tecken.` };
+    return { ok: false, error: t("planket.errors.maxBody", { max: PLANKET_MAX_BODY }) };
   }
 
   // Ett inlägg har antingen ett spel eller en kupong — aldrig båda. Samma
@@ -73,13 +81,13 @@ export async function createPost(
   const imageUrl = input.imageUrl?.trim() || null;
 
   if (input.attachmentType === "bet" && !betId) {
-    return { ok: false, error: "Välj ett spel att bifoga." };
+    return { ok: false, error: t("planket.errors.pickBet") };
   }
   if (input.attachmentType === "coupon" && !couponId) {
-    return { ok: false, error: "Välj en kupong att bifoga." };
+    return { ok: false, error: t("planket.errors.pickCoupon") };
   }
   if (!body && input.attachmentType === "none" && !imageUrl) {
-    return { ok: false, error: "Skriv något, bifoga en bild eller ett spel." };
+    return { ok: false, error: t("planket.errors.emptyPost") };
   }
 
   const supabase = await createClient();
@@ -96,8 +104,8 @@ export async function createPost(
     .select("id")
     .maybeSingle();
 
-  if (error) return toFailure(error.message, "Kunde inte posta.");
-  if (!data) return { ok: false, error: "Kunde inte posta." };
+  if (error) return toFailure(error.message, t("planket.errors.postFailed"), t);
+  if (!data) return { ok: false, error: t("planket.errors.postFailed") };
 
   revalidatePath(PLANKET_PATH);
   return { ok: true, postId: data.id };
@@ -107,12 +115,12 @@ export async function createPostReply(
   postId: string,
   body: string
 ): Promise<{ ok: true } | Fail> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false, error: t("planket.errors.auth"), code: "auth" };
   const clean = body.trim();
-  if (!clean) return { ok: false, error: "Skriv ett svar." };
+  if (!clean) return { ok: false, error: t("planket.errors.replyEmpty") };
   if (clean.length > PLANKET_MAX_BODY) {
-    return { ok: false, error: `Max ${PLANKET_MAX_BODY} tecken.` };
+    return { ok: false, error: t("planket.errors.maxBody", { max: PLANKET_MAX_BODY }) };
   }
 
   const supabase = await createClient();
@@ -121,7 +129,11 @@ export async function createPostReply(
     author_id: user.id,
     body: clean,
   });
-  if (error) return toFailure(error.message, "Kunde inte spara svaret.");
+  if (error) return toFailure(
+    error.message,
+    t("planket.errors.replySaveFailed"),
+    t
+  );
   revalidatePath(PLANKET_PATH);
   return { ok: true };
 }
@@ -130,8 +142,8 @@ export async function createPostReply(
 export async function deletePostReply(
   replyId: string
 ): Promise<{ ok: true } | Fail> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false, error: t("planket.errors.auth"), code: "auth" };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -140,8 +152,12 @@ export async function deletePostReply(
     .eq("id", replyId)
     .eq("author_id", user.id)
     .select("id");
-  if (error) return toFailure(error.message, "Kunde inte ta bort svaret.");
-  if (!data?.length) return { ok: false, error: "Svaret hittades inte." };
+  if (error) return toFailure(
+    error.message,
+    t("planket.errors.replyDeleteFailed"),
+    t
+  );
+  if (!data?.length) return { ok: false, error: t("planket.errors.replyNotFound") };
   revalidatePath(PLANKET_PATH);
   return { ok: true };
 }
@@ -159,7 +175,7 @@ export type PostReplyRow = {
 export async function listPostReplies(postId: string): Promise<PostReplyRow[]> {
   // Svaren går att läsa utan konto, precis som flödet.
   const supabase = await planketReader();
-  const user = await getSessionUser();
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
   const { data, error } = await supabase
     .from("post_replies")
     .select("id, body, created_at, author_id, profiles:author_id(username, avatar_url)")
@@ -181,7 +197,8 @@ export async function listPostReplies(postId: string): Promise<PostReplyRow[]> {
       body: row.body,
       created_at: row.created_at,
       author_username:
-        (profile as { username?: string } | null)?.username || "användare",
+        (profile as { username?: string } | null)?.username ||
+        t("planket.thread.authorFallback"),
       author_avatar:
         (profile as { avatar_url?: string | null } | null)?.avatar_url ?? null,
       isAuthor: !!user && row.author_id === user.id,
@@ -190,12 +207,12 @@ export async function listPostReplies(postId: string): Promise<PostReplyRow[]> {
 }
 
 export async function editPost(postId: string, body: string) {
-  const user = await getSessionUser();
-  if (!user) return { ok: false as const, error: "Du måste vara inloggad." };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false as const, error: t("planket.errors.auth") };
 
   const clean = body.trim();
   if (clean.length > PLANKET_MAX_BODY) {
-    return { ok: false as const, error: `Max ${PLANKET_MAX_BODY} tecken.` };
+    return { ok: false as const, error: t("planket.errors.maxBody", { max: PLANKET_MAX_BODY }) };
   }
 
   const supabase = await createClient();
@@ -216,8 +233,8 @@ export async function editPost(postId: string, body: string) {
  * historiken behåller sin referens.
  */
 export async function deletePost(postId: string) {
-  const user = await getSessionUser();
-  if (!user) return { ok: false as const, error: "Du måste vara inloggad." };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false as const, error: t("planket.errors.auth") };
 
   // Ägarskapet kontrolleras med användarens egen klient (RLS). Själva
   // raderingen går via serverklienten: läspolicyn döljer rader med
@@ -230,7 +247,7 @@ export async function deletePost(postId: string) {
     .eq("id", postId)
     .eq("author_id", user.id)
     .maybeSingle();
-  if (!own) return { ok: false as const, error: "Inlägget hittades inte." };
+  if (!own) return { ok: false as const, error: t("planket.errors.postNotFound") };
 
   const { error } = await createAdminClient()
     .from("posts")
@@ -238,7 +255,7 @@ export async function deletePost(postId: string) {
     .eq("id", postId)
     .eq("author_id", user.id);
 
-  if (error) return { ok: false as const, error: "Kunde inte ta bort inlägget." };
+  if (error) return { ok: false as const, error: t("planket.errors.deleteFailed") };
 
   revalidatePath(PLANKET_PATH);
   return { ok: true as const };
@@ -256,8 +273,8 @@ export async function toggleReaction(
   kind: ReactionKind,
   on: boolean
 ): Promise<{ ok: true } | Fail> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false, error: t("planket.errors.auth"), code: "auth" };
 
   const supabase = await createClient();
 
@@ -268,7 +285,11 @@ export async function toggleReaction(
       .eq("post_id", postId)
       .eq("user_id", user.id)
       .eq("kind", kind);
-    if (error) return toFailure(error.message, "Kunde inte ta bort reaktionen.");
+    if (error) return toFailure(
+      error.message,
+      t("planket.errors.reactionRemoveFailed"),
+      t
+    );
     return { ok: true };
   }
 
@@ -280,7 +301,7 @@ export async function toggleReaction(
     // Redan reagerat är inte ett fel för användaren — knappen visar ju
     // redan rätt läge efter den optimistiska uppdateringen.
     if (/duplicate|unique/i.test(error.message)) return { ok: true };
-    return toFailure(error.message, "Kunde inte spara reaktionen.");
+    return toFailure(error.message, t("planket.errors.reactionSaveFailed"), t);
   }
 
   const { data: post } = await supabase
@@ -327,8 +348,8 @@ export async function backPost({
   sheetId: string;
   stake: number;
 }): Promise<BackPostResult> {
-  const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false, error: t("planket.errors.auth"), code: "auth" };
 
   const supabase = await createClient();
 
@@ -340,7 +361,7 @@ export async function backPost({
 
   const amount = Number(stake);
   const prefs = displayPrefsFrom(profile);
-  const problem = stakeError(amount, { ...prefs, mode: "money" });
+  const problem = stakeError(amount, { ...prefs, mode: "money" }, t);
   if (problem) return { ok: false, error: problem };
 
   const { data: sheet } = await supabase
@@ -350,7 +371,7 @@ export async function backPost({
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!sheet) return { ok: false, error: "Välj en av dina egna spelböcker." };
+  if (!sheet) return { ok: false, error: t("planket.errors.backPickSheet") };
 
   const { data: post } = await supabase
     .from("planket_posts")
@@ -363,9 +384,9 @@ export async function backPost({
     .eq("id", postId)
     .maybeSingle();
 
-  if (!post) return { ok: false, error: "Inlägget finns inte längre." };
+  if (!post) return { ok: false, error: t("planket.errors.backPostGone") };
   if (post.attachment_type === "none") {
-    return { ok: false, error: "Inlägget har inget spel att rygga." };
+    return { ok: false, error: t("planket.errors.backNoAttachment") };
   }
 
   // Dubblettspärren är det unika indexet post_backs(post_id, user_id).
@@ -378,7 +399,7 @@ export async function backPost({
     .maybeSingle();
 
   if (already) {
-    return { ok: false, error: "Du har redan ryggat det här inlägget.", code: "duplicate" };
+    return { ok: false, error: t("planket.errors.backAlready"), code: "duplicate" };
   }
 
   const now = new Date().toISOString();
@@ -389,10 +410,10 @@ export async function backPost({
 
   if (post.attachment_type === "bet") {
     if (post.bet_result && post.bet_result !== "open") {
-      return { ok: false, error: "Spelet är redan rättat.", code: "started" };
+      return { ok: false, error: t("planket.errors.backSettled"), code: "started" };
     }
     if (post.kickoff && Date.now() >= new Date(post.kickoff).getTime()) {
-      return { ok: false, error: "Avspark passerad", code: "started" };
+      return { ok: false, error: t("planket.errors.backStarted"), code: "started" };
     }
 
     notifyMatch = post.bet_match ?? "";
@@ -429,7 +450,7 @@ export async function backPost({
       .eq("id", post.coupon_id!)
       .maybeSingle();
 
-    if (!coupon) return { ok: false, error: "Kupongen finns inte längre." };
+    if (!coupon) return { ok: false, error: t("planket.errors.backCouponGone") };
 
     type Leg = {
       sort_order: number;
@@ -446,14 +467,14 @@ export async function backPost({
     const legs = ((coupon.coupon_legs ?? []) as unknown as Leg[]).sort(
       (a, b) => a.sort_order - b.sort_order
     );
-    if (!legs.length) return { ok: false, error: "Kupongen saknar spel." };
+    if (!legs.length) return { ok: false, error: t("planket.errors.backCouponEmpty") };
 
     const firstKickoff = legs
       .map((l) => l.fixtures?.kickoff)
       .filter((k): k is string => !!k)
       .sort()[0];
     if (firstKickoff && Date.now() >= new Date(firstKickoff).getTime()) {
-      return { ok: false, error: "Avspark passerad", code: "started" };
+      return { ok: false, error: t("planket.errors.backStarted"), code: "started" };
     }
 
     const label = (leg: Leg) =>
@@ -500,11 +521,11 @@ export async function backPost({
     if (betError && /duplicate|unique/i.test(betError.message)) {
       return {
         ok: false,
-        error: "Du har redan bokfört det här spelet.",
+        error: t("planket.errors.backAlreadyBooked"),
         code: "duplicate",
       };
     }
-    return toFailure(betError?.message, "Kunde inte lägga spelet i spelboken.");
+    return toFailure(betError?.message, t("planket.errors.backBookFailed"), t);
   }
 
   const { data: back, error: backError } = await supabase
@@ -520,11 +541,15 @@ export async function backPost({
     if (backError && /duplicate|unique/i.test(backError.message)) {
       return {
         ok: false,
-        error: "Du har redan ryggat det här inlägget.",
+        error: t("planket.errors.backAlready"),
         code: "duplicate",
       };
     }
-    return toFailure(backError?.message, "Kunde inte registrera ryggningen.");
+    return toFailure(
+      backError?.message,
+      t("planket.errors.backRegisterFailed"),
+      t
+    );
   }
 
   await notifyPostBacked({
@@ -532,7 +557,7 @@ export async function backPost({
     postBackId: back.id,
     authorId: post.author_id,
     backerId: user.id,
-    backerUsername: profile?.username ?? "Någon",
+    backerUsername: profile?.username ?? t("planket.notify.backerFallback"),
     match: notifyMatch,
     pick: notifyPick,
     odds: notifyOdds,
@@ -549,10 +574,10 @@ export async function backPost({
 // -------------------------------------------------------------
 
 export async function reportPost(postId: string, reason: string) {
-  const user = await getSessionUser();
-  if (!user) return { ok: false as const, error: "Du måste vara inloggad." };
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
+  if (!user) return { ok: false as const, error: t("planket.errors.auth") };
   if (!isReportReason(reason)) {
-    return { ok: false as const, error: "Välj en anledning." };
+    return { ok: false as const, error: t("planket.errors.reportReason") };
   }
 
   const supabase = await createClient();
@@ -563,7 +588,7 @@ export async function reportPost(postId: string, reason: string) {
   // Redan anmäld ser likadant ut som en ny anmälan. Annars går det att
   // avlyssna vem som anmält vad genom att prova.
   if (error && !/duplicate|unique/i.test(error.message)) {
-    return { ok: false as const, error: "Kunde inte skicka anmälan." };
+    return { ok: false as const, error: t("planket.errors.reportFailed") };
   }
 
   return { ok: true as const };

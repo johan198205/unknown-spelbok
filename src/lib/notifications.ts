@@ -6,6 +6,7 @@
  * Skrivningen ligger i notify-events.ts, som är server-only.
  */
 
+import { createT, type TextKey, type TFunction } from "@/lib/texts";
 import { formatPercent } from "@/lib/utils";
 
 export const NOTIFICATION_TYPES = [
@@ -90,14 +91,15 @@ export const NOTIFICATION_SETTINGS_CATEGORIES =
 
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
 
-export const CATEGORY_LABELS: Record<NotificationCategory, string> = {
-  goal: "Mål i match",
-  kickoff: "Avspark",
-  settled: "Spel rättat",
-  coupon: "Ny kupong",
-  competition: "Tävlingsplacering",
-  popup: "Kampanjer och erbjudanden",
-  planket: "Planket",
+/** Textnyckeln för kategorins namn i inställningarna. Slå upp med t(). */
+export const CATEGORY_LABEL_KEYS: Record<NotificationCategory, TextKey> = {
+  goal: "notiser.categories.goal",
+  kickoff: "notiser.categories.kickoff",
+  settled: "notiser.categories.settled",
+  coupon: "notiser.categories.coupon",
+  competition: "notiser.categories.competition",
+  popup: "notiser.categories.popup",
+  planket: "notiser.categories.planket",
 };
 
 export function categoryOf(type: NotificationType): NotificationCategory {
@@ -287,23 +289,34 @@ function clock(date: Date) {
  * Relativ tid på svenska. Räknas om var 30:e sekund medan panelen är
  * öppen, så "Nu" hinner aldrig bli gammalt på skärmen.
  */
-export function relativeTime(iso: string, now = Date.now()) {
+export function relativeTime(
+  iso: string,
+  now = Date.now(),
+  t: TFunction = createT({})
+) {
   const then = new Date(iso);
   const ms = then.getTime();
   if (!Number.isFinite(ms)) return "";
 
   const min = Math.round((now - ms) / 60000);
-  if (min < 1) return "Nu";
-  if (min < 60) return `${min} min sedan`;
+  if (min < 1) return t("notiser.time.now");
+  if (min < 60) return t("notiser.time.minutes", { count: min });
 
   const hours = Math.round(min / 60);
-  if (hours < 24) return `${hours} ${hours === 1 ? "timme" : "timmar"} sedan`;
+  if (hours < 24) {
+    return t(hours === 1 ? "notiser.time.hours.one" : "notiser.time.hours.other", {
+      count: hours,
+    });
+  }
 
   const days = Math.round(hours / 24);
-  if (days === 1) return `Igår ${clock(then)}`;
-  if (days < 7) return `${days} dagar sedan`;
+  if (days === 1) return t("notiser.time.yesterday", { time: clock(then) });
+  if (days < 7) return t("notiser.time.days", { count: days });
 
-  return `${then.getDate()}/${then.getMonth() + 1}`;
+  return t("notiser.time.date", {
+    day: then.getDate(),
+    month: then.getMonth() + 1,
+  });
 }
 
 export type NotificationGroup = {
@@ -314,7 +327,8 @@ export type NotificationGroup = {
 /** IDAG / TIDIGARE I VECKAN / ÄLDRE. Tomma grupper renderas inte. */
 export function groupNotifications(
   items: AppNotification[],
-  now = Date.now()
+  now = Date.now(),
+  t: TFunction = createT({})
 ): NotificationGroup[] {
   const dayStart = new Date(now);
   dayStart.setHours(0, 0, 0, 0);
@@ -322,9 +336,9 @@ export function groupNotifications(
   const weekAgo = now - 7 * 86_400_000;
 
   const groups: NotificationGroup[] = [
-    { label: "Idag", items: [] },
-    { label: "Tidigare i veckan", items: [] },
-    { label: "Äldre", items: [] },
+    { label: t("notiser.panel.groupToday"), items: [] },
+    { label: t("notiser.panel.groupWeek"), items: [] },
+    { label: t("notiser.panel.groupOlder"), items: [] },
   ];
 
   for (const item of items) {
@@ -348,12 +362,15 @@ export function groupNotifications(
  */
 export function formatNotificationAmount(
   amount: number,
-  kind: NotificationAmountKind | null
+  kind: NotificationAmountKind | null,
+  t: TFunction = createT({})
 ) {
   const sign = amount > 0 ? "+" : amount < 0 ? "−" : "";
   const value = Math.abs(amount);
   if (kind === "roi") return `${sign}${formatPercent(value)}`;
-  return `${sign}${Math.round(value).toLocaleString("sv-SE")} kr`;
+  return t("notiser.amount.money", {
+    amount: `${sign}${Math.round(value).toLocaleString("sv-SE")}`,
+  });
 }
 
 export function amountColor(amount: number) {

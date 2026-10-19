@@ -5,6 +5,7 @@ import {
   useDisplayPrefs,
   useSetDisplayMode,
 } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { setDisplayMode } from "@/lib/display-actions";
 import { type DisplayMode } from "@/lib/display";
@@ -24,6 +25,7 @@ export function DisplayModeToggle({
   /** "menu": stora knappar i hamburgermenyn, aktivt val i grönt. */
   variant?: "compact" | "menu";
 }) {
+  const t = useT();
   const prefs = useDisplayPrefs();
   const setModeLocal = useSetDisplayMode();
   const { toast } = useToast();
@@ -40,7 +42,7 @@ export function DisplayModeToggle({
       if (id !== requestId.current) return;
       if (!res.ok) {
         setModeLocal(prev);
-        toast(`Kunde inte byta visningsläge: ${res.error}`);
+        toast(t("header.displayMode.error", { error: res.error }));
       }
     });
   }
@@ -49,15 +51,19 @@ export function DisplayModeToggle({
     {
       value: "money",
       label: prefs.currency,
-      title: `Visa belopp i ${prefs.currency}`,
+      title: t("header.displayMode.moneyTitle", { currency: prefs.currency }),
     },
-    { value: "units", label: "Units", title: "Visa belopp i units" },
+    {
+      value: "units",
+      label: t("header.displayMode.units"),
+      title: t("header.displayMode.unitsTitle"),
+    },
   ];
 
   return (
     <div
       role="group"
-      aria-label="Visa belopp i valuta eller units"
+      aria-label={t("header.displayMode.groupLabel")}
       className={cn(
         "flex items-center gap-0.5 rounded-[var(--radius-btn-sm)] border border-line bg-panel-2 p-0.5",
         variant === "menu" && "p-1",

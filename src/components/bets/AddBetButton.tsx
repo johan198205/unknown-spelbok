@@ -2,6 +2,7 @@
 
 import { useMobileChrome } from "@/components/layout/MobileChrome";
 import { Button } from "@/components/ui/Button";
+import { useT } from "@/components/TextsProvider";
 
 /**
  * Dashboardens primära åtgärd. Öppnar samma flöde som plusknappen i
@@ -9,12 +10,13 @@ import { Button } from "@/components/ui/Button";
  */
 export function AddBetButton() {
   const chrome = useMobileChrome();
+  const t = useT();
   return (
     <Button
       onClick={() => chrome?.openAddBet()}
       className="shrink-0 rounded-[10px] px-5 py-3 text-[14.5px]"
     >
-      + Lägg nytt spel
+      {t("betform.trigger")}
     </Button>
   );
 }

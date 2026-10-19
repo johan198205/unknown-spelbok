@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AttachNewBet } from "@/components/planket/AttachNewBet";
 import { LeagueCrest } from "@/components/planket/Bits";
+import { useT } from "@/components/TextsProvider";
 import { formatPick } from "@/lib/picks";
 import {
   listAttachableBets,
@@ -42,6 +43,7 @@ export function AttachPicker({
   onPick: (attachment: Attachment) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const [bets, setBets] = useState<AttachableBet[] | null>(null);
   const [coupons, setCoupons] = useState<AttachableCoupon[] | null>(null);
   const [query, setQuery] = useState("");
@@ -103,18 +105,18 @@ export function AttachPicker({
         <div className="flex gap-1 border-b border-line px-2 pt-2">
           <SourceTab
             active={betSource === "book"}
-            label="Från spelboken"
+            label={t("planket.picker.tabBook")}
             onClick={() => setBetSource("book")}
           />
           <SourceTab
             active={betSource === "new"}
-            label="Nytt spel"
+            label={t("planket.picker.tabNew")}
             onClick={() => setBetSource("new")}
           />
           <button
             type="button"
             onClick={onClose}
-            aria-label="Stäng väljaren"
+            aria-label={t("planket.picker.close")}
             className="ml-auto mb-1.5 shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#1e1e21] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
           >
             ×
@@ -129,7 +131,9 @@ export function AttachPicker({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
-              mode === "bet" ? "Sök lag eller marknad…" : "Sök kupong…"
+              mode === "bet"
+                ? t("planket.picker.searchBets")
+                : t("planket.picker.searchCoupons")
             }
             className="min-w-0 flex-1 border-none bg-transparent text-[14px] text-text outline-none"
           />
@@ -137,7 +141,7 @@ export function AttachPicker({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Stäng väljaren"
+              aria-label={t("planket.picker.close")}
               className="shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#1e1e21] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
             >
               ×
@@ -161,23 +165,23 @@ export function AttachPicker({
           />
         ) : loading ? (
           <div className="px-3 py-6 text-center text-[13.5px] text-[#5D6883]">
-            Hämtar…
+            {t("planket.picker.loading")}
           </div>
         ) : empty ? (
           <div className="px-3 py-6 text-center text-[13.5px] text-[#5D6883]">
             {mode === "bet" ? (
               <>
-                Inga spel i spelboken att bifoga.{" "}
+                {t("planket.picker.emptyBets")}{" "}
                 <button
                   type="button"
                   onClick={() => setBetSource("new")}
                   className="cursor-pointer font-semibold text-cyan hover:underline"
                 >
-                  Skapa ett nytt spel
+                  {t("planket.picker.createNew")}
                 </button>
               </>
             ) : (
-              "Inga öppna kuponger just nu."
+              t("planket.picker.emptyCoupons")
             )}
           </div>
         ) : mode === "bet" ? (
@@ -226,6 +230,7 @@ function BetRow({
   bet: AttachableBet;
   onPick: (attachment: Attachment) => void;
 }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -251,7 +256,7 @@ function BetRow({
           <div className="truncate text-[12px] text-[#5D6883]">
             {[
               bet.league,
-              planketKickoff(bet.kickoff),
+              planketKickoff(bet.kickoff, t),
               formatPick(bet.pick),
               bet.sheet_name,
             ]
@@ -264,19 +269,19 @@ function BetRow({
             {planketOdds(bet.odds)}
           </div>
           <div className="font-mono-num text-[11.5px] text-[#5D6883]">
-            {planketKr(bet.stake)}
+            {planketKr(bet.stake, { t })}
           </div>
         </div>
         {bet.posted ? (
           <span className="shrink-0 rounded-[6px] border border-line-strong px-2 py-[3px] text-[11px] font-semibold text-[#8A94AB]">
-            Postad
+            {t("planket.picker.posted")}
           </span>
         ) : null}
       </div>
 
       {bet.sheet_private && !bet.posted ? (
         <div className="mt-1.5 text-[11.5px] leading-[1.5] text-yellow">
-          Spelet blir synligt på Planket. Resten av boken förblir privat.
+          {t("planket.picker.privateNote")}
         </div>
       ) : null}
     </button>
@@ -290,6 +295,7 @@ function CouponRow({
   coupon: AttachableCoupon;
   onPick: (attachment: Attachment) => void;
 }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -303,15 +309,15 @@ function CouponRow({
       )}
     >
       <span className="shrink-0 font-display text-[11.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
-        Kupong
+        {t("planket.coupon.label")}
       </span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-[14px]">{coupon.title}</div>
         <div className="truncate text-[12px] text-[#5D6883]">
           {[
-            `${coupon.legs} spel`,
+            t("planket.picker.couponLegs", { count: coupon.legs }),
             coupon.bookmaker_name,
-            planketKr(coupon.stake),
+            planketKr(coupon.stake, { t }),
           ]
             .filter(Boolean)
             .join(" · ")}
@@ -322,7 +328,7 @@ function CouponRow({
       </span>
       {coupon.posted ? (
         <span className="shrink-0 rounded-[6px] border border-line-strong px-2 py-[3px] text-[11px] font-semibold text-[#8A94AB]">
-          Postad
+          {t("planket.picker.posted")}
         </span>
       ) : null}
     </button>

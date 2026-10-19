@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { Avatar, RoiBadge } from "@/components/planket/Bits";
 import { PostBetCard } from "@/components/planket/PostBetCard";
@@ -43,6 +44,7 @@ export function PostCard({
   canInteract?: boolean;
 }) {
   const { toast } = useToast();
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.body);
   const [saving, setSaving] = useState(false);
@@ -99,10 +101,10 @@ export function PostCard({
       {post.isEditorial ? (
         <div className="mb-2.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-yellow">
           <span aria-hidden>★</span>
-          Redaktionens spel
+          {t("planket.post.editorial")}
           {post.pinned ? (
             <span className="font-normal normal-case tracking-normal text-[#8A94AB]">
-              · Fäst överst
+              {t("planket.post.pinned")}
             </span>
           ) : null}
         </div>
@@ -134,8 +136,8 @@ export function PostCard({
               compact
             />
             <span className="hidden text-[12.5px] text-[#5D6883] lg:inline">
-              {postAge(post.created_at)}
-              {post.edited_at ? " · redigerat" : ""}
+              {postAge(post.created_at, t)}
+              {post.edited_at ? ` ${t("planket.post.edited")}` : ""}
             </span>
           </div>
           {/*
@@ -144,14 +146,16 @@ export function PostCard({
           */}
           <div className="mt-px text-[12px] text-[#5D6883] lg:mt-0.5 lg:text-[12.5px]">
             <span className="lg:hidden">
-              {postAge(post.created_at)}
-              {post.edited_at ? " · redigerat" : ""}
+              {postAge(post.created_at, t)}
+              {post.edited_at ? ` ${t("planket.post.edited")}` : ""}
             </span>
             <span className="hidden lg:inline">
               {[
                 post.sheet_name,
                 post.sheet_bets_count != null
-                  ? `${post.sheet_bets_count} spel`
+                  ? t("planket.post.sheetBets", {
+                      count: post.sheet_bets_count,
+                    })
                   : null,
               ]
                 .filter(Boolean)
@@ -188,14 +192,14 @@ export function PostCard({
               onClick={() => void saveEdit()}
               className="cursor-pointer rounded-[9px] border-none bg-win px-4 py-2 text-[13.5px] font-bold text-win-ink disabled:opacity-60"
             >
-              {saving ? "Sparar…" : "Spara"}
+              {saving ? t("planket.post.saving") : t("planket.post.save")}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
               className="cursor-pointer rounded-[9px] border border-line-strong bg-[#1e1e21] px-4 py-2 text-[13.5px] font-semibold text-[#C3CBDB]"
             >
-              Avbryt
+              {t("planket.post.cancel")}
             </button>
             <span className="ml-auto font-mono-num text-[12.5px] text-[#5D6883]">
               {draft.length}/{PLANKET_MAX_BODY}
@@ -230,8 +234,10 @@ export function PostCard({
               <Link
                 key={kind}
                 href={PLANKET_LOGIN_HREF}
-                aria-label={`${REACTION_LABEL[kind]} – logga in för att reagera`}
-                title="Logga in för att reagera"
+                aria-label={t("planket.reactions.loginAria", {
+                  label: t(REACTION_LABEL[kind]),
+                })}
+                title={t("planket.reactions.loginTitle")}
                 className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-[#1e1e21] px-[11px] py-[7px] text-[13px] text-[#C3CBDB] no-underline hover:border-[#46464d] hover:no-underline lg:gap-[7px] lg:px-3 lg:text-[13.5px]"
               >
                 <span aria-hidden className="text-[13px] lg:text-[14px]">
@@ -248,7 +254,7 @@ export function PostCard({
               key={kind}
               type="button"
               aria-pressed={active}
-              aria-label={REACTION_LABEL[kind]}
+              aria-label={t(REACTION_LABEL[kind])}
               onClick={() => void react(kind)}
               className={cn(
                 "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-[11px] py-[7px] text-[13px] transition-colors lg:gap-[7px] lg:px-3 lg:text-[13.5px]",
@@ -275,11 +281,13 @@ export function PostCard({
               rel="noopener sponsored nofollow"
               className="ml-auto inline-flex items-center rounded-[9px] border border-[rgba(102,227,138,.45)] bg-[rgba(102,227,138,.14)] px-[15px] py-2 text-[13px] font-bold text-win no-underline hover:bg-[rgba(102,227,138,.22)] hover:no-underline lg:px-[17px] lg:text-[13.5px]"
             >
-              Rygga spelet
+              {t("planket.post.back")}
             </a>
           ) : (
             <span className="ml-auto rounded-[9px] border border-line-strong bg-[#1e1e21] px-[15px] py-2 text-[13px] font-bold text-[#5D6883] lg:px-[17px] lg:text-[13.5px]">
-              {isSettledAttachment(post) ? "Avgjort" : "Avspark passerad"}
+              {isSettledAttachment(post)
+                ? t("planket.post.settled")
+                : t("planket.post.started")}
             </span>
           )
         ) : null}

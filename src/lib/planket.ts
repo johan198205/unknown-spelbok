@@ -11,8 +11,12 @@
  * "prediktion". Det heter spel, kupong och rygga.
  */
 
+import { createT, type TextKey, type TFunction } from "@/lib/texts";
 import type { CouponLegResult, CouponStatus } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
+
+/** Standardtexterna, för anrop utan t (t.ex. admin). */
+const defaultT = createT({});
 
 // -------------------------------------------------------------
 // Gränser
@@ -182,9 +186,9 @@ export const REACTION_ICON: Record<ReactionKind, string> = {
   thumb: "👍",
 };
 
-export const REACTION_LABEL: Record<ReactionKind, string> = {
-  fire: "Het",
-  thumb: "Tummen upp",
+export const REACTION_LABEL: Record<ReactionKind, TextKey> = {
+  fire: "planket.reactions.fire",
+  thumb: "planket.reactions.thumb",
 };
 
 // -------------------------------------------------------------
@@ -192,11 +196,11 @@ export const REACTION_LABEL: Record<ReactionKind, string> = {
 // -------------------------------------------------------------
 
 export const REPORT_REASONS = [
-  { key: "spam", label: "Spam" },
-  { key: "offensive", label: "Kränkande" },
-  { key: "misleading", label: "Vilseledande" },
-  { key: "bad_link", label: "Fel spelbolagslänk" },
-] as const;
+  { key: "spam", label: "planket.report.spam" },
+  { key: "offensive", label: "planket.report.offensive" },
+  { key: "misleading", label: "planket.report.misleading" },
+  { key: "bad_link", label: "planket.report.bad_link" },
+] as const satisfies ReadonlyArray<{ key: string; label: TextKey }>;
 
 export type ReportReason = (typeof REPORT_REASONS)[number]["key"];
 
@@ -204,8 +208,9 @@ export function isReportReason(value: unknown): value is ReportReason {
   return REPORT_REASONS.some((r) => r.key === value);
 }
 
-export function reportReasonLabel(reason: string) {
-  return REPORT_REASONS.find((r) => r.key === reason)?.label ?? reason;
+export function reportReasonLabel(reason: string, t: TFunction = defaultT) {
+  const label = REPORT_REASONS.find((r) => r.key === reason)?.label;
+  return label ? t(label) : reason;
 }
 
 /** Så många anmälningar döljer inlägget automatiskt (triggern i db/planket.sql). */
@@ -229,10 +234,11 @@ export function parseRateLimit(message: string | null | undefined) {
   return Number.isFinite(minutes) && minutes > 0 ? minutes : 1;
 }
 
-export function rateLimitMessage(minutes: number) {
-  return `Du har postat mycket på kort tid. Försök igen om ${minutes} ${
-    minutes === 1 ? "minut" : "minuter"
-  }.`;
+export function rateLimitMessage(minutes: number, t: TFunction) {
+  return t(
+    minutes === 1 ? "planket.errors.rateLimit.one" : "planket.errors.rateLimit.other",
+    { minutes }
+  );
 }
 
 // -------------------------------------------------------------
@@ -253,9 +259,9 @@ export function planketOdds(value: number | string | null | undefined) {
 /** Belopp i hela kronor: 1 240 kr. `sign` ger ledande + eller −. */
 export function planketKr(
   value: number,
-  opts?: { sign?: boolean; currency?: string }
+  opts?: { sign?: boolean; currency?: string; t?: TFunction }
 ) {
-  const currency = opts?.currency ?? "kr";
+  const currency = opts?.currency ?? (opts?.t ?? defaultT)("planket.units.kr");
   const abs = Math.abs(Math.round(value));
   const sign = opts?.sign ? (value < 0 ? "−" : "+") : value < 0 ? "−" : "";
   // Hårt mellanslag före valutan: summan får aldrig brytas så "kr"
@@ -301,6 +307,7 @@ export function planketTime(iso: string) {
  */
 export function planketKickoff(
   iso: string | null | undefined,
+  t: TFunction,
   now = Date.now()
 ) {
   if (!iso) return "";
@@ -311,8 +318,10 @@ export function planketKickoff(
   const today = new Date(now);
   const tomorrow = new Date(now + 86_400_000);
 
-  if (sameStockholmDay(date, today)) return `Idag ${time}`;
-  if (sameStockholmDay(date, tomorrow)) return `Imorgon ${time}`;
+  if (sameStockholmDay(date, today)) return t("planket.time.today", { time });
+  if (sameStockholmDay(date, tomorrow)) {
+    return t("planket.time.tomorrow", { time });
+  }
 
   const days = Math.abs(date.getTime() - now) / 86_400_000;
   if (days < 7) {
@@ -336,19 +345,27 @@ export function planketKickoff(
  * Inläggets ålder i huvudet: "för 14 min", "för 1 timme", "för 2 timmar".
  * Äldre än ett dygn skrivs som datum — "för 38 timmar" säger inget.
  */
-export function postAge(iso: string, now = Date.now()) {
+export function postAge(iso: string, t: TFunction, now = Date.now()) {
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return "";
 
   const min = Math.max(0, Math.round((now - then) / 60_000));
-  if (min < 1) return "just nu";
-  if (min < 60) return `för ${min} min`;
+  if (min < 1) return t("planket.age.now");
+  if (min < 60) return t("planket.age.minutes", { count: min });
 
   const hours = Math.round(min / 60);
-  if (hours < 24) return `för ${hours} ${hours === 1 ? "timme" : "timmar"}`;
+  if (hours < 24) {
+    return t(hours === 1 ? "planket.age.hours.one" : "planket.age.hours.other", {
+      count: hours,
+    });
+  }
 
   const days = Math.round(hours / 24);
-  if (days < 7) return `för ${days} ${days === 1 ? "dag" : "dagar"}`;
+  if (days < 7) {
+    return t(days === 1 ? "planket.age.days.one" : "planket.age.days.other", {
+      count: days,
+    });
+  }
 
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: TZ,
@@ -376,18 +393,26 @@ export function isSettledBet(result: string | null | undefined) {
 }
 
 /** "Vinst +1 196 kr" eller "Förlust −1 300 kr". Null när spelet är öppet. */
-export function settledOutcome(post: {
-  bet_result: string | null;
-  bet_stake: number | null;
-  bet_payout: number | null;
-}) {
+export function settledOutcome(
+  post: {
+    bet_result: string | null;
+    bet_stake: number | null;
+    bet_payout: number | null;
+  },
+  t: TFunction
+) {
   if (!isSettledBet(post.bet_result)) return null;
   const netto = Number(post.bet_payout ?? 0) - Number(post.bet_stake ?? 0);
   if (post.bet_result === "void") {
-    return { label: `Void ${planketKr(0)}`, color: "#8A94AB" };
+    return {
+      label: t("planket.bet.outcomeVoid", { amount: planketKr(0, { t }) }),
+      color: "#8A94AB",
+    };
   }
   return {
-    label: `${netto >= 0 ? "Vinst" : "Förlust"} ${planketKr(netto, { sign: true })}`,
+    label: t(netto >= 0 ? "planket.bet.outcomeWin" : "planket.bet.outcomeLoss", {
+      amount: planketKr(netto, { sign: true, t }),
+    }),
     color: netto >= 0 ? "#66E38A" : "#E8697A",
   };
 }
@@ -404,9 +429,11 @@ export function couponTotalOdds(legs: Array<{ odds: number }>) {
 }
 
 /** "4 spel · Kombination" i kupongkortets överrad. */
-export function couponMeta(legs: unknown[]) {
+export function couponMeta(legs: unknown[], t: TFunction) {
   const n = legs.length;
-  return `${n} spel · ${n > 1 ? "Kombination" : "Enkel"}`;
+  return t(n > 1 ? "planket.coupon.metaCombo" : "planket.coupon.metaSingle", {
+    count: n,
+  });
 }
 
 /** Möjlig vinst på en kupong: insats × (totalodds − 1). */

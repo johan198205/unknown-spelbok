@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "@/components/TextsProvider";
 import { track } from "@/lib/analytics";
 
 export function urlBase64ToUint8Array(base64String: string) {
@@ -43,6 +44,7 @@ function detectSupport() {
 }
 
 export function usePushNotifications() {
+  const t = useT();
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -81,13 +83,13 @@ export function usePushNotifications() {
     try {
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
-        throw new Error("Push-nycklar saknas. Kontakta admin.");
+        throw new Error(t("pwa.push.error.noKeys"));
       }
 
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result !== "granted") {
-        throw new Error("Notiser godkändes inte.");
+        throw new Error(t("pwa.push.error.notGranted"));
       }
 
       const registration = await navigator.serviceWorker.register("/sw.js");
@@ -110,19 +112,19 @@ export function usePushNotifications() {
       } | null;
 
       if (!res.ok || !data?.ok || !data.id) {
-        throw new Error(data?.error || "Kunde inte spara prenumerationen.");
+        throw new Error(data?.error || t("pwa.push.error.saveFailed"));
       }
 
       setIsSubscribed(true);
       track({ event: "push_subscribe" });
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Kunde inte aktivera notiser."
+        err instanceof Error ? err.message : t("pwa.push.error.enableFailed")
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const unsubscribe = useCallback(async () => {
     setError(null);
@@ -146,19 +148,19 @@ export function usePushNotifications() {
           const data = (await res.json().catch(() => null)) as {
             error?: string;
           } | null;
-          throw new Error(data?.error || "Kunde inte stänga av notiser.");
+          throw new Error(data?.error || t("pwa.push.error.disableFailed"));
         }
       }
 
       setIsSubscribed(false);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Kunde inte stänga av notiser."
+        err instanceof Error ? err.message : t("pwa.push.error.disableFailed")
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   return {
     isSupported,

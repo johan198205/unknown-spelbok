@@ -1,3 +1,5 @@
+import type { TextKey } from "@/lib/texts";
+
 /**
  * Delade typer för filimport av spel.
  *
@@ -53,18 +55,19 @@ export const IMPORT_FIELDS: ImportField[] = [
   "netto",
 ];
 
-export const IMPORT_FIELD_LABELS: Record<ImportField, string> = {
-  placed_at: "Datum",
-  sport: "Sport",
-  league: "Liga",
-  match_label: "Match",
-  market: "Spel",
-  odds: "Odds",
-  stake: "Insats",
-  bookmaker: "Spelbolag",
-  result: "Resultat",
-  payout: "Vinst (utdelning)",
-  netto: "Netto (vinst/förlust)",
+/** Textnyckeln för fältets namn i mappningssteget — slå upp med t(). */
+export const IMPORT_FIELD_LABEL_KEYS: Record<ImportField, TextKey> = {
+  placed_at: "import.field.placed_at",
+  sport: "import.field.sport",
+  league: "import.field.league",
+  match_label: "import.field.match_label",
+  market: "import.field.market",
+  odds: "import.field.odds",
+  stake: "import.field.stake",
+  bookmaker: "import.field.bookmaker",
+  result: "import.field.result",
+  payout: "import.field.payout",
+  netto: "import.field.netto",
 };
 
 /** Utan dessa går det inte att skapa ett spel. */

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { NewSheetForm } from "@/components/bets/NewSheetForm";
+import { useT } from "@/components/TextsProvider";
 import type { Sheet } from "@/lib/types";
 
 /**
@@ -19,6 +20,7 @@ export function SpelbokSheetTabs({
   /** När ?sheet= saknas — samma fallback som sidan (första boken). */
   fallbackSheetId: string | null;
 }) {
+  const t = useT();
   const searchParams = useSearchParams();
   const sheetParam = searchParams.get("sheet");
   const urlActive = sheetParam ?? fallbackSheetId ?? sheets[0]?.id ?? null;
@@ -47,7 +49,7 @@ export function SpelbokSheetTabs({
           {s.name}
         </Link>
       ))}
-      <NewSheetForm buttonLabel="+ Ny" />
+      <NewSheetForm buttonLabel={t("spelbok.tabs.newSheet")} />
     </div>
   );
 }

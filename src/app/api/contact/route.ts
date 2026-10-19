@@ -3,6 +3,7 @@ import { CONTACT_TOPICS, type ContactTopic } from "@/lib/contact";
 import { sendContactEmails } from "@/lib/contact-mail";
 import { rateLimit } from "@/lib/import/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getT } from "@/lib/texts/server";
 
 export const runtime = "nodejs";
 
@@ -16,11 +17,12 @@ function clientIp(req: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const t = await getT();
   let payload: unknown;
   try {
     payload = await request.json();
   } catch {
-    return NextResponse.json({ error: "Ogiltig begäran." }, { status: 400 });
+    return NextResponse.json({ error: t("kontakt.errors.badRequest") }, { status: 400 });
   }
 
   const body = (payload ?? {}) as Record<string, unknown>;
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
   const limit = rateLimit(`contact:${ip}`, 5, 60 * 60 * 1000);
   if (!limit.allowed) {
     return NextResponse.json(
-      { error: "För många meddelanden. Försök igen om en stund." },
+      { error: t("kontakt.errors.rateLimit") },
       {
         status: 429,
         headers: { "Retry-After": String(limit.retryAfter) },
@@ -50,37 +52,36 @@ export async function POST(request: NextRequest) {
 
   if (!name || !email) {
     return NextResponse.json(
-      { error: "Fyll i namn och e-post så vi kan svara." },
+      { error: t("kontakt.errors.nameEmail") },
       { status: 400 }
     );
   }
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json(
-      { error: "E-postadressen ser inte rätt ut." },
+      { error: t("kontakt.errors.email") },
       { status: 400 }
     );
   }
   if (!CONTACT_TOPICS.includes(topicRaw as ContactTopic)) {
-    return NextResponse.json({ error: "Ogiltigt ärende." }, { status: 400 });
+    return NextResponse.json({ error: t("kontakt.errors.topic") }, { status: 400 });
   }
   const topic = topicRaw as ContactTopic;
   if (!message) {
     return NextResponse.json(
-      { error: "Skriv ett meddelande." },
+      { error: t("kontakt.errors.message") },
       { status: 400 }
     );
   }
   if (message.length > MAX_MSG) {
     return NextResponse.json(
-      { error: "Meddelandet är för långt." },
+      { error: t("kontakt.errors.tooLong") },
       { status: 400 }
     );
   }
   if (!consent) {
     return NextResponse.json(
       {
-        error:
-          "Du behöver godkänna att vi sparar meddelandet för att kunna svara.",
+        error: t("kontakt.errors.consent"),
       },
       { status: 400 }
     );
@@ -97,14 +98,14 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("[contact] insert failed", error.message);
       return NextResponse.json(
-        { error: "Kunde inte spara meddelandet. Försök igen." },
+        { error: t("kontakt.errors.saveFailed") },
         { status: 500 }
       );
     }
   } catch (err) {
     console.error("[contact] admin client", err);
     return NextResponse.json(
-      { error: "Kunde inte spara meddelandet. Försök igen." },
+      { error: t("kontakt.errors.saveFailed") },
       { status: 500 }
     );
   }

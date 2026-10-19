@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { Avatar } from "@/components/planket/Bits";
 import {
@@ -31,6 +32,7 @@ export function PostThread({
   canReply?: boolean;
 }) {
   const { toast } = useToast();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [replies, setReplies] = useState<PostReplyRow[]>([]);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function PostThread({
   }
 
   async function remove(replyId: string) {
-    if (!window.confirm("Ta bort din kommentar?")) return;
+    if (!window.confirm(t("planket.thread.confirmDelete"))) return;
     setRemoving(replyId);
     const result = await deletePostReply(replyId);
     setRemoving(null);
@@ -90,10 +92,15 @@ export function PostThread({
         className="cursor-pointer border-0 bg-transparent p-0 text-[13px] font-semibold text-[#8A94AB] hover:text-text"
       >
         {open
-          ? "Dölj diskussion"
+          ? t("planket.thread.hide")
           : count
-            ? `${count} ${count === 1 ? "kommentar" : "kommentarer"}`
-            : "Svara / diskutera"}
+            ? t(
+                count === 1
+                  ? "planket.thread.count.one"
+                  : "planket.thread.count.other",
+                { count }
+              )
+            : t("planket.thread.open")}
       </button>
 
       {open ? (
@@ -116,7 +123,7 @@ export function PostThread({
                     {r.author_username}
                   </Link>
                   <span className="text-[11px] text-faint">
-                    {postAge(r.created_at)}
+                    {postAge(r.created_at, t)}
                   </span>
                   {r.isAuthor ? (
                     <button
@@ -125,7 +132,9 @@ export function PostThread({
                       onClick={() => void remove(r.id)}
                       className="ml-auto cursor-pointer border-0 bg-transparent p-0 text-[11.5px] font-semibold text-[#8A94AB] hover:text-loss disabled:opacity-50"
                     >
-                      {removing === r.id ? "Tar bort…" : "Ta bort"}
+                      {removing === r.id
+                        ? t("planket.thread.deleting")
+                        : t("planket.thread.delete")}
                     </button>
                   ) : null}
                 </div>
@@ -143,7 +152,7 @@ export function PostThread({
                 value={draft}
                 maxLength={PLANKET_MAX_BODY}
                 rows={2}
-                placeholder="Skriv ett svar… (länkar är inte klickbara)"
+                placeholder={t("planket.thread.placeholder")}
                 onChange={(e) => setDraft(e.target.value)}
                 className="min-w-0 flex-1 resize-none rounded-[10px] border border-line bg-bg-soft px-3 py-2 text-[14px] text-text outline-none focus:border-line-hover"
               />
@@ -158,19 +167,19 @@ export function PostThread({
                     : "cursor-not-allowed bg-[#1e1e21] text-[#5D6883]"
                 )}
               >
-                {pending ? "…" : "Svara"}
+                {pending ? "…" : t("planket.thread.submit")}
               </button>
             </div>
           ) : (
             <p className="text-[13px] text-[#8A94AB]">
               <Link href={PLANKET_LOGIN_HREF} className="font-semibold text-win">
-                Logga in
+                {t("planket.thread.guest.login")}
               </Link>{" "}
-              eller{" "}
+              {t("planket.thread.guest.or")}{" "}
               <Link href="/registrera" className="font-semibold text-win">
-                skapa ett konto
+                {t("planket.thread.guest.register")}
               </Link>{" "}
-              för att kommentera.
+              {t("planket.thread.guest.after")}
             </p>
           )}
         </div>

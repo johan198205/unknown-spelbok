@@ -1,6 +1,7 @@
 import { BannerHtml } from "./BannerHtml";
 import { BannerLink } from "./BannerLink";
 import { getBannerForPlacement } from "@/lib/banners";
+import { getT } from "@/lib/texts/server";
 import { cn } from "@/lib/utils";
 import type { Banner, BannerFormat, BannerPlacement } from "@/lib/types";
 
@@ -60,7 +61,7 @@ export function BannerCreative({
 }
 
 /** Tom plats får en mjuk min-höjd; fyllda platser anpassar sig efter snutten/bilden. */
-export function EmptyAdSlot({
+export async function EmptyAdSlot({
   format,
   label,
   className,
@@ -69,6 +70,8 @@ export function EmptyAdSlot({
   label?: string;
   className?: string;
 }) {
+  const t = await getT();
+
   return (
     <div
       className={cn(
@@ -77,7 +80,7 @@ export function EmptyAdSlot({
         className
       )}
     >
-      {label ?? `ANNONSPLATS ${format.replace("x", "×")}`}
+      {label ?? t("popups.adSlot.empty", { format: format.replace("x", "×") })}
     </div>
   );
 }

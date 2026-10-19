@@ -33,6 +33,8 @@ import {
 } from "@/lib/stockholm";
 import { createClient } from "@/lib/supabase/client";
 import { cn, foldText } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
+import type { TFunction } from "@/lib/texts";
 
 type Coverage = { from: string; to: string };
 
@@ -120,10 +122,10 @@ function formatRange(from: string, to: string) {
   return `${fmt(from)} – ${fmt(to)}`;
 }
 
-function chipLabel(chip: DayChip) {
-  if (chip.isToday) return "Idag";
-  if (chip.isTomorrow) return "Imorgon";
-  if (chip.isYesterday) return "Igår";
+function chipLabel(chip: DayChip, t: TFunction) {
+  if (chip.isToday) return t("betform.day.today");
+  if (chip.isTomorrow) return t("betform.day.tomorrow");
+  if (chip.isYesterday) return t("betform.day.yesterday");
   return chip.weekday;
 }
 
@@ -134,6 +136,7 @@ export function DayStrip({
   ymd: string;
   onChange: (ymd: string) => void;
 }) {
+  const t = useT();
   const chips = useMemo(() => fixtureDayChips(), []);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const today = stockholmYmd();
@@ -162,7 +165,7 @@ export function DayStrip({
       >
         <Calendar className="size-3.5" strokeWidth={2.25} />
         <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.08em]">
-          Datum
+          {t("betform.day.custom")}
         </span>
         <input
           type="date"
@@ -173,7 +176,7 @@ export function DayStrip({
             if (/^\d{4}-\d{2}-\d{2}$/.test(next)) onChange(next);
           }}
           className="absolute inset-0 cursor-pointer opacity-0"
-          aria-label="Välj datum"
+          aria-label={t("betform.day.pickDate")}
         />
       </label>
       {chips.map((chip) => {
@@ -192,7 +195,7 @@ export function DayStrip({
             )}
           >
             <div className="text-[10px] font-semibold uppercase tracking-[0.08em]">
-              {chipLabel(chip)}
+              {chipLabel(chip, t)}
             </div>
             <div className="font-mono-num text-[13px] font-semibold leading-tight">
               {chip.day}
@@ -205,7 +208,8 @@ export function DayStrip({
 }
 
 function FinishedPickerOption({ fixture }: { fixture: PickerFixture }) {
-  const row = finishedPickerMeta(fixture);
+  const t = useT();
+  const row = finishedPickerMeta(fixture, t);
   if (!row) return null;
   return (
     <span className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-[13px] leading-snug text-text">
@@ -231,7 +235,8 @@ function FinishedPickerOption({ fixture }: { fixture: PickerFixture }) {
 }
 
 function PickerMatchOption({ fixture }: { fixture: PickerFixture }) {
-  if (finishedPickerMeta(fixture)) {
+  const t = useT();
+  if (finishedPickerMeta(fixture, t)) {
     return <FinishedPickerOption fixture={fixture} />;
   }
   return <FixtureMatch fixture={fixture} />;
@@ -256,6 +261,7 @@ function MatchDropdown({
   disabled?: boolean;
   onPick: (fixture: PickerFixture) => void;
 }) {
+  const t = useT();
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -294,7 +300,7 @@ function MatchDropdown({
   useEffect(() => {
     if (!open) return;
     setQ("");
-    const t = requestAnimationFrame(() => searchRef.current?.focus());
+    const frame = requestAnimationFrame(() => searchRef.current?.focus());
     function onDoc(e: MouseEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     }
@@ -304,22 +310,22 @@ function MatchDropdown({
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
     return () => {
-      cancelAnimationFrame(t);
+      cancelAnimationFrame(frame);
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
   const triggerLabel = loading
-    ? "Hämtar matcher…"
+    ? t("betform.picker.loading")
     : totalCount === 0 && !filling
-      ? "Inga matcher"
-      : "Välj match …";
+      ? t("betform.picker.noMatches")
+      : t("betform.picker.choose");
 
   return (
     <div ref={rootRef} className="relative">
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-        Match
+        {t("betform.picker.matchLabel")}
       </div>
       <button
         type="button"
@@ -358,7 +364,7 @@ function MatchDropdown({
             className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-line-strong border-t-cyan"
             aria-hidden
           />
-          Hämtar matcher från API…
+          {t("betform.picker.loadingApi")}
         </div>
       ) : null}
 
@@ -372,14 +378,14 @@ function MatchDropdown({
               ref={searchRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Sök lag…"
+              placeholder={t("betform.picker.searchPlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-soft px-2.5 py-2 text-[13px] text-text outline-none placeholder:text-faint focus:border-blue"
             />
           </div>
           <div className="overflow-auto p-1.5">
             {loading && totalCount === 0 ? (
               <div className="px-2.5 py-3 text-[13px] text-faint">
-                Hämtar matcher…
+                {t("betform.picker.loading")}
               </div>
             ) : filteredCount ? (
               filtered.map((group) => (
@@ -423,18 +429,18 @@ function MatchDropdown({
               ))
             ) : filling ? (
               <div className="px-2.5 py-3 text-[13px] text-faint">
-                Hämtar matcher…
+                {t("betform.picker.loading")}
               </div>
             ) : (
               <div className="px-2.5 py-3 text-[13px] text-faint">
                 {q.trim()
-                  ? "Ingen match matchar. Prova ett annat namn."
+                  ? t("betform.picker.noFilterMatch")
                   : emptyMessage}
               </div>
             )}
             {filling && filteredCount > 0 ? (
               <div className="px-2.5 py-2 text-[13px] text-faint">
-                Hämtar fler matcher…
+                {t("betform.picker.loadingMore")}
               </div>
             ) : null}
           </div>
@@ -462,6 +468,7 @@ export function FixturePicker({
   ymd?: string;
   onYmdChange?: (ymd: string) => void;
 }) {
+  const t = useT();
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [internalYmd, setInternalYmd] = useState(stockholmYmd());
   const selectedYmd = ymd ?? internalYmd;
@@ -596,7 +603,7 @@ export function FixturePicker({
   const byLeague = useMemo((): LeagueGroup[] => {
     const map = new Map<string, LeagueGroup>();
     for (const f of items) {
-      const name = f.league_name || "Övrigt";
+      const name = f.league_name || t("betform.picker.otherLeague");
       const key =
         f.league_id != null ? `id:${f.league_id}` : `name:${name.toLowerCase()}`;
       const existing = map.get(key);
@@ -625,7 +632,7 @@ export function FixturePicker({
     return [...map.values()].sort((a, b) =>
       compareLeaguesByPriority(sportLabelToSlug(sport), a, b)
     );
-  }, [items, sport]);
+  }, [items, sport, t]);
 
   // Vald liga ligger kvar över datumbyten — matchar dagens data när den finns
   const selectedLeague = useMemo(
@@ -695,23 +702,23 @@ export function FixturePicker({
     const groups: DropdownGroup[] = [
       {
         label: "",
-        options: [{ value: ALL_LEAGUES, label: "Alla ligor" }],
+        options: [{ value: ALL_LEAGUES, label: t("betform.picker.allLeaguesOption") }],
       },
     ];
     if (popular.length) {
       groups.push({
-        label: "Dina populäraste ligor",
+        label: t("betform.picker.popularLeagues"),
         options: popular.map(toOption),
       });
     }
     if (rest.length) {
       groups.push({
-        label: "Alla ligor",
+        label: t("betform.picker.allLeaguesGroup"),
         options: rest.map(toOption),
       });
     }
     return groups;
-  }, [byLeague, league, playedLeagues, sport]);
+  }, [byLeague, league, playedLeagues, sport, t]);
 
   const visibleGroups = useMemo((): LeagueGroup[] => {
     if (league) return selectedLeague ? [selectedLeague] : [];
@@ -724,10 +731,12 @@ export function FixturePicker({
   );
 
   const emptyMessage = planLimited && coverage
-    ? `API-planen visar bara matcher ${formatRange(coverage.from, coverage.to)}. Välj ett av de datumen, eller ange matchen manuellt.`
+    ? t("betform.picker.empty.plan", {
+        range: formatRange(coverage.from, coverage.to),
+      })
     : league
-      ? "Inga matcher i den här ligan den här dagen."
-      : "Inga matcher den här dagen. Välj ett annat datum.";
+      ? t("betform.picker.empty.league")
+      : t("betform.picker.empty.day");
 
   const live = useLiveFixtures(
     flatMatchRows.map((f) => f.fixture_id),
@@ -744,18 +753,19 @@ export function FixturePicker({
   return (
     <div>
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-        Datum
+        {t("betform.picker.dateLabel")}
       </div>
       <DayStrip ymd={selectedYmd} onChange={setSelectedYmd} />
       {coverage ? (
         <p className="mb-3 text-[12px] leading-snug text-faint">
-          Matchlistan täcker {formatRange(coverage.from, coverage.to)} med
-          nuvarande API-plan.
+          {t("betform.picker.coverage", {
+            range: formatRange(coverage.from, coverage.to),
+          })}
         </p>
       ) : null}
 
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-        Sport
+        {t("betform.picker.sportLabel")}
       </div>
       <div className="mb-3 flex flex-wrap gap-2">
         {PICKER_SPORTS.map((label) => (
@@ -778,10 +788,10 @@ export function FixturePicker({
       {sport ? (
         <div className="space-y-3">
           <SearchDropdown
-            label="Liga"
+            label={t("betform.picker.leagueLabel")}
             value={league?.key ?? ALL_LEAGUES}
-            placeholder="Filtrera liga…"
-            searchPlaceholder="Sök liga…"
+            placeholder={t("betform.picker.leaguePlaceholder")}
+            searchPlaceholder={t("betform.picker.leagueSearchPlaceholder")}
             groups={leagueGroups}
             disabled={loading && !byLeague.length}
             onChange={(next) => {

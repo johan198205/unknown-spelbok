@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useAmount } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
+import { breakdownLabel } from "@/lib/bet-category";
 import type { BreakdownRow } from "@/lib/breakdowns";
+import type { TextKey } from "@/lib/texts";
 import {
   MIN_ROI_BETS,
   cn,
@@ -20,13 +23,13 @@ export type DistributionTab =
 
 export type DistributionGroups = Record<DistributionTab, BreakdownRow[]>;
 
-const TABS: Array<{ value: DistributionTab; label: string }> = [
-  { value: "liga", label: "Liga" },
-  { value: "kategori", label: "Kategori" },
-  { value: "spelform", label: "Spelform" },
-  { value: "spelbolag", label: "Spelbolag" },
-  { value: "sport", label: "Sport" },
-  { value: "odds", label: "Odds" },
+const TABS: Array<{ value: DistributionTab; label: TextKey }> = [
+  { value: "liga", label: "statistik.distribution.tab.liga" },
+  { value: "kategori", label: "statistik.distribution.tab.kategori" },
+  { value: "spelform", label: "statistik.distribution.tab.spelform" },
+  { value: "spelbolag", label: "statistik.distribution.tab.spelbolag" },
+  { value: "sport", label: "statistik.distribution.tab.sport" },
+  { value: "odds", label: "statistik.distribution.tab.odds" },
 ];
 
 const MAX_ROWS = 8;
@@ -46,6 +49,7 @@ export function DistributionCard({
   size?: "compact" | "regular";
 }) {
   const amount = useAmount();
+  const t = useT();
   const [tab, setTab] = useState<DistributionTab>("liga");
   const rows = groups[tab] ?? [];
   // Raderna kommer sorterade på netto. Att bara kapa listan döljer då alla
@@ -73,22 +77,22 @@ export function DistributionCard({
             big ? "text-[17px]" : "text-[15px]"
           )}
         >
-          Fördelning
+          {t("statistik.distribution.title")}
         </h2>
         <div className="flex flex-wrap gap-[3px] rounded-[9px] border border-line-soft bg-bg-soft p-[3px]">
-          {TABS.map((t) => (
+          {TABS.map((item) => (
             <button
-              key={t.value}
+              key={item.value}
               type="button"
-              onClick={() => setTab(t.value)}
+              onClick={() => setTab(item.value)}
               className={cn(
                 "cursor-pointer rounded-[7px] px-3 py-1.5 text-[12.5px] font-semibold transition",
-                tab === t.value
+                tab === item.value
                   ? "bg-panel-2 text-text"
                   : "bg-transparent text-muted hover:text-text"
               )}
             >
-              {t.label}
+              {t(item.label)}
             </button>
           ))}
         </div>
@@ -107,7 +111,7 @@ export function DistributionCard({
                   big ? "text-[14.5px]" : "text-[13.5px]"
                 )}
               >
-                {row.name}
+                {breakdownLabel(row.name, t)}
               </span>
               <span className="hidden h-[6px] w-[110px] shrink-0 overflow-hidden rounded-[99px] bg-panel-2 sm:block">
                 <span
@@ -126,7 +130,7 @@ export function DistributionCard({
                   big ? "text-[13.5px]" : "text-[12.5px]"
                 )}
               >
-                {row.bets} spel
+                {t("statistik.distribution.betsCount", { count: row.bets })}
               </span>
               <span
                 className={cn(
@@ -151,18 +155,17 @@ export function DistributionCard({
 
           {hidden > 0 ? (
             <p className="border-t border-line-soft pt-[9px] text-[12px] text-faint">
-              +{hidden} till med färre spel
+              {t("statistik.distribution.hiddenMore", { count: hidden })}
             </p>
           ) : null}
 
           <p className="mt-3 text-[11.5px] leading-snug text-faint">
-            ROI visas från fem spel och uppåt. Färre spel säger inget om
-            träffsäkerhet.
+            {t("statistik.distribution.roiNote")}
           </p>
         </>
       ) : (
         <p className="border-t border-line-soft py-8 text-center text-[13px] text-muted">
-          Ingen data ännu.
+          {t("statistik.distribution.empty")}
         </p>
       )}
     </section>

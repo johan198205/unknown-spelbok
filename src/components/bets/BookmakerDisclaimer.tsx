@@ -1,3 +1,7 @@
+"use client";
+
+import { useT } from "@/components/TextsProvider";
+import { createT, type TFunction } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 const STODLINJEN = "https://stodlinjen.se";
@@ -16,9 +20,14 @@ export type BookmakerDisclaimerSource = {
 };
 
 /** "18+" eller bolagets egen gräns, t.ex. "21+". */
-export function ageLabel(bookmaker?: BookmakerDisclaimerSource | null) {
+export function ageLabel(
+  bookmaker?: BookmakerDisclaimerSource | null,
+  t: TFunction = createT({})
+) {
   const age = Number(bookmaker?.age_limit);
-  return `${Number.isFinite(age) && age >= 18 ? Math.round(age) : 18}+`;
+  return t("spelbolag.disclaimer.age", {
+    age: Number.isFinite(age) && age >= 18 ? Math.round(age) : 18,
+  });
 }
 
 /**
@@ -45,6 +54,7 @@ export function BookmakerDisclaimer({
   tone?: "dark" | "light";
   className?: string;
 }) {
+  const t = useT();
   const termsUrl = bookmaker?.terms_url?.trim();
   const terms = bookmaker?.terms?.trim();
   const extra = bookmaker?.extra_disclaimer?.trim();
@@ -66,14 +76,14 @@ export function BookmakerDisclaimer({
     >
       <p>
         {prefix ? `${prefix} | ` : null}
-        {ageLabel(bookmaker)} | Spela ansvarsfullt |{" "}
+        {ageLabel(bookmaker, t)} | {t("spelbolag.disclaimer.responsible")} |{" "}
         <a
           href={STODLINJEN}
           target="_blank"
           rel="noopener noreferrer"
           className={linkClass}
         >
-          Stodlinjen.se
+          {t("spelbolag.disclaimer.stodlinjen")}
         </a>{" "}
         |{" "}
         <a
@@ -82,7 +92,7 @@ export function BookmakerDisclaimer({
           rel="noopener noreferrer"
           className={linkClass}
         >
-          Spelpaus.se
+          {t("spelbolag.disclaimer.spelpaus")}
         </a>{" "}
         |{" "}
         {termsUrl ? (
@@ -92,10 +102,10 @@ export function BookmakerDisclaimer({
             rel="noopener nofollow noreferrer"
             className={linkClass}
           >
-            Regler &amp; villkor gäller
+            {t("spelbolag.disclaimer.terms")}
           </a>
         ) : (
-          "Regler & villkor gäller"
+          t("spelbolag.disclaimer.terms")
         )}
         {terms ? ` ${terms}` : null}
         {/* Bolagets egen formulering, ordagrant — den får inte klippas eller

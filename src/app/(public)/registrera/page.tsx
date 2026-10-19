@@ -3,10 +3,11 @@ import { AuthPage } from "@/components/layout/AuthForm";
 import { Panel } from "@/components/ui/Panel";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 export default async function RegisterPage() {
   const supabase = await createClient();
-  const site = await fetchSiteSettings(supabase);
+  const [site, t] = await Promise.all([fetchSiteSettings(supabase), getT()]);
 
   if (!site.registrations_open) {
     return (
@@ -19,24 +20,23 @@ export default async function RegisterPage() {
           </div>
           <Panel className="p-[26px] text-center">
             <div className="mb-2 inline-flex rounded-[6px] bg-yellow/15 px-2 py-1 text-[10.5px] font-bold tracking-[0.1em] text-yellow">
-              STÄNGD
+              {t("auth.closed.badge")}
             </div>
             <h1 className="font-display text-[20px] font-semibold uppercase tracking-[0.05em]">
-              Registreringen är stängd
+              {t("auth.closed.title")}
             </h1>
             <p className="mt-2.5 text-[14px] text-muted">
-              Just nu tar vi inte emot nya konton på {site.name}. Har du redan
-              ett konto kan du logga in som vanligt.
+              {t("auth.closed.body", { site: site.name })}
             </p>
             <Link
               href="/login"
               className="mt-5 inline-flex rounded-[10px] bg-win px-5 py-3 text-[14.5px] font-bold text-win-ink no-underline hover:text-win-ink hover:no-underline"
             >
-              Logga in
+              {t("auth.closed.login")}
             </Link>
           </Panel>
           <div className="mt-[18px] text-center">
-            <Link href="/">Tillbaka till startsidan</Link>
+            <Link href="/">{t("auth.back")}</Link>
           </div>
         </div>
       </div>

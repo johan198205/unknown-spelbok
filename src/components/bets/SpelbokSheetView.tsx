@@ -26,6 +26,7 @@ import { SheetPagination } from "@/components/bets/SheetPagination";
 import { SheetStatsPanel } from "@/components/bets/SheetStatsPanel";
 import { DailySuggestions } from "@/components/suggestions/DailySuggestions";
 import { MobileBetCards } from "@/components/pwa/MobileBetCards";
+import { useT } from "@/components/TextsProvider";
 import { useLiveFixtures } from "@/hooks/useLiveFixtures";
 import { track } from "@/lib/analytics";
 import { FEATURES } from "@/lib/features";
@@ -91,6 +92,7 @@ export function SpelbokSheetView({
    */
   suggestions?: DailySuggestion[];
 }) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -118,7 +120,10 @@ export function SpelbokSheetView({
 
   const leagues = useMemo(() => distinctLeagues(bets), [bets]);
   const categories = useMemo(() => distinctCategories(bets), [bets]);
-  const bookmakerOptions = useMemo(() => distinctBookmakers(bets), [bets]);
+  const bookmakerOptions = useMemo(
+    () => distinctBookmakers(bets, t),
+    [bets, t]
+  );
   const filtered = useMemo(
     () => filterSheetBets(bets, filters),
     [bets, filters]
@@ -227,17 +232,15 @@ export function SpelbokSheetView({
     if (kickoffIso) {
       const kickoff = new Date(kickoffIso).getTime();
       if (Number.isFinite(kickoff) && kickoff <= Date.now()) {
-        window.alert(
-          "Spelet kan inte raderas efter avspark. Använd Void om det lagts fel."
-        );
+        window.alert(t("spelbok.remove.afterKickoff"));
         return;
       }
     }
-    if (!confirm("Ta bort spelet?")) return;
+    if (!confirm(t("spelbok.remove.confirm"))) return;
     const supabase = createClient();
     const { error } = await supabase.from("bets").delete().eq("id", bet.id);
     if (error) {
-      window.alert(error.message || "Kunde inte radera spelet.");
+      window.alert(error.message || t("spelbok.remove.failed"));
       return;
     }
     router.refresh();
@@ -271,7 +274,7 @@ export function SpelbokSheetView({
             />
           </div>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-1 text-[14px]">
-            <span className="text-muted">av</span>
+            <span className="text-muted">{t("spelbok.header.by")}</span>
             <Link
               href={`/profil/${encodeURIComponent(username)}`}
               className="font-semibold text-blue no-underline hover:underline"
@@ -320,7 +323,7 @@ export function SpelbokSheetView({
       <div className="mb-[26px]">
         <SheetNettoChart
           bets={filtered}
-          periodLabel={periodLabel(filters.period)}
+          periodLabel={periodLabel(filters.period, t)}
         />
       </div>
 

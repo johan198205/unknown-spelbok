@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isHttpsUrl } from "@/lib/push";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 type PushBody = {
   endpoint?: unknown;
@@ -16,19 +17,19 @@ function parseEndpoint(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+    return NextResponse.json({ error: t("notiser.api.notSignedIn") }, { status: 401 });
   }
 
   let body: PushBody;
   try {
     body = (await request.json()) as PushBody;
   } catch {
-    return NextResponse.json({ error: "Ogiltig JSON" }, { status: 400 });
+    return NextResponse.json({ error: t("notiser.api.invalidJson") }, { status: 400 });
   }
 
   const endpoint = parseEndpoint(body.endpoint);
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
 
   if (!endpoint || !p256dh || !auth) {
     return NextResponse.json(
-      { error: "Ogiltig prenumeration" },
+      { error: t("notiser.api.invalidSubscription") },
       { status: 400 }
     );
   }
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
 
   if (!data?.id) {
     return NextResponse.json(
-      { error: "Prenumerationen skrevs inte till databasen." },
+      { error: t("notiser.api.subscriptionNotSaved") },
       { status: 500 }
     );
   }
@@ -73,24 +74,24 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+    return NextResponse.json({ error: t("notiser.api.notSignedIn") }, { status: 401 });
   }
 
   let body: { endpoint?: unknown };
   try {
     body = (await request.json()) as { endpoint?: unknown };
   } catch {
-    return NextResponse.json({ error: "Ogiltig JSON" }, { status: 400 });
+    return NextResponse.json({ error: t("notiser.api.invalidJson") }, { status: 400 });
   }
 
   const endpoint = parseEndpoint(body.endpoint);
   if (!endpoint) {
-    return NextResponse.json({ error: "Ogiltig endpoint" }, { status: 400 });
+    return NextResponse.json({ error: t("notiser.api.invalidEndpoint") }, { status: 400 });
   }
 
   const { error } = await supabase

@@ -1,8 +1,8 @@
 import { ImageResponse } from "next/og";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import {
-  COUPON_STATUS_LABEL,
   couponNetto,
+  couponStatusLabel,
   formatCouponOdds,
   isSettled,
   possibleWin,
@@ -10,6 +10,7 @@ import {
 import { getCouponBySlug } from "@/lib/coupons-server";
 import { teamLogoUrl } from "@/lib/logos";
 import { loadOgFonts, OG_DISPLAY, OG_MONO, OG_SANS } from "@/lib/og-fonts";
+import { getT } from "@/lib/texts/server";
 import { formatMoney } from "@/lib/utils";
 
 const WIDTH = 1200;
@@ -90,10 +91,10 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const coupon = await getCouponBySlug(slug);
+  const [coupon, t] = await Promise.all([getCouponBySlug(slug), getT()]);
 
   if (!coupon) {
-    return new Response("Kupongen finns inte", { status: 404 });
+    return new Response(t("kuponger.shareCard.notFound"), { status: 404 });
   }
 
   const settled = isSettled(coupon);
@@ -176,7 +177,7 @@ export async function GET(
               marginRight: 16,
             }}
           >
-            SPELBOK
+            {t("kuponger.shareCard.brand")}
           </div>
           {coupon.kicker ? (
             <div
@@ -210,7 +211,7 @@ export async function GET(
               color: accent,
             }}
           >
-            {COUPON_STATUS_LABEL[coupon.status]}
+            {couponStatusLabel(coupon.status, t)}
           </div>
         </div>
 
@@ -320,7 +321,7 @@ export async function GET(
                 flexShrink: 0,
               }}
             >
-              {`+${hiddenLegs} fler`}
+              {t("kuponger.shareCard.moreLegs", { count: hiddenLegs })}
             </div>
           ) : null}
         </div>
@@ -335,12 +336,12 @@ export async function GET(
           }}
         >
           <Field
-            label="Insats"
-            value={formatMoney(Number(coupon.stake), "kr").replace("+", "")}
+            label={t("kuponger.card.stake")}
+            value={formatMoney(Number(coupon.stake), t("kuponger.unit.kr")).replace("+", "")}
             size={32}
           />
           <Field
-            label="Totalodds"
+            label={t("kuponger.card.totalOdds")}
             value={formatCouponOdds(coupon.total_odds)}
             size={46}
             color={GREEN}
@@ -348,15 +349,15 @@ export async function GET(
           {/* Avgjord kupong delas med sitt utfall, aldrig med möjlig vinst. */}
           {settled ? (
             <Field
-              label="Utfall"
-              value={formatMoney(netto, "kr")}
+              label={t("kuponger.card.outcome")}
+              value={formatMoney(netto, t("kuponger.unit.kr"))}
               size={32}
               color={netto > 0 ? GREEN : netto < 0 ? RED : TEXT}
             />
           ) : (
             <Field
-              label="Möjlig vinst"
-              value={formatMoney(possibleWin(coupon), "kr")}
+              label={t("kuponger.card.possibleWin")}
+              value={formatMoney(possibleWin(coupon), t("kuponger.unit.kr"))}
               size={32}
               color={GREEN}
             />
@@ -392,7 +393,7 @@ export async function GET(
               ) : null}
             </div>
             <div style={{ display: "flex", fontSize: 15, color: FAINT, marginTop: 10 }}>
-              spelbok.se · 18+ · Spela ansvarsfullt
+              {t("kuponger.shareCard.footer")}
             </div>
           </div>
         </div>

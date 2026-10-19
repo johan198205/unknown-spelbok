@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/TextsProvider";
 import { formatMoney, initialOf, nettoColor } from "@/lib/utils";
 
 export function StickySelfRank({
@@ -11,6 +12,7 @@ export function StickySelfRank({
   name: string;
   netto: number;
 }) {
+  const t = useT();
   return (
     <div className="fixed inset-x-0 bottom-[96px] z-40 border-t border-win/30 bg-[rgba(17,17,19,.96)] px-4 py-2.5 backdrop-blur-md lg:hidden">
       <div className="mx-auto flex max-w-lg items-center gap-3">
@@ -19,7 +21,7 @@ export function StickySelfRank({
           {initialOf(name)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">Du: plats {rank}</div>
+          <div className="truncate text-sm font-semibold">{t("topplista.self.rank", { rank })}</div>
         </div>
         <span className={`font-mono-num text-sm font-semibold ${nettoColor(netto)}`}>
           {formatMoney(netto)}

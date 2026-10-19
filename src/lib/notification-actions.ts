@@ -6,6 +6,8 @@ import {
   type NotificationSettings,
 } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
+import type { TFunction } from "@/lib/texts";
 
 export type NotificationSettingResult = { ok: true } | { ok: false; error: string };
 
@@ -27,11 +29,14 @@ export async function setNotificationSetting(
   key: string,
   value: boolean
 ): Promise<NotificationSettingResult> {
-  if (!isKey(key)) return { ok: false, error: "Okänd inställning." };
-  if (typeof value !== "boolean") return { ok: false, error: "Ogiltigt värde." };
+  const t = await getT();
+  if (!isKey(key)) return { ok: false, error: t("notiser.errors.unknownSetting") };
+  if (typeof value !== "boolean") {
+    return { ok: false, error: t("notiser.errors.invalidValue") };
+  }
 
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du är inte inloggad." };
+  if (!user) return { ok: false, error: t("notiser.errors.notSignedIn") };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -41,7 +46,7 @@ export async function setNotificationSetting(
     .select("user_id")
     .maybeSingle();
 
-  if (error) return { ok: false, error: friendly(error.message) };
+  if (error) return { ok: false, error: friendly(error.message, t) };
   if (data) return { ok: true };
 
   // Konto registrerat innan triggern fanns: skapa raden med defaults.
@@ -53,12 +58,12 @@ export async function setNotificationSetting(
       [key]: value,
     });
 
-  if (insertError) return { ok: false, error: friendly(insertError.message) };
+  if (insertError) return { ok: false, error: friendly(insertError.message, t) };
   return { ok: true };
 }
 
-function friendly(message: string) {
+function friendly(message: string, t: TFunction) {
   return /notification_settings|schema cache|could not find/i.test(message)
-    ? "Kör SQL-filen db/notifications.sql i Supabase först."
+    ? t("notiser.errors.missingTable")
     : message;
 }

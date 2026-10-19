@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
 import { NavIcon, type NavIconKey } from "@/components/layout/NavIcon";
+import { useT } from "@/components/TextsProvider";
 import { createClient } from "@/lib/supabase/client";
+import type { TextKey } from "@/lib/texts";
 import { cn } from "@/lib/utils";
 
 export type MobileMenuUser = {
@@ -15,22 +17,22 @@ export type MobileMenuUser = {
   isAdmin: boolean;
 };
 
-type MenuLink = { href: string; label: string; icon: NavIconKey };
+type MenuLink = { href: string; label: TextKey; icon: NavIconKey };
 
 // Hem nås via loggan, profilen via avataren i headern. Kuponger är
 // avstängd tills vidare (FEATURES.coupons).
 const LOGGED_IN_LINKS: MenuLink[] = [
-  { href: "/spelbok", label: "Spreadsheet", icon: "spelbok" },
-  { href: "/topplista", label: "Topplista", icon: "topplista" },
-  { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
-  { href: "/planket", label: "Planket", icon: "planket" },
+  { href: "/spelbok", label: "header.menu.spreadsheet", icon: "spelbok" },
+  { href: "/topplista", label: "header.menu.topplista", icon: "topplista" },
+  { href: "/spelbolag", label: "header.menu.spelbolag", icon: "spelbolag" },
+  { href: "/planket", label: "header.menu.planket", icon: "planket" },
 ];
 
 const LOGGED_OUT_LINKS: MenuLink[] = [
-  { href: "/planket", label: "Planket", icon: "planket" },
-  { href: "/topplista", label: "Topplista", icon: "topplista" },
-  { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
-  { href: "/om-oss", label: "Om oss", icon: "om-oss" },
+  { href: "/planket", label: "header.menu.planket", icon: "planket" },
+  { href: "/topplista", label: "header.menu.topplista", icon: "topplista" },
+  { href: "/spelbolag", label: "header.menu.spelbolag", icon: "spelbolag" },
+  { href: "/om-oss", label: "header.menu.omOss", icon: "om-oss" },
 ];
 
 /**
@@ -39,6 +41,7 @@ const LOGGED_OUT_LINKS: MenuLink[] = [
  * stället för i headern. Stängs vid klick utanför, Escape och sidbyte.
  */
 export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const [menuPath, setMenuPath] = useState(pathname);
@@ -95,7 +98,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-label={open ? "Stäng menyn" : "Öppna menyn"}
+        aria-label={open ? t("header.menu.close") : t("header.menu.open")}
         className="flex h-9 w-9 items-center justify-center rounded-[9px] border border-line-strong bg-transparent text-text"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -119,7 +122,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
 
       {open ? (
         <div className="absolute inset-x-3 top-[calc(100%+8px)] z-50 overflow-hidden rounded-[14px] border border-line-strong bg-panel shadow-[0_18px_48px_rgba(0,0,0,.55)]">
-          <nav aria-label="Meny" className="flex flex-col p-1.5">
+          <nav aria-label={t("header.menu.navLabel")} className="flex flex-col p-1.5">
             {links.map((l) => {
               const active =
                 pathname === l.href || pathname.startsWith(`${l.href}/`);
@@ -138,7 +141,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
                       name={l.icon}
                       className={cn("size-[18px] shrink-0", active ? "text-win" : "text-muted")}
                     />
-                    {l.label}
+                    {t(l.label)}
                   </span>
                   <span aria-hidden className="text-faint">
                     ›
@@ -151,7 +154,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
                 href="/admin/anvandare"
                 className="flex items-center justify-between rounded-[9px] px-3 py-3 text-[15px] font-semibold text-yellow no-underline hover:bg-hover hover:text-yellow hover:no-underline"
               >
-                Admin
+                {t("header.admin")}
                 <span aria-hidden className="text-faint">
                   ›
                 </span>
@@ -163,7 +166,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
             <>
               <div className="mx-3 mb-3 rounded-[10px] border border-line-soft p-3">
                 <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-faint">
-                  Visa belopp i
+                  {t("header.menu.displayMode")}
                 </div>
                 <DisplayModeToggle variant="menu" />
               </div>
@@ -172,7 +175,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
                 onClick={onLogout}
                 className="w-full border-t border-line-soft px-4 py-3.5 text-left text-[15px] font-semibold text-loss hover:bg-hover"
               >
-                Logga ut
+                {t("header.logout")}
               </button>
             </>
           ) : null}

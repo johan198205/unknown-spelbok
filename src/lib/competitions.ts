@@ -1,4 +1,8 @@
+import { createT, type TFunction } from "./texts";
 import type { Competition, LeaderboardRow } from "./types";
+
+/** Standardtexterna, för anrop som inte skickar med t. */
+const DEFAULT_T = createT({});
 
 export type CompetitionVisibility = "public" | "invite";
 export type CompetitionStatus = "live" | "upcoming" | "done";
@@ -50,21 +54,26 @@ export function formatPeriod(startsAt: string, endsAt: string) {
 
 export function formatCountdown(
   competition: Pick<Competition, "starts_at" | "ends_at">,
-  now = Date.now()
+  now = Date.now(),
+  t: TFunction = DEFAULT_T
 ) {
   const status = competitionStatus(competition, now);
-  if (status === "done") return "Avslutad";
+  if (status === "done") return t("tavlingar.countdown.done");
   if (status === "upcoming") {
     const days = daysUntil(competition.starts_at, now);
-    return days <= 1 ? "Startar i morgon" : `Startar om ${days} dagar`;
+    return days <= 1
+      ? t("tavlingar.countdown.startsTomorrow")
+      : t("tavlingar.countdown.startsIn", { days });
   }
   const days = daysLeft(competition.ends_at, now);
-  if (days === 0) return "Slutar i dag";
-  return days === 1 ? "Slutar i morgon" : `Slutar om ${days} dagar`;
+  if (days === 0) return t("tavlingar.countdown.endsToday");
+  return days === 1
+    ? t("tavlingar.countdown.endsTomorrow")
+    : t("tavlingar.countdown.endsIn", { days });
 }
 
-export function formatStake(value: number) {
-  return `${Math.round(value).toLocaleString("sv-SE")} kr`;
+export function formatStake(value: number, t: TFunction = DEFAULT_T) {
+  return `${Math.round(value).toLocaleString("sv-SE")} ${t("tavlingar.unit.kr")}`;
 }
 
 export function visibilityLabel(visibility: string) {
@@ -82,27 +91,32 @@ export function isQualified(
 }
 
 /** Null when the competition has no entry bar at all. */
-export function rulesSummary(rules: CompetitionRules) {
+export function rulesSummary(rules: CompetitionRules, t: TFunction = DEFAULT_T) {
   const parts: string[] = [];
   if (Number(rules.min_bets) > 0) {
-    parts.push(`minst ${Number(rules.min_bets)} spel`);
+    parts.push(t("tavlingar.rules.minBets", { count: Number(rules.min_bets) }));
   }
   if (Number(rules.min_total_stake) > 0) {
-    parts.push(`minst ${formatStake(Number(rules.min_total_stake))} i insats`);
+    parts.push(
+      t("tavlingar.rules.minStake", {
+        stake: formatStake(Number(rules.min_total_stake), t),
+      })
+    );
   }
-  return parts.length ? `Kvalificering: ${parts.join(" · ")}` : null;
+  return parts.length ? t("tavlingar.rules.summary", { rules: parts.join(" · ") }) : null;
 }
 
 /** Missing what the rules ask for, phrased for the entrant. */
 export function missingSummary(
   entry: Pick<BoardEntry, "bets_count" | "total_stake">,
-  rules: CompetitionRules
+  rules: CompetitionRules,
+  t: TFunction = DEFAULT_T
 ) {
   const parts: string[] = [];
   const bets = Number(rules.min_bets) - entry.bets_count;
   const stake = Number(rules.min_total_stake) - entry.total_stake;
-  if (bets > 0) parts.push(`${bets} spel kvar`);
-  if (stake > 0) parts.push(`${formatStake(stake)} kvar i insats`);
+  if (bets > 0) parts.push(t("tavlingar.missing.bets", { count: bets }));
+  if (stake > 0) parts.push(t("tavlingar.missing.stake", { stake: formatStake(stake, t) }));
   return parts.join(" · ");
 }
 
@@ -112,14 +126,15 @@ export function missingSummary(
  */
 export function rankBoard(
   rows: LeaderboardRow[],
-  rules: CompetitionRules
+  rules: CompetitionRules,
+  t: TFunction = DEFAULT_T
 ): BoardEntry[] {
   const entries = rows
     .filter((row) => row.user_id)
     .map((row) => {
       const entry = {
         user_id: row.user_id as string,
-        username: row.username ?? "Okänd",
+        username: row.username ?? t("tavlingar.unknownUser"),
         avatar_url: row.avatar_url ?? null,
         bets_count: Number(row.bets_count ?? 0),
         total_stake: Number(row.total_stake ?? 0),

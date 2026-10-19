@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 function missingColumn(message: string) {
   const text = message.toLowerCase();
@@ -11,12 +12,12 @@ function missingColumn(message: string) {
 }
 
 export async function GET() {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+    return NextResponse.json({ error: t("notiser.api.notSignedIn") }, { status: 401 });
   }
 
   const [{ data: profile, error: profileError }, { count, error: pushError }] =
@@ -36,7 +37,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: missingColumn(profileError.message)
-          ? "Kör SQL-filen notify-settings i Supabase först."
+          ? t("notiser.api.missingColumn")
           : profileError.message,
       },
       { status: missingColumn(profileError.message) ? 409 : 500 }
@@ -55,23 +56,23 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+    return NextResponse.json({ error: t("notiser.api.notSignedIn") }, { status: 401 });
   }
 
   let body: { notify_settle?: unknown };
   try {
     body = (await request.json()) as { notify_settle?: unknown };
   } catch {
-    return NextResponse.json({ error: "Ogiltig JSON" }, { status: 400 });
+    return NextResponse.json({ error: t("notiser.api.invalidJson") }, { status: 400 });
   }
 
   if (typeof body.notify_settle !== "boolean") {
-    return NextResponse.json({ error: "Ogiltigt värde" }, { status: 400 });
+    return NextResponse.json({ error: t("notiser.api.invalidValue") }, { status: 400 });
   }
 
   const { data, error } = await supabase
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: missingColumn(error.message)
-          ? "Kör SQL-filen notify-settings i Supabase först."
+          ? t("notiser.api.missingColumn")
           : error.message,
       },
       { status: missingColumn(error.message) ? 409 : 500 }
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
 
   if (!data || data.notify_settle !== body.notify_settle) {
     return NextResponse.json(
-      { error: "Värdet skrevs inte till databasen." },
+      { error: t("notiser.api.notSaved") },
       { status: 500 }
     );
   }

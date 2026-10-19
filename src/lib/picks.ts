@@ -1,4 +1,5 @@
 import { SPORT_LABELS } from "@/lib/sports";
+import { createT, type TextKey, type TFunction } from "@/lib/texts";
 
 /**
  * Sporterna i spelformuläret: alla API-sporter (sports.ts) plus Tennis,
@@ -17,6 +18,11 @@ export const LEAGUES: Record<string, Sport> = {
   ATP: "Tennis",
 };
 
+/**
+ * `label` är gruppens standardnamn och nyckel i PICK_GROUP_LABEL_KEYS —
+ * visa den med pickGroupLabel(). Alternativen sparas ordagrant som spelval
+ * i databasen och är därför inte redigerbara texter.
+ */
 export type PickGroup = { label: string; options: string[] };
 
 export const PICK_GROUPS: Record<string, PickGroup[]> = {
@@ -188,6 +194,61 @@ export const PICK_GROUPS: Record<string, PickGroup[]> = {
   ],
 };
 
+const PICK_GROUP_LABEL_KEYS: Record<string, TextKey> = {
+  Matchresultat: "terms.pickGroup.matchResult",
+  "Mål – totalen": "terms.pickGroup.goalsTotal",
+  "Båda lagen": "terms.pickGroup.bothTeams",
+  Halvlekar: "terms.pickGroup.halves",
+  Hörnor: "terms.pickGroup.corners",
+  Kort: "terms.pickGroup.cards",
+  Handikapp: "terms.pickGroup.handicap",
+  Perioder: "terms.pickGroup.periods",
+  Spelare: "terms.pickGroup.player",
+  "Matchvinnare inkl. övertid": "terms.pickGroup.winnerInclOt",
+  "Poäng – totalen": "terms.pickGroup.pointsTotal",
+  "Matchvinnare inkl. extra innings": "terms.pickGroup.winnerInclInnings",
+  "Run line": "terms.pickGroup.runLine",
+  "Runs – totalen": "terms.pickGroup.runsTotal",
+  Matchvinnare: "terms.pickGroup.winner",
+  Setresultat: "terms.pickGroup.setResult",
+  "Set – totalen": "terms.pickGroup.setsTotal",
+  Vinstmetod: "terms.pickGroup.method",
+  Ronder: "terms.pickGroup.rounds",
+  Set: "terms.pickGroup.sets",
+  Games: "terms.pickGroup.games",
+  Övrigt: "terms.pickGroup.other",
+};
+
+/** Visningsnamnet för en snabbvalsgrupp (PickGroup.label). */
+export function pickGroupLabel(label: string, t?: TFunction): string {
+  const key = PICK_GROUP_LABEL_KEYS[label];
+  return key ? (t ?? createT({}))(key) : label;
+}
+
+const SPORT_NAME_KEYS: Record<string, TextKey> = {
+  Fotboll: "terms.sport.football",
+  Ishockey: "terms.sport.hockey",
+  Basket: "terms.sport.basketball",
+  "Amerikansk fotboll": "terms.sport.americanFootball",
+  Baseboll: "terms.sport.baseball",
+  Handboll: "terms.sport.handball",
+  Rugby: "terms.sport.rugby",
+  Volleyboll: "terms.sport.volleyball",
+  AFL: "terms.sport.afl",
+  MMA: "terms.sport.mma",
+  Tennis: "terms.sport.tennis",
+};
+
+/**
+ * Visningsnamnet för en sport. bets.sport och fixtures.sport lagras med
+ * den svenska etiketten (sports.ts) — värdet är data, namnet som visas är
+ * en text. Okända värden visas som de är.
+ */
+export function sportName(sport: string, t?: TFunction): string {
+  const key = SPORT_NAME_KEYS[sport];
+  return key ? (t ?? createT({}))(key) : sport;
+}
+
 /** Platt lista för snabbval (mobil m.m.) */
 export const PICKS: Record<string, string[]> = Object.fromEntries(
   Object.entries(PICK_GROUPS).map(([sport, groups]) => [
@@ -213,18 +274,20 @@ export function formatPick(pick: string | null | undefined): string {
 export function pickHint(
   pick: string | null | undefined,
   home: string,
-  away: string
+  away: string,
+  t?: TFunction
 ): string {
+  const tr = t ?? createT({});
   const p = formatPick(pick).trim();
   const map: Record<string, string> = {
-    "1": `${home} vinner`,
-    "2": `${away} vinner`,
-    X: "Oavgjort",
-    "1X": `${home} eller oavgjort`,
-    X2: `${away} eller oavgjort`,
-    "12": "Ingen oavgjord",
-    "Hemma DNB": `${home} utan oavgjort`,
-    "Borta DNB": `${away} utan oavgjort`,
+    "1": tr("terms.pickHint.homeWins", { home }),
+    "2": tr("terms.pickHint.awayWins", { away }),
+    X: tr("terms.pickHint.draw"),
+    "1X": tr("terms.pickHint.homeOrDraw", { home }),
+    X2: tr("terms.pickHint.awayOrDraw", { away }),
+    "12": tr("terms.pickHint.noDraw"),
+    "Hemma DNB": tr("terms.pickHint.homeDnb", { home }),
+    "Borta DNB": tr("terms.pickHint.awayDnb", { away }),
   };
   if (map[p]) return map[p];
 
@@ -235,7 +298,10 @@ export function pickHint(
     if (rest && !/^mål\b/i.test(rest)) return "";
     const over = tot[1].toLowerCase() === "ö";
     const num = tot[2].replace(/\./g, ",");
-    return `${over ? "Över" : "Under"} ${num} ${rest || "mål"}`;
+    const unit = rest || tr("terms.pickHint.goalsUnit");
+    return over
+      ? tr("terms.pickHint.over", { line: num, unit })
+      : tr("terms.pickHint.under", { line: num, unit });
   }
 
   return "";

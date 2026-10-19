@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/components/TextsProvider";
 
 const DISMISS_KEY = "spelbok.install.dismissedAt";
 const DISMISS_DAYS = 14;
@@ -36,6 +37,7 @@ function wasDismissedRecently() {
 }
 
 export function InstallPrompt({ betCount }: { betCount: number }) {
+  const t = useT();
   const deferred = useRef<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [iosHelp, setIosHelp] = useState(false);
@@ -93,15 +95,15 @@ export function InstallPrompt({ betCount }: { betCount: number }) {
       {iosHelp ? (
         <div className="rounded-[14px] border border-line bg-panel p-4 shadow-[0_18px_50px_rgba(0,0,0,.55)]">
           <div className="mb-2 flex items-start justify-between gap-2">
-            <div className="font-semibold">Lägg till på hemskärmen</div>
+            <div className="font-semibold">{t("pwa.install.title")}</div>
             <button type="button" onClick={dismiss} className="text-muted">
               ×
             </button>
           </div>
           <ol className="space-y-2 text-sm text-muted">
-            <li>1. Tryck på Dela-ikonen i Safari</li>
-            <li>2. Välj ”Lägg till på hemskärmen”</li>
-            <li>3. Bekräfta med Lägg till</li>
+            <li>{t("pwa.install.ios.step1")}</li>
+            <li>{t("pwa.install.ios.step2")}</li>
+            <li>{t("pwa.install.ios.step3")}</li>
           </ol>
         </div>
       ) : (
@@ -114,10 +116,10 @@ export function InstallPrompt({ betCount }: { betCount: number }) {
           />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">
-              Lägg till på hemskärmen
+              {t("pwa.install.title")}
             </div>
             <div className="truncate text-[12px] text-muted">
-              Fullskärm, snabbare start
+              {t("pwa.install.subtitle")}
             </div>
           </div>
           <button
@@ -125,9 +127,9 @@ export function InstallPrompt({ betCount }: { betCount: number }) {
             onClick={install}
             className="rounded-[10px] bg-win px-3 py-2 text-[13px] font-bold text-win-ink"
           >
-            Lägg till
+            {t("pwa.install.add")}
           </button>
-          <button type="button" onClick={dismiss} className="px-1 text-muted" aria-label="Stäng">
+          <button type="button" onClick={dismiss} className="px-1 text-muted" aria-label={t("pwa.install.close")}>
             ×
           </button>
         </div>

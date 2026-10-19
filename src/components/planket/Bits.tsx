@@ -2,6 +2,7 @@
 
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { useT } from "@/components/TextsProvider";
 import { planketRoi, showRoiBadge } from "@/lib/planket";
 import { teamLogoUrl } from "@/lib/logos";
 import { cn, initialOf } from "@/lib/utils";
@@ -97,11 +98,12 @@ const CHECK =
  * På mobil krymper den till bara bocken, utan text.
  */
 export function VerifiedBadge({ compact = false }: { compact?: boolean }) {
+  const t = useT();
   if (compact) {
     return (
       <span
-        title="Loggat i spelboken före avspark"
-        aria-label="Verifierad — loggat i spelboken före avspark"
+        title={t("planket.bet.verifiedTitle")}
+        aria-label={t("planket.bet.verifiedAria")}
         className="block shrink-0 bg-center bg-no-repeat"
         style={{
           width: 13,
@@ -115,7 +117,7 @@ export function VerifiedBadge({ compact = false }: { compact?: boolean }) {
 
   return (
     <span
-      title="Loggat i spelboken före avspark"
+      title={t("planket.bet.verifiedTitle")}
       className="inline-flex shrink-0 items-center gap-[5px] rounded-[6px] bg-[rgba(102,227,138,.14)] px-2 py-[3px] text-[11px] font-semibold tracking-[0.04em] text-win"
     >
       <span
@@ -128,7 +130,7 @@ export function VerifiedBadge({ compact = false }: { compact?: boolean }) {
           backgroundSize: "contain",
         }}
       />
-      Verifierad
+      {t("planket.bet.verified")}
     </span>
   );
 }
@@ -149,12 +151,13 @@ export function RoiBadge({
   settledBets: number | null;
   compact?: boolean;
 }) {
+  const t = useT();
   if (roi == null || !showRoiBadge(settledBets)) return null;
   const up = roi >= 0;
 
   return (
     <span
-      title="ROI i spelboken"
+      title={t("planket.bet.roiTitle")}
       className={cn(
         "shrink-0 rounded-[6px] font-mono-num font-semibold",
         compact ? "px-[6px] py-[2px] text-[11.5px]" : "px-[7px] py-[3px] text-[12px]"

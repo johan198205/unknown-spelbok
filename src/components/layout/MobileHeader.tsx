@@ -4,6 +4,7 @@ import { FormattedAmount } from "@/components/FormattedAmount";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { getProfile } from "@/lib/auth";
 import { getUnreadNotificationCount } from "@/lib/notifications-server";
+import { getT } from "@/lib/texts/server";
 import { initialOf, nettoColor } from "@/lib/utils";
 
 export async function MobileHeader({
@@ -16,6 +17,7 @@ export async function MobileHeader({
   // Memoiserad per request — layouten har redan betalat för profilen.
   const profile = username ? await getProfile() : null;
   const unread = profile ? await getUnreadNotificationCount() : 0;
+  const t = await getT();
 
   return (
     <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(17,17,19,.92)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-[10px] lg:hidden">
@@ -26,7 +28,7 @@ export async function MobileHeader({
           href="/hem"
           className="shrink-0 font-display text-[17px] font-bold tracking-[0.14em] text-text no-underline"
         >
-          SPELBOK
+          {t("header.brand")}
         </Link>
         <div className="ml-auto flex min-w-0 items-center gap-2">
           <span
@@ -39,7 +41,7 @@ export async function MobileHeader({
             <Link
               href="/installningar"
               className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line-strong bg-panel-2 font-display text-sm font-semibold text-text no-underline"
-              aria-label="Profil"
+              aria-label={t("header.mobile.profile")}
             >
               {profile?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element

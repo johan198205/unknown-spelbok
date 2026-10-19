@@ -5,11 +5,13 @@ import { getSessionUser } from "./auth";
 import { COUPON_PATH } from "./coupons";
 import { isEditor } from "./coupons-server";
 import { createClient } from "./supabase/server";
+import type { TFunction } from "./texts";
+import { getT } from "./texts/server";
 import type { CouponLegRow } from "./types";
 
 type CopyResult =
   | { ok: true; message: string; sheetId: string }
-  | { ok: false; message: string; needsLogin?: boolean };
+  | { ok: false; message: string; needsLogin?: boolean; alreadyCopied?: boolean };
 
 type LegForCopy = Pick<CouponLegRow, "pick" | "odds" | "fixture_id" | "sort_order"> & {
   fixtures: {
@@ -23,11 +25,11 @@ type LegForCopy = Pick<CouponLegRow, "pick" | "odds" | "fixture_id" | "sort_orde
   } | null;
 };
 
-function matchLabel(leg: LegForCopy) {
+function matchLabel(leg: LegForCopy, t: TFunction) {
   const home = leg.fixtures?.home_name?.trim();
   const away = leg.fixtures?.away_name?.trim();
   if (home && away) return `${home} – ${away}`;
-  return "Okänd match";
+  return t("kuponger.copy.unknownMatch");
 }
 
 /**
@@ -46,12 +48,12 @@ export async function copyCouponToSheet(
   couponId: string,
   sheetId?: string
 ): Promise<CopyResult> {
-  const user = await getSessionUser();
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
   if (!user) {
     return {
       ok: false,
       needsLogin: true,
-      message: "Logga in för att kopiera kupongen till din spelbok.",
+      message: t("kuponger.copy.needsLogin"),
     };
   }
 
@@ -70,28 +72,28 @@ export async function copyCouponToSheet(
     .maybeSingle();
 
   if (error || !coupon) {
-    return { ok: false, message: "Kupongen finns inte längre." };
+    return { ok: false, message: t("kuponger.copy.notFound") };
   }
 
   const legs = ((coupon.legs ?? []) as unknown as LegForCopy[]).sort(
     (a, b) => a.sort_order - b.sort_order
   );
   if (!legs.length) {
-    return { ok: false, message: "Kupongen saknar objekt." };
+    return { ok: false, message: t("kuponger.copy.noLegs") };
   }
 
   // Samma spärr som när man ryggar ett inlägg på planket: ett utfall som
   // redan är känt får inte bokföras som ett öppet spel och räknas in i
   // topplistorna.
   if (coupon.status !== "open") {
-    return { ok: false, message: "Kupongen är redan avgjord." };
+    return { ok: false, message: t("kuponger.copy.alreadySettled") };
   }
   const kickoffs = legs
     .map((l) => l.fixtures?.kickoff)
     .filter((k): k is string => !!k)
     .map((k) => new Date(k).getTime());
   if (kickoffs.length && Date.now() >= Math.min(...kickoffs)) {
-    return { ok: false, message: "Avspark passerad. Kupongen går inte längre att kopiera." };
+    return { ok: false, message: t("kuponger.copy.kickoffPassed") };
   }
 
   // Dubblettspärren finns också som unikt index i databasen. Den här
@@ -104,7 +106,7 @@ export async function copyCouponToSheet(
     .maybeSingle();
 
   if (existing) {
-    return { ok: false, message: "Redan bokförd" };
+    return { ok: false, message: t("kuponger.copy.alreadyCopied"), alreadyCopied: true };
   }
 
   const { data: sheets } = await supabase
@@ -118,7 +120,7 @@ export async function copyCouponToSheet(
     : (sheets ?? [])[0];
 
   if (!sheet) {
-    return { ok: false, message: "Skapa en spelbok först." };
+    return { ok: false, message: t("kuponger.copy.noSheet") };
   }
 
   const stake = Number(coupon.stake);
@@ -130,7 +132,7 @@ export async function copyCouponToSheet(
         user_id: user.id,
         sheet_id: sheet.id,
         source_coupon_id: couponId,
-        match: matchLabel(first),
+        match: matchLabel(first, t),
         pick: first.pick,
         odds: Number(first.odds),
         stake,
@@ -146,7 +148,7 @@ export async function copyCouponToSheet(
         user_id: user.id,
         sheet_id: sheet.id,
         source_coupon_id: couponId,
-        match: legs.map(matchLabel).join(" + "),
+        match: legs.map((l) => matchLabel(l, t)).join(" + "),
         pick: legs.map((l) => l.pick).join(" + "),
         odds: Number(coupon.total_odds),
         stake,
@@ -163,7 +165,7 @@ export async function copyCouponToSheet(
 
   if (insertError) {
     if (/duplicate|unique/i.test(insertError.message)) {
-      return { ok: false, message: "Redan bokförd" };
+      return { ok: false, message: t("kuponger.copy.alreadyCopied"), alreadyCopied: true };
     }
     return { ok: false, message: insertError.message };
   }
@@ -174,7 +176,7 @@ export async function copyCouponToSheet(
   return {
     ok: true,
     sheetId: sheet.id,
-    message: `Kupongen är bokförd i ${sheet.name}.`,
+    message: t("kuponger.copy.success", { sheet: sheet.name }),
   };
 }
 
@@ -183,8 +185,9 @@ export async function copyCouponToSheet(
  * webbläsare; det här skriver bara URL:en på kupongen.
  */
 export async function saveCouponProof(couponId: string, proofUrl: string) {
+  const t = await getT();
   if (!(await isEditor())) {
-    return { ok: false as const, message: "Saknar behörighet." };
+    return { ok: false as const, message: t("kuponger.proof.noAccess") };
   }
 
   const supabase = await createClient();
@@ -196,5 +199,5 @@ export async function saveCouponProof(couponId: string, proofUrl: string) {
   if (error) return { ok: false as const, message: error.message };
 
   revalidatePath(COUPON_PATH, "layout");
-  return { ok: true as const, message: "Spelbeviset sparat." };
+  return { ok: true as const, message: t("kuponger.proof.saved") };
 }

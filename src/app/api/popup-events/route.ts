@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { recordPopupNotification } from "@/lib/notify-events";
 import { POPUP_COLUMNS, type Popup } from "@/lib/popups";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 /**
  * Tar emot beacons från PopupRenderer (visning, klick, stängning).
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
           title: row.title,
           body: row.body,
           href: row.button_url?.trim() || null,
-        });
+        }, await getT());
       } catch (err) {
         // En trasig notis får aldrig se ut som en trasig popup för
         // besökaren — rutan är redan på skärmen när beaconen går.

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
+import { useT } from "@/components/TextsProvider";
 import type { DailySuggestion } from "@/lib/suggestions";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,9 @@ export function AiReasonButton({
   const [loading, setLoading] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   const { toast } = useToast();
+  const t = useT();
+  // Samma gräns som DAILY_AI_LIMIT i lib/ai-reason (server-only).
+  const limitText = t("forslag.ai.limitReached", { limit: 10 });
 
   if (suggestion.ai_reason) {
     return <AiReasonText reason={suggestion.ai_reason} />;
@@ -40,16 +44,16 @@ export function AiReasonButton({
 
       if (res.status === 429) {
         setLimitReached(true);
-        toast(json.error || "Dagens AI-analyser är slut (10/dag)");
+        toast(json.error || limitText);
         return;
       }
       if (!res.ok || !json.reason) {
-        toast("Kunde inte generera just nu");
+        toast(t("forslag.ai.failed"));
         return;
       }
       onGenerated(json.reason);
     } catch {
-      toast("Kunde inte generera just nu");
+      toast(t("forslag.ai.failed"));
     } finally {
       setLoading(false);
     }
@@ -60,7 +64,7 @@ export function AiReasonButton({
       <div
         className="flex h-[30px] items-center gap-1 px-2"
         role="status"
-        aria-label="Genererar AI-analys"
+        aria-label={t("forslag.ai.loadingAria")}
       >
         {[0, 1, 2].map((i) => (
           <span
@@ -79,9 +83,7 @@ export function AiReasonButton({
       onClick={generate}
       disabled={limitReached}
       title={
-        limitReached
-          ? "Dagens AI-analyser är slut (10/dag)"
-          : "Kort motivering av varför matchen passar din historik"
+        limitReached ? limitText : t("forslag.ai.buttonTitle")
       }
       className={cn(
         "inline-flex h-[30px] items-center gap-1.5 rounded-[var(--radius-btn-sm)] border px-2.5 text-[12px] font-semibold transition-colors",
@@ -91,15 +93,16 @@ export function AiReasonButton({
       )}
     >
       <Sparkles className="size-3.5" strokeWidth={2.25} />
-      AI-analys
+      {t("forslag.ai.button")}
     </button>
   );
 }
 
 function AiReasonText({ reason }: { reason: string }) {
+  const t = useT();
   return (
     <div className="animate-sbfade rounded-[var(--radius-btn-sm)] bg-panel-2 px-2.5 py-2">
-      <Badge tone="yellow">AI</Badge>
+      <Badge tone="yellow">{t("forslag.ai.badge")}</Badge>
       <p className="mt-1.5 text-[13px] leading-snug text-muted">{reason}</p>
     </div>
   );

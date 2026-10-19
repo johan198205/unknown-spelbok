@@ -11,14 +11,14 @@ import {
   type AppNotification,
 } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey } from "@/lib/texts";
 
 export type NotificationTab = "alla" | "olasta";
 
-const EMPTY_TEXT: Record<NotificationTab, string> = {
-  olasta: "Inga olästa notiser. Allt är avklarat.",
-  alla:
-    "Inga notiser än. Här landar mål, rättade spel, nya kuponger och " +
-    "tävlingsplaceringar.",
+const EMPTY_TEXT: Record<NotificationTab, TextKey> = {
+  olasta: "notiser.panel.emptyUnread",
+  alla: "notiser.panel.emptyAll",
 };
 
 /** Tiderna räknas om medan panelen är öppen så "Nu" aldrig blir gammalt. */
@@ -36,6 +36,7 @@ function NotificationRow({
   now: number;
   onOpen: (item: AppNotification) => void;
 }) {
+  const t = useT();
   const meta = NOTIFICATION_META[item.type];
   const unread = item.read_at === null;
   const amount = item.amount === null ? null : Number(item.amount);
@@ -77,14 +78,14 @@ function NotificationRow({
         ) : null}
         <span className="mt-1.5 flex items-center gap-[9px]">
           <span className="font-mono-num text-[11.5px] text-[#5D6883]">
-            {relativeTime(item.created_at, now)}
+            {relativeTime(item.created_at, now, t)}
           </span>
           {amount !== null ? (
             <span
               className="font-mono-num text-[12.5px] font-semibold"
               style={{ color: amountColor(amount) }}
             >
-              {formatNotificationAmount(amount, item.amount_kind)}
+              {formatNotificationAmount(amount, item.amount_kind, t)}
             </span>
           ) : null}
         </span>
@@ -125,6 +126,7 @@ export function NotificationPanel({
   onLoadMore: () => void;
   onSettings: () => void;
 }) {
+  const t = useT();
   const [now, setNow] = useState(() => Date.now());
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -158,7 +160,7 @@ export function NotificationPanel({
   }, []);
 
   const shown = tab === "olasta" ? items.filter((n) => !n.read_at) : items;
-  const groups = groupNotifications(shown, now);
+  const groups = groupNotifications(shown, now, t);
 
   function handleScroll() {
     const el = listRef.current;
@@ -180,7 +182,7 @@ export function NotificationPanel({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Notiser"
+        aria-label={t("notiser.panel.ariaLabel")}
         className={cn(
           "animate-sbslide flex h-full w-full max-w-full flex-col",
           "notif:w-[400px]",
@@ -190,19 +192,19 @@ export function NotificationPanel({
         {/* HUVUD */}
         <div className="flex shrink-0 items-center gap-2.5 border-b border-line-soft px-5 py-[18px]">
           <span className="flex-1 font-display text-[17px] font-semibold uppercase tracking-[0.09em] text-text">
-            Notiser
+            {t("notiser.panel.title")}
           </span>
           <button
             type="button"
             onClick={onReadAll}
             className="cursor-pointer whitespace-nowrap border-none bg-transparent p-0 text-[13px] font-semibold text-cyan"
           >
-            Markera alla lästa
+            {t("notiser.panel.readAll")}
           </button>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Stäng notiser"
+            aria-label={t("notiser.panel.close")}
             className="flex size-[30px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-line-strong bg-panel-2 text-[15px] text-[#C3CBDB] hover:border-line-hover"
           >
             ×
@@ -213,26 +215,28 @@ export function NotificationPanel({
         <div className="mx-5 mt-3.5 flex shrink-0 gap-[3px] rounded-[9px] border border-line-soft bg-panel p-[3px]">
           {(
             [
-              { key: "alla" as const, label: "Alla" },
+              { key: "alla" as const, label: t("notiser.panel.tabAll") },
               {
                 key: "olasta" as const,
-                label: unread ? `Olästa (${unread})` : "Olästa",
+                label: unread
+                  ? t("notiser.panel.tabUnreadCount", { count: unread })
+                  : t("notiser.panel.tabUnread"),
               },
             ]
-          ).map((t) => (
+          ).map((item) => (
             <button
-              key={t.key}
+              key={item.key}
               type="button"
-              onClick={() => onTab(t.key)}
-              aria-pressed={tab === t.key}
+              onClick={() => onTab(item.key)}
+              aria-pressed={tab === item.key}
               className={cn(
                 "flex-1 cursor-pointer rounded-[7px] border-none py-2 text-[13.5px] font-semibold",
-                tab === t.key
+                tab === item.key
                   ? "bg-panel-2 text-text"
                   : "bg-transparent text-muted"
               )}
             >
-              {t.label}
+              {item.label}
             </button>
           ))}
         </div>
@@ -263,12 +267,14 @@ export function NotificationPanel({
 
           {!groups.length ? (
             <div className="rounded-[12px] border border-line bg-panel p-[26px] text-center text-[14.5px] leading-[1.6] text-[#8A94AB]">
-              {loading ? "Laddar…" : EMPTY_TEXT[tab]}
+              {loading ? t("notiser.panel.loading") : t(EMPTY_TEXT[tab])}
             </div>
           ) : null}
 
           {groups.length && loading ? (
-            <div className="py-2 text-center text-[13px] text-faint">Laddar…</div>
+            <div className="py-2 text-center text-[13px] text-faint">
+              {t("notiser.panel.loading")}
+            </div>
           ) : null}
         </div>
 
@@ -279,7 +285,7 @@ export function NotificationPanel({
             onClick={onSettings}
             className="w-full cursor-pointer rounded-[10px] border border-line-strong bg-panel-2 py-[11px] text-[13.5px] font-semibold text-[#C3CBDB] hover:border-line-hover"
           >
-            Notisinställningar
+            {t("notiser.panel.settings")}
           </button>
         </div>
       </div>

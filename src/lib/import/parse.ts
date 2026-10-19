@@ -4,6 +4,7 @@ import {
   type ImportRow,
   type ParsedFile,
 } from "@/lib/import/types";
+import { createT, type TFunction } from "@/lib/texts";
 
 /**
  * Filparsning i webbläsaren. Själva filen laddas aldrig upp — bara rådata
@@ -50,10 +51,10 @@ function isFilled(value: string) {
 }
 
 /** Rubriker måste vara unika — de är nycklar i mappningen och i raddatan. */
-function uniqueHeaders(raw: string[]): string[] {
+function uniqueHeaders(raw: string[], t: TFunction): string[] {
   const seen = new Map<string, number>();
   return raw.map((header, i) => {
-    const base = header || `Kolumn ${i + 1}`;
+    const base = header || t("import.parse.columnFallback", { n: i + 1 });
     const count = seen.get(base) ?? 0;
     seen.set(base, count + 1);
     return count === 0 ? base : `${base} (${count + 1})`;
@@ -63,7 +64,10 @@ function uniqueHeaders(raw: string[]): string[] {
 /**
  * Matris → rubriker + rader. Titelrader ovanför rubrikraden hoppas över.
  */
-function tableFromMatrix(matrix: string[][]): {
+function tableFromMatrix(
+  matrix: string[][],
+  t: TFunction
+): {
   headers: string[];
   rows: ImportRow[];
 } {
@@ -72,7 +76,10 @@ function tableFromMatrix(matrix: string[][]): {
   );
   if (headerIndex === -1) return { headers: [], rows: [] };
 
-  const headers = uniqueHeaders(matrix[headerIndex].map((h) => h.trim()));
+  const headers = uniqueHeaders(
+    matrix[headerIndex].map((h) => h.trim()),
+    t
+  );
   const rows: ImportRow[] = [];
 
   for (const cells of matrix.slice(headerIndex + 1)) {
@@ -97,7 +104,8 @@ async function hashFile(buffer: ArrayBuffer): Promise<string> {
 
 async function parseXlsx(
   buffer: ArrayBuffer,
-  notices: string[]
+  notices: string[],
+  t: TFunction
 ): Promise<string[][]> {
   const XLSX = await import("xlsx");
   let workbook;
@@ -105,12 +113,12 @@ async function parseXlsx(
     // cellDates gör att Excels serienummer redan är Date här.
     workbook = XLSX.read(buffer, { cellDates: true });
   } catch {
-    throw new ImportParseError("Filen kunde inte läsas.");
+    throw new ImportParseError(t("import.parse.unreadable"));
   }
 
   const names = workbook.SheetNames;
-  if (!names.length) throw new ImportParseError("Filen kunde inte läsas.");
-  if (names.length > 1) notices.push("Endast första bladet importeras.");
+  if (!names.length) throw new ImportParseError(t("import.parse.unreadable"));
+  if (names.length > 1) notices.push(t("import.parse.firstSheetOnly"));
 
   const sheet = workbook.Sheets[names[0]];
   const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
@@ -145,27 +153,30 @@ async function parseCsv(buffer: ArrayBuffer): Promise<string[][]> {
   );
 }
 
-export async function parseBetFile(file: File): Promise<ParsedFile> {
+export async function parseBetFile(
+  file: File,
+  t: TFunction = createT({})
+): Promise<ParsedFile> {
   if (file.size > MAX_IMPORT_BYTES) {
-    throw new ImportParseError("För stor fil (max 2 MB).");
+    throw new ImportParseError(t("import.parse.tooLarge"));
   }
 
   const lower = file.name.toLowerCase();
   const isCsv = lower.endsWith(".csv");
   const isXlsx = lower.endsWith(".xlsx");
   if (!isCsv && !isXlsx) {
-    throw new ImportParseError("Välj en .xlsx- eller .csv-fil.");
+    throw new ImportParseError(t("import.parse.wrongType"));
   }
 
   const buffer = await file.arrayBuffer();
   const notices: string[] = [];
   const matrix = isXlsx
-    ? await parseXlsx(buffer, notices)
+    ? await parseXlsx(buffer, notices, t)
     : await parseCsv(buffer);
 
-  const { headers, rows } = tableFromMatrix(matrix);
+  const { headers, rows } = tableFromMatrix(matrix, t);
   if (!headers.length || !rows.length) {
-    throw new ImportParseError("Inga spel hittades i filen.");
+    throw new ImportParseError(t("import.parse.noRows"));
   }
 
   let kept = rows;
@@ -173,7 +184,7 @@ export async function parseBetFile(file: File): Promise<ParsedFile> {
     // Exporter ligger i kronologisk ordning — de sista raderna är de senaste.
     kept = rows.slice(-MAX_IMPORT_ROWS);
     notices.push(
-      `Filen har ${rows.length} rader. De ${MAX_IMPORT_ROWS} senaste importeras.`
+      t("import.parse.truncated", { count: rows.length, max: MAX_IMPORT_ROWS })
     );
   }
 

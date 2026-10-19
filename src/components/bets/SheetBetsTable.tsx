@@ -16,11 +16,13 @@ import { stockholmYmd } from "@/lib/stockholm";
 import type { Bet } from "@/lib/types";
 import { track } from "@/lib/analytics";
 import { useAmount } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey } from "@/lib/texts";
 import { betNetto, cn, formatOdds, nettoColor } from "@/lib/utils";
 
 type Column = {
   key: SheetSortKey | "actions";
-  label: string;
+  label: TextKey;
   /** Kolumnbredder i procent — tabellen får aldrig bli bredare än sin ruta. */
   width: string;
   align?: "right";
@@ -39,19 +41,19 @@ type Column = {
   Insatsen följer SEK/Units precis som Netto och måste rymma "10 000 kr".
 */
 const COLUMNS: Column[] = [
-  { key: "date", label: "Datum", width: "w-[7%]" },
-  { key: "match", label: "Match", width: "w-[24%]" },
-  { key: "league", label: "Liga", width: "w-[11%]" },
-  { key: "pick", label: "Spel", width: "w-[9%]" },
-  { key: "bookmaker", label: "Bolag", width: "w-[7%]" },
-  { key: "stake", label: "Insats", width: "w-[8%]", align: "right" },
-  { key: "odds", label: "Odds", width: "w-[5%]", align: "right" },
-  { key: "result", label: "Rättning", width: "w-[13%]", align: "right" },
+  { key: "date", label: "spelbok.table.date", width: "w-[7%]" },
+  { key: "match", label: "spelbok.table.match", width: "w-[24%]" },
+  { key: "league", label: "spelbok.table.league", width: "w-[11%]" },
+  { key: "pick", label: "spelbok.table.pick", width: "w-[9%]" },
+  { key: "bookmaker", label: "spelbok.table.bookmaker", width: "w-[7%]" },
+  { key: "stake", label: "spelbok.table.stake", width: "w-[8%]", align: "right" },
+  { key: "odds", label: "spelbok.table.odds", width: "w-[5%]", align: "right" },
+  { key: "result", label: "spelbok.table.result", width: "w-[13%]", align: "right" },
   /* Netto måste rymma "−10 000 kr" på EN rad — annars trillar "kr" ner. */
-  { key: "netto", label: "Netto", width: "w-[10%]", align: "right" },
+  { key: "netto", label: "spelbok.table.netto", width: "w-[10%]", align: "right" },
   {
     key: "actions",
-    label: "Åtgärder",
+    label: "spelbok.table.actions",
     width: "w-[6%]",
     align: "right",
     sortable: false,
@@ -193,6 +195,7 @@ export function SheetBetsTable({
   /** Raden en notis pekade ut. Pulsar i två sekunder, sedan null. */
   highlightBetId?: string | null;
 }) {
+  const t = useT();
   const amount = useAmount();
 
   return (
@@ -214,14 +217,14 @@ export function SheetBetsTable({
                 )}
               >
                 {col.sortable === false || col.key === "actions" ? (
-                  <span className="sr-only">{col.label}</span>
+                  <span className="sr-only">{t(col.label)}</span>
                 ) : (
                   <button
                     type="button"
                     onClick={() => onSort(col.key as SheetSortKey)}
                     className="inline-flex cursor-pointer items-center gap-1 uppercase tracking-[0.11em] transition hover:text-text"
                   >
-                    {col.label}
+                    {t(col.label)}
                     {sortKey === col.key ? (
                       <span aria-hidden className="text-[9px] text-win">
                         {sortDir === "asc" ? "▲" : "▼"}
@@ -294,7 +297,7 @@ export function SheetBetsTable({
           {!bets.length ? (
             <tr>
               <td colSpan={COLUMNS.length} className="px-4 py-12 text-center text-muted">
-                Inga spel i urvalet.
+                {t("spelbok.table.empty")}
               </td>
             </tr>
           ) : null}

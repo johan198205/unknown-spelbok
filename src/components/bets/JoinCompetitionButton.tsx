@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useT } from "@/components/TextsProvider";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ export function JoinCompetitionButton({
   fullWidth?: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
 
   async function toggle() {
@@ -50,7 +52,7 @@ export function JoinCompetitionButton({
       disabled={loading}
       className={cn(fullWidth && "w-full")}
     >
-      {joined ? "Du är med" : "Gå med"}
+      {joined ? t("tavlingar.join.joined") : t("tavlingar.join.join")}
     </Button>
   );
 }

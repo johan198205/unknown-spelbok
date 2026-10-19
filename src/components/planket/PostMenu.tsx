@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { deletePost, reportPost } from "@/lib/planket-actions";
 import { REPORT_REASONS, postUrl, type PlanketPost } from "@/lib/planket";
@@ -28,6 +29,7 @@ export function PostMenu({
   const [busy, setBusy] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -56,9 +58,9 @@ export function PostMenu({
     close();
     try {
       await navigator.clipboard.writeText(postUrl(post.id));
-      toast("Länken är kopierad.");
+      toast(t("planket.menu.copied"));
     } catch {
-      toast("Kunde inte kopiera länken.");
+      toast(t("planket.menu.copyFailed"));
     }
   }
 
@@ -69,20 +71,20 @@ export function PostMenu({
     close();
     toast(
       result.ok
-        ? "Tack — anmälan är skickad till redaktionen."
+        ? t("planket.menu.reported")
         : result.error
     );
   }
 
   async function remove() {
-    if (!window.confirm("Ta bort inlägget?")) return;
+    if (!window.confirm(t("planket.menu.confirmDelete"))) return;
     setBusy(true);
     const result = await deletePost(post.id);
     setBusy(false);
     close();
     if (result.ok) {
       onDeleted();
-      toast("Inlägget är borttaget.");
+      toast(t("planket.menu.deleted"));
     } else {
       toast(result.error);
     }
@@ -97,7 +99,7 @@ export function PostMenu({
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Fler val"
+        aria-label={t("planket.menu.more")}
         onClick={() => setOpen((v) => !v)}
         className={cn(
           "cursor-pointer border-none bg-transparent px-1.5 py-0.5 text-[17px] leading-none",
@@ -115,7 +117,7 @@ export function PostMenu({
           {reporting ? (
             <>
               <div className="px-3.5 py-2 text-[11px] uppercase tracking-[0.12em] text-[#5D6883]">
-                Anledning
+                {t("planket.menu.reasonHeading")}
               </div>
               {REPORT_REASONS.map((reason) => (
                 <button
@@ -126,7 +128,7 @@ export function PostMenu({
                   className={item}
                   onClick={() => void submitReport(reason.key)}
                 >
-                  {reason.label}
+                  {t(reason.label)}
                 </button>
               ))}
             </>
@@ -138,7 +140,7 @@ export function PostMenu({
                 className={item}
                 onClick={() => setReporting(true)}
               >
-                Anmäl
+                {t("planket.menu.report")}
               </button>
               <button
                 type="button"
@@ -146,7 +148,7 @@ export function PostMenu({
                 className={item}
                 onClick={() => void copyLink()}
               >
-                Kopiera länk
+                {t("planket.menu.copyLink")}
               </button>
               {post.isAuthor ? (
                 <>
@@ -159,7 +161,7 @@ export function PostMenu({
                       onEdit();
                     }}
                   >
-                    Redigera
+                    {t("planket.menu.edit")}
                   </button>
                   <button
                     type="button"
@@ -168,7 +170,7 @@ export function PostMenu({
                     className={cn(item, "text-loss hover:text-loss")}
                     onClick={() => void remove()}
                   >
-                    Ta bort
+                    {t("planket.menu.delete")}
                   </button>
                 </>
               ) : null}

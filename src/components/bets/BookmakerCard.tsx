@@ -16,6 +16,7 @@ import {
   wageringParts,
 } from "@/lib/bookmakers";
 import { BookmakerDisclaimer } from "@/components/bets/BookmakerDisclaimer";
+import { useT } from "@/components/TextsProvider";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -56,9 +57,10 @@ function StarRow({
   rating: number | null;
   compact?: boolean;
 }) {
+  const t = useT();
   return (
     <span
-      title={ratingTitle(rating)}
+      title={ratingTitle(rating, t)}
       className={cn(
         "absolute right-3 top-3 z-[3] flex cursor-help items-center",
         compact && "max-sm:right-2 max-sm:top-2"
@@ -83,6 +85,7 @@ function HeroUpload({
   name: string;
   onUploaded: (url: string, filename: string) => void;
 }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -92,11 +95,11 @@ function HeroUpload({
     if (!file) return;
     const ok = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
     if (!ok) {
-      setError("JPG, PNG eller WebP");
+      setError(t("spelbolag.hero.wrongType"));
       return;
     }
     if (file.size > 1024 * 1024) {
-      setError("Max 1 MB");
+      setError(t("spelbolag.hero.tooLarge"));
       return;
     }
     setBusy(true);
@@ -140,10 +143,10 @@ function HeroUpload({
     >
       <span className="text-[13px] font-semibold leading-snug text-white drop-shadow">
         {busy
-          ? "Laddar upp…"
+          ? t("spelbolag.hero.uploading")
           : error
             ? error
-            : `Släpp bannerbild för ${name} · 640×300`}
+            : t("spelbolag.hero.drop", { name })}
       </span>
       <input
         ref={inputRef}
@@ -180,6 +183,7 @@ export function BookmakerCard({
    */
   compactOnMobile?: boolean;
 }) {
+  const t = useT();
   const c = compactOnMobile;
   const brand = displayText(data.brand_color) || "#212124";
   const goHref = `/go/${data.slug}${src ? `?src=${src}` : ""}`;
@@ -188,8 +192,8 @@ export function BookmakerCard({
   const logoUrl = getBookmakerLogoUrl(data.logo_url);
   const badge = displayText(data.badge);
   const pay = primaryPayment(data.payments);
-  const bonusLine = formatBonusLine(data);
-  const wager = wageringParts(data.wagering);
+  const bonusLine = formatBonusLine(data, t);
+  const wager = wageringParts(data.wagering, t);
   const bonus2Label = displayText(data.bonus2_label);
   const bonus2Value = displayText(data.bonus2_value);
   const showBonus2 = !!bonus2Label && !!bonus2Value && !!bonus2Kind(bonus2Label);
@@ -237,7 +241,7 @@ export function BookmakerCard({
 
         {editorMode ? (
           <HeroUpload
-            name={data.name || "spelbolaget"}
+            name={data.name || t("spelbolag.card.fallbackName")}
             onUploaded={(url, filename) => onHeroUploaded?.(url, filename)}
           />
         ) : null}
@@ -340,7 +344,7 @@ export function BookmakerCard({
         <div className={cn("px-[18px]", c && "max-sm:px-2.5")}>
           {preview ? (
             <span className="block rounded-full bg-[#2F8B4F] px-[18px] py-[15px] text-center text-[17px] font-bold text-white">
-              Till {data.name || "spelbolaget"}
+              {t("spelbolag.card.cta", { name: data.name || t("spelbolag.card.fallbackName") })}
             </span>
           ) : (
             <a
@@ -355,7 +359,7 @@ export function BookmakerCard({
                 c && "max-sm:px-2 max-sm:py-2.5 max-sm:text-[13.5px]"
               )}
             >
-              Till {data.name || "spelbolaget"}
+              {t("spelbolag.card.cta", { name: data.name || t("spelbolag.card.fallbackName") })}
             </a>
           )}
         </div>

@@ -7,6 +7,7 @@ import { COUPON_PATH } from "@/lib/coupons";
 import { recordCouponNotifications } from "@/lib/notify-events";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getT } from "@/lib/texts/server";
 import { slugify } from "@/lib/utils";
 import type { Coupon } from "@/lib/coupons";
 import type { CouponLegResult, CouponStatus } from "@/lib/types";
@@ -167,7 +168,7 @@ export async function saveCoupon(draft: CouponDraft) {
       title,
       legs: legs.length,
       totalOdds: Number(fresh?.total_odds ?? 1),
-    });
+    }, await getT());
   }
 
   revalidateCoupons(slug);

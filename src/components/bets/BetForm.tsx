@@ -13,6 +13,7 @@ import type { Bet, BetResult, Bookmaker, Fixture, Sheet } from "@/lib/types";
 import {
   LEAGUES,
   PICK_GROUPS,
+  pickGroupLabel,
   formatPick,
   leaguesForSport,
 } from "@/lib/picks";
@@ -35,6 +36,8 @@ import {
   settlementForFinishedPick,
 } from "@/lib/bet-settlement";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey } from "@/lib/texts";
 import {
   amountUnitLabel,
   fromUnits,
@@ -93,6 +96,7 @@ export function BetForm({
 }) {
   const prefs = useDisplayPrefs();
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(!!hideTrigger);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -175,10 +179,10 @@ export function BetForm({
   const pickGroups = useMemo(() => {
     const groups = PICK_GROUPS[sport] || PICK_GROUPS.Fotboll;
     return groups.map((g) => ({
-      label: g.label,
+      label: pickGroupLabel(g.label, t),
       options: g.options.map((o) => ({ value: o, label: o })),
     }));
-  }, [sport]);
+  }, [sport, t]);
 
   const leagueOptions = useMemo((): DropdownOption[] => {
     if (apiLeagues.length) {
@@ -289,7 +293,7 @@ export function BetForm({
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      setError("Du måste vara inloggad");
+      setError(t("betform.error.notLoggedIn"));
       setLoading(false);
       return;
     }
@@ -298,7 +302,7 @@ export function BetForm({
     const stakeValue =
       prefs.mode === "units" ? fromUnits(typed, prefs) : typed;
 
-    const stakeProblem = stakeError(stakeValue, prefs);
+    const stakeProblem = stakeError(stakeValue, prefs, t);
     if (stakeProblem) {
       setError(stakeProblem);
       setLoading(false);
@@ -365,7 +369,7 @@ export function BetForm({
     if (hideTrigger) return null;
     return (
       <Panel className="p-4 text-sm text-muted">
-        Skapa ett spreadsheet först under Spelbok.
+        {t("betform.empty.noSheet")}
       </Panel>
     );
   }
@@ -373,7 +377,7 @@ export function BetForm({
   return (
     <>
       {hideTrigger ? null : (
-        <Button onClick={() => setOpen(true)}>+ Lägg nytt spel</Button>
+        <Button onClick={() => setOpen(true)}>{t("betform.trigger")}</Button>
       )}
 
       {open ? (
@@ -394,12 +398,12 @@ export function BetForm({
                 id="add-bet-title"
                 className="font-display text-[22px] font-semibold"
               >
-                Lägg nytt spel
+                {t("betform.modal.title")}
               </h3>
               <button
                 type="button"
                 onClick={close}
-                aria-label="Stäng"
+                aria-label={t("betform.modal.close")}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong text-lg text-muted hover:text-text"
               >
                 ×
@@ -410,10 +414,10 @@ export function BetForm({
               {sheets.length > 1 ? (
                 <div className="sm:col-span-2">
                   <SearchDropdown
-                    label="Spreadsheet"
+                    label={t("betform.sheet.label")}
                     value={sheetId}
-                    placeholder="Välj spreadsheet …"
-                    searchPlaceholder="Sök spreadsheet …"
+                    placeholder={t("betform.sheet.placeholder")}
+                    searchPlaceholder={t("betform.sheet.searchPlaceholder")}
                     options={sheets.map((s) => ({
                       value: s.id,
                       label: s.name,
@@ -439,7 +443,7 @@ export function BetForm({
                           <span className="min-w-0 truncate">{league}</span>
                         </>
                       ) : (
-                        "Match"
+                        t("betform.chosen.matchFallback")
                       )}
                       {chosenKickoff
                         ? ` · ${new Date(chosenKickoff).toLocaleString("sv-SE", {
@@ -456,7 +460,7 @@ export function BetForm({
                       onClick={goSearch}
                       className="text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
                     >
-                      Ändra match
+                      {t("betform.chosen.change")}
                     </button>
                   </div>
                   <div className="font-display text-lg">
@@ -493,7 +497,7 @@ export function BetForm({
                     onClick={goManual}
                     className="mt-3 text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
                   >
-                    Ange match manuellt ›
+                    {t("betform.search.manual")}
                   </button>
                 </div>
               ) : null}
@@ -519,27 +523,27 @@ export function BetForm({
                       onClick={goSearch}
                       className="mt-3 text-[13px] font-semibold text-blue hover:text-[#7FB0FF]"
                     >
-                      Sök match i stället
+                      {t("betform.manual.searchInstead")}
                     </button>
                   </div>
                   <div className="sm:col-span-2">
                     <SearchDropdown
-                      label="Liga"
+                      label={t("betform.league.label")}
                       value={league}
-                      placeholder="Välj liga …"
-                      searchPlaceholder="Sök liga …"
+                      placeholder={t("betform.league.placeholder")}
+                      searchPlaceholder={t("betform.league.searchPlaceholder")}
                       options={leagueOptions}
                       allowCustom
-                      customPlaceholder="t.ex. Serie A"
+                      customPlaceholder={t("betform.league.customPlaceholder")}
                       onChange={applyLeagueChoice}
                     />
                   </div>
                   <div className="sm:col-span-2">
                     <Input
-                      label="Match"
+                      label={t("betform.match.label")}
                       value={match}
                       onChange={(e) => setMatch(e.target.value)}
-                      placeholder="Liverpool – Arsenal"
+                      placeholder={t("betform.match.placeholder")}
                       required
                     />
                   </div>
@@ -547,28 +551,28 @@ export function BetForm({
               ) : null}
 
               <SearchDropdown
-                label="Spel"
+                label={t("betform.pick.label")}
                 value={pick}
-                placeholder="Välj spel …"
-                searchPlaceholder="Sök spel …"
+                placeholder={t("betform.pick.placeholder")}
+                searchPlaceholder={t("betform.pick.searchPlaceholder")}
                 groups={pickGroups}
                 allowCustom
-                customPlaceholder="t.ex. Över 1.5 mål 2:a halvlek"
+                customPlaceholder={t("betform.pick.customPlaceholder")}
                 boldValue
                 onChange={setPick}
               />
 
               <SearchDropdown
-                label="Spelbolag"
+                label={t("betform.bookmaker.label")}
                 value={bookmakerId}
-                placeholder="Välj spelbolag …"
-                searchPlaceholder="Sök spelbolag …"
+                placeholder={t("betform.bookmaker.placeholder")}
+                searchPlaceholder={t("betform.bookmaker.searchPlaceholder")}
                 options={bookmakerOptions}
                 onChange={setBookmakerId}
               />
 
               <Input
-                label={`Insats (${amountUnitLabel(prefs)})`}
+                label={t("betform.stake.label", { unit: amountUnitLabel(prefs, t) })}
                 type="number"
                 step={prefs.mode === "units" ? "0.25" : "1"}
                 min="0"
@@ -582,7 +586,7 @@ export function BetForm({
                 className="font-mono-num"
               />
               <Input
-                label="Odds"
+                label={t("betform.odds.label")}
                 type="number"
                 step="0.01"
                 min="1"
@@ -604,10 +608,10 @@ export function BetForm({
                 onClick={submit}
                 disabled={loading || !match.trim() || !pick.trim()}
               >
-                {loading ? "Sparar…" : "Spara spel"}
+                {loading ? t("betform.submit.saving") : t("betform.submit.save")}
               </Button>
               <Button variant="secondary" className="px-5 py-[13px]" onClick={close}>
-                Avbryt
+                {t("betform.submit.cancel")}
               </Button>
             </div>
           </div>
@@ -618,12 +622,12 @@ export function BetForm({
 }
 
 /** Alla rättningar en rad kan sättas till — även för orättade spel. */
-const RESULT_CHOICES: Array<{ value: BetResult; short: string; label: string }> =
+const RESULT_CHOICES: Array<{ value: BetResult; short: TextKey; label: TextKey }> =
   [
-    { value: "win", short: "W", label: "Vann" },
-    { value: "loss", short: "L", label: "Förlorade" },
-    { value: "void", short: "V", label: "Void" },
-    { value: "open", short: "O", label: "Öppen" },
+    { value: "win", short: "betform.row.result.winShort", label: "betform.row.result.win" },
+    { value: "loss", short: "betform.row.result.lossShort", label: "betform.row.result.loss" },
+    { value: "void", short: "betform.row.result.voidShort", label: "betform.row.result.void" },
+    { value: "open", short: "betform.row.result.openShort", label: "betform.row.result.open" },
   ];
 
 function resultChoiceTone(result: BetResult) {
@@ -647,6 +651,7 @@ export function BetRow({
 }) {
   const amount = useAmount();
   const router = useRouter();
+  const t = useT();
   const tone = resultTone(bet.result);
   const netto = betNetto(bet);
   const fixture = fixtureFromBet(bet);
@@ -665,7 +670,7 @@ export function BetRow({
       })
       .eq("id", bet.id);
     if (error) {
-      alert(error.message || "Kunde inte sätta resultat");
+      alert(error.message || t("betform.row.settleError"));
       return;
     }
     const outcome = settleOutcome(result);
@@ -674,7 +679,7 @@ export function BetRow({
   }
 
   async function remove() {
-    if (!confirm("Ta bort spelet?")) return;
+    if (!confirm(t("betform.row.confirmDelete"))) return;
     const supabase = createClient();
     await supabase.from("bets").delete().eq("id", bet.id);
     router.refresh();
@@ -698,11 +703,11 @@ export function BetRow({
         {isLive ? (
           <span className="mt-1 inline-flex items-center gap-1 rounded-badge bg-live/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-live">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-live" />
-            Live
+            {t("betform.row.live")}
           </span>
         ) : isPending ? (
           <span className="mt-1 inline-flex items-center gap-1 rounded-badge bg-blue/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-blue">
-            Orättat
+            {t("betform.row.pending")}
           </span>
         ) : null}
       </td>
@@ -756,28 +761,28 @@ export function BetRow({
         {canEdit ? (
           <div
             role="group"
-            aria-label="Rättning"
+            aria-label={t("betform.row.settleGroup")}
             className="inline-flex flex-wrap gap-1"
           >
             {RESULT_CHOICES.map(({ value, short, label }) => {
               const active = bet.result === value;
-              const t = resultChoiceTone(value);
+              const choiceTone = resultChoiceTone(value);
               return (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setResult(value)}
-                  title={label}
-                  aria-label={label}
+                  title={t(label)}
+                  aria-label={t(label)}
                   aria-pressed={active}
                   className={cn(
                     "h-[26px] w-[26px] rounded-badge border font-mono-num text-[11px] font-bold transition",
                     active
-                      ? `${t.bg} ${t.fg} ${t.border}`
+                      ? `${choiceTone.bg} ${choiceTone.fg} ${choiceTone.border}`
                       : "border-line text-faint hover:border-line-strong hover:text-muted"
                   )}
                 >
-                  {short}
+                  {t(short)}
                 </button>
               );
             })}
@@ -786,7 +791,7 @@ export function BetRow({
           <span
             className={`rounded px-2 py-1 font-mono-num text-[10px] font-semibold ${tone.bg} ${tone.fg}`}
           >
-            {resultLabel(bet.result)}
+            {resultLabel(bet.result, t)}
           </span>
         )}
       </td>
@@ -824,6 +829,7 @@ export function BetsTable({
   onRygga?: (bet: Bet) => void;
 }) {
   const router = useRouter();
+  const t = useT();
   const showActions = canEdit || canRygga;
 
   const live = useLiveFixtures(
@@ -842,15 +848,15 @@ export function BetsTable({
         <thead>
           <tr>
             {[
-              "Datum",
-              "Liga",
-              "Match",
-              "Spel",
-              "Bolag",
-              "Insats",
-              "Odds",
-              "Resultat",
-              "Netto",
+              t("betform.table.date"),
+              t("betform.table.league"),
+              t("betform.table.match"),
+              t("betform.table.pick"),
+              t("betform.table.bookmaker"),
+              t("betform.table.stake"),
+              t("betform.table.odds"),
+              t("betform.table.result"),
+              t("betform.table.netto"),
               ...(showActions ? [""] : []),
             ].map((label) => (
               <th
@@ -880,7 +886,7 @@ export function BetsTable({
                 colSpan={showActions ? 10 : 9}
                 className="px-4 py-10 text-center text-muted"
               >
-                Inga spel ännu.
+                {t("betform.table.empty")}
               </td>
             </tr>
           ) : null}

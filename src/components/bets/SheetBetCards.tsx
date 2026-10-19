@@ -7,6 +7,7 @@ import { BookmakerPlate } from "@/components/bets/SheetBetsTable";
 import { SheetMatchCell } from "@/components/bets/SheetMatchCell";
 import { SheetSettleControls } from "@/components/bets/SheetSettleControls";
 import { useAmount } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import { formatKickoffTime } from "@/lib/live-fixture";
 import { betDisplayDate, betLeagueLogo } from "@/lib/logos";
 import { formatPick } from "@/lib/picks";
@@ -39,12 +40,13 @@ export function SheetBetCards({
   density: SheetDensity;
   highlightBetId?: string | null;
 }) {
+  const t = useT();
   const amount = useAmount();
 
   if (!bets.length) {
     return (
       <div className="rounded-[14px] border border-line bg-panel px-4 py-12 text-center text-muted">
-        Inga spel i urvalet.
+        {t("spelbok.table.empty")}
       </div>
     );
   }
@@ -60,7 +62,9 @@ export function SheetBetCards({
         const netto = betNetto(bet);
         const possibleWin = betPossibleWin(bet);
         const outcomeValue = settled ? netto : possibleWin;
-        const outcomeLabel = settled ? "Resultat" : "Möjlig vinst";
+        const outcomeLabel = settled
+          ? t("spelbok.cards.result")
+          : t("spelbok.cards.possibleWin");
         const note = bet.note?.trim() || "";
         const meta = [
           bet.league,
@@ -132,7 +136,7 @@ export function SheetBetCards({
             {/* 3. Spel i full bredd, insats och odds under */}
             <div className="mt-3 rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2.5">
               <div className="mb-1 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-                Spel
+                {t("spelbok.cards.pick")}
               </div>
               <div className="break-words text-[16px] font-bold leading-snug">
                 {pick}
@@ -141,7 +145,7 @@ export function SheetBetCards({
             <div className="mt-2 grid grid-cols-2 gap-2">
               <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
                 <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-                  Insats
+                  {t("spelbok.cards.stake")}
                 </div>
                 <div className="whitespace-nowrap font-mono-num text-[14px] font-semibold tabular-nums">
                   {amount(Number(bet.stake), { sign: false })}
@@ -149,7 +153,7 @@ export function SheetBetCards({
               </div>
               <div className="rounded-[11px] border border-line-soft bg-bg-soft px-[13px] py-2">
                 <div className="mb-0.5 text-[10px] uppercase tracking-[0.13em] text-[#5D6883]">
-                  Odds
+                  {t("spelbok.cards.odds")}
                 </div>
                 <div className="font-mono-num text-[14px] font-semibold tabular-nums">
                   {formatOdds(Number(bet.odds))}

@@ -7,13 +7,16 @@ import { getBannersForPlacement } from "@/lib/banners";
 import { getProfile } from "@/lib/auth";
 import { fetchPlanketPage } from "@/lib/planket-server";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 import type { Bookmaker, Sheet } from "@/lib/types";
 
-export const metadata: Metadata = {
-  title: "Planket",
-  description:
-    "Community-flödet i Spelbok. Användare postar spel och kuponger ur sin egen spelbok — och andra kan rygga dem.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("planket.meta.title"),
+    description: t("planket.meta.description"),
+  };
+}
 
 // Flödet ändras hela tiden och är personligt (egna reaktioner, egna
 // ryggningar). Ingen cache.

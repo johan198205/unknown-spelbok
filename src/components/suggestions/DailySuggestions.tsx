@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useMobileChrome } from "@/components/layout/MobileChrome";
 import { SuggestionCard } from "@/components/suggestions/SuggestionCard";
+import { useT } from "@/components/TextsProvider";
 import {
   fixtureFromSuggestion,
   suggestionDateLabel,
@@ -31,6 +32,7 @@ export function DailySuggestions({
   const [items, setItems] = useState(initial);
   const [leaving, setLeaving] = useState<string | null>(null);
   const chrome = useMobileChrome();
+  const t = useT();
 
   const patch = useCallback(
     (id: string, body: { clicked?: boolean; dismissed?: boolean }) => {
@@ -80,7 +82,9 @@ export function DailySuggestions({
           id={headingId}
           className="font-display text-[17px] font-semibold uppercase tracking-[0.04em]"
         >
-          {isSheet ? "Dagens matcher för spelboken" : "Dagens matcher för dig"}
+          {isSheet
+            ? t("forslag.daily.titleSheet")
+            : t("forslag.daily.titleAccount")}
         </h2>
         <span className="shrink-0 text-[12.5px] text-muted">
           {suggestionDateLabel()}
@@ -101,8 +105,7 @@ export function DailySuggestions({
 
       {!isSheet && (
         <p className="mt-2 px-1 text-[11.5px] leading-snug text-faint">
-          Matcherna är valda utifrån din egen spelhistorik och är värda att kolla
-          upp. Ingen prognos av utfallet.
+          {t("forslag.daily.disclaimer")}
         </p>
       )}
     </section>

@@ -15,6 +15,8 @@ import {
   stockholmYmd,
 } from "@/lib/stockholm";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey, TFunction } from "@/lib/texts";
 
 const MIN_CHARS = 2;
 const DEBOUNCE_MS = 250;
@@ -22,18 +24,19 @@ const RESULT_LIMIT = 40;
 /** Pågående matcher ska gå att hitta — avspark upp till så här långt bak */
 const LIVE_GRACE_MS = 3 * 60 * 60 * 1000;
 
-const SPORT_CHIPS = [
-  { value: "", label: "Alla" },
+/** label är en textnyckel för "Alla", annars sportens namn som det är. */
+const SPORT_CHIPS: Array<{ value: string; label: string; labelKey?: TextKey }> = [
+  { value: "", label: "", labelKey: "betform.search.sportAll" },
   ...SPORT_LABELS.map((label) => ({ value: label, label })),
 ];
 
 type DayFilter = "all" | "today" | "tomorrow" | "week" | { ymd: string };
 
-const DAY_CHIPS: Array<{ value: Exclude<DayFilter, { ymd: string }>; label: string }> = [
-  { value: "all", label: "Alla dagar" },
-  { value: "today", label: "Idag" },
-  { value: "tomorrow", label: "Imorgon" },
-  { value: "week", label: "Denna vecka" },
+const DAY_CHIPS: Array<{ value: Exclude<DayFilter, { ymd: string }>; label: TextKey }> = [
+  { value: "all", label: "betform.search.dayAll" },
+  { value: "today", label: "betform.day.today" },
+  { value: "tomorrow", label: "betform.day.tomorrow" },
+  { value: "week", label: "betform.search.dayWeek" },
 ];
 
 /**
@@ -59,12 +62,12 @@ function dayParams(filter: DayFilter): Record<string, string> {
   };
 }
 
-function dayLabel(kickoff: string) {
+function dayLabel(kickoff: string, t: TFunction) {
   const ymd = stockholmYmd(new Date(kickoff));
   const today = stockholmYmd();
-  if (ymd === today) return "Idag";
-  if (ymd === addStockholmDays(today, 1)) return "Imorgon";
-  if (ymd === addStockholmDays(today, -1)) return "Igår";
+  if (ymd === today) return t("betform.day.today");
+  if (ymd === addStockholmDays(today, 1)) return t("betform.day.tomorrow");
+  if (ymd === addStockholmDays(today, -1)) return t("betform.day.yesterday");
   return new Date(kickoff).toLocaleDateString("sv-SE", {
     weekday: "short",
     day: "numeric",
@@ -125,6 +128,7 @@ function ResultRow({
   onPick: () => void;
   onHover: () => void;
 }) {
+  const t = useT();
   const finished = isFinishedStatus(fixture.status);
   const live = !finished && isInPlayStatus(fixture.status);
   const hasScore = fixture.home_score != null && fixture.away_score != null;
@@ -152,16 +156,16 @@ function ResultRow({
           size={14}
         />
         <span className="min-w-0 flex-1 truncate">
-          {fixture.league_name || "Okänd liga"}
+          {fixture.league_name || t("betform.search.unknownLeague")}
           {fixture.league_country ? ` · ${fixture.league_country}` : ""}
         </span>
         {live ? (
           <span className="shrink-0 rounded-badge bg-live/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-live">
-            Live
+            {t("betform.search.live")}
           </span>
         ) : null}
         <span className="shrink-0 font-mono-num text-[11.5px] text-text">
-          {dayLabel(fixture.kickoff)} · {timeLabel(fixture.kickoff)}
+          {dayLabel(fixture.kickoff, t)} · {timeLabel(fixture.kickoff)}
         </span>
       </div>
       <div className="flex items-center gap-2 text-[14px]">
@@ -172,7 +176,7 @@ function ResultRow({
         <span className="shrink-0 font-mono-num text-[12px] text-faint">
           {(finished || live) && hasScore
             ? `${fixture.home_score}–${fixture.away_score}`
-            : "vs"}
+            : t("betform.search.versus")}
         </span>
         <span className="min-w-0 flex-1 truncate text-right font-semibold">
           {fixture.away_name}
@@ -196,6 +200,7 @@ export function MatchSearch({
   active?: boolean;
   autoFocus?: boolean;
 }) {
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [sport, setSport] = useState("");
@@ -215,8 +220,8 @@ export function MatchSearch({
 
   useEffect(() => {
     if (!autoFocus || !active) return;
-    const t = requestAnimationFrame(() => inputRef.current?.focus());
-    return () => cancelAnimationFrame(t);
+    const frame = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
   }, [autoFocus, active]);
 
   useEffect(() => {
@@ -253,10 +258,10 @@ export function MatchSearch({
       }
     }
 
-    const t = setTimeout(load, DEBOUNCE_MS);
+    const timer = setTimeout(load, DEBOUNCE_MS);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
       if (poll) clearTimeout(poll);
     };
   }, [active, ready, trimmed, sport, dayKey, customYmd]);
@@ -264,13 +269,13 @@ export function MatchSearch({
   const today = stockholmYmd();
   const maxYmd = addStockholmDays(today, FIXTURE_PICKER_FUTURE_DAYS);
   const customLabel = useMemo(() => {
-    if (!customYmd) return "Datum";
+    if (!customYmd) return t("betform.day.custom");
     return new Date(`${customYmd}T12:00:00Z`).toLocaleDateString("sv-SE", {
       day: "numeric",
       month: "short",
       timeZone: "UTC",
     });
-  }, [customYmd]);
+  }, [customYmd, t]);
 
   function pick(fixture: PickerFixture) {
     onSelect(fixture);
@@ -300,7 +305,7 @@ export function MatchSearch({
         htmlFor="match-search"
         className="mb-1.5 block text-[11px] uppercase tracking-[0.1em] text-muted"
       >
-        Match
+        {t("betform.search.label")}
       </label>
       <div className="relative">
         <Search
@@ -315,7 +320,7 @@ export function MatchSearch({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Sök lag eller match …"
+          placeholder={t("betform.search.placeholder")}
           autoComplete="off"
           role="combobox"
           aria-expanded={results.length > 0}
@@ -334,15 +339,15 @@ export function MatchSearch({
           alltid synas och gå att klicka på, även i smal modal och mobil. */}
       <div className="mt-2.5 flex flex-wrap gap-1.5">
         {SPORT_CHIPS.map((c) => (
-          <Chip key={c.label} active={sport === c.value} onClick={() => setSport(c.value)}>
-            {c.label}
+          <Chip key={c.value || "all"} active={sport === c.value} onClick={() => setSport(c.value)}>
+            {c.labelKey ? t(c.labelKey) : c.label}
           </Chip>
         ))}
       </div>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {DAY_CHIPS.map((c) => (
           <Chip key={c.value} active={sameFilter(day, c.value)} onClick={() => setDay(c.value)}>
-            {c.label}
+            {t(c.label)}
           </Chip>
         ))}
         <label
@@ -365,23 +370,24 @@ export function MatchSearch({
               else setDay("all");
             }}
             className="absolute inset-0 cursor-pointer opacity-0"
-            aria-label="Välj datum"
+            aria-label={t("betform.day.pickDate")}
           />
         </label>
       </div>
 
       {!ready ? (
         <p className="mt-2 text-[12.5px] text-faint">
-          Skriv minst {MIN_CHARS} tecken, t.ex. &quot;Liv&quot;, så visas{" "}
-          {upcomingOnly ? "lagets närmaste matcher" : "matcherna den dagen"}.
+          {upcomingOnly
+            ? t("betform.search.hint.upcoming", { min: MIN_CHARS })
+            : t("betform.search.hint.day", { min: MIN_CHARS })}
         </p>
       ) : showStale && !results.length ? (
         <p className="mt-2 text-[12.5px] text-faint" role="status">
-          Söker …
+          {t("betform.search.loading")}
         </p>
       ) : failed ? (
         <p className="mt-2 text-[12.5px] text-loss">
-          Sökningen misslyckades. Försök igen eller ange matchen manuellt.
+          {t("betform.search.failed")}
         </p>
       ) : results.length ? (
         <div
@@ -404,19 +410,26 @@ export function MatchSearch({
         </div>
       ) : !loading ? (
         <p className="mt-2 text-[12.5px] text-faint">
-          Ingen {upcomingOnly ? "kommande " : ""}match hittades för &quot;{trimmed}&quot;
-          {sport || day !== "all" ? " med valda filter" : ""}. Prova ett annat
-          namn eller ange matchen manuellt.
+          {t(
+            upcomingOnly
+              ? "betform.search.noResults.upcoming"
+              : "betform.search.noResults.any",
+            {
+              query: trimmed,
+              filters:
+                sport || day !== "all" ? t("betform.search.noResults.filters") : "",
+            }
+          )}
         </p>
       ) : null}
     </div>
   );
 }
 
-const MANUAL_DAY_CHIPS: Array<{ offset: number; label: string }> = [
-  { offset: -1, label: "Igår" },
-  { offset: 0, label: "Idag" },
-  { offset: 1, label: "Imorgon" },
+const MANUAL_DAY_CHIPS: Array<{ offset: number; label: TextKey }> = [
+  { offset: -1, label: "betform.day.yesterday" },
+  { offset: 0, label: "betform.day.today" },
+  { offset: 1, label: "betform.day.tomorrow" },
 ];
 
 /**
@@ -436,6 +449,7 @@ export function ManualMatchFilters({
   ymd: string;
   onYmdChange: (ymd: string) => void;
 }) {
+  const t = useT();
   const today = stockholmYmd();
   const quick = MANUAL_DAY_CHIPS.map((c) => ({
     ...c,
@@ -448,12 +462,12 @@ export function ManualMatchFilters({
         month: "short",
         timeZone: "UTC",
       })
-    : "Datum";
+    : t("betform.day.custom");
 
   return (
     <div>
       <div className="mb-1.5 text-[11px] uppercase tracking-[0.1em] text-muted">
-        Sport
+        {t("betform.manual.sport")}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {SPORTS.map((s) => (
@@ -463,12 +477,12 @@ export function ManualMatchFilters({
         ))}
       </div>
       <div className="mb-1.5 mt-3 text-[11px] uppercase tracking-[0.1em] text-muted">
-        Datum
+        {t("betform.manual.date")}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {quick.map((c) => (
           <Chip key={c.label} active={c.ymd === ymd} onClick={() => onYmdChange(c.ymd)}>
-            {c.label}
+            {t(c.label)}
           </Chip>
         ))}
         <label
@@ -489,7 +503,7 @@ export function ManualMatchFilters({
               if (/^\d{4}-\d{2}-\d{2}$/.test(next)) onYmdChange(next);
             }}
             className="absolute inset-0 cursor-pointer opacity-0"
-            aria-label="Välj datum"
+            aria-label={t("betform.day.pickDate")}
           />
         </label>
       </div>

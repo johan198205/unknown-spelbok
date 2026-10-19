@@ -9,6 +9,7 @@ import {
 } from "@/lib/import/server";
 import type { ImportPreviewResponse } from "@/lib/import/types";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 export const runtime = "nodejs";
 
@@ -18,28 +19,28 @@ export const runtime = "nodejs";
  * finns från en annan fil (mjuk dubblett).
  */
 export async function POST(request: Request) {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getT()]);
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+    return NextResponse.json({ error: t("import.api.notLoggedIn") }, { status: 401 });
   }
 
   const limit = rateLimit(`import-preview:${user.id}`, 5, 60_000);
   if (!limit.allowed) {
     return NextResponse.json(
-      { error: "För många försök. Vänta en stund." },
+      { error: t("import.api.rateLimited") },
       { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
     );
   }
 
   let body;
   try {
-    body = parseImportBody(await request.json());
+    body = parseImportBody(await request.json(), t);
   } catch (error) {
     const message =
-      error instanceof ImportRequestError ? error.message : "Trasig data.";
+      error instanceof ImportRequestError ? error.message : t("import.request.broken");
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     unitValue: body.unit_value,
     source: body.import_source,
     bookmakerIndex,
+    t,
   });
 
   const { ids: existingIds } = await loadExistingExternalIds(supabase, user.id);

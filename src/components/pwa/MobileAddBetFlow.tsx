@@ -22,6 +22,7 @@ import {
 } from "@/lib/bet-settlement";
 import { isFinishedStatus } from "@/lib/live-fixture";
 import { stockholmYmd } from "@/lib/stockholm";
+import { useT } from "@/components/TextsProvider";
 
 export function MobileAddBetFlow({
   sheets,
@@ -41,6 +42,7 @@ export function MobileAddBetFlow({
   const prefs = useDisplayPrefs();
   const router = useRouter();
   const online = useOnlineStatus();
+  const t = useT();
   // Guiden monteras om varje gång den öppnas, så förifyllningen hör hemma
   // i initialvärdena i stället för i en effekt.
   const [step, setStep] = useState(prefillFixture ? 2 : 1);
@@ -97,13 +99,13 @@ export function MobileAddBetFlow({
   const pickOptions = PICKS[sport] || PICKS.Fotboll;
 
   async function save() {
-    const stakeProblem = stakeError(stakeValue, prefs);
+    const stakeProblem = stakeError(stakeValue, prefs, t);
     if (stakeProblem) {
       setError(stakeProblem);
       return;
     }
     if (!oddsValid) {
-      setError("Ange giltiga odds (minst 1,01).");
+      setError(t("betform.mobile.error.odds"));
       return;
     }
 
@@ -150,7 +152,7 @@ export function MobileAddBetFlow({
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      setError("Du måste vara inloggad");
+      setError(t("betform.error.notLoggedIn"));
       setLoading(false);
       return;
     }
@@ -185,13 +187,13 @@ export function MobileAddBetFlow({
           type="button"
           onClick={() => (step > 1 ? setStep(step - 1) : onClose())}
           className="text-muted"
-          aria-label="Tillbaka"
+          aria-label={t("betform.mobile.back")}
         >
           ←
         </button>
         <div className="flex-1">
           <div className="font-display text-[17px] font-semibold">
-            Lägg nytt spel
+            {t("betform.mobile.title")}
           </div>
           <div className="mt-1 flex gap-1.5">
             {[1, 2, 3].map((n) => (
@@ -240,7 +242,7 @@ export function MobileAddBetFlow({
                   }}
                   className="w-full py-3 text-center text-sm font-semibold text-cyan"
                 >
-                  Skriv match manuellt
+                  {t("betform.mobile.manual")}
                 </button>
               </>
             ) : (
@@ -254,13 +256,13 @@ export function MobileAddBetFlow({
                 <input
                   value={match}
                   onChange={(e) => setMatch(e.target.value)}
-                  placeholder="Liverpool – Arsenal"
+                  placeholder={t("betform.mobile.matchPlaceholder")}
                   className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3 text-[15px] outline-none"
                 />
                 <input
                   value={league}
                   onChange={(e) => setLeague(e.target.value)}
-                  placeholder="Liga"
+                  placeholder={t("betform.mobile.leaguePlaceholder")}
                   className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3 text-[15px] outline-none"
                 />
                 <button
@@ -269,7 +271,7 @@ export function MobileAddBetFlow({
                   onClick={() => setStep(2)}
                   className="w-full rounded-[13px] bg-win py-3.5 font-bold text-win-ink disabled:opacity-40"
                 >
-                  Fortsätt
+                  {t("betform.mobile.continue")}
                 </button>
               </div>
             )}
@@ -292,7 +294,7 @@ export function MobileAddBetFlow({
                     <span>{league}</span>
                   </>
                 ) : (
-                  "Match"
+                  t("betform.mobile.matchFallback")
                 )}
               </div>
               <div className="mt-1">
@@ -321,7 +323,7 @@ export function MobileAddBetFlow({
             </div>
             <div>
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Snabbval
+                {t("betform.mobile.quickPicks")}
               </div>
               <div className="flex flex-wrap gap-2">
                 {pickOptions.map((p) => (
@@ -344,12 +346,12 @@ export function MobileAddBetFlow({
             <input
               value={pick}
               onChange={(e) => setPick(e.target.value)}
-              placeholder="Eget spel…"
+              placeholder={t("betform.mobile.customPick")}
               className="w-full rounded-[9px] border border-line bg-panel px-3.5 py-3.5 text-[16px] outline-none"
             />
             <div>
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Bolag
+                {t("betform.mobile.bookmaker")}
               </div>
               <div className="flex flex-wrap gap-2">
                 {bookmakers.map((b) => {
@@ -401,7 +403,7 @@ export function MobileAddBetFlow({
               onClick={() => setStep(3)}
               className="w-full rounded-[13px] bg-win py-3.5 font-bold text-win-ink disabled:opacity-40"
             >
-              Fortsätt
+              {t("betform.mobile.continue")}
             </button>
           </div>
         ) : null}
@@ -410,7 +412,7 @@ export function MobileAddBetFlow({
           <div className="space-y-5">
             <div>
               <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Insats ({amountUnitLabel(prefs)})
+                {t("betform.mobile.stake", { unit: amountUnitLabel(prefs, t) })}
               </label>
               <input
                 inputMode="decimal"
@@ -433,7 +435,7 @@ export function MobileAddBetFlow({
             </div>
             <div>
               <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Odds
+                {t("betform.mobile.odds")}
               </label>
               <input
                 inputMode="decimal"
@@ -443,7 +445,7 @@ export function MobileAddBetFlow({
               />
             </div>
             <div className="rounded-[12px] border border-line bg-panel px-4 py-3">
-              <div className="text-[12px] text-muted">Möjlig vinst</div>
+              <div className="text-[12px] text-muted">{t("betform.mobile.potential")}</div>
               <div className="font-mono-num text-[22px] font-semibold text-win">
                 {amount(potential)}{" "}
                 <span className="text-sm text-faint">
@@ -468,7 +470,11 @@ export function MobileAddBetFlow({
             onClick={save}
             className="w-full rounded-[13px] bg-win py-4 text-[15px] font-bold text-win-ink disabled:opacity-40"
           >
-            {loading ? "Sparar…" : online ? "Spara spel" : "Spara offline"}
+            {loading
+              ? t("betform.submit.saving")
+              : online
+                ? t("betform.submit.save")
+                : t("betform.mobile.saveOffline")}
           </button>
         </div>
       ) : null}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth";
 import { canRyggaBet, ryggaPlacedAt } from "@/lib/rygga";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 export type RyggaBetInput = {
   sourceBetId: string;
@@ -56,18 +57,18 @@ function asOne<T>(value: T | T[] | null | undefined): T | null {
 }
 
 export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
-  const user = await getSessionUser();
+  const [user, t] = await Promise.all([getSessionUser(), getT()]);
   if (!user) {
-    return { ok: false, error: "Du måste vara inloggad.", code: "auth" };
+    return { ok: false, error: t("betform.ryggaError.auth"), code: "auth" };
   }
 
   const stake = Number(input.stake);
   const odds = Number(input.odds);
   if (!Number.isFinite(stake) || stake <= 0) {
-    return { ok: false, error: "Ogiltig insats." };
+    return { ok: false, error: t("betform.ryggaError.stake") };
   }
   if (!Number.isFinite(odds) || odds < 1) {
-    return { ok: false, error: "Ogiltigt odds." };
+    return { ok: false, error: t("betform.ryggaError.odds") };
   }
 
   const supabase = await createClient();
@@ -81,13 +82,13 @@ export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
   if (sheetError) {
     return {
       ok: false,
-      error: sheetError.message || "Kunde inte läsa målspelboken.",
+      error: sheetError.message || t("betform.ryggaError.readSheet"),
     };
   }
   if (!targetSheet || targetSheet.user_id !== user.id) {
     return {
       ok: false,
-      error: "Målspelboken hittades inte.",
+      error: t("betform.ryggaError.sheetNotFound"),
       code: "forbidden",
     };
   }
@@ -101,7 +102,7 @@ export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
     .maybeSingle();
 
   if (sourceError || !rawSource) {
-    return { ok: false, error: "Källspelet hittades inte.", code: "forbidden" };
+    return { ok: false, error: t("betform.ryggaError.sourceNotFound"), code: "forbidden" };
   }
 
   const source: SourceBetRow = {
@@ -122,7 +123,7 @@ export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
   if (!allowed) {
     return {
       ok: false,
-      error: "Du har inte behörighet att rygga detta spel.",
+      error: t("betform.ryggaError.forbidden"),
       code: "forbidden",
     };
   }
@@ -136,7 +137,7 @@ export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
   ) {
     return {
       ok: false,
-      error: "Spelet kan inte ryggas (matchen har startat eller är avgjord).",
+      error: t("betform.ryggaError.started"),
       code: "started",
     };
   }
@@ -151,7 +152,7 @@ export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
   if (existing) {
     return {
       ok: false,
-      error: "Du har redan ryggat detta spel i den spelboken",
+      error: t("betform.ryggaError.duplicate"),
       code: "duplicate",
     };
   }
@@ -191,15 +192,15 @@ export async function ryggaBet(input: RyggaBetInput): Promise<RyggaBetResult> {
     ) {
       return {
         ok: false,
-        error: "Du har redan ryggat detta spel i den spelboken",
+        error: t("betform.ryggaError.duplicate"),
         code: "duplicate",
       };
     }
-    return { ok: false, error: insertError.message || "Kunde inte spara spelet." };
+    return { ok: false, error: insertError.message || t("betform.ryggaError.save") };
   }
 
   if (!inserted) {
-    return { ok: false, error: "Kunde inte spara spelet." };
+    return { ok: false, error: t("betform.ryggaError.save") };
   }
 
   revalidatePath("/spelbok");

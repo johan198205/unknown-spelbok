@@ -8,13 +8,16 @@ import type { AffiliateTopRow } from "@/lib/bet-stats";
 import { couponRecord } from "@/lib/coupons";
 import { copiedCouponIds, isEditor, listCoupons } from "@/lib/coupons-server";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 import type { Bookmaker } from "@/lib/types";
 
-export const metadata: Metadata = {
-  title: "Kuponger",
-  description:
-    "Redaktionens spelförslag med motivering, insats och rekommenderat spelbolag.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("kuponger.meta.title"),
+    description: t("kuponger.meta.description"),
+  };
+}
 
 export default async function KupongerPage() {
   // Kuponger är avstängd tills vidare — speltipsen samlas på Planket.
@@ -22,7 +25,7 @@ export default async function KupongerPage() {
   if (!FEATURES.coupons) redirect((await getSessionUser()) ? "/planket" : "/");
   const supabase = await createClient();
 
-  const [coupons, user, editorMode, copied, { data: bookmakers }] =
+  const [coupons, user, editorMode, copied, { data: bookmakers }, t] =
     await Promise.all([
       listCoupons(),
       getSessionUser(),
@@ -34,6 +37,7 @@ export default async function KupongerPage() {
         .eq("active", true)
         .order("rank")
         .order("name"),
+      getT(),
     ]);
 
   const affiliates: AffiliateTopRow[] = ((bookmakers || []) as Bookmaker[])
@@ -57,12 +61,10 @@ export default async function KupongerPage() {
 
       <header className="mb-[22px] max-w-[760px]">
         <h1 className="font-display mb-2 text-[34px] font-semibold uppercase tracking-[0.03em]">
-          Kuponger
+          {t("kuponger.page.title")}
         </h1>
         <p className="text-[16px] leading-[1.6] text-muted [text-wrap:pretty]">
-          Redaktionens spelförslag med motivering, insats och rekommenderat
-          spelbolag. Varje kupong går att kopiera rakt in i din egen spelbok och
-          dela vidare i sin helhet.
+          {t("kuponger.page.intro")}
         </p>
       </header>
 

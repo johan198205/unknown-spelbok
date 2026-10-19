@@ -3,6 +3,11 @@
  * Speglar API-Football fixture.status.short / elapsed.
  */
 
+import { createT, type TextKey, type TFunction } from "@/lib/texts";
+
+/** Standardtexterna när anroparen inte skickar in ett t. */
+const DEFAULT_T = createT({});
+
 export const IN_PLAY_STATUSES = [
   "1H",
   "HT",
@@ -170,7 +175,8 @@ export function finishedPickerMeta(
   fixture: Pick<
     MatchFixture,
     "home_name" | "away_name" | "home_score" | "away_score" | "kickoff" | "status"
-  > & { venue?: string | null }
+  > & { venue?: string | null },
+  t: TFunction = DEFAULT_T
 ) {
   if (
     !isFinishedStatus(fixture.status) ||
@@ -184,8 +190,8 @@ export function finishedPickerMeta(
   const when = time ? `${day} ${time}` : day;
   const venue = fixture.venue?.trim();
   return {
-    home: fixture.home_name || "Hemma",
-    away: fixture.away_name || "Borta",
+    home: fixture.home_name || t("terms.fixture.homeFallback"),
+    away: fixture.away_name || t("terms.fixture.awayFallback"),
     score: `${fixture.home_score}–${fixture.away_score}`,
     meta: venue ? `${when}, ${venue}` : when,
   };
@@ -196,9 +202,10 @@ export function formatFinishedPickerLine(
   fixture: Pick<
     MatchFixture,
     "home_name" | "away_name" | "home_score" | "away_score" | "kickoff" | "status"
-  > & { venue?: string | null }
+  > & { venue?: string | null },
+  t: TFunction = DEFAULT_T
 ) {
-  const row = finishedPickerMeta(fixture);
+  const row = finishedPickerMeta(fixture, t);
   if (!row) return null;
   return `${row.home} – ${row.away} ${row.score} · ${row.meta}`;
 }
@@ -211,24 +218,32 @@ export function formatMatchClock(
   status: string,
   elapsed: number | null | undefined,
   kickoff: string,
-  extra?: number | null
+  extra?: number | null,
+  t: TFunction = DEFAULT_T
 ) {
-  if (isFinishedStatus(status)) return "FT";
-  if (status === "HT") return "HT";
-  if (status === "BT") return "ET";
-  if (status === "P") return "PEN";
+  if (isFinishedStatus(status)) return t("terms.matchPhase.ft");
+  if (status === "HT") return t("terms.matchPhase.ht");
+  if (status === "BT") return t("terms.matchPhase.et");
+  if (status === "P") return t("terms.matchPhase.pen");
   if (status === "NS" || status === "TBD" || status === "PST") {
     return formatKickoffTime(kickoff);
   }
   if (elapsed != null) {
-    if (extra != null && extra > 0) return `${elapsed}+${extra}'`;
+    if (extra != null && extra > 0) {
+      return t("terms.matchPhase.stoppage", { minute: elapsed, extra });
+    }
     // Skydd för minuter som aldrig gått genom liveClock: räkna om en minut
     // bortom halvlekens slut till tilläggstid i stället för att visa "92'".
     const end = REGULATION_END[status];
-    if (end != null && elapsed > end) return `${end}+${elapsed - end}'`;
-    return `${elapsed}'`;
+    if (end != null && elapsed > end) {
+      return t("terms.matchPhase.stoppage", {
+        minute: end,
+        extra: elapsed - end,
+      });
+    }
+    return t("terms.matchPhase.minute", { minute: elapsed });
   }
-  if (status === "ET") return "ET";
+  if (status === "ET") return t("terms.matchPhase.et");
   if (isInPlayStatus(status)) return status;
   return formatKickoffTime(kickoff);
 }
@@ -239,7 +254,8 @@ export function fixtureClock(
     MatchFixture,
     "status" | "elapsed" | "extra" | "kickoff" | "receivedAt"
   >,
-  now = Date.now()
+  now = Date.now(),
+  t: TFunction = DEFAULT_T
 ) {
   const clock = liveClock(
     fixture.status,
@@ -253,7 +269,8 @@ export function fixtureClock(
     fixture.status,
     clock.minute,
     fixture.kickoff,
-    clock.extra
+    clock.extra,
+    t
   );
 }
 
@@ -271,11 +288,11 @@ function isFootballHalftime(
 }
 
 /** Slutstatusar där matchen inte spelats klart: etikett i FT-ton. */
-const TERMINAL_LABELS: Record<string, string> = {
-  AWD: "FT",
-  WO: "WO",
-  CANC: "Inst.",
-  ABD: "Avbr.",
+const TERMINAL_LABELS: Record<string, TextKey> = {
+  AWD: "terms.matchPhase.ft",
+  WO: "terms.matchPhase.wo",
+  CANC: "terms.matchPhase.canc",
+  ABD: "terms.matchPhase.abd",
 };
 
 /** Hur länge efter avspark minuten får räknas lokalt utan API-status. */
@@ -303,7 +320,8 @@ export function matchPhase(
     "status" | "elapsed" | "extra" | "kickoff" | "receivedAt" | "sport"
   > | null,
   opts: { settled?: boolean; placedAt?: string | null } = {},
-  now = Date.now()
+  now = Date.now(),
+  t: TFunction = DEFAULT_T
 ): MatchPhase {
   const settled = !!opts.settled;
   const kickoff = fixture?.kickoff || opts.placedAt || null;
@@ -311,21 +329,21 @@ export function matchPhase(
   const sport = fixture?.sport;
 
   if (isFinishedStatus(status)) {
-    return { label: "FT", tone: "ft", live: false };
+    return { label: t("terms.matchPhase.ft"), tone: "ft", live: false };
   }
 
   // Slutstatusar utan spelad match: aldrig live, aldrig tickande minut.
   const terminal = status ? TERMINAL_LABELS[status] : undefined;
   if (terminal) {
-    return { label: terminal, tone: "ft", live: false };
+    return { label: t(terminal), tone: "ft", live: false };
   }
   if (status === "PST") {
-    return { label: "Uppskj.", tone: "ns", live: false };
+    return { label: t("terms.matchPhase.pst"), tone: "ns", live: false };
   }
 
   if (isInPlayStatus(status) && fixture) {
     if (status === "HT") {
-      return { label: "HT", tone: "live", live: true };
+      return { label: t("terms.matchPhase.ht"), tone: "live", live: true };
     }
     const clock = liveClock(
       fixture.status,
@@ -341,13 +359,14 @@ export function matchPhase(
       status != null &&
       !["2H", "ET", "BT", "P"].includes(status)
     ) {
-      return { label: "HT", tone: "live", live: true };
+      return { label: t("terms.matchPhase.ht"), tone: "live", live: true };
     }
     const label = formatMatchClock(
       fixture.status,
       clock.minute,
       fixture.kickoff,
-      clock.extra
+      clock.extra,
+      t
     );
     return { label, tone: "live", live: true };
   }
@@ -356,7 +375,7 @@ export function matchPhase(
   // här kontrollen fick importerade spel (ingen kopplad match, kickoff =
   // placed_at) en tickande "90'" och såg pågående ut.
   if (settled) {
-    return { label: "FT", tone: "ft", live: false };
+    return { label: t("terms.matchPhase.ft"), tone: "ft", live: false };
   }
 
   if (kickoff) {
@@ -384,10 +403,14 @@ export function matchPhase(
       const mins = Math.floor((now - start) / 60_000);
       if (mins >= 0 && mins < LOCAL_CLOCK_MAX_MINUTES) {
         if (isFootballHalftime(sport, mins)) {
-          return { label: "HT", tone: "live", live: true };
+          return { label: t("terms.matchPhase.ht"), tone: "live", live: true };
         }
         const capped = Math.min(mins, isHockeySport(sport) ? 60 : 90);
-        return { label: `${capped}'`, tone: "live", live: true };
+        return {
+          label: t("terms.matchPhase.minute", { minute: capped }),
+          tone: "live",
+          live: true,
+        };
       }
       // Passerad avspark utan status: datum, inte en klocktid som ser
       // kommande ut.

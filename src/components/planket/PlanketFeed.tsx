@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { PlanketComposer } from "@/components/planket/PlanketComposer";
 import { PostCard } from "@/components/planket/PostCard";
+import { useT } from "@/components/TextsProvider";
 import {
   checkNewPosts,
   loadMorePosts,
@@ -47,6 +48,7 @@ export function PlanketFeed({
   /** Annonserna som roteras in i mobilflödet. Desktop har högerkolumnen. */
   feedAds?: ReactNode[];
 }) {
+  const t = useT();
   // Ett enda flöde — filterchipparna är borttagna.
   const filter: PlanketFilter = "alla";
   const [posts, setPosts] = useState(initialPosts);
@@ -167,17 +169,16 @@ export function PlanketFeed({
         ) : (
           <div className="rounded-[14px] border border-line bg-[#161618] p-4 text-[14.5px] text-[#C3CBDB]">
             <Link href="/registrera" className="font-semibold text-win">
-              Skapa ett konto
+              {t("planket.feed.guest.register")}
             </Link>{" "}
-            för att posta, reagera och kommentera på Planket. Har du redan
-            ett?{" "}
+            {t("planket.feed.guest.middle")}{" "}
             <Link
               href={`/login?next=${encodeURIComponent("/planket")}`}
               className="font-semibold text-win"
             >
-              Logga in
+              {t("planket.feed.guest.login")}
             </Link>
-            .
+            {t("planket.feed.guest.after")}
           </div>
         )}
 
@@ -196,17 +197,22 @@ export function PlanketFeed({
               className="block h-[7px] w-[7px] shrink-0 animate-pulse rounded-full bg-cyan"
             />
             <span className="min-w-0 flex-1 text-[13.5px] text-[#C3CBDB]">
-              {newCount} {newCount === 1 ? "nytt inlägg" : "nya inlägg"}
+              {t(
+                newCount === 1
+                  ? "planket.feed.newPosts.one"
+                  : "planket.feed.newPosts.other",
+                { count: newCount }
+              )}
             </span>
             <span className="shrink-0 text-[13.5px] font-semibold text-cyan">
-              Visa
+              {t("planket.feed.newPosts.show")}
             </span>
           </button>
         ) : null}
 
         {posts.length === 0 && !loading ? (
           <div className="rounded-[14px] border border-line bg-[#161618] px-5 py-10 text-center text-[14px] text-muted">
-            Inget här ännu. Posta först.
+            {t("planket.feed.empty")}
           </div>
         ) : null}
 
@@ -243,7 +249,7 @@ export function PlanketFeed({
                     // som ett inlägg.
                     <div className="mx-auto w-full max-w-[300px] py-1">
                       <div className="mb-1 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5D6883]">
-                        Annons
+                        {t("planket.feed.ad")}
                       </div>
                       {ad}
                     </div>
@@ -258,7 +264,7 @@ export function PlanketFeed({
 
         {loading ? (
           <div className="py-4 text-center text-[13px] text-[#5D6883]">
-            Hämtar…
+            {t("planket.feed.loading")}
           </div>
         ) : null}
 

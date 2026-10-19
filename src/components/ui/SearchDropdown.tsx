@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useT } from "@/components/TextsProvider";
 import { cn } from "@/lib/utils";
 
 export type DropdownOption = {
@@ -45,17 +46,18 @@ type SearchDropdownProps = {
 export function SearchDropdown({
   label,
   value,
-  placeholder = "Välj …",
-  searchPlaceholder = "Sök …",
+  placeholder,
+  searchPlaceholder,
   options,
   groups,
   onChange,
   allowCustom = false,
-  customPlaceholder = "Skriv själv …",
+  customPlaceholder,
   boldValue = false,
   disabled = false,
   className,
 }: SearchDropdownProps) {
+  const t = useT();
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -93,7 +95,8 @@ export function SearchDropdown({
     }
     return value ? ({ value, label: value } as DropdownOption) : null;
   }, [allGroups, value]);
-  const display = selected?.label || placeholder;
+  const display =
+    selected?.label || (placeholder ?? t("common.dropdown.placeholder"));
   const isPlaceholder = !value;
 
   useEffect(() => {
@@ -190,7 +193,7 @@ export function SearchDropdown({
               ref={searchRef}
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t("common.dropdown.search")}
               className="w-full rounded-lg border border-line bg-bg-soft px-2.5 py-2 text-[13px] text-text outline-none placeholder:text-faint focus:border-blue"
             />
           </div>
@@ -247,7 +250,7 @@ export function SearchDropdown({
             ))}
             {empty ? (
               <div className="px-2.5 py-3 text-[13px] text-faint">
-                Inget matchar sökningen.
+                {t("common.dropdown.empty")}
               </div>
             ) : null}
           </div>
@@ -257,7 +260,7 @@ export function SearchDropdown({
               onClick={startCustom}
               className="border-t border-line px-4 py-2.5 text-left text-[13.5px] font-semibold text-blue hover:text-[#7FB0FF]"
             >
-              + Annat – skriv själv
+              {t("common.dropdown.customOption")}
             </button>
           ) : null}
         </div>
@@ -270,7 +273,7 @@ export function SearchDropdown({
             setCustom(true);
             onChange(e.target.value);
           }}
-          placeholder={customPlaceholder}
+          placeholder={customPlaceholder ?? t("common.dropdown.customPlaceholder")}
           className="mt-2 w-full rounded-[9px] border border-line bg-bg-soft px-3 py-2.5 text-[14px] font-bold text-text outline-none placeholder:font-normal placeholder:text-faint focus:border-blue"
         />
       ) : null}

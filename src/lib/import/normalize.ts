@@ -11,6 +11,7 @@ import {
 } from "@/lib/import/types";
 import { MAX_UNITS_PER_BET } from "@/lib/display";
 import { stockholmIso } from "@/lib/stockholm";
+import { createT, type TFunction } from "@/lib/texts";
 
 /**
  * Rådata + mappning → spel. Körs bara på servern: både /preview och /commit
@@ -325,6 +326,8 @@ export type NormalizeArgs = {
   source?: ImportSource;
   /** gemener namn → bookmakers.id, för logga i spelboken */
   bookmakerIndex?: Map<string, string>;
+  /** Texterna för orsak och varning. Utan den används standardtexterna. */
+  t?: TFunction;
 };
 
 export type NormalizeResult = {
@@ -349,6 +352,7 @@ export function normalizeRows({
   unitValue = DEFAULT_UNIT_VALUE,
   source = "file",
   bookmakerIndex,
+  t = createT({}),
 }: NormalizeArgs): NormalizeResult {
   const header = fieldToHeader(mapping);
   const cell = (row: ImportRow, field: keyof typeof header) => {
@@ -407,11 +411,11 @@ export function normalizeRows({
         : null;
 
     let reason: string | null = null;
-    if (!matchLabel) reason = "Saknar match";
-    else if (odds == null) reason = "Saknar odds";
-    else if (odds < ODDS_MIN || odds > ODDS_MAX) reason = "Ogiltigt odds";
-    else if (stake == null) reason = "Saknar insats";
-    else if (stake <= 0) reason = "Ogiltig insats";
+    if (!matchLabel) reason = t("import.row.reason.noMatch");
+    else if (odds == null) reason = t("import.row.reason.noOdds");
+    else if (odds < ODDS_MIN || odds > ODDS_MAX) reason = t("import.row.reason.badOdds");
+    else if (stake == null) reason = t("import.row.reason.noStake");
+    else if (stake <= 0) reason = t("import.row.reason.badStake");
 
     // Taket gäller bara när filen/bilden faktiskt är i units — inte när
     // insatserna redan är kronor (t.ex. 2500). En importerad 15u-satsning
@@ -452,9 +456,9 @@ export function normalizeRows({
       stake_units: unitDetected && rawStake != null ? rawStake : null,
       bookmaker_id: bookmakerId,
       warning: unknown
-        ? "Okänt resultatvärde — tolkas som orättat"
+        ? t("import.row.warning.unknownResult")
         : overCap
-          ? `Över ${MAX_UNITS_PER_BET} units — importeras ändå`
+          ? t("import.row.warning.overCap", { max: MAX_UNITS_PER_BET })
           : null,
     });
   });

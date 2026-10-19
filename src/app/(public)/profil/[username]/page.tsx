@@ -14,6 +14,7 @@ import {
   initialOf,
 } from "@/lib/utils";
 import type { Bet } from "@/lib/types";
+import { getT } from "@/lib/texts/server";
 
 export default async function PublicProfilePage({
   params,
@@ -25,6 +26,7 @@ export default async function PublicProfilePage({
   // Betraktarens läge och unit-storlek — samma val som på publika spelböcker.
   const prefs = await getDisplayPrefs();
   const viewer = await getProfile();
+  const t = await getT();
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -83,13 +85,13 @@ export default async function PublicProfilePage({
             </h1>
             <StreakBadge streak={streak} />
           </div>
-          <p className="text-muted">Publik profil</p>
+          <p className="text-muted">{t("profil.header.subtitle")}</p>
           {isOwn ? (
             <Link
               href="/installningar"
               className="mt-2 inline-block text-[13.5px] font-semibold text-cyan no-underline hover:underline"
             >
-              Redigera profilbild och bio
+              {t("profil.header.editLink")}
             </Link>
           ) : null}
         </div>
@@ -98,7 +100,7 @@ export default async function PublicProfilePage({
       {bio ? (
         <div className="mb-8">
           <div className="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.13em] text-dim">
-            Om mig
+            {t("profil.bio.label")}
           </div>
           <p className="max-w-[52ch] text-[15px] leading-relaxed text-text-soft whitespace-pre-wrap">
             {bio}
@@ -108,10 +110,13 @@ export default async function PublicProfilePage({
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "Spel", value: String(stats.bets) },
-          { label: "Netto", value: formatAmount(stats.netto, prefs) },
-          { label: "ROI", value: formatRoi(stats.roi) },
-          { label: "Vinstprocent", value: `${stats.hitrate.toFixed(0)}%` },
+          { label: t("profil.kpi.bets"), value: String(stats.bets) },
+          { label: t("profil.kpi.netto"), value: formatAmount(stats.netto, prefs) },
+          { label: t("profil.kpi.roi"), value: formatRoi(stats.roi) },
+          {
+            label: t("profil.kpi.hitrate"),
+            value: `${stats.hitrate.toFixed(0)}%`,
+          },
         ].map((k) => (
           <div
             key={k.label}
@@ -130,7 +135,7 @@ export default async function PublicProfilePage({
       <BestSport bets={bets} prefs={prefs} />
 
       {!sheets?.length ? (
-        <p className="text-muted">Inga publika spelböcker.</p>
+        <p className="text-muted">{t("profil.sheets.empty")}</p>
       ) : (
         <div className="space-y-2">
           {sheets.map((s) => (

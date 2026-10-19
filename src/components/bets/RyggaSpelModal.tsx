@@ -14,6 +14,7 @@ import { formatPick } from "@/lib/picks";
 import { ryggaBet } from "@/lib/rygga-bet";
 import type { Bet, Sheet } from "@/lib/types";
 import { formatOdds } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
 
 const LAST_SHEET_KEY = "spelbok:last-sheet-id";
 
@@ -65,6 +66,7 @@ export function RyggaSpelModal({
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const t = useT();
   // Insatsen skrivs i betraktarens eget läge — det är hens spelbok spelet
   // hamnar i, inte originalbokens.
   const defaultStake =
@@ -89,12 +91,12 @@ export function RyggaSpelModal({
     if (busy) return;
     const targetId = effectiveSheetId;
     if (!targetId) {
-      setError("Välj en spelbok.");
+      setError(t("betform.rygga.error.noSheet"));
       return;
     }
     const typed = Number(stake.replace(",", "."));
     const stakeValue = prefs.mode === "units" ? fromUnits(typed, prefs) : typed;
-    const stakeProblem = stakeError(stakeValue, prefs);
+    const stakeProblem = stakeError(stakeValue, prefs, t);
     if (stakeProblem) {
       setError(stakeProblem);
       return;
@@ -119,8 +121,8 @@ export function RyggaSpelModal({
 
     writeLastSheetId(result.sheetId);
     track({ event: "rygga_spel", source_slug: sourceSlugFromPath(pathname) });
-    toast(`Spelet tillagt i ${result.sheetName}`, {
-      label: "Visa spelbok",
+    toast(t("betform.rygga.toast.added", { sheet: result.sheetName }), {
+      label: t("betform.rygga.toast.action"),
       href: `/spelbok?sheet=${result.sheetId}`,
     });
     onClose();
@@ -132,12 +134,12 @@ export function RyggaSpelModal({
       <button
         type="button"
         className="absolute inset-0"
-        aria-label="Stäng"
+        aria-label={t("betform.rygga.close")}
         onClick={onClose}
       />
       <div className="relative w-full max-w-[440px] rounded-t-[16px] border border-line bg-panel p-5 shadow-[var(--shadow-modal)] sm:rounded-[14px]">
         <h2 className="font-display text-[22px] font-semibold uppercase tracking-[0.04em]">
-          Rygga spel
+          {t("betform.rygga.title")}
         </h2>
 
         <div className="mt-4 rounded-[10px] border border-line bg-bg-soft px-3.5 py-3 text-[13.5px]">
@@ -146,7 +148,7 @@ export function RyggaSpelModal({
             {[bet.league, formatPick(bet.pick)].filter(Boolean).join(" · ")}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono-num text-[13px] text-[#C3CBDB]">
-            <span>Odds {formatOdds(Number(bet.odds))}</span>
+            <span>{t("betform.rygga.sourceOdds", { odds: formatOdds(Number(bet.odds)) })}</span>
             <span className="inline-flex items-center gap-1.5">
               <BookmakerLogo
                 logoPath={bet.bookmakers?.logo_url}
@@ -163,13 +165,13 @@ export function RyggaSpelModal({
           <div>
             <Select
               key={sheetOptionsKey}
-              label="Välj spelbok"
+              label={t("betform.rygga.sheetLabel")}
               value={effectiveSheetId}
               onChange={(e) => setSheetId(e.target.value)}
               disabled={!sheets.length}
             >
               {!sheets.length ? (
-                <option value="">Ingen spelbok ännu</option>
+                <option value="">{t("betform.rygga.noSheets")}</option>
               ) : (
                 sheets.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -186,12 +188,12 @@ export function RyggaSpelModal({
                 else router.push("/spelbok");
               }}
             >
-              Skapa ny spelbok
+              {t("betform.rygga.createSheet")}
             </button>
           </div>
 
           <Input
-            label={`Insats (${amountUnitLabel(prefs)})`}
+            label={t("betform.rygga.stakeLabel", { unit: amountUnitLabel(prefs, t) })}
             inputMode="decimal"
             value={stake}
             onChange={(e) => setStake(e.target.value)}
@@ -199,7 +201,7 @@ export function RyggaSpelModal({
           />
 
           <Input
-            label="Odds"
+            label={t("betform.rygga.oddsLabel")}
             inputMode="decimal"
             value={odds}
             onChange={(e) => setOdds(e.target.value)}
@@ -217,10 +219,10 @@ export function RyggaSpelModal({
             disabled={busy || !effectiveSheetId || !sheets.length}
             className="flex-1"
           >
-            {busy ? "Lägger till…" : "Lägg till i spelbok"}
+            {busy ? t("betform.rygga.submitting") : t("betform.rygga.submit")}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={busy}>
-            Avbryt
+            {t("betform.rygga.cancel")}
           </Button>
         </div>
       </div>
@@ -261,12 +263,13 @@ export function useRyggaFlow({
 }
 
 export function RyggaLoginHintLink({ returnPath }: { returnPath: string }) {
+  const t = useT();
   return (
     <Link
       href={`/login?next=${encodeURIComponent(returnPath)}`}
       className="text-win no-underline hover:underline"
     >
-      Logga in
+      {t("betform.rygga.login")}
     </Link>
   );
 }

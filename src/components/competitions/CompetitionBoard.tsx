@@ -5,13 +5,14 @@ import {
   type BoardEntry,
   type CompetitionRules,
 } from "@/lib/competitions";
+import { getT } from "@/lib/texts/server";
 import { cn, formatMoney, formatRoi, initialOf, nettoColor } from "@/lib/utils";
 
 /**
  * Shared leaderboard rows for /tavlingar and /topplista. Entrants below
  * min_bets / min_total_stake are dimmed and marked "Ej kvalificerad".
  */
-export function CompetitionBoard({
+export async function CompetitionBoard({
   entries,
   rules,
   selfId,
@@ -24,6 +25,7 @@ export function CompetitionBoard({
   dense?: boolean;
   className?: string;
 }) {
+  const t = await getT();
   if (!entries.length) {
     return (
       <div
@@ -32,7 +34,7 @@ export function CompetitionBoard({
           className
         )}
       >
-        Inga deltagare ännu.
+        {t("tavlingar.board.empty")}
       </div>
     );
   }
@@ -41,7 +43,7 @@ export function CompetitionBoard({
     <div className={className}>
       {entries.map((entry) => {
         const isSelf = !!selfId && entry.user_id === selfId;
-        const missing = entry.qualified ? "" : missingSummary(entry, rules);
+        const missing = entry.qualified ? "" : missingSummary(entry, rules, t);
 
         return (
           <div
@@ -75,18 +77,19 @@ export function CompetitionBoard({
                 >
                   {entry.username}
                 </Link>
-                {isSelf ? " · Du" : ""}
+                {isSelf ? ` · ${t("tavlingar.board.you")}` : ""}
               </div>
               {entry.qualified ? null : (
                 <div className="truncate font-mono-num text-[11.5px] text-dim">
-                  Ej kvalificerad{missing ? ` · ${missing}` : ""}
+                  {t("tavlingar.board.notQualified")}
+                  {missing ? ` · ${missing}` : ""}
                 </div>
               )}
             </div>
             {dense ? null : (
               <>
                 <span className="hidden font-mono-num text-[12.5px] text-muted sm:block">
-                  {entry.bets_count} spel
+                  {t("tavlingar.board.bets", { count: entry.bets_count })}
                 </span>
                 <span
                   className={cn(

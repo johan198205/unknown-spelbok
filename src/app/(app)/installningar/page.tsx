@@ -11,6 +11,7 @@ import { SignOutButton } from "@/components/layout/SignOutButton";
 import { formatAmount } from "@/lib/display";
 import { getDisplayPrefs } from "@/lib/display-prefs";
 import { getNotificationSettings } from "@/lib/notifications-server";
+import { getT } from "@/lib/texts/server";
 import { computeStats, formatRoi, initialOf, nettoColor } from "@/lib/utils";
 import type { Bet, Sheet } from "@/lib/types";
 
@@ -21,6 +22,7 @@ export default async function InstallningarPage() {
 
   const prefs = await getDisplayPrefs();
   const notificationSettings = await getNotificationSettings();
+  const t = await getT();
   const supabase = await createClient();
   const [{ data: sheets }, { data: betsData }] = await Promise.all([
     supabase
@@ -67,25 +69,25 @@ export default async function InstallningarPage() {
             href={`/profil/${encodeURIComponent(profile.username)}`}
             className="mt-2 text-[13px] font-semibold text-cyan no-underline hover:underline"
           >
-            Visa publik profil
+            {t("installningar.hero.publicProfile")}
           </Link>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-2.5">
           {[
             {
-              label: "Netto",
+              label: t("installningar.hero.kpi.netto"),
               value: formatAmount(stats.netto, prefs),
               color: nettoColor(stats.netto),
             },
             {
-              label: "ROI",
+              label: t("installningar.hero.kpi.roi"),
               value: formatRoi(stats.roi),
               color: nettoColor(stats.roi),
             },
-            { label: "Spel", value: String(stats.bets), color: "text-text" },
+            { label: t("installningar.hero.kpi.bets"), value: String(stats.bets), color: "text-text" },
             {
-              label: "Böcker",
+              label: t("installningar.hero.kpi.sheets"),
               value: String(sheetList.length),
               color: "text-text",
             },
@@ -106,7 +108,7 @@ export default async function InstallningarPage() {
 
         <div className="mt-5">
           <h2 className="mb-2 font-display text-[17px] font-semibold uppercase tracking-[0.04em]">
-            Spelbokslista
+            {t("installningar.hero.sheetsTitle")}
           </h2>
           <div className="space-y-2">
             {sheetList.map((s) => {
@@ -121,10 +123,13 @@ export default async function InstallningarPage() {
                     <div className="flex items-center gap-2">
                       <span className="truncate font-semibold">{s.name}</span>
                       <Badge tone={s.is_public ? "win" : "muted"}>
-                        {s.is_public ? "PUBLIK" : "PRIVAT"}
+                        {s.is_public
+                          ? t("installningar.hero.sheetPublic")
+                          : t("installningar.hero.sheetPrivate")}
                       </Badge>
                     </div>
-                    <div className="text-[12px] text-muted">{st.bets} spel</div>
+                    <div className="text-[12px] text-muted">{t("installningar.hero.sheetBets", { count: st.bets })}
+                    </div>
                   </div>
                   <span className={`font-mono-num font-semibold ${nettoColor(st.netto)}`}>
                     {formatAmount(st.netto, prefs)}
@@ -140,14 +145,18 @@ export default async function InstallningarPage() {
             href="/installningar#username"
             className="flex items-center justify-between border-b border-line-soft px-4 py-3.5 text-text no-underline"
           >
-            <span className="font-semibold">Byt användarnamn</span>
+            <span className="font-semibold">
+              {t("installningar.hero.changeUsername")}
+            </span>
             <span className="text-muted">›</span>
           </Link>
           <Link
             href="/spelbok"
             className="flex items-center justify-between border-b border-line-soft px-4 py-3.5 text-text no-underline"
           >
-            <span className="font-semibold">Hantera spelböcker</span>
+            <span className="font-semibold">
+              {t("installningar.hero.manageSheets")}
+            </span>
             <span className="text-muted">›</span>
           </Link>
           <div className="px-4 py-3">
@@ -161,15 +170,15 @@ export default async function InstallningarPage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-[32px] font-semibold">
-              Inställningar
+              {t("installningar.header.title")}
             </h1>
-            <p className="text-muted">Uppdatera din profil</p>
+            <p className="text-muted">{t("installningar.header.subtitle")}</p>
           </div>
           <Link
             href={`/profil/${encodeURIComponent(profile.username)}`}
             className="text-[13.5px] font-semibold text-cyan no-underline hover:underline"
           >
-            Visa publik profil
+            {t("installningar.header.publicProfile")}
           </Link>
         </div>
       </div>
@@ -177,7 +186,7 @@ export default async function InstallningarPage() {
       <div id="username">
         <Panel className="p-[18px]">
           <div className="mb-3 font-display text-lg font-semibold lg:hidden">
-            Byt användarnamn
+            {t("installningar.profile.title")}
           </div>
           <SettingsForm profile={profile} />
         </Panel>
@@ -185,11 +194,10 @@ export default async function InstallningarPage() {
 
       <Panel className="p-[18px]">
         <h2 className="mb-1.5 font-display text-lg font-semibold">
-          Enheter och valuta
+          {t("installningar.display.title")}
         </h2>
         <p className="mb-4 text-[14px] text-muted">
-          Gäller alla dina spelböcker. Växla mellan units och valuta direkt i
-          headern.
+          {t("installningar.display.body")}
         </p>
         <DisplayPrefsForm prefs={prefs} />
       </Panel>
@@ -206,10 +214,10 @@ export default async function InstallningarPage() {
           heter Notiser på samma sida går inte att skilja åt.
         */}
         <h2 className="mb-1.5 font-display text-lg font-semibold">
-          Push till enheten
+          {t("installningar.push.title")}
         </h2>
         <p className="mb-4 text-[14px] text-muted">
-          Meddelanden på låsskärmen, även när Spelbok är stängt.
+          {t("installningar.push.body")}
         </p>
         <PushToggle />
         <div className="mt-4 border-t border-line-soft pt-4">

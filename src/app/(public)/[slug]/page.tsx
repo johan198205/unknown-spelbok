@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 import type { Metadata } from "next";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -16,7 +17,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq("published", true)
     .maybeSingle();
 
-  if (!data) return { title: "Sidan hittades inte" };
+  if (!data) {
+    const t = await getT();
+    return { title: t("cms.notFound.metaTitle") };
+  }
   return {
     title: data.seo_title || data.title,
     description: data.seo_description || undefined,

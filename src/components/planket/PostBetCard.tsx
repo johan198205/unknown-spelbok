@@ -1,5 +1,6 @@
 "use client";
 
+import { useT } from "@/components/TextsProvider";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import { parseMatchSides } from "@/lib/logos";
 import { formatPick } from "@/lib/picks";
@@ -43,12 +44,13 @@ function sidesOf(post: PlanketPost): Sides {
 }
 
 export function PostBetCard({ post }: { post: PlanketPost }) {
+  const t = useT();
   const sides = sidesOf(post);
   const market = formatPick(post.bet_pick);
   const odds = planketOdds(post.bet_odds);
-  const stake = planketKr(Number(post.bet_stake ?? 0));
-  const kickoff = planketKickoff(post.kickoff);
-  const outcome = settledOutcome(post);
+  const stake = planketKr(Number(post.bet_stake ?? 0), { t });
+  const kickoff = planketKickoff(post.kickoff, t);
+  const outcome = settledOutcome(post, t);
   const bookLogo = getBookmakerLogoUrl(post.bet_bookmaker_logo);
   const border = betBorderColor(post.bet_result);
   const bookHref = postBookmakerHref(post);
@@ -98,7 +100,7 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
               ) : null}
             </div>
             <div className="shrink-0 text-right">
-              <FieldLabel>Odds</FieldLabel>
+              <FieldLabel>{t("planket.bet.odds")}</FieldLabel>
               <div className="font-mono-num text-[30px] font-semibold leading-none tabular-nums">
                 {odds}
               </div>
@@ -112,11 +114,11 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
           */}
           <div className="mt-[14px] flex flex-wrap items-center gap-[14px] border-t border-line pt-[13px]">
             <div className="min-w-0">
-              <FieldLabel>Marknad</FieldLabel>
+              <FieldLabel>{t("planket.bet.market")}</FieldLabel>
               <div className="text-[14.5px] font-bold">{market}</div>
             </div>
             <div className="min-w-0">
-              <FieldLabel>Insats</FieldLabel>
+              <FieldLabel>{t("planket.bet.stake")}</FieldLabel>
               <div className="font-mono-num text-[14.5px] font-semibold tabular-nums">
                 {stake}
               </div>
@@ -134,7 +136,7 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
           {outcome ? (
             <div className="mt-[13px] flex items-baseline gap-[9px] border-t border-line pt-3">
               <span className="font-mono-num text-[11.5px] tracking-[0.08em] text-[#5D6883]">
-                RÄTTAT
+                {t("planket.bet.settled")}
               </span>
               <span
                 className="font-mono-num text-[17px] font-semibold tabular-nums"

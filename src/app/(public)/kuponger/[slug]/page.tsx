@@ -6,7 +6,7 @@ import { CouponCard } from "@/components/coupons/CouponCard";
 import { CouponSidebar } from "@/components/coupons/CouponSidebar";
 import { getSessionUser } from "@/lib/auth";
 import type { AffiliateTopRow } from "@/lib/bet-stats";
-import { COUPON_TYPE_LABEL, couponRecord, formatCouponOdds } from "@/lib/coupons";
+import { couponRecord, couponTypeLabel, formatCouponOdds } from "@/lib/coupons";
 import {
   copiedCouponIds,
   getCouponBySlug,
@@ -14,18 +14,22 @@ import {
   listCoupons,
 } from "@/lib/coupons-server";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 import type { Bookmaker } from "@/lib/types";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const coupon = await getCouponBySlug(slug);
-  if (!coupon) return { title: "Kupongen finns inte" };
+  const [coupon, t] = await Promise.all([getCouponBySlug(slug), getT()]);
+  if (!coupon) return { title: t("kuponger.detail.metaNotFound") };
 
   const description =
     coupon.body.slice(0, 180) ||
-    `${COUPON_TYPE_LABEL[coupon.type]} · totalodds ${formatCouponOdds(coupon.total_odds)}`;
+    t("kuponger.detail.metaDescription", {
+      type: couponTypeLabel(coupon.type, t),
+      odds: formatCouponOdds(coupon.total_odds),
+    });
 
   // Samma bild som "Ladda ner PNG" i delningskortet — en enda renderare,
   // så förhandsvisningen på Facebook och filen användaren laddar ner kan
@@ -57,7 +61,7 @@ export default async function KupongPage({ params }: Props) {
   const { slug } = await params;
   const supabase = await createClient();
 
-  const [coupon, user, editorMode, copied, all, { data: bookmakers }] =
+  const [coupon, user, editorMode, copied, all, { data: bookmakers }, t] =
     await Promise.all([
       getCouponBySlug(slug),
       getSessionUser(),
@@ -70,6 +74,7 @@ export default async function KupongPage({ params }: Props) {
         .eq("active", true)
         .order("rank")
         .order("name"),
+      getT(),
     ]);
 
   if (!coupon) notFound();
@@ -95,7 +100,7 @@ export default async function KupongPage({ params }: Props) {
         href="/kuponger"
         className="mb-4 inline-block text-[13.5px] font-semibold text-cyan no-underline hover:underline"
       >
-        ← Alla kuponger
+        {t("kuponger.detail.back")}
       </Link>
 
       {/* En kupong visas alltid i listläget: full bredd, sidopanel intill. */}

@@ -6,6 +6,7 @@ import { MatchSearch } from "@/components/bets/MatchSearch";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { MatchStack } from "@/components/bets/TeamPair";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import { track } from "@/lib/analytics";
 import {
   placedAtForPastBet,
@@ -41,6 +42,7 @@ export function AttachNewBet({
   bookmakers: Bookmaker[];
   onPick: (bet: AttachableBet) => void;
 }) {
+  const t = useT();
   const amount = useAmount();
   const prefs = useDisplayPrefs();
   const [step, setStep] = useState<1 | 2>(1);
@@ -77,8 +79,7 @@ export function AttachNewBet({
   if (!sheets.length) {
     return (
       <div className="px-3 py-6 text-center text-[13.5px] text-[#5D6883]">
-        Skapa en spelbok först under Spelbok — spelet sparas där när du
-        bifogar det.
+        {t("planket.newBet.noSheets")}
       </div>
     );
   }
@@ -99,17 +100,17 @@ export function AttachNewBet({
 
   async function save() {
     if (!match.trim() || !pick.trim()) {
-      setError("Välj match och speltyp.");
+      setError(t("planket.newBet.errorPick"));
       return;
     }
-    const stakeProblem = stakeError(stakeValue, prefs);
+    const stakeProblem = stakeError(stakeValue, prefs, t);
     if (stakeProblem) {
       setError(stakeProblem);
       return;
     }
     const oddsValue = Number(String(odds).replace(",", "."));
     if (!Number.isFinite(oddsValue) || oddsValue < 1.01) {
-      setError("Ange giltiga odds.");
+      setError(t("planket.newBet.errorOdds"));
       return;
     }
 
@@ -122,7 +123,7 @@ export function AttachNewBet({
     } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
-      setError("Du måste vara inloggad.");
+      setError(t("planket.errors.auth"));
       return;
     }
 
@@ -164,7 +165,7 @@ export function AttachNewBet({
     setLoading(false);
 
     if (insertError || !data) {
-      setError(insertError?.message || "Kunde inte spara spelet.");
+      setError(insertError?.message || t("planket.newBet.errorSave"));
       return;
     }
 
@@ -189,7 +190,7 @@ export function AttachNewBet({
       sport,
       kickoff,
       sheet_id: sheetId,
-      sheet_name: sheet?.name ?? "Spelbok",
+      sheet_name: sheet?.name ?? t("planket.newBet.sheetFallback"),
       sheet_private: sheet ? !sheet.is_public : false,
       posted: false,
       verified: !!kickoff && now < new Date(kickoff).getTime(),
@@ -221,7 +222,7 @@ export function AttachNewBet({
                 <span className="min-w-0 truncate">{league}</span>
               </>
             ) : (
-              "Match"
+              t("planket.newBet.match")
             )}
           </span>
           <button
@@ -232,7 +233,7 @@ export function AttachNewBet({
             }}
             className="shrink-0 cursor-pointer text-[12.5px] font-semibold text-blue hover:text-[#7FB0FF]"
           >
-            Ändra match
+            {t("planket.newBet.changeMatch")}
           </button>
         </div>
         {chosenFixture ? (
@@ -260,7 +261,7 @@ export function AttachNewBet({
 
       <div>
         <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5D6883]">
-          Speltyp
+          {t("planket.newBet.pickLabel")}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {pickOptions.slice(0, 12).map((p) => (
@@ -282,7 +283,7 @@ export function AttachNewBet({
         <input
           value={pick}
           onChange={(e) => setPick(e.target.value)}
-          placeholder="Eget spel…"
+          placeholder={t("planket.newBet.customPick")}
           className="mt-2 w-full rounded-[9px] border border-line-strong bg-[#1e1e21] px-3 py-2.5 text-[14px] text-text outline-none focus:border-[#46464d]"
         />
       </div>
@@ -290,7 +291,7 @@ export function AttachNewBet({
       <div className="grid grid-cols-2 gap-2.5">
         <div>
           <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5D6883]">
-            Odds
+            {t("planket.newBet.odds")}
           </label>
           <input
             inputMode="decimal"
@@ -301,7 +302,7 @@ export function AttachNewBet({
         </div>
         <div>
           <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5D6883]">
-            Insats ({amountUnitLabel(prefs)})
+            {t("planket.newBet.stake", { unit: amountUnitLabel(prefs, t) })}
           </label>
           <input
             inputMode="decimal"
@@ -328,7 +329,7 @@ export function AttachNewBet({
       {bookmakers.length > 0 ? (
         <div>
           <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5D6883]">
-            Bolag
+            {t("planket.newBet.bookmaker")}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {bookmakers.map((b) => {
@@ -378,7 +379,9 @@ export function AttachNewBet({
       ) : null}
 
       <div className="rounded-[9px] border border-line-soft bg-[#161618] px-3 py-2.5">
-        <div className="text-[11.5px] text-[#5D6883]">Möjlig vinst</div>
+        <div className="text-[11.5px] text-[#5D6883]">
+          {t("planket.newBet.possibleWin")}
+        </div>
         <div className="font-mono-num text-[17px] font-semibold text-win">
           {amount(potential)}{" "}
           <span className="text-[12px] text-[#5D6883]">
@@ -388,10 +391,11 @@ export function AttachNewBet({
       </div>
 
       <p className="text-[11.5px] leading-[1.45] text-[#5D6883]">
-        Spelet sparas i {sheet?.name ?? "spelboken"} och syns på Planket när
-        du postar.
+        {t("planket.newBet.savedIn", {
+          sheet: sheet?.name ?? t("planket.newBet.savedInFallback"),
+        })}
         {sheet && !sheet.is_public
-          ? " Resten av boken förblir privat."
+          ? ` ${t("planket.newBet.restPrivate")}`
           : null}
       </p>
 
@@ -412,7 +416,7 @@ export function AttachNewBet({
             : "cursor-pointer border border-win bg-win text-win-ink hover:brightness-105"
         )}
       >
-        {loading ? "Sparar…" : "Bifoga spel"}
+        {loading ? t("planket.newBet.saving") : t("planket.newBet.submit")}
       </button>
     </div>
   );

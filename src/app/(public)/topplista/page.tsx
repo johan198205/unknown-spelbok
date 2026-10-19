@@ -5,6 +5,7 @@ import { AdSlot } from "@/components/ui/AdSlot";
 import { EmptyState, Panel } from "@/components/ui/Panel";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth";
+import { getT } from "@/lib/texts/server";
 import {
   computeStats,
   formatMoney,
@@ -33,7 +34,7 @@ import {
 } from "@/lib/toplists";
 
 export default async function TopplistaPage() {
-  const profile = await getProfile();
+  const [profile, t] = await Promise.all([getProfile(), getT()]);
   const supabase = await createClient();
   const nowIso = new Date().toISOString();
 
@@ -51,7 +52,7 @@ export default async function TopplistaPage() {
     slug: (sheet.slug as string | null) ?? null,
     owner:
       (sheet.profiles as unknown as { username: string } | null)?.username ||
-      "Okänd",
+      t("topplista.unknownOwner"),
     ownerAvatar:
       (sheet.profiles as unknown as { avatar_url: string | null } | null)
         ?.avatar_url ?? null,
@@ -76,43 +77,43 @@ export default async function TopplistaPage() {
   const weekStart = +new Date(nowIso) - WEEK_MS;
   const topLists = [
     {
-      title: "Topp 10 spelböcker",
-      subtitle: `ROI · minst ${MIN_BETS_TOTAL} avgjorda spel`,
+      title: t("topplista.lists.roi.title"),
+      subtitle: t("topplista.lists.roi.subtitle", { min: MIN_BETS_TOTAL }),
       entries: sheetRoiList(toplistSheets),
-      empty: "Inga spelböcker kvalar in ännu.",
+      empty: t("topplista.lists.roi.empty"),
     },
     {
-      title: "Topp 10 senaste veckan",
-      subtitle: `ROI 7 dagar · minst ${MIN_BETS_WEEK} avgjorda spel`,
+      title: t("topplista.lists.week.title"),
+      subtitle: t("topplista.lists.week.subtitle", { min: MIN_BETS_WEEK }),
       entries: sheetRoiList(toplistSheets, {
         since: weekStart,
         minBets: MIN_BETS_WEEK,
       }),
-      empty: "Inga avgjorda spel den senaste veckan.",
+      empty: t("topplista.lists.week.empty"),
     },
     {
-      title: "Topp 10 största netto",
-      subtitle: "Netto i kronor · alla tider",
-      entries: sheetNettoList(toplistSheets),
-      empty: "Inga spelböcker kvalar in ännu.",
+      title: t("topplista.lists.netto.title"),
+      subtitle: t("topplista.lists.netto.subtitle"),
+      entries: sheetNettoList(toplistSheets, {}, t),
+      empty: t("topplista.lists.netto.empty"),
     },
     {
-      title: "Topp 10 flest spel",
-      subtitle: "Loggade spel i publika spelböcker",
+      title: t("topplista.lists.count.title"),
+      subtitle: t("topplista.lists.count.subtitle"),
       entries: betCountList(toplistSheets),
-      empty: "Inga loggade spel ännu.",
+      empty: t("topplista.lists.count.empty"),
     },
     {
-      title: "Topp 10 bäst form",
-      subtitle: `Raka vinster just nu · minst ${MIN_WIN_STREAK} i rad`,
-      entries: formList(toplistSheets),
-      empty: `Ingen har ${MIN_WIN_STREAK} raka vinster just nu.`,
+      title: t("topplista.lists.form.title"),
+      subtitle: t("topplista.lists.form.subtitle", { min: MIN_WIN_STREAK }),
+      entries: formList(toplistSheets, t),
+      empty: t("topplista.lists.form.empty", { min: MIN_WIN_STREAK }),
     },
     {
-      title: "Topp 10 högsta vunna odds",
-      subtitle: "Högsta odds på ett vunnet spel · singel eller kombination",
+      title: t("topplista.lists.odds.title"),
+      subtitle: t("topplista.lists.odds.subtitle"),
       entries: highestWonOddsList(toplistSheets),
-      empty: "Inga vunna spel ännu.",
+      empty: t("topplista.lists.odds.empty"),
     },
   ];
 
@@ -147,11 +148,11 @@ export default async function TopplistaPage() {
 
       <Panel className="hidden overflow-hidden lg:block">
         <div className="grid grid-cols-[40px_1fr_80px_100px_100px] gap-3 border-b border-line bg-bg-soft px-5 py-3 text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted">
-          <span>#</span>
-          <span>Spreadsheet</span>
-          <span className="text-right">Spel</span>
-          <span className="text-right">ROI</span>
-          <span className="text-right">Netto</span>
+          <span>{t("topplista.table.rank")}</span>
+          <span>{t("topplista.table.sheet")}</span>
+          <span className="text-right">{t("topplista.table.bets")}</span>
+          <span className="text-right">{t("topplista.table.roi")}</span>
+          <span className="text-right">{t("topplista.table.netto")}</span>
         </div>
         {topBoard.length ? (
           topBoard.map((row, i) => (
@@ -174,8 +175,8 @@ export default async function TopplistaPage() {
                 <div className="min-w-0">
                   <div className="truncate font-semibold">{row.name}</div>
                   <div className="text-[12.5px] text-muted">
-                    <OwnerLink owner={row.owner} /> · vinstprocent{" "}
-                    {row.hitrate.toFixed(0)}%
+                    <OwnerLink owner={row.owner} /> ·{" "}
+                    {t("topplista.table.hitrate", { hitrate: row.hitrate.toFixed(0) })}
                   </div>
                 </div>
               </div>
@@ -198,8 +199,7 @@ export default async function TopplistaPage() {
           ))
         ) : (
           <EmptyState>
-            Inga publika spreadsheets ännu. Markera din bok som publik under
-            Spelbok.
+            {t("topplista.table.empty")}
           </EmptyState>
         )}
       </Panel>
@@ -231,7 +231,7 @@ export default async function TopplistaPage() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold">
                     <OwnerLink owner={row.owner} className="text-text" />
-                    {isSelf ? " · Du" : ""}
+                    {isSelf ? ` · ${t("topplista.mobile.you")}` : ""}
                   </div>
                   <div className="truncate text-[12px] text-muted">
                     {row.name}
@@ -246,16 +246,16 @@ export default async function TopplistaPage() {
             );
           })
         ) : (
-          <EmptyState>Inga publika spreadsheets ännu.</EmptyState>
+          <EmptyState>{t("topplista.mobile.empty")}</EmptyState>
         )}
       </div>
 
       <section className="mt-6 pb-16 lg:mt-8">
         <h2 className="mb-1 font-display text-[20px] font-semibold lg:text-[24px]">
-          Topplistor
+          {t("topplista.lists.title")}
         </h2>
         <p className="mb-4 text-[13.5px] text-muted">
-          Baserat på publika spelböcker
+          {t("topplista.lists.subtitle")}
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {topLists.map((list) => (
@@ -288,7 +288,7 @@ export default async function TopplistaPage() {
  * namn och avatar ovanpå kan länka till profilen (länkar får inte nästlas).
  * Rader utan slug (äldre spelböcker) renderas som vanliga block.
  */
-function RowLink({
+async function RowLink({
   href,
   className,
   children,
@@ -298,9 +298,10 @@ function RowLink({
   children: React.ReactNode;
 }) {
   if (!href) return <div className={className}>{children}</div>;
+  const t = await getT();
   return (
     <div className={`relative ${className} transition-colors hover:bg-panel-2`}>
-      <Link href={href} aria-label="Till spelboken" className="absolute inset-0" />
+      <Link href={href} aria-label={t("topplista.table.rowAria")} className="absolute inset-0" />
       {children}
     </div>
   );

@@ -16,6 +16,10 @@ import type {
   CouponStatus,
   Fixture,
 } from "./types";
+import { createT, type TFunction, type TextKey } from "./texts";
+
+/** Standardtexterna, för anrop som inte skickar med t. */
+const DEFAULT_T = createT({});
 
 export const COUPON_PATH = "/kuponger";
 
@@ -76,11 +80,23 @@ export type Coupon = CouponRow & {
 // Status
 // -------------------------------------------------------------
 
+const COUPON_STATUS_KEY: Record<CouponStatus, TextKey> = {
+  open: "kuponger.status.open",
+  won: "kuponger.status.won",
+  lost: "kuponger.status.lost",
+  void: "kuponger.status.void",
+};
+
+export function couponStatusLabel(status: CouponStatus, t: TFunction = DEFAULT_T) {
+  return t(COUPON_STATUS_KEY[status]);
+}
+
+/** Standardtexterna. Vyer med t använder couponStatusLabel. */
 export const COUPON_STATUS_LABEL: Record<CouponStatus, string> = {
-  open: "ÖPPEN",
-  won: "VUNNEN",
-  lost: "FÖRLORAD",
-  void: "VOID",
+  open: couponStatusLabel("open"),
+  won: couponStatusLabel("won"),
+  lost: couponStatusLabel("lost"),
+  void: couponStatusLabel("void"),
 };
 
 /**
@@ -113,11 +129,11 @@ export const COUPON_STATUS_TONE: Record<
   },
 };
 
-export const LEG_RESULT_MARK: Record<CouponLegResult, string> = {
-  WIN: "W",
-  LOSS: "L",
-  PUSH: "P",
-  VOID: "V",
+export const LEG_RESULT_MARK: Record<CouponLegResult, TextKey> = {
+  WIN: "kuponger.legMark.win",
+  LOSS: "kuponger.legMark.loss",
+  PUSH: "kuponger.legMark.push",
+  VOID: "kuponger.legMark.void",
 };
 
 export const LEG_RESULT_COLOR: Record<CouponLegResult, string> = {
@@ -131,9 +147,20 @@ export function isSettled(coupon: Pick<CouponRow, "status">) {
   return coupon.status !== "open";
 }
 
+const COUPON_TYPE_KEY: Record<string, TextKey> = {
+  single: "kuponger.type.single",
+  combo: "kuponger.type.combo",
+};
+
+export function couponTypeLabel(type: string, t: TFunction = DEFAULT_T) {
+  const key = COUPON_TYPE_KEY[type];
+  return key ? t(key) : undefined;
+}
+
+/** Standardtexterna. Vyer med t använder couponTypeLabel. */
 export const COUPON_TYPE_LABEL: Record<string, string> = {
-  single: "Singel",
-  combo: "Kombination",
+  single: DEFAULT_T("kuponger.type.single"),
+  combo: DEFAULT_T("kuponger.type.combo"),
 };
 
 // -------------------------------------------------------------
@@ -199,26 +226,34 @@ export type Countdown = {
  * Nedräkning till första avspark. Tickas var 30:e sekund i klienten —
  * en sekundvisare på ett dygn är bara batteri.
  */
-export function countdownTo(kickoff: string | null, now = Date.now()): Countdown {
+export function countdownTo(
+  kickoff: string | null,
+  now = Date.now(),
+  t: TFunction = DEFAULT_T
+): Countdown {
   if (!kickoff) {
-    return { text: "Avspark saknas", tone: "muted", started: false };
+    return { text: t("kuponger.countdown.noKickoff"), tone: "muted", started: false };
   }
 
   const diffMin = Math.floor((new Date(kickoff).getTime() - now) / 60000);
 
   if (diffMin <= 0) {
-    return { text: "Matcherna har startat", tone: "muted", started: true };
+    return { text: t("kuponger.countdown.started"), tone: "muted", started: true };
   }
 
   if (diffMin < 60) {
-    return { text: `Avspark om ${diffMin} min`, tone: "yellow", started: false };
+    return {
+      text: t("kuponger.countdown.minutes", { minutes: diffMin }),
+      tone: "yellow",
+      started: false,
+    };
   }
 
   const hours = Math.floor(diffMin / 60);
   if (hours < 24) {
     const minutes = diffMin % 60;
     return {
-      text: `Avspark om ${hours} tim ${minutes} min`,
+      text: t("kuponger.countdown.hours", { hours, minutes }),
       tone: "cyan",
       started: false,
     };
@@ -226,28 +261,33 @@ export function countdownTo(kickoff: string | null, now = Date.now()): Countdown
 
   const days = Math.floor(hours / 24);
   return {
-    text: `Avspark om ${days} ${days === 1 ? "dag" : "dagar"} ${hours % 24} tim`,
+    text: t(days === 1 ? "kuponger.countdown.days.one" : "kuponger.countdown.days.other", {
+      days,
+      hours: hours % 24,
+    }),
     tone: "cyan",
     started: false,
   };
 }
 
 /** Publiceringstid relativt nu: "Nu", "12 min sedan", "Igår 19:04", "3/8". */
-export function publishedLabel(iso: string, now = Date.now()) {
+export function publishedLabel(iso: string, now = Date.now(), t: TFunction = DEFAULT_T) {
   const then = new Date(iso).getTime();
   const minutes = Math.floor((now - then) / 60000);
 
-  if (minutes < 1) return "Nu";
-  if (minutes < 60) return `${minutes} min sedan`;
+  if (minutes < 1) return t("kuponger.published.now");
+  if (minutes < 60) return t("kuponger.published.minutes", { minutes });
 
   const hours = Math.floor(minutes / 60);
   if (hours < 24 && isSameStockholmDay(then, now)) {
-    return `${hours} ${hours === 1 ? "timme" : "timmar"} sedan`;
+    return t(hours === 1 ? "kuponger.published.hours.one" : "kuponger.published.hours.other", {
+      hours,
+    });
   }
 
   const days = daysBetweenStockholm(then, now);
-  if (days === 1) return `Igår ${stockholmTime(iso)}`;
-  if (days < 7) return `${days} dagar sedan`;
+  if (days === 1) return t("kuponger.published.yesterday", { time: stockholmTime(iso) });
+  if (days < 7) return t("kuponger.published.days", { days });
 
   return stockholmDayMonth(iso);
 }
@@ -299,15 +339,15 @@ export function stockholmDayMonth(iso: string) {
 }
 
 /** "27/8 19:00" — benets rad under lagnamnen. */
-export function legWhen(kickoff: string | null | undefined) {
-  if (!kickoff) return "Tid saknas";
+export function legWhen(kickoff: string | null | undefined, t: TFunction = DEFAULT_T) {
+  if (!kickoff) return t("kuponger.leg.noTime");
   return `${stockholmDayMonth(kickoff)} ${stockholmTime(kickoff)}`;
 }
 
 /** "Rättad 25/8 · +288 kr" — raden under titeln på en avgjord kupong. */
-export function settledLabel(coupon: Coupon, netto: string) {
+export function settledLabel(coupon: Coupon, netto: string, t: TFunction = DEFAULT_T) {
   const when = coupon.settled_at ? stockholmDayMonth(coupon.settled_at) : "—";
-  return `Rättad ${when} · ${netto}`;
+  return t("kuponger.card.settled", { when, netto });
 }
 
 // -------------------------------------------------------------
@@ -323,6 +363,15 @@ export const COUPON_TABS = [
 ] as const;
 
 export type CouponTab = (typeof COUPON_TABS)[number];
+
+/** Flikarnas etiketter. Flikens id ovan är bara ett id. */
+export const COUPON_TAB_LABEL: Record<CouponTab, TextKey> = {
+  Alla: "kuponger.tabs.all",
+  Öppna: "kuponger.tabs.open",
+  Avgjorda: "kuponger.tabs.settled",
+  Singel: "kuponger.tabs.single",
+  Kombination: "kuponger.tabs.combo",
+};
 
 export function matchesTab(coupon: Coupon, tab: CouponTab) {
   switch (tab) {
@@ -340,9 +389,9 @@ export function matchesTab(coupon: Coupon, tab: CouponTab) {
 }
 
 export const COUPON_VIEWS = [
-  { key: "Lista", label: "Lista", help: "En kupong per rad" },
-  { key: "2", label: "2", help: "Två kuponger per rad" },
-] as const;
+  { key: "Lista", label: "kuponger.view.list.label", help: "kuponger.view.list.help" },
+  { key: "2", label: "kuponger.view.two.label", help: "kuponger.view.two.help" },
+] as const satisfies readonly { key: string; label: TextKey; help: TextKey }[];
 
 export type CouponView = (typeof COUPON_VIEWS)[number]["key"];
 

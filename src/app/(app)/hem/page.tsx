@@ -36,6 +36,7 @@ import {
 } from "@/lib/utils";
 import type { Bet, Sheet } from "@/lib/types";
 import { attachManualLogos } from "@/lib/manual-logos";
+import { getT } from "@/lib/texts/server";
 
 /** Under den här gränsen är ROI och vinstprocent brus — säg det i stället för att dölja det. */
 const THIN_SAMPLE = 20;
@@ -72,6 +73,7 @@ export default async function HemPage() {
   const user = await requireUser();
   const profile = await getProfile();
   const supabase = await createClient();
+  const t = await getT();
 
   const [{ data: sheets }, betsQuery] = await Promise.all([
       supabase
@@ -132,32 +134,35 @@ export default async function HemPage() {
 
   const kpis = [
     {
-      label: "Netto",
+      label: t("hem.kpi.netto"),
       value: <FormattedAmount value={stats.netto} />,
       color: nettoColor(stats.netto),
     },
     {
-      label: "ROI",
+      label: t("hem.kpi.roi"),
       value: formatRoiOrDash(stats.roi, stats.bets),
       color: stats.bets >= MIN_ROI_BETS ? nettoColor(stats.roi) : "text-faint",
-      note: stats.bets < THIN_SAMPLE ? "litet underlag" : null,
+      note: stats.bets < THIN_SAMPLE ? t("hem.kpi.roiThinNote") : null,
     },
     {
-      label: "Vinstprocent",
+      label: t("hem.kpi.hitrate"),
       value: formatPercent(stats.hitrate),
       color: "text-text",
-      note: stats.bets < THIN_SAMPLE ? `${stats.bets} rättade` : null,
+      note:
+        stats.bets < THIN_SAMPLE
+          ? t("hem.kpi.hitrateThinNote", { count: stats.bets })
+          : null,
     },
     {
-      label: "Omsättning",
+      label: t("hem.kpi.stake"),
       value: <FormattedAmount value={stats.stake} sign={false} />,
       color: "text-text",
     },
     // Alla spel, inte bara rättade: annars kan "Levande" visa fler spel än
     // "Spel", vilket är obegripligt.
-    { label: "Spel", value: String(bets.length), color: "text-text" },
+    { label: t("hem.kpi.bets"), value: String(bets.length), color: "text-text" },
     {
-      label: "Levande",
+      label: t("hem.kpi.open"),
       value: String(stats.open),
       color: stats.open > 0 ? "text-cyan" : "text-muted",
     },
@@ -168,7 +173,9 @@ export default async function HemPage() {
       <div className="mb-[18px] flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="text-[14px] text-muted">
-            Hej {profile?.username || "spelare"}
+            {t("hem.header.greeting", {
+              name: profile?.username || t("hem.header.greetingFallback"),
+            })}
           </div>
           <div
             className={cn(
@@ -180,7 +187,10 @@ export default async function HemPage() {
             <FormattedAmount value={stats.netto} />
           </div>
           <div className="font-mono-num text-[13px] text-faint">
-            totalt netto · {sheetList.length} spreadsheets · {bets.length} spel
+            {t("hem.header.summary", {
+              sheets: sheetList.length,
+              bets: bets.length,
+            })}
           </div>
         </div>
         <AddBetButton />
@@ -226,10 +236,10 @@ export default async function HemPage() {
           <section>
             <div className="mb-2.5 flex items-baseline justify-between gap-3">
               <h2 className="font-display text-[15px] font-semibold uppercase tracking-[0.09em]">
-                Mina spreadsheets
+                {t("hem.sheets.title")}
               </h2>
               <Link href="/installningar" className="text-[13px] font-semibold">
-                Hantera
+                {t("hem.sheets.manage")}
               </Link>
             </div>
             <div className="space-y-2.5">
@@ -247,7 +257,9 @@ export default async function HemPage() {
                         {sheet.name}
                       </span>
                       <Badge tone={sheet.is_public ? "public" : "private"}>
-                        {sheet.is_public ? "Publik" : "Privat"}
+                        {sheet.is_public
+                          ? t("hem.sheets.public")
+                          : t("hem.sheets.private")}
                       </Badge>
                     </span>
                     {sheet.description ? (
@@ -257,7 +269,7 @@ export default async function HemPage() {
                     ) : null}
                   </span>
 
-                  <SheetStat label="ROI" width="w-[84px]">
+                  <SheetStat label={t("hem.sheets.roi")} width="w-[84px]">
                     <span
                       className={cn(
                         "font-mono-num text-[15px] font-semibold",
@@ -269,12 +281,12 @@ export default async function HemPage() {
                       {formatRoiOrDash(st.roi, st.bets)}
                     </span>
                   </SheetStat>
-                  <SheetStat label="Spel" width="w-[74px]">
+                  <SheetStat label={t("hem.sheets.bets")} width="w-[74px]">
                     <span className="font-mono-num text-[15px] font-semibold text-text-soft">
                       {all}
                     </span>
                   </SheetStat>
-                  <SheetStat label="Netto" width="w-[132px]">
+                  <SheetStat label={t("hem.sheets.netto")} width="w-[132px]">
                     <span
                       className={cn(
                         "whitespace-nowrap font-mono-num text-[19px] font-semibold",
@@ -288,7 +300,7 @@ export default async function HemPage() {
               ))}
               {!sheetRows.length ? (
                 <div className="rounded-[13px] border border-line bg-panel px-4 py-8 text-center text-muted">
-                  Skapa din första spelbok under Spelboken.
+                  {t("hem.sheets.empty")}
                 </div>
               ) : null}
             </div>
@@ -300,7 +312,7 @@ export default async function HemPage() {
         <div className="min-w-0 space-y-[18px]">
           <section>
             <h2 className="mb-2.5 font-display text-[15px] font-semibold uppercase tracking-[0.09em]">
-              Senaste resultat
+              {t("hem.recent.title")}
             </h2>
             <div className="overflow-hidden rounded-[13px] border border-line bg-panel">
               {recent.map((bet) => {
@@ -341,7 +353,7 @@ export default async function HemPage() {
               })}
               {!recent.length ? (
                 <p className="px-4 py-8 text-center text-[13px] text-muted">
-                  Inga rättade spel ännu.
+                  {t("hem.recent.empty")}
                 </p>
               ) : null}
             </div>

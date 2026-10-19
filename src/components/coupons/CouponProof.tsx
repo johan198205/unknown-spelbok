@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { saveCouponProof } from "@/lib/coupon-actions";
 import { publishedLabel } from "@/lib/coupons";
@@ -39,10 +40,11 @@ export function CouponProof({
   totalOdds: string;
   editorMode: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState(proofUrl);
 
-  const note = `Skärmbild från ${bookmakerName} med insats och odds.`;
+  const note = t("kuponger.proof.note", { bookmaker: bookmakerName });
 
   return (
     <div
@@ -50,11 +52,13 @@ export function CouponProof({
       style={{ flex: "0 0 var(--kupong-proof-w)", width: "var(--kupong-proof-w)" }}
     >
       <div className="mb-[7px] flex items-baseline gap-[7px]">
-        <span className={LABEL}>Spelbevis</span>
+        <span className={LABEL}>{t("kuponger.proof.label")}</span>
         {/* "Verifierad" bara när det finns något att verifiera. */}
         {url ? (
           <span className="font-mono-num text-[10.5px] text-faint">
-            Verifierad {publishedLabel(publishedAt)}
+            {t("kuponger.proof.verified", {
+              when: publishedLabel(publishedAt, undefined, t),
+            })}
           </span>
         ) : null}
       </div>
@@ -72,7 +76,7 @@ export function CouponProof({
           <button
             type="button"
             onClick={() => setOpen(true)}
-            aria-label="Förstora spelbeviset"
+            aria-label={t("kuponger.proof.zoomAria")}
             className="block w-full cursor-zoom-in rounded-[10px] border border-line bg-bg-deep bg-cover bg-center bg-no-repeat"
             style={{
               height: "var(--kupong-proof-h)",
@@ -88,10 +92,10 @@ export function CouponProof({
           style={{ height: "var(--kupong-proof-h)", maxWidth: "var(--kupong-proof-w)" }}
         >
           <span className="font-mono-num text-[11.5px] tracking-[0.1em] text-faint">
-            SPELBEVIS SAKNAS
+            {t("kuponger.proof.missingTitle")}
           </span>
           <span className="text-[11.5px] leading-[1.45] text-faint">
-            Redaktionen har inte laddat upp någon skärmbild för den här kupongen.
+            {t("kuponger.proof.missingBody")}
           </span>
         </div>
       )}
@@ -123,6 +127,7 @@ function ProofDropzone({
   bookmakerName: string;
   onZoom: () => void;
 }) {
+  const t = useT();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -131,7 +136,7 @@ function ProofDropzone({
   async function upload(file: File | null | undefined) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast("Spelbeviset måste vara en bild.");
+      toast(t("kuponger.proof.notImage"));
       return;
     }
 
@@ -191,10 +196,10 @@ function ProofDropzone({
         {url ? null : (
           <>
             <span className="font-mono-num text-[11.5px] tracking-[0.1em] text-faint">
-              {busy ? "LADDAR UPP…" : "SLÄPP SKÄRMBILD"}
+              {busy ? t("kuponger.proof.uploading") : t("kuponger.proof.drop")}
             </span>
             <span className="text-[11.5px] leading-[1.45] text-faint">
-              Skärmbild av kupongen hos {bookmakerName}.
+              {t("kuponger.proof.dropHint", { bookmaker: bookmakerName })}
             </span>
           </>
         )}
@@ -216,11 +221,11 @@ function ProofDropzone({
             onClick={onZoom}
             className="cursor-pointer rounded-[8px] border border-line-strong bg-panel-2 px-[11px] py-[7px] text-[12px] font-semibold text-text-soft hover:border-line-hover hover:text-text"
           >
-            Förstora
+            {t("kuponger.proof.zoom")}
           </button>
         ) : null}
         <span className="min-w-0 text-[11px] leading-[1.35] text-faint">
-          Redaktionsläge · syns bara för dig.
+          {t("kuponger.proof.editorNote")}
         </span>
       </div>
     </div>
@@ -247,6 +252,7 @@ function ProofLightbox({
   totalOdds: string;
   onClose: () => void;
 }) {
+  const t = useT();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -268,14 +274,14 @@ function ProofLightbox({
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="font-display text-[19px] font-semibold uppercase tracking-[0.04em] text-text">
-              Spelbevis
+              {t("kuponger.proof.lightboxTitle")}
             </div>
             <div className="text-[13.5px] text-muted">{title}</div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Stäng"
+            aria-label={t("kuponger.proof.close")}
             className="size-[34px] shrink-0 cursor-pointer rounded-[9px] border border-line-strong bg-panel text-[16px] text-muted hover:text-text"
           >
             ×
@@ -286,14 +292,13 @@ function ProofLightbox({
           {src ? (
             <div
               role="img"
-              aria-label="Spelbevis"
+              aria-label={t("kuponger.proof.imageAria")}
               className="h-full w-full bg-contain bg-center bg-no-repeat"
               style={{ backgroundImage: `url(${JSON.stringify(src)})` }}
             />
           ) : (
             <div className="p-7 text-center text-[14px] leading-[1.6] text-faint">
-              Redaktionen har inte laddat upp någon skärmbild för den här
-              kupongen.
+              {t("kuponger.proof.missingBody")}
             </div>
           )}
         </div>
@@ -301,9 +306,9 @@ function ProofLightbox({
         <div className="mt-3 flex flex-wrap items-center gap-2.5 font-mono-num text-[12.5px] text-faint">
           <span>{bookmakerName}</span>
           <span>·</span>
-          <span>Insats {stake}</span>
+          <span>{t("kuponger.proof.stake", { stake })}</span>
           <span>·</span>
-          <span>Totalodds {totalOdds}</span>
+          <span>{t("kuponger.proof.totalOdds", { odds: totalOdds })}</span>
         </div>
       </div>
     </div>

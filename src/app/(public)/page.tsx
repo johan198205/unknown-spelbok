@@ -6,6 +6,7 @@ import { fetchLandingPage } from "@/lib/landing-content.server";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { compareByQualifiedRoi, profileHref, rankColor } from "@/lib/toplists";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 import {
   computeStats,
   formatMoney,
@@ -63,6 +64,7 @@ export default async function LandingPage() {
   const supabase = await createClient();
   const site = await fetchSiteSettings(supabase);
   const landing = await fetchLandingPage();
+  const t = await getT();
 
   const [{ data: publicSheets }, { data: competitions }] = await Promise.all([
     supabase
@@ -84,7 +86,7 @@ export default async function LandingPage() {
       const stats = computeStats(bets);
       const owner =
         (sheet.profiles as unknown as { username: string } | null)?.username ||
-        "Okänd";
+        t("landing.leaderboard.unknownOwner");
       return {
         id: sheet.id,
         name: sheet.name,
@@ -211,7 +213,10 @@ export default async function LandingPage() {
                     >
                       {r.owner}
                     </Link>{" "}
-                    · {r.bets} spel · vinstprocent {r.hitrate.toFixed(0)}%
+                    {t("landing.leaderboard.rowMeta", {
+                      bets: r.bets,
+                      hitrate: r.hitrate.toFixed(0),
+                    })}
                   </div>
                 </div>
                 {/* Under sm staplas ROI och netto så att namnkolumnen får plats. */}
@@ -233,7 +238,7 @@ export default async function LandingPage() {
             ))
           ) : (
             <div className="px-6 py-10 text-center text-muted">
-              Inga publika spreadsheets ännu.
+              {t("landing.leaderboard.empty")}
             </div>
           )}
         </Panel>
@@ -242,13 +247,12 @@ export default async function LandingPage() {
           <Panel className="mt-6 p-[18px]">
             <div className="mb-2 flex items-start justify-between gap-2">
               <div className="font-display text-[19px] font-semibold">
-                {comp?.name || "Ingen tävling just nu"}
+                {comp?.name || t("landing.competition.none")}
               </div>
-              {comp ? <Badge tone="cyan">Pågår</Badge> : null}
+              {comp ? <Badge tone="cyan">{t("landing.competition.live")}</Badge> : null}
             </div>
             <div className="mb-3 text-sm leading-relaxed text-muted">
-              {comp?.description ||
-                "Admin kan skapa tävlingar under Admin → Tävlingar."}
+              {comp?.description || t("landing.competition.noneBody")}
             </div>
             {comp ? (
               <div className="font-mono-num text-[12.5px] text-faint">

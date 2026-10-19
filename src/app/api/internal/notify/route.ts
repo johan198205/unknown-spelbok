@@ -13,6 +13,8 @@ import {
   notifySettleReminders,
   type FinishedMatch,
 } from "@/lib/send-push";
+import { getT } from "@/lib/texts/server";
+import type { TFunction } from "@/lib/texts";
 
 export const runtime = "nodejs";
 
@@ -46,7 +48,7 @@ function authorized(request: Request) {
   return ok;
 }
 
-function parseMatches(value: unknown): FinishedMatch[] {
+function parseMatches(value: unknown, t: TFunction): FinishedMatch[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((row) => {
     if (!row || typeof row !== "object") return [];
@@ -56,8 +58,14 @@ function parseMatches(value: unknown): FinishedMatch[] {
     return [
       {
         fixtureId,
-        homeName: typeof m.homeName === "string" ? m.homeName : "Hemma",
-        awayName: typeof m.awayName === "string" ? m.awayName : "Borta",
+        homeName:
+          typeof m.homeName === "string"
+            ? m.homeName
+            : t("notiser.events.fallbackHome"),
+        awayName:
+          typeof m.awayName === "string"
+            ? m.awayName
+            : t("notiser.events.fallbackAway"),
         homeScore: Number(m.homeScore) || 0,
         awayScore: Number(m.awayScore) || 0,
       },
@@ -89,15 +97,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ogiltig JSON" }, { status: 400 });
   }
 
+  const t = await getT();
+
   try {
     // Cron-jobben: inga argument, all data finns i databasen.
     if (body.kind === "kickoff") {
-      const created = await recordKickoffNotifications();
+      const created = await recordKickoffNotifications(undefined, t);
       return NextResponse.json({ ok: true, created });
     }
 
     if (body.kind === "competition") {
-      const created = await recordCompetitionNotifications();
+      const created = await recordCompetitionNotifications(undefined, t);
       return NextResponse.json({ ok: true, created });
     }
 
@@ -111,8 +121,14 @@ export async function POST(request: Request) {
         elapsed: Number.isFinite(Number(body.elapsed))
           ? Number(body.elapsed)
           : null,
-        homeName: typeof body.homeName === "string" ? body.homeName : "Hemma",
-        awayName: typeof body.awayName === "string" ? body.awayName : "Borta",
+        homeName:
+          typeof body.homeName === "string"
+            ? body.homeName
+            : t("notiser.events.fallbackHome"),
+        awayName:
+          typeof body.awayName === "string"
+            ? body.awayName
+            : t("notiser.events.fallbackAway"),
         homeScore: Number(body.homeScore) || 0,
         awayScore: Number(body.awayScore) || 0,
       };
@@ -123,13 +139,13 @@ export async function POST(request: Request) {
             ? Number(body.teamId)
             : null,
         }),
-        recordGoalNotifications(goal),
+        recordGoalNotifications(goal, t),
       ]);
       return NextResponse.json({ ok: true });
     }
 
     if (body.kind === "fulltime" || body.kind === "settle-reminder") {
-      const matches = parseMatches(body.matches);
+      const matches = parseMatches(body.matches, t);
       if (!matches.length) {
         return NextResponse.json({ ok: true, skipped: true });
       }
@@ -168,7 +184,7 @@ export async function POST(request: Request) {
     }
     await Promise.all([
       notifySettledBets(betIds),
-      recordSettledNotifications(betIds),
+      recordSettledNotifications(betIds, t),
     ]);
     return NextResponse.json({ ok: true });
   } catch (err) {

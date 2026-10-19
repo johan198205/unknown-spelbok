@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useAmount } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import { axisDateLabels, compactAxisValue } from "@/lib/sheet-filters";
 
 // Närmaste "snygga" steg (1, 2, 2,5, 5, 10 × 10^n) för y-axelns etiketter.
@@ -30,6 +31,7 @@ export function NettoChart({
   compact?: boolean;
 }) {
   const amount = useAmount();
+  const t = useT();
   const [active, setActive] = useState<number | null>(null);
 
   // Med bara en spelbok är dess linje identisk med totalen.
@@ -251,14 +253,14 @@ export function NettoChart({
         </svg>
         <div className="mt-1.5 flex justify-between font-mono-num text-[11px] text-faint">
           <span>{edgeDates[0]}</span>
-          <span>ackumulerat netto</span>
+          <span>{t("statistik.nettoChart.axisLabel")}</span>
           <span>{edgeDates[1]}</span>
         </div>
         {showSeries ? (
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="flex items-center gap-1.5 text-[11px] text-muted">
               <span className="h-[2px] w-3.5 rounded-full bg-win" />
-              Totalt
+              {t("statistik.nettoChart.legendTotal")}
             </span>
             {series.map((s) => (
               <span

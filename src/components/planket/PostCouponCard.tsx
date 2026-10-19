@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useT } from "@/components/TextsProvider";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import {
-  COUPON_STATUS_LABEL,
+  couponStatusLabel,
   COUPON_STATUS_TONE,
   couponPath,
 } from "@/lib/coupons";
@@ -35,17 +36,19 @@ import { BookmakerLink } from "@/components/planket/PostBetCard";
  * samma regel som kupongkortet på /kuponger och spelinläggen på planket.
  */
 export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
+  const t = useT();
   const legs = coupon.legs;
   const total = planketOdds(coupon.total_odds);
-  const stake = planketKr(coupon.stake);
+  const stake = planketKr(coupon.stake, { t });
   const win = planketKr(couponPossibleWin(coupon.stake, coupon.total_odds), {
     sign: true,
+    t,
   });
   const bookLogo = getBookmakerLogoUrl(coupon.bookmaker_logo);
   const settled = coupon.status !== "open";
   const tone = COUPON_STATUS_TONE[coupon.status];
   const netto = couponOutcome(coupon);
-  const outcome = planketKr(netto, { sign: netto !== 0 });
+  const outcome = planketKr(netto, { sign: netto !== 0, t });
   const outcomeClass =
     netto > 0 ? "text-win" : netto < 0 ? "text-loss" : "text-text";
   const href = couponPath(coupon.slug);
@@ -54,7 +57,7 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
       className="shrink-0 rounded-[6px] px-2 py-[3px] font-mono-num text-[11px] font-semibold tracking-[0.07em]"
       style={{ background: tone.badgeBg, color: tone.badgeFg }}
     >
-      {COUPON_STATUS_LABEL[coupon.status]}
+      {couponStatusLabel(coupon.status, t)}
     </span>
   ) : null;
 
@@ -71,10 +74,10 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
             className="flex min-w-0 flex-1 items-center gap-[9px] no-underline hover:no-underline"
           >
             <span className="shrink-0 font-display text-[12.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
-              Kupong
+              {t("planket.coupon.label")}
             </span>
             <span className="min-w-0 flex-1 truncate font-mono-num text-[12.5px] text-[#5D6883] hover:text-text-soft">
-              {couponMeta(legs)}
+              {couponMeta(legs, t)}
             </span>
           </Link>
           {badge}
@@ -109,7 +112,7 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
             <div className="min-w-0 flex-1">
               <div className="truncate text-[14px]">{leg.match}</div>
               <div className="mt-px truncate text-[12px] text-[#5D6883]">
-                {[leg.league, planketKickoff(leg.kickoff)]
+                {[leg.league, planketKickoff(leg.kickoff, t)]
                   .filter(Boolean)
                   .join(" · ")}
               </div>
@@ -130,20 +133,20 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
 
         <div className="flex">
           <div className="flex-1 px-[14px] py-3">
-            <FieldLabel>Totalodds</FieldLabel>
+            <FieldLabel>{t("planket.coupon.totalOdds")}</FieldLabel>
             <div className="font-mono-num text-[20px] font-semibold tabular-nums">
               {total}
             </div>
           </div>
           <div className="flex-1 border-l border-line px-[14px] py-3">
-            <FieldLabel>Insats</FieldLabel>
+            <FieldLabel>{t("planket.coupon.stake")}</FieldLabel>
             <div className="font-mono-num text-[20px] font-semibold tabular-nums">
               {stake}
             </div>
           </div>
           {settled ? (
             <div className="flex-1 border-l border-line px-[14px] py-3">
-              <FieldLabel>Utfall</FieldLabel>
+              <FieldLabel>{t("planket.coupon.outcome")}</FieldLabel>
               <div
                 className={`font-mono-num text-[20px] font-semibold tabular-nums ${outcomeClass}`}
               >
@@ -152,7 +155,7 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
             </div>
           ) : (
             <div className="flex-1 border-l border-line px-[14px] py-3">
-              <FieldLabel>Möjlig vinst</FieldLabel>
+              <FieldLabel>{t("planket.coupon.possibleWin")}</FieldLabel>
               <div className="font-mono-num text-[20px] font-semibold tabular-nums text-win">
                 {win}
               </div>
@@ -172,10 +175,10 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
             className="flex min-w-0 flex-1 items-center gap-2 no-underline hover:no-underline"
           >
             <span className="shrink-0 font-display text-[11.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
-              Kupong
+              {t("planket.coupon.label")}
             </span>
             <span className="min-w-0 truncate font-mono-num text-[11.5px] text-[#5D6883]">
-              {couponMeta(legs)}
+              {couponMeta(legs, t)}
             </span>
           </Link>
           {badge}
@@ -207,13 +210,17 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
 
         <div className="flex">
           <div className="flex-1 px-3 py-2.5">
-            <FieldLabel className="text-[9.5px]">Totalodds</FieldLabel>
+            <FieldLabel className="text-[9.5px]">
+              {t("planket.coupon.totalOdds")}
+            </FieldLabel>
             <div className="font-mono-num text-[17px] font-semibold tabular-nums">
               {total}
             </div>
           </div>
           <div className="flex-1 border-l border-line px-3 py-2.5">
-            <FieldLabel className="text-[9.5px]">Insats</FieldLabel>
+            <FieldLabel className="text-[9.5px]">
+              {t("planket.coupon.stake")}
+            </FieldLabel>
             <div className="font-mono-num text-[17px] font-semibold tabular-nums">
               {stake}
             </div>
@@ -221,7 +228,9 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
         </div>
         {settled ? (
           <div className="flex items-baseline gap-2 border-t border-line px-3 py-2.5">
-            <FieldLabel className="mb-0 text-[9.5px]">Utfall</FieldLabel>
+            <FieldLabel className="mb-0 text-[9.5px]">
+              {t("planket.coupon.outcome")}
+            </FieldLabel>
             <span
               className={`ml-auto font-mono-num text-[17px] font-semibold tabular-nums ${outcomeClass}`}
             >

@@ -1,7 +1,8 @@
+import { getT } from "@/lib/texts/server";
 import { cn } from "@/lib/utils";
 
 /** Visas från 3 raka vinster; från 5 förstärkt med 🔥. */
-export function StreakBadge({
+export async function StreakBadge({
   streak,
   className,
 }: {
@@ -10,10 +11,11 @@ export function StreakBadge({
 }) {
   if (streak < 3) return null;
   const hot = streak >= 5;
+  const t = await getT();
 
   return (
     <span
-      title={`${streak} raka vinster i rad`}
+      title={t("common.streak.title", { count: streak })}
       className={cn(
         "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[13.5px] font-semibold",
         hot
@@ -24,7 +26,7 @@ export function StreakBadge({
     >
       {hot ? <span aria-hidden>🔥</span> : null}
       <span className="font-mono-num">{streak}</span>
-      raka vinster
+      {t("common.streak.label")}
     </span>
   );
 }

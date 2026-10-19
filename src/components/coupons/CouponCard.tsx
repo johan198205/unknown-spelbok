@@ -9,16 +9,17 @@ import { CouponCountdown, CouponPublished } from "./CouponCountdown";
 import { CouponProof } from "./CouponProof";
 import { CouponShareModal } from "./CouponShareModal";
 import { CopyCouponButton } from "./CopyCouponButton";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { track } from "@/lib/analytics";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import {
-  COUPON_STATUS_LABEL,
   COUPON_STATUS_TONE,
-  COUPON_TYPE_LABEL,
   LEG_RESULT_COLOR,
   LEG_RESULT_MARK,
   couponNetto,
+  couponStatusLabel,
+  couponTypeLabel,
   couponUrl,
   firstKickoff,
   formatCouponOdds,
@@ -44,13 +45,14 @@ export function CouponCard({
   alreadyCopied: boolean;
   loggedIn: boolean;
 }) {
+  const t = useT();
   const [shareOpen, setShareOpen] = useState(false);
   const tone = COUPON_STATUS_TONE[coupon.status];
   const settled = isSettled(coupon);
   const netto = couponNetto(coupon);
-  const stakeLabel = formatMoney(Number(coupon.stake), "kr").replace("+", "");
+  const stakeLabel = formatMoney(Number(coupon.stake), t("kuponger.unit.kr")).replace("+", "");
   const oddsLabel = formatCouponOdds(coupon.total_odds);
-  const bookmakerName = coupon.bookmakers?.name ?? "spelbolaget";
+  const bookmakerName = coupon.bookmakers?.name ?? t("kuponger.card.unknownBookmaker");
 
   return (
     <article
@@ -75,14 +77,14 @@ export function CouponCard({
           till för kicker + meta + badge på samma rad.
         */}
         <span className="font-mono-num min-w-0 flex-1 truncate text-[12px] text-faint">
-          {COUPON_TYPE_LABEL[coupon.type]} ·{" "}
+          {couponTypeLabel(coupon.type, t)} ·{" "}
           <CouponPublished publishedAt={coupon.published_at} />
         </span>
         <span
           className="font-mono-num ml-auto whitespace-nowrap rounded-[6px] px-2.5 py-[5px] text-[11.5px] font-semibold tracking-[0.07em]"
           style={{ background: tone.badgeBg, color: tone.badgeFg }}
         >
-          {COUPON_STATUS_LABEL[coupon.status]}
+          {couponStatusLabel(coupon.status, t)}
         </span>
       </div>
 
@@ -98,7 +100,7 @@ export function CouponCard({
         </h2>
         {settled ? (
           <div className="font-mono-num mb-3.5 text-[13px] text-faint">
-            {settledLabel(coupon, formatMoney(netto, "kr"))}
+            {settledLabel(coupon, formatMoney(netto, t("kuponger.unit.kr")), t)}
           </div>
         ) : (
           <CouponCountdown kickoff={firstKickoff(coupon.legs)} />
@@ -118,12 +120,12 @@ export function CouponCard({
             hamnade ensam på en egen rad i 2-läget och på mobil.
           */}
           <div className="grid grid-cols-[1fr_1fr_1.3fr] border-t border-line bg-panel">
-            <SummaryCell label="Insats" value={stakeLabel} />
-            <SummaryCell label="Totalodds" value={oddsLabel} size="20px" />
+            <SummaryCell label={t("kuponger.card.stake")} value={stakeLabel} />
+            <SummaryCell label={t("kuponger.card.totalOdds")} value={oddsLabel} size="20px" />
             {settled ? (
               <SummaryCell
-                label="Utfall"
-                value={formatMoney(netto, "kr")}
+                label={t("kuponger.card.outcome")}
+                value={formatMoney(netto, t("kuponger.unit.kr"))}
                 size="20px"
                 color={
                   netto > 0
@@ -135,8 +137,8 @@ export function CouponCard({
               />
             ) : (
               <SummaryCell
-                label="Möjlig vinst"
-                value={formatMoney(possibleWin(coupon), "kr")}
+                label={t("kuponger.card.possibleWin")}
+                value={formatMoney(possibleWin(coupon), t("kuponger.unit.kr"))}
                 color="var(--win)"
               />
             )}
@@ -147,7 +149,7 @@ export function CouponCard({
       {/* SPELREKOMMENDATION + SPELBEVIS */}
       <div className="flex flex-wrap items-start gap-5 px-5 pt-4">
         <div className="min-w-0" style={{ flex: "1 1 320px" }}>
-          <div className={`${LABEL} mb-[7px]`}>Kommentar</div>
+          <div className={`${LABEL} mb-[7px]`}>{t("kuponger.card.comment")}</div>
           <p className="m-0 text-[15px] leading-[1.65] text-text-soft [text-wrap:pretty]">
             {coupon.body}
           </p>
@@ -181,7 +183,7 @@ export function CouponCard({
           onClick={() => setShareOpen(true)}
           className="cursor-pointer rounded-[10px] border border-line-strong bg-transparent px-4 py-[11px] text-[14px] font-semibold text-text-soft hover:border-line-hover"
         >
-          Delningskort
+          {t("kuponger.card.shareCard")}
         </button>
         <ShareButtons coupon={coupon} />
       </div>
@@ -194,8 +196,9 @@ export function CouponCard({
 }
 
 function LegRow({ leg }: { leg: CouponLeg }) {
+  const t = useT();
   const fx = leg.fixtures;
-  const mark = leg.result ? LEG_RESULT_MARK[leg.result] : "–";
+  const mark = leg.result ? t(LEG_RESULT_MARK[leg.result]) : "–";
   const markColor = leg.result ? LEG_RESULT_COLOR[leg.result] : "#4a4a52";
 
   return (
@@ -234,7 +237,7 @@ function LegRow({ leg }: { leg: CouponLeg }) {
             className="truncate text-[14.5px]"
             style={{ flex: "0 1 auto", minWidth: 24 }}
           >
-            {fx?.home_name ?? "Okänt lag"}
+            {fx?.home_name ?? t("kuponger.card.unknownTeam")}
           </span>
           <span className="shrink-0 text-[11.5px] text-faint">–</span>
           <TeamCrest
@@ -248,11 +251,11 @@ function LegRow({ leg }: { leg: CouponLeg }) {
             className="truncate text-[14.5px]"
             style={{ flex: "0 1 auto", minWidth: 24 }}
           >
-            {fx?.away_name ?? "Okänt lag"}
+            {fx?.away_name ?? t("kuponger.card.unknownTeam")}
           </span>
         </div>
         <div className="font-mono-num mt-[3px] text-[11.5px] text-faint">
-          {fx?.league_name ?? "Okänd liga"} · {legWhen(fx?.kickoff)}
+          {fx?.league_name ?? t("kuponger.card.unknownLeague")} · {legWhen(fx?.kickoff, t)}
         </div>
       </div>
 
@@ -308,6 +311,7 @@ function SummaryCell({
  * Spelbolagsbox på kupong: logga, namn, bonus, CTA — ingen "bästa oddset".
  */
 function CouponCta({ coupon }: { coupon: Coupon }) {
+  const t = useT();
   const bookmaker = coupon.bookmakers;
   if (!bookmaker) return null;
 
@@ -316,7 +320,7 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
   const bonusText = bookmaker.bonus?.trim()
     ? bookmaker.bonus
     : bookmaker.bonus_value
-      ? `${bookmaker.bonus_value.toLocaleString("sv-SE")} kr`
+      ? `${bookmaker.bonus_value.toLocaleString("sv-SE")} ${t("kuponger.unit.kr")}`
       : null;
   const goHref = `/go/${bookmaker.slug}?src=kupong`;
 
@@ -364,11 +368,11 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
           onClick={() => track({ event: "affiliate_click", bookmaker: bookmaker.slug })}
           className="mt-3 block rounded-[9px] bg-win px-2.5 py-2.5 text-center text-[13.5px] font-bold text-win-ink no-underline hover:text-win-ink hover:no-underline hover:brightness-105"
         >
-          Spela hos {short}
+          {t("kuponger.card.ctaPlay", { name: short })}
         </a>
       </div>
       <BookmakerDisclaimer
-        prefix="Reklamlänk"
+        prefix={t("kuponger.card.ctaDisclaimer")}
         bookmaker={bookmaker}
         className="mt-2"
       />
@@ -377,6 +381,7 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
 }
 
 function ShareButtons({ coupon }: { coupon: Coupon }) {
+  const t = useT();
   const { toast } = useToast();
 
   function openWindow(url: string) {
@@ -386,9 +391,9 @@ function ShareButtons({ coupon }: { coupon: Coupon }) {
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(couponUrl(coupon.slug));
-      toast("Länk kopierad");
+      toast(t("kuponger.card.linkCopied"));
     } catch {
-      toast("Kunde inte kopiera länken");
+      toast(t("kuponger.card.linkCopyFailed"));
     }
   }
 
@@ -399,7 +404,7 @@ function ShareButtons({ coupon }: { coupon: Coupon }) {
     <span className="ml-auto flex items-center gap-[7px]">
       <button
         type="button"
-        title="Dela på Facebook"
+        title={t("kuponger.card.shareFacebook")}
         className={square}
         onClick={() =>
           openWindow(
@@ -411,7 +416,7 @@ function ShareButtons({ coupon }: { coupon: Coupon }) {
       </button>
       <button
         type="button"
-        title="Dela på X"
+        title={t("kuponger.card.shareX")}
         className={square}
         onClick={() =>
           openWindow(
@@ -423,7 +428,7 @@ function ShareButtons({ coupon }: { coupon: Coupon }) {
       </button>
       <button
         type="button"
-        title="Kopiera länk"
+        title={t("kuponger.card.copyLink")}
         className={square}
         onClick={() => void copyLink()}
       >

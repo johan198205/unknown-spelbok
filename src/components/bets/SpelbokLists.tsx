@@ -3,10 +3,13 @@
 import { Component, type ReactNode } from "react";
 import { BetForm, BetsTable } from "@/components/bets/BetForm";
 import { MobileBetCards } from "@/components/pwa/MobileBetCards";
+import { useT } from "@/components/TextsProvider";
+import type { TFunction } from "@/lib/texts";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
 
+/** Klasskomponent — kan inte anropa useT(), så t skickas in. */
 class ListError extends Component<
-  { children: ReactNode },
+  { children: ReactNode; t: TFunction },
   { error: Error | null }
 > {
   state: { error: Error | null } = { error: null };
@@ -19,7 +22,9 @@ class ListError extends Component<
     if (this.state.error) {
       return (
         <p className="rounded-[11px] border border-loss/35 bg-loss/10 px-3 py-3 text-sm text-loss">
-          Kunde inte visa spellen: {this.state.error.message}
+          {this.props.t("spelbok.lists.error", {
+            message: this.state.error.message,
+          })}
         </p>
       );
     }
@@ -38,6 +43,7 @@ export function SpelbokLists({
   bookmakers: Bookmaker[];
   sheetId: string;
 }) {
+  const t = useT();
   return (
     <>
       <div className="hidden lg:block">
@@ -47,7 +53,7 @@ export function SpelbokLists({
           defaultSheetId={sheetId}
         />
       </div>
-      <ListError>
+      <ListError t={t}>
         <div className="hidden lg:block">
           <BetsTable bets={bets} canEdit />
         </div>

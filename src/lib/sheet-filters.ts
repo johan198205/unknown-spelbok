@@ -1,6 +1,11 @@
 import type { Bet, BetResult } from "@/lib/types";
 import { betLeagueLogo, leagueInitials } from "@/lib/logos";
-import { betCategory, distinctCategories } from "@/lib/bet-category";
+import {
+  betCategory,
+  betCategoryLabel,
+  distinctCategories,
+} from "@/lib/bet-category";
+import { createT, type TextKey, type TFunction } from "@/lib/texts";
 
 export { distinctCategories };
 
@@ -17,56 +22,65 @@ export type SheetViewMode = "table" | "cards";
 /** Matchcellens täthet — slim borttaget (feedback); typen behålls för props. */
 export type SheetDensity = "result";
 
-export const SPORT_FILTER_OPTIONS: Array<{
-  value: SheetSportFilter;
-  label: string;
-}> = [
-  { value: "all", label: "Alla sporter" },
-  { value: "football", label: "Fotboll" },
-  { value: "hockey", label: "Hockey" },
+/** Standardtexterna, för etiketterna nedan och när inget t skickas in. */
+const DEFAULT_T = createT({});
+
+/**
+ * Alternativen bär textnyckeln i `key`; `label` är standardtexten för
+ * anropare som inte har ett t. Visa `t(option.key)` där det går.
+ */
+type FilterOption<T> = { value: T; key: TextKey; label: string };
+
+function option<T>(value: T, key: TextKey): FilterOption<T> {
+  return { value, key, label: DEFAULT_T(key) };
+}
+
+/** Alternativen med etiketterna från t (admins överskrivningar). */
+export function translateOptions<T>(
+  options: ReadonlyArray<FilterOption<T>>,
+  t: TFunction
+): Array<FilterOption<T>> {
+  return options.map((o) => ({ ...o, label: t(o.key) }));
+}
+
+export const SPORT_FILTER_OPTIONS: Array<FilterOption<SheetSportFilter>> = [
+  option("all", "terms.sportFilter.all"),
+  option("football", "terms.sportFilter.football"),
+  option("hockey", "terms.sportFilter.hockey"),
 ];
 
-export const RESULT_FILTER_OPTIONS: Array<{
-  value: SheetResultFilter;
-  label: string;
-}> = [
-  { value: "all", label: "Alla" },
-  { value: "open", label: "Öppen" },
-  { value: "win", label: "Vinst" },
-  { value: "loss", label: "Förlust" },
-  { value: "void", label: "Void" },
-  { value: "halfwin", label: "Halv vinst" },
-  { value: "halfloss", label: "Halv förlust" },
+export const RESULT_FILTER_OPTIONS: Array<FilterOption<SheetResultFilter>> = [
+  option("all", "terms.resultFilter.all"),
+  option("open", "terms.resultFilter.open"),
+  option("win", "terms.resultFilter.win"),
+  option("loss", "terms.resultFilter.loss"),
+  option("void", "terms.resultFilter.void"),
+  option("halfwin", "terms.resultFilter.halfwin"),
+  option("halfloss", "terms.resultFilter.halfloss"),
 ];
 
-export const PERIOD_FILTER_OPTIONS: Array<{
-  value: SheetPeriodFilter;
-  label: string;
-}> = [
-  { value: "30d", label: "30 dagar" },
-  { value: "3m", label: "3 månader" },
-  { value: "ytd", label: "I år" },
-  { value: "all", label: "Allt" },
+export const PERIOD_FILTER_OPTIONS: Array<FilterOption<SheetPeriodFilter>> = [
+  option("30d", "terms.period.30d"),
+  option("3m", "terms.period.3m"),
+  option("ytd", "terms.period.ytd"),
+  option("all", "terms.period.all"),
 ];
 
-export const CHART_PERIOD_OPTIONS: Array<{
-  value: ChartPeriodFilter;
-  label: string;
-}> = [
-  { value: "30d", label: "30 dagar" },
-  { value: "3m", label: "3 månader" },
-  { value: "1y", label: "1 år" },
-  { value: "all", label: "Allt" },
+export const CHART_PERIOD_OPTIONS: Array<FilterOption<ChartPeriodFilter>> = [
+  option("30d", "terms.period.30d"),
+  option("3m", "terms.period.3m"),
+  option("1y", "terms.period.1y"),
+  option("all", "terms.period.all"),
 ];
 
 /** Slimmad-läge borttaget — behåll tom lista så filterbaren kan dölja kontrollen. */
-export const DENSITY_OPTIONS: Array<{ value: SheetDensity; label: string }> = [
-  { value: "result", label: "Resultat" },
+export const DENSITY_OPTIONS: Array<FilterOption<SheetDensity>> = [
+  option("result", "terms.density.result"),
 ];
 
-export const VIEW_OPTIONS: Array<{ value: SheetViewMode; label: string }> = [
-  { value: "table", label: "Tabell" },
-  { value: "cards", label: "Kort" },
+export const VIEW_OPTIONS: Array<FilterOption<SheetViewMode>> = [
+  option("table", "terms.view.table"),
+  option("cards", "terms.view.cards"),
 ];
 
 export interface SheetFilterState {
@@ -121,10 +135,12 @@ export function periodCutoff(
   return null;
 }
 
-export function periodLabel(period: SheetPeriodFilter): string {
-  return (
-    PERIOD_FILTER_OPTIONS.find((o) => o.value === period)?.label || "Allt"
-  );
+export function periodLabel(
+  period: SheetPeriodFilter,
+  t: TFunction = DEFAULT_T
+): string {
+  const key = PERIOD_FILTER_OPTIONS.find((o) => o.value === period)?.key;
+  return t(key ?? "terms.period.all");
 }
 
 export function matchesSportFilter(
@@ -276,7 +292,10 @@ export interface BookmakerOption {
   count: number;
 }
 
-export function distinctBookmakers(bets: Bet[]): BookmakerOption[] {
+export function distinctBookmakers(
+  bets: Bet[],
+  t: TFunction = DEFAULT_T
+): BookmakerOption[] {
   const map = new Map<string, BookmakerOption>();
   for (const bet of bets) {
     const id = bet.bookmaker_id;
@@ -286,7 +305,7 @@ export function distinctBookmakers(bets: Bet[]): BookmakerOption[] {
     else {
       map.set(id, {
         id,
-        name: bet.bookmakers?.name || "Okänt spelbolag",
+        name: bet.bookmakers?.name || t("terms.filter.unknownBookmaker"),
         count: 1,
       });
     }
@@ -322,35 +341,39 @@ export function clearPanelFilters(
 /** Aktiva filter som borttagbara chips, i panelens ordning. */
 export function activeFilterChips(
   filters: SheetFilterState,
-  bookmakers: BookmakerOption[]
+  bookmakers: BookmakerOption[],
+  t: TFunction = DEFAULT_T
 ): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
   if (filters.sport !== "all") {
+    const key = SPORT_FILTER_OPTIONS.find((o) => o.value === filters.sport)?.key;
     chips.push({
       key: "sport",
-      label:
-        SPORT_FILTER_OPTIONS.find((o) => o.value === filters.sport)?.label ||
-        filters.sport,
+      label: key ? t(key) : filters.sport,
     });
   }
   if (filters.league) chips.push({ key: "league", label: filters.league });
   if (filters.category) {
-    chips.push({ key: "category", label: filters.category });
+    chips.push({
+      key: "category",
+      label: betCategoryLabel(filters.category, t),
+    });
   }
   if (filters.bookmaker) {
     chips.push({
       key: "bookmaker",
       label:
         bookmakers.find((b) => b.id === filters.bookmaker)?.name ||
-        "Spelbolag",
+        t("terms.filter.bookmakerFallback"),
     });
   }
   if (filters.result !== "all") {
+    const key = RESULT_FILTER_OPTIONS.find(
+      (o) => o.value === filters.result
+    )?.key;
     chips.push({
       key: "result",
-      label:
-        RESULT_FILTER_OPTIONS.find((o) => o.value === filters.result)?.label ||
-        filters.result,
+      label: key ? t(key) : filters.result,
     });
   }
   return chips;

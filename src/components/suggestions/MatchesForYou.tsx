@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { X } from "lucide-react";
 import { useMobileChrome } from "@/components/layout/MobileChrome";
 import { MatchLine } from "@/components/bets/TeamPair";
+import { useT } from "@/components/TextsProvider";
 import { fixtureFromSuggestion, type DailySuggestion } from "@/lib/suggestions";
 
 export type MatchForYou = {
@@ -28,6 +29,7 @@ export function MatchesForYou({
 }) {
   const [dismissed, setDismissed] = useState<string[]>([]);
   const chrome = useMobileChrome();
+  const t = useT();
 
   const patch = useCallback(
     (id: string, body: { clicked?: boolean; dismissed?: boolean }) => {
@@ -52,7 +54,7 @@ export function MatchesForYou({
           id="matcher-for-dig"
           className="font-display text-[15px] font-semibold uppercase tracking-[0.09em]"
         >
-          Matcher för dig
+          {t("forslag.forYou.title")}
         </h2>
         <span className="shrink-0 font-mono-num text-[12px] text-faint">
           {dateLabel}
@@ -100,14 +102,17 @@ export function MatchesForYou({
                     {Math.round(Number(suggestion.match_score))}
                   </span>
                   <span className="block text-[9.5px] uppercase tracking-[0.1em] text-faint">
-                    Matchning
+                    {t("forslag.forYou.scoreLabel")}
                   </span>
                 </span>
               </button>
 
               <button
                 type="button"
-                aria-label={`Dölj ${suggestion.home_team} – ${suggestion.away_team}`}
+                aria-label={t("forslag.forYou.dismissAria", {
+                  home: suggestion.home_team,
+                  away: suggestion.away_team,
+                })}
                 onClick={() => {
                   patch(suggestion.id, { dismissed: true });
                   setDismissed((prev) => [...prev, suggestion.id]);
@@ -122,8 +127,7 @@ export function MatchesForYou({
       </div>
 
       <p className="mt-2 text-[11.5px] leading-snug text-faint">
-        Matchningen visar hur nära matchen ligger din egen spelhistorik. Ingen
-        prognos av utfallet.
+        {t("forslag.forYou.disclaimer")}
       </p>
     </section>
   );

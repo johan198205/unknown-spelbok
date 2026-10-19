@@ -1,12 +1,8 @@
-import { Lock, LockOpen } from "lucide-react";
-import { cn } from "@/lib/utils";
+"use client";
 
-const COPY = {
-  before: "Låst spel - detta spel bokfördes före matchstart.",
-  after: "Olåst spel - detta spel bokfördes efter matchstart.",
-  badgeBefore: "Låst – loggat före avspark",
-  badgeAfter: "Öppet – efterregistrerat",
-} as const;
+import { Lock, LockOpen } from "lucide-react";
+import { useT } from "@/components/TextsProvider";
+import { cn } from "@/lib/utils";
 
 /** Diskret ikon för spellistan (14–16px). null = ingen ikon. */
 export function LoggedBeforeKickoffIcon({
@@ -16,11 +12,12 @@ export function LoggedBeforeKickoffIcon({
   value: boolean | null | undefined;
   className?: string;
 }) {
+  const t = useT();
   if (value === true) {
     return (
       <span
-        title={COPY.before}
-        aria-label={COPY.before}
+        title={t("spelbok.lock.before")}
+        aria-label={t("spelbok.lock.before")}
         className={cn("inline-flex shrink-0 text-win", className)}
       >
         <Lock className="size-3.5" strokeWidth={2.25} aria-hidden />
@@ -31,8 +28,8 @@ export function LoggedBeforeKickoffIcon({
   if (value === false) {
     return (
       <span
-        title={COPY.after}
-        aria-label={COPY.after}
+        title={t("spelbok.lock.after")}
+        aria-label={t("spelbok.lock.after")}
         className={cn("inline-flex shrink-0 text-yellow", className)}
       >
         <LockOpen className="size-3.5" strokeWidth={2.25} aria-hidden />
@@ -57,8 +54,9 @@ export function SheetLockIcon({
   value: boolean | null | undefined;
   className?: string;
 }) {
+  const t = useT();
   if (value !== true && value !== false) return null;
-  const title = value ? COPY.before : COPY.after;
+  const title = value ? t("spelbok.lock.before") : t("spelbok.lock.after");
   const Icon = value ? Lock : LockOpen;
   return (
     <span
@@ -83,6 +81,7 @@ export function LoggedBeforeKickoffBadge({
   value: boolean | null | undefined;
   className?: string;
 }) {
+  const t = useT();
   if (value === true) {
     return (
       <span
@@ -92,7 +91,7 @@ export function LoggedBeforeKickoffBadge({
         )}
       >
         <Lock className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-        {COPY.badgeBefore}
+        {t("spelbok.lock.badgeBefore")}
       </span>
     );
   }
@@ -106,7 +105,7 @@ export function LoggedBeforeKickoffBadge({
         )}
       >
         <LockOpen className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-        {COPY.badgeAfter}
+        {t("spelbok.lock.badgeAfter")}
       </span>
     );
   }

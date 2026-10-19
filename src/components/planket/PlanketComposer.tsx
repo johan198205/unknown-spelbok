@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { Avatar, LeagueCrest, VerifiedBadge } from "@/components/planket/Bits";
 import {
@@ -70,6 +71,7 @@ export function PlanketComposer({
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const t = useT();
 
   // Auto-växande textarea: höjden följer innehållet, ingen inre scroll.
   useEffect(() => {
@@ -92,11 +94,11 @@ export function PlanketComposer({
   async function onPickImage(file: File | null | undefined) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast("Filen måste vara en bild");
+      toast(t("planket.composer.imageNotImage"));
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
-      toast("Max 4 MB");
+      toast(t("planket.composer.imageTooLarge"));
       return;
     }
     setBusy(true);
@@ -107,7 +109,7 @@ export function PlanketComposer({
     } = await supabase.auth.getUser();
     if (!user) {
       setBusy(false);
-      toast("Du måste vara inloggad.");
+      toast(t("planket.errors.auth"));
       return;
     }
     const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
@@ -162,7 +164,7 @@ export function PlanketComposer({
         >
           <Avatar username={username} src={avatarUrl} size={28} />
           <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#5D6883]">
-            Skriv till Planket…
+            {t("planket.composer.pill")}
           </span>
           <span
             aria-hidden
@@ -267,6 +269,7 @@ function ComposerCard({
   canPost: boolean;
   onSubmit: () => void;
 }) {
+  const t = useT();
   const hasBet = attachment?.type === "bet";
   const hasCoupon = attachment?.type === "coupon";
 
@@ -283,7 +286,7 @@ function ComposerCard({
             ref={areaRef}
             value={body}
             maxLength={PLANKET_MAX_BODY}
-            placeholder="Skriv något till Planket…"
+            placeholder={t("planket.composer.placeholder")}
             onChange={(e) => setBody(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -305,7 +308,7 @@ function ComposerCard({
                 onClick={onClearImage}
                 className="absolute right-2 top-2 cursor-pointer rounded-full border border-line bg-[#161618] px-2 py-1 text-[12px] text-muted"
               >
-                Ta bort bild
+                {t("planket.composer.removeImage")}
               </button>
             </div>
           ) : null}
@@ -343,13 +346,21 @@ function ComposerCard({
 
           <div className="mt-3 flex flex-wrap items-center gap-[9px] border-t border-line-soft pt-[13px]">
             <AttachButton
-              label={hasBet ? "Spel bifogat" : "Bifoga spel"}
+              label={
+                hasBet
+                  ? t("planket.composer.betAttached")
+                  : t("planket.composer.attachBet")
+              }
               active={hasBet}
               disabled={hasCoupon}
               onClick={() => setPicker(picker === "bet" ? null : "bet")}
             />
             <AttachButton
-              label={imageUrl ? "Bild bifogad" : "Bifoga bild"}
+              label={
+                imageUrl
+                  ? t("planket.composer.imageAttached")
+                  : t("planket.composer.attachImage")
+              }
               active={!!imageUrl}
               disabled={false}
               onClick={() => imageRef.current?.click()}
@@ -373,7 +384,7 @@ function ComposerCard({
                   : "cursor-not-allowed border border-line-strong bg-[#1e1e21] text-[#5D6883]"
               )}
             >
-              {busy ? "Postar…" : "Posta"}
+              {busy ? t("planket.composer.posting") : t("planket.composer.post")}
             </button>
           </div>
         </div>
@@ -424,14 +435,15 @@ function AttachmentPreview({
   attachment: Attachment;
   onRemove: () => void;
 }) {
+  const t = useT();
   const isBet = attachment.type === "bet";
 
   return (
     <div className="relative mt-3 rounded-[11px] border border-line-strong bg-[#1e1e21] px-[14px] py-3">
       <button
         type="button"
-        title="Ta bort bilagan"
-        aria-label="Ta bort bilagan"
+        title={t("planket.composer.removeAttachment")}
+        aria-label={t("planket.composer.removeAttachment")}
         onClick={onRemove}
         className="absolute right-[9px] top-[9px] flex h-6 w-6 cursor-pointer items-center justify-center rounded-[7px] border border-line-strong bg-[#111113] text-[14px] leading-none text-[#8A94AB] hover:border-[#46464d] hover:text-text"
       >
@@ -455,6 +467,7 @@ function BetPreview({
   // bet.verified kommer från servern (fetchAttachableBets), aldrig från en
   // klocka här inne. Det slutgiltiga svaret sätts ändå av triggern på
   // bets.logged_before_kickoff — det här är bara förhandsvisningen av det.
+  const t = useT();
   const verified = bet.verified;
 
   return (
@@ -472,7 +485,7 @@ function BetPreview({
         </span>
         {bet.kickoff ? (
           <span className="shrink-0 font-mono-num text-[12.5px] text-[#5D6883]">
-            {planketKickoff(bet.kickoff)}
+            {planketKickoff(bet.kickoff, t)}
           </span>
         ) : null}
         {verified ? <VerifiedBadge /> : null}
@@ -490,15 +503,14 @@ function BetPreview({
             {planketOdds(bet.odds)}
           </div>
           <div className="font-mono-num text-[12px] text-[#5D6883]">
-            {planketKr(bet.stake)}
+            {planketKr(bet.stake, { t })}
           </div>
         </div>
       </div>
 
       {bet.sheet_private ? (
         <div className="mt-2 pr-7 text-[11.5px] leading-[1.5] text-yellow">
-          Spelet blir synligt på Planket. Resten av {bet.sheet_name} förblir
-          privat.
+          {t("planket.composer.privateNote", { sheet: bet.sheet_name })}
         </div>
       ) : null}
     </>
@@ -510,14 +522,20 @@ function CouponPreview({
 }: {
   coupon: Extract<Attachment, { type: "coupon" }>["coupon"];
 }) {
+  const t = useT();
   return (
     <>
       <div className="mb-[9px] flex items-center gap-[9px] pr-7">
         <span className="shrink-0 font-display text-[12.5px] font-semibold uppercase tracking-[0.11em] text-yellow">
-          Kupong
+          {t("planket.coupon.label")}
         </span>
         <span className="min-w-0 truncate font-mono-num text-[12.5px] text-[#5D6883]">
-          {coupon.legs} spel · {coupon.legs > 1 ? "Kombination" : "Enkel"}
+          {t(
+            coupon.legs > 1
+              ? "planket.coupon.metaCombo"
+              : "planket.coupon.metaSingle",
+            { count: coupon.legs }
+          )}
         </span>
       </div>
       <div className="flex items-center gap-3.5 pr-7">
@@ -529,7 +547,7 @@ function CouponPreview({
             {planketOdds(coupon.total_odds)}
           </div>
           <div className="font-mono-num text-[12px] text-[#5D6883]">
-            {planketKr(coupon.stake)}
+            {planketKr(coupon.stake, { t })}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser, getProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchSiteSettings } from "@/lib/site-settings";
+import { getT } from "@/lib/texts/server";
 import { Badge, EmptyState, Panel } from "@/components/ui/Panel";
 import { JoinCompetitionButton } from "@/components/bets/JoinCompetitionButton";
 import { CompetitionBoard } from "@/components/competitions/CompetitionBoard";
@@ -17,7 +18,7 @@ import type { Competition, LeaderboardRow } from "@/lib/types";
 
 export default async function TavlingarPage() {
   await requireUser();
-  const profile = await getProfile();
+  const [profile, t] = await Promise.all([getProfile(), getT()]);
   const supabase = await createClient();
 
   // Middleware fångar det normalt — det här skyddar direktrender och cache.
@@ -72,10 +73,10 @@ export default async function TavlingarPage() {
     <div className="animate-sbfade space-y-5">
       <div>
         <h1 className="font-display text-[28px] font-semibold lg:text-[32px]">
-          Tävlingar
+          {t("tavlingar.page.title")}
         </h1>
         <p className="text-muted">
-          Anmäl dig och tävla på ROI under tävlingsperioden.
+          {t("tavlingar.page.intro")}
         </p>
       </div>
 
@@ -84,26 +85,26 @@ export default async function TavlingarPage() {
           href="/topplista"
           className="rounded-full border border-line bg-panel px-3.5 py-1.5 text-sm font-semibold text-muted no-underline"
         >
-          Topplista
+          {t("tavlingar.tabs.toplist")}
         </Link>
         <Link
           href="/tavlingar"
           className="rounded-full border border-win bg-win/10 px-3.5 py-1.5 text-sm font-semibold text-win no-underline"
         >
-          Tävlingar
+          {t("tavlingar.tabs.competitions")}
         </Link>
       </div>
 
       {!comps.length ? (
         <EmptyState>
-          Inga aktiva tävlingar. En admin kan skapa dem under Admin → Tävlingar.
+          {t("tavlingar.page.empty")}
         </EmptyState>
       ) : (
         comps.map((c) => {
           const joined = joinedIds.has(c.id);
-          const entries = rankBoard(boards[c.id] || [], c);
+          const entries = rankBoard(boards[c.id] || [], c, t);
           const status = competitionStatus(c);
-          const rules = rulesSummary(c);
+          const rules = rulesSummary(c, t);
           const self = profile
             ? entries.find((e) => e.user_id === profile.id)
             : undefined;
@@ -127,10 +128,10 @@ export default async function TavlingarPage() {
                       }
                     >
                       {status === "live"
-                        ? "Pågår"
+                        ? t("tavlingar.status.live")
                         : status === "upcoming"
-                          ? "Planerad"
-                          : "Avslutad"}
+                          ? t("tavlingar.status.upcoming")
+                          : t("tavlingar.status.done")}
                     </Badge>
                   </div>
                   {c.description ? (
@@ -139,15 +140,16 @@ export default async function TavlingarPage() {
                     </p>
                   ) : null}
                   <div className="font-mono-num text-[12.5px] text-faint">
-                    {formatPeriod(c.starts_at, c.ends_at)} · {entries.length}{" "}
-                    deltagare · {formatCountdown(c)}
+                    {formatPeriod(c.starts_at, c.ends_at)} ·{" "}
+                    {t("tavlingar.card.entrants", { count: entries.length })} ·{" "}
+                    {formatCountdown(c, undefined, t)}
                   </div>
                   {rules ? (
                     <div className="mt-1 text-[12.5px] text-muted">{rules}</div>
                   ) : null}
                   {c.prize ? (
                     <div className="mt-1 text-[12.5px] text-yellow">
-                      Pris: {c.prize}
+                      {t("tavlingar.card.prize", { prize: c.prize })}
                     </div>
                   ) : null}
                 </div>
@@ -172,8 +174,8 @@ export default async function TavlingarPage() {
                 {self && (self.rank === null || self.rank > 3) ? (
                   <div className="border-b border-rowline bg-win/10 px-4 py-3 text-sm font-semibold text-win">
                     {self.qualified
-                      ? `Du: plats ${self.rank}`
-                      : "Du: ej kvalificerad ännu"}
+                      ? t("tavlingar.self.rank", { rank: self.rank })
+                      : t("tavlingar.self.notQualified")}
                   </div>
                 ) : null}
                 {profile ? (

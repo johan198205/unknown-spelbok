@@ -25,6 +25,7 @@ import {
 } from "@/lib/notifications";
 import { planketOdds } from "@/lib/planket";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getT } from "@/lib/texts/server";
 
 /** Har användaren Planket-notiser i appen påslagna? Saknad rad ger defaults. */
 async function wantsPlanket(userId: string) {
@@ -73,13 +74,18 @@ export async function notifyPostBacked({
   try {
     if (!(await wantsPlanket(authorId))) return;
 
+    const t = await getT();
     const admin = createAdminClient();
     await admin.from("notifications").upsert(
       {
         user_id: authorId,
         type: "back",
-        title: `${backerUsername} ryggade ditt spel`,
-        body: `${match} · ${formatPick(pick)} @ ${planketOdds(odds)}`,
+        title: t("planket.notify.backTitle", { username: backerUsername }),
+        body: t("planket.notify.backBody", {
+          match,
+          pick: formatPick(pick),
+          odds: planketOdds(odds),
+        }),
         dedupe_key: `back:${postBackId}`,
         target_type: "post",
         target_id: postId,
@@ -125,14 +131,15 @@ export async function notifyPostReaction({
     const people = new Set((rows ?? []).map((r) => r.user_id)).size;
     if (people < 1) return;
 
+    const t = await getT();
     await admin.from("notifications").upsert(
       {
         user_id: authorId,
         type: "reaction",
         title:
           people === 1
-            ? "Någon reagerade på ditt inlägg"
-            : `${people} personer reagerade på ditt inlägg`,
+            ? t("planket.notify.reaction.one")
+            : t("planket.notify.reaction.other", { count: people }),
         body: "",
         dedupe_key: `reaction:${postId}:${reactionHourKey(hourStart)}`,
         target_type: "post",

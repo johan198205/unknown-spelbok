@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAmount, useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import { formatAmount } from "@/lib/display";
 import {
   STATS_PERIODS,
@@ -33,6 +34,7 @@ export function SheetStatsPanel({
   sheetId: string;
   initialStats: BetStatsPayload;
 }) {
+  const t = useT();
   const amount = useAmount();
   const prefs = useDisplayPrefs();
 
@@ -85,77 +87,77 @@ export function SheetStatsPanel({
 
   const columns: Row[][] = [
     [
-      { label: "Antal spel", value: String(stats.antal_spel) },
-      { label: "Vinster", value: String(stats.vinster), color: "text-win" },
-      { label: "Förluster", value: String(stats.forluster), color: "text-loss" },
-      { label: "Void / push", value: String(stats.void) },
+      { label: t("spelbok.stats.count"), value: String(stats.antal_spel) },
+      { label: t("spelbok.stats.wins"), value: String(stats.vinster), color: "text-win" },
+      { label: t("spelbok.stats.losses"), value: String(stats.forluster), color: "text-loss" },
+      { label: t("spelbok.stats.voids"), value: String(stats.void) },
       {
-        label: "Öppna spel",
+        label: t("spelbok.stats.open"),
         value: String(stats.oppna_spel),
         color: stats.oppna_spel > 0 ? "text-cyan" : undefined,
       },
-      { label: "Öppen risk", value: plain(stats.oppen_risk) },
+      { label: t("spelbok.stats.openRisk"), value: plain(stats.oppen_risk) },
       {
-        label: "Öppen potentiell vinst",
+        label: t("spelbok.stats.openPotential"),
         value: plain(stats.oppen_potentiell_vinst),
       },
     ],
     [
-      { label: "Insats", value: plain(stats.insats) },
+      { label: t("spelbok.stats.stake"), value: plain(stats.insats) },
       {
-        label: "Vunnet",
+        label: t("spelbok.stats.won"),
         value: amount(stats.vunnet),
         color: "text-win",
       },
       {
-        label: "Förlorat",
+        label: t("spelbok.stats.lost"),
         value: amount(stats.forlorat),
         color: "text-loss",
       },
       {
-        label: "Netto",
+        label: t("spelbok.stats.netto"),
         value: amount(stats.netto),
         color: nettoColor(stats.netto),
       },
       {
-        label: "ROI",
+        label: t("spelbok.stats.roi"),
         value: formatRoiOrDash(stats.roi, settled),
         color: settled >= 5 ? nettoColor(stats.roi) : "text-faint",
       },
       {
-        label: "1 unit",
+        label: t("spelbok.stats.unitSize"),
         value: formatAmount(stats.unit_size, { ...prefs, mode: "money" }, {
           sign: false,
         }),
       },
       {
-        label: "Unitnetto",
+        label: t("spelbok.stats.unitNetto"),
         value:
           (stats.unitnetto > 0 ? "+" : "") + formatNumber(stats.unitnetto, 2),
         color: nettoColor(stats.unitnetto),
       },
     ],
     [
-      { label: "Vinstprocent", value: formatPercent(stats.vinstprocent) },
-      { label: "Medelodds", value: formatNumber(stats.medelodds, 2) },
-      { label: "Medelinsats", value: plain(Math.round(stats.medelinsats)) },
+      { label: t("spelbok.stats.hitrate"), value: formatPercent(stats.vinstprocent) },
+      { label: t("spelbok.stats.avgOdds"), value: formatNumber(stats.medelodds, 2) },
+      { label: t("spelbok.stats.avgStake"), value: plain(Math.round(stats.medelinsats)) },
       {
-        label: "Medelvinst",
+        label: t("spelbok.stats.avgWin"),
         value: amount(stats.medelvinst),
         color: nettoColor(stats.medelvinst),
       },
       {
-        label: "Bästa spel",
+        label: t("spelbok.stats.best"),
         value: amount(stats.basta_spel),
         color: "text-win",
       },
       {
-        label: "Sämsta spel",
+        label: t("spelbok.stats.worst"),
         value: amount(stats.samsta_spel),
         color: "text-loss",
       },
       {
-        label: "Snittinsats öppna",
+        label: t("spelbok.stats.avgStakeOpen"),
         value: plain(Math.round(stats.snittinsats_oppna)),
       },
     ],
@@ -165,7 +167,7 @@ export function SheetStatsPanel({
     <section className="overflow-hidden rounded-[14px] border border-line bg-panel">
       <div className="flex flex-col gap-3 border-b border-line-soft px-5 py-[17px] sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-display text-[17px] font-semibold uppercase tracking-[0.09em]">
-          Statistik
+          {t("spelbok.stats.title")}
         </h2>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           {STATS_PERIODS.map((p) => (
@@ -180,7 +182,7 @@ export function SheetStatsPanel({
                   : "border-transparent font-medium text-muted hover:text-text"
               )}
             >
-              {p.label}
+              {t(p.key)}
             </button>
           ))}
         </div>

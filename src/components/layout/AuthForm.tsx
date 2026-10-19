@@ -6,6 +6,7 @@ import { FormEvent, Suspense, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
+import { useT } from "@/components/TextsProvider";
 import { track } from "@/lib/analytics";
 import { createClient } from "@/lib/supabase/client";
 
@@ -34,6 +35,7 @@ function GoogleIcon() {
 }
 
 function AuthForm({ mode }: { mode: "login" | "register" }) {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/hem";
@@ -99,9 +101,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
         // Med e-postbekräftelse påslagen svarar Supabase utan fel även när
         // adressen redan finns, men då utan identiteter.
         if (data.user && data.user.identities?.length === 0) {
-          throw new Error(
-            "Det finns redan ett konto med den e-postadressen. Logga in i stället."
-          );
+          throw new Error(t("auth.error.emailTaken"));
         }
 
         track({ event: "sign_up", method: "password" });
@@ -123,7 +123,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
       router.push(next);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Något gick fel");
+      setError(err instanceof Error ? err.message : t("auth.error.generic"));
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
       <div className="w-full max-w-[400px]">
         <div className="mb-6 text-center">
           <div className="font-display text-2xl font-bold tracking-[0.14em]">
-            SPELBOK
+            {t("auth.brand")}
           </div>
         </div>
         <Panel className="p-[26px]">
@@ -147,7 +147,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
                   : "text-muted hover:text-text"
               }`}
             >
-              Logga in
+              {t("auth.tabs.login")}
             </Link>
             <Link
               href={
@@ -161,7 +161,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
                   : "text-muted hover:text-text"
               }`}
             >
-              Registrera
+              {t("auth.tabs.register")}
             </Link>
           </div>
 
@@ -176,16 +176,16 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
           >
             <GoogleIcon />
             {googleLoading
-              ? "Öppnar Google …"
+              ? t("auth.google.loading")
               : mode === "login"
-                ? "Logga in med Google"
-                : "Fortsätt med Google"}
+                ? t("auth.google.login")
+                : t("auth.google.register")}
           </button>
 
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-line-soft" />
             <span className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">
-              eller
+              {t("auth.divider")}
             </span>
             <div className="h-px flex-1 bg-line-soft" />
           </div>
@@ -194,13 +194,12 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
             <div className="space-y-3.5">
               <div className="rounded-[9px] border border-line-soft bg-bg-soft px-4 py-3.5 text-sm leading-relaxed">
                 <div className="mb-1 font-semibold text-text">
-                  Bekräfta din e-post
+                  {t("auth.confirm.title")}
                 </div>
                 <div className="text-muted">
-                  Vi har skickat en bekräftelselänk till{" "}
-                  <span className="font-semibold text-text">{confirmSentTo}</span>.
-                  Klicka på länken i mejlet för att aktivera kontot. Hittar du
-                  det inte, titta i skräpposten.
+                  {t("auth.confirm.before")}{" "}
+                  <span className="font-semibold text-text">{confirmSentTo}</span>
+                  {t("auth.confirm.after")}
                 </div>
               </div>
               <Button
@@ -209,35 +208,35 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
                 className="w-full"
                 onClick={() => setConfirmSentTo(null)}
               >
-                Använd en annan e-postadress
+                {t("auth.confirm.otherEmail")}
               </Button>
             </div>
           ) : (
             <form onSubmit={onSubmit} className="space-y-3.5">
               {mode === "register" ? (
                 <Input
-                  label="Användarnamn"
+                  label={t("auth.field.username")}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="t.ex. valuejagaren"
+                  placeholder={t("auth.field.usernamePlaceholder")}
                   required
                   minLength={3}
                 />
               ) : null}
               <Input
-                label="E-post"
+                label={t("auth.field.email")}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="namn@exempel.se"
+                placeholder={t("auth.field.emailPlaceholder")}
                 required
               />
               <Input
-                label="Lösenord"
+                label={t("auth.field.password")}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={t("auth.field.passwordPlaceholder")}
                 required
                 minLength={6}
               />
@@ -254,16 +253,16 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
                 disabled={loading || googleLoading}
               >
                 {loading
-                  ? "Vänta…"
+                  ? t("auth.submit.loading")
                   : mode === "login"
-                    ? "Logga in"
-                    : "Skapa konto"}
+                    ? t("auth.submit.login")
+                    : t("auth.submit.register")}
               </Button>
             </form>
           )}
         </Panel>
         <div className="mt-[18px] text-center">
-          <Link href="/">Tillbaka till startsidan</Link>
+          <Link href="/">{t("auth.back")}</Link>
         </div>
       </div>
     </div>
@@ -271,11 +270,13 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
 }
 
 export function AuthPage({ mode }: { mode: "login" | "register" }) {
+  const t = useT();
+
   return (
     <Suspense
       fallback={
         <div className="flex flex-1 items-center justify-center py-20 font-mono-num text-faint">
-          LADDAR …
+          {t("auth.loading")}
         </div>
       }
     >

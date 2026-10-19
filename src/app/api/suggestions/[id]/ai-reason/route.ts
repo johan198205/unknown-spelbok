@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stockholmDayBounds, stockholmYmd } from "@/lib/stockholm";
 import { parseReasons } from "@/lib/suggestions";
+import { getT } from "@/lib/texts/server";
 import {
   DAILY_AI_LIMIT,
   generateAiReason,
@@ -89,9 +90,11 @@ export async function POST(
     .lt("created_at", to);
 
   if ((count ?? 0) >= DAILY_AI_LIMIT) {
+    // Felet visas som notis i AiReasonButton.
+    const t = await getT();
     return NextResponse.json(
       {
-        error: `Dagens AI-analyser är slut (${DAILY_AI_LIMIT}/dag)`,
+        error: t("forslag.ai.limitReached", { limit: DAILY_AI_LIMIT }),
         limit: DAILY_AI_LIMIT,
       },
       { status: 429 }

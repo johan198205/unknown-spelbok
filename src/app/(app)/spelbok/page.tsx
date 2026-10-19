@@ -15,6 +15,7 @@ import {
 } from "@/lib/bet-stats";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
 import { attachManualLogos } from "@/lib/manual-logos";
+import { getT } from "@/lib/texts/server";
 
 function toPlain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -31,7 +32,7 @@ export default async function SpelbokPage({
   searchParams: Promise<{ sheet?: string; bet?: string }>;
 }) {
   const user = await requireUser();
-  const profile = await getProfile();
+  const [profile, t] = await Promise.all([getProfile(), getT()]);
   const { sheet: sheetParam, bet: betParam } = await searchParams;
   const supabase = await createClient();
 
@@ -105,7 +106,7 @@ export default async function SpelbokPage({
   // Manuella och importerade spel får lagloggor uppslagna på lagnamn.
   bets = await attachManualLogos(supabase, bets);
 
-  const username = profile?.username || "användare";
+  const username = profile?.username || t("spelbok.page.usernameFallback");
   // Statistik-RPC:n räknar unitnetto och behöver storleken i klartext.
   const unitSize = (await getDisplayPrefs()).unitSize;
 
@@ -150,7 +151,7 @@ export default async function SpelbokPage({
   if (!sheetList.length) {
     return (
       <EmptyState>
-        Du har inga spreadsheets ännu. Skapa din första nedan.
+        {t("spelbok.page.empty")}
         <div className="mt-4 flex justify-center">
           <NewSheetForm />
         </div>
@@ -162,7 +163,11 @@ export default async function SpelbokPage({
 
   return (
     <Suspense
-      fallback={<div className="py-10 text-center text-muted">Laddar…</div>}
+      fallback={
+        <div className="py-10 text-center text-muted">
+          {t("spelbok.page.loading")}
+        </div>
+      }
     >
       <SpelbokSheetView
         sheet={toPlain(activeSheet)}

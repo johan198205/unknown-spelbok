@@ -11,6 +11,8 @@ import { FormattedAmount } from "@/components/FormattedAmount";
 import { getUnreadNotificationCount } from "@/lib/notifications-server";
 import { fetchSiteSettings } from "@/lib/site-settings";
 import { createClient } from "@/lib/supabase/server";
+import type { TextKey } from "@/lib/texts";
+import { getT } from "@/lib/texts/server";
 import { initialOf, nettoColor } from "@/lib/utils";
 
 export async function SiteHeader({
@@ -36,17 +38,24 @@ export async function SiteHeader({
 
   const site = await fetchSiteSettings(supabase);
   const unread = profile ? await getUnreadNotificationCount() : 0;
+  const t = await getT();
 
   // Hem nås via loggan och profilen via namnet/avataren uppe till höger.
   // Kuponger är avstängd tills vidare (FEATURES.coupons).
   const appNav: { href: string; label: string; icon: NavIconKey }[] = [
-    { href: "/spelbok", label: "Spreadsheet", icon: "spelbok" },
-    { href: "/planket", label: "Planket", icon: "planket" },
+    { href: "/spelbok", label: t("header.nav.spreadsheet"), icon: "spelbok" },
+    { href: "/planket", label: t("header.nav.planket"), icon: "planket" },
     ...(site.competitions_enabled
-      ? [{ href: "/tavlingar", label: "Tävlingar", icon: "tavlingar" as const }]
+      ? [
+          {
+            href: "/tavlingar",
+            label: t("header.nav.tavlingar"),
+            icon: "tavlingar" as const,
+          },
+        ]
       : []),
-    { href: "/topplista", label: "Topplistor", icon: "topplista" },
-    { href: "/spelbolag", label: "Spelbolag", icon: "spelbolag" },
+    { href: "/topplista", label: t("header.nav.topplistor"), icon: "topplista" },
+    { href: "/spelbolag", label: t("header.nav.spelbolag"), icon: "spelbolag" },
   ];
 
   return (
@@ -54,10 +63,10 @@ export async function SiteHeader({
       <div className="mx-auto flex min-w-0 max-w-[1360px] items-center gap-3 px-4 py-3 lg:gap-[22px] lg:px-5">
         <Link
           href={profile ? "/hem" : "/"}
-          title="Till startsidan"
+          title={t("header.brandTitle")}
           className="shrink-0 font-display text-[19px] font-bold tracking-[0.14em] text-text no-underline hover:text-text hover:no-underline"
         >
-          SPELBOK
+          {t("header.brand")}
         </Link>
 
         {/* I mobil ersätts menyraden av hamburgermenyn längst till höger. */}
@@ -81,7 +90,7 @@ export async function SiteHeader({
               {/* Namn och avatar är vägen till profilen — ingen egen menyflik. */}
               <Link
                 href="/installningar"
-                title="Din profil"
+                title={t("header.profile.title")}
                 className="hidden text-right no-underline hover:no-underline lg:block"
               >
                 <div className="text-sm font-semibold text-text hover:underline">
@@ -95,8 +104,8 @@ export async function SiteHeader({
               {/* Mobil: saldo → profilbild → notisklocka → meny. */}
               <Link
                 href="/installningar"
-                aria-label="Din profil"
-                title="Din profil"
+                aria-label={t("header.profile.title")}
+                title={t("header.profile.title")}
                 className="shrink-0 no-underline hover:no-underline max-lg:order-1"
               >
                 {profile.avatar_url ? (
@@ -120,7 +129,7 @@ export async function SiteHeader({
                   href="/admin/anvandare"
                   className="hidden rounded-[var(--radius-btn-sm)] px-3 lg:block py-1.5 text-[13px] font-semibold text-yellow no-underline hover:bg-yellow/10 hover:text-yellow hover:no-underline"
                 >
-                  Admin
+                  {t("header.admin")}
                 </Link>
               ) : null}
               <div className="hidden lg:block">
@@ -142,7 +151,7 @@ export async function SiteHeader({
               href="/login"
               className="rounded-[var(--radius-btn-sm)] bg-win px-[15px] py-[9px] text-[13.5px] font-bold text-win-ink no-underline hover:text-win-ink hover:no-underline hover:brightness-105"
             >
-              Logga in
+              {t("header.login")}
             </Link>
           )}
           {profile ? null : <MobileMenu user={null} />}
@@ -161,54 +170,69 @@ export async function SiteHeader({
  * Hjälp.
  */
 const FOOTER_COLUMNS: {
-  title: string;
-  links: { href: string; label: string; cms?: boolean }[];
+  title: TextKey;
+  links: { href: string; label: TextKey; cms?: boolean }[];
 }[] = [
   {
-    title: "Spelbok",
+    title: "header.footer.col.spelbok",
     links: [
-      { href: "/planket", label: "Planket" },
-      { href: "/topplista", label: "Topplista" },
-      { href: "/spelbolag", label: "Spelbolag" },
-      { href: "/om-oss", label: "Om oss" },
+      { href: "/planket", label: "header.footer.link.planket" },
+      { href: "/topplista", label: "header.footer.link.topplista" },
+      { href: "/spelbolag", label: "header.footer.link.spelbolag" },
+      { href: "/om-oss", label: "header.footer.link.omOss" },
     ],
   },
   {
-    title: "Hjälp",
+    title: "header.footer.col.hjalp",
     links: [
-      { href: "/sa-fungerar-spelbok", label: "Så fungerar Spelbok", cms: true },
-      { href: "/faq", label: "FAQ", cms: true },
-      { href: "/kontakt", label: "Kontakt" },
+      {
+        href: "/sa-fungerar-spelbok",
+        label: "header.footer.link.saFungerar",
+        cms: true,
+      },
+      { href: "/faq", label: "header.footer.link.faq", cms: true },
+      { href: "/kontakt", label: "header.footer.link.kontakt" },
     ],
   },
   {
-    title: "Juridiskt",
+    title: "header.footer.col.juridiskt",
     links: [
-      { href: "/integritetspolicy", label: "Integritetspolicy", cms: true },
-      { href: "/anvandarvillkor", label: "Användarvillkor", cms: true },
-      { href: "/cookies", label: "Cookies", cms: true },
+      {
+        href: "/integritetspolicy",
+        label: "header.footer.link.integritet",
+        cms: true,
+      },
+      {
+        href: "/anvandarvillkor",
+        label: "header.footer.link.villkor",
+        cms: true,
+      },
+      { href: "/cookies", label: "header.footer.link.cookies", cms: true },
     ],
   },
 ];
 
 export async function SiteFooter() {
   const supabase = await createClient();
-  const { data: pages } = await supabase
-    .from("pages")
-    .select("slug, title, show_in_footer")
-    .eq("published", true)
-    .order("title");
+  const [{ data: pages }, t] = await Promise.all([
+    supabase
+      .from("pages")
+      .select("slug, title, show_in_footer")
+      .eq("published", true)
+      .order("title"),
+    getT(),
+  ]);
 
   const published = pages ?? [];
   const known = new Set(
     FOOTER_COLUMNS.flatMap((c) => c.links.map((l) => l.href)),
   );
   const columns = FOOTER_COLUMNS.map((col) => ({
-    title: col.title,
+    title: t(col.title),
     links: col.links.flatMap((l) => {
       const page = published.find((row) => `/${row.slug}` === l.href);
       if (l.cms && !page) return [];
-      return [{ href: l.href, label: page?.title || l.label }];
+      return [{ href: l.href, label: page?.title || t(l.label) }];
     }),
   }));
   columns[1].links.push(
@@ -227,20 +251,18 @@ export async function SiteFooter() {
           <div className="max-w-[360px]">
             <Link
               href="/"
-              title="Till startsidan"
+              title={t("header.brandTitle")}
               className="inline-flex items-center gap-3 text-text no-underline hover:text-text hover:no-underline"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-[7px] border border-line-strong bg-panel font-display text-[14px] font-bold">
-                S
+                {t("header.footer.brandMark")}
               </span>
               <span className="font-display text-[20px] font-bold tracking-[0.14em]">
-                SPELBOK
+                {t("header.brand")}
               </span>
             </Link>
             <p className="mt-4 leading-relaxed text-faint">
-              Spelbok är ett verktyg för bokföring och statistik av dina
-              bettingspel. Följ din ROI, jämför dig i topplistan. Inga spel
-              förmedlas.
+              {t("header.footer.about")}
             </p>
           </div>
 
@@ -268,31 +290,39 @@ export async function SiteFooter() {
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-y-4 border-t border-line-soft py-8 text-text [&>*]:px-6 sm:[&>*+*]:border-l sm:[&>*+*]:border-line-soft">
-          <span title="18+ · Spela ansvarsfullt" className="flex items-center">
-            <AgeMark />
+          <span
+            title={t("header.footer.responsible.title")}
+            className="flex items-center"
+          >
+            <AgeMark
+              line1={t("header.footer.responsible.line1")}
+              line2={t("header.footer.responsible.line2")}
+            />
           </span>
           <ExternalMark
             href="https://www.stodlinjen.se"
-            label="Stödlinjen – för spelare och anhöriga"
+            label={t("header.footer.stodlinjen")}
           >
             <StodlinjenMark />
           </ExternalMark>
           <ExternalMark
             href="https://www.spelpaus.se"
-            label="Spelpaus – stäng av dig från spel"
+            label={t("header.footer.spelpaus")}
           >
             <SpelpausMark />
           </ExternalMark>
           <ExternalMark
             href="https://www.spelinspektionen.se"
-            label="Spelinspektionen"
+            label={t("header.footer.spelinspektionen")}
           >
             <SpelinspektionenMark />
           </ExternalMark>
         </div>
 
         <div className="flex flex-col gap-3 border-t border-line-soft py-6 text-[12px] text-faint sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} Spelbok</span>
+          <span>
+            {t("header.footer.copyright", { year: new Date().getFullYear() })}
+          </span>
           <div className="flex flex-wrap gap-x-6 gap-y-2">
             {legal.map((l) => (
               <Link
@@ -336,7 +366,7 @@ function ExternalMark({
   );
 }
 
-function AgeMark() {
+function AgeMark({ line1, line2 }: { line1: string; line2: string }) {
   return (
     <svg width="116" height="30" viewBox="0 0 116 30" aria-hidden="true">
       <circle
@@ -361,10 +391,10 @@ function AgeMark() {
         +
       </text>
       <text x="36" y="13" fontSize="9" fontWeight="800" fill="currentColor">
-        SPELA
+        {line1}
       </text>
       <text x="36" y="23" fontSize="9" fontWeight="800" fill="currentColor">
-        ANSVARSFULLT
+        {line2}
       </text>
     </svg>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/components/TextsProvider";
 import { countdownTo, publishedLabel } from "@/lib/coupons";
 
 const TONE: Record<"cyan" | "yellow" | "muted", string> = {
@@ -20,6 +21,7 @@ const TONE: Record<"cyan" | "yellow" | "muted", string> = {
  * texten är identisk i båda och hydreringen är tyst.
  */
 export function CouponCountdown({ kickoff }: { kickoff: string | null }) {
+  const t = useT();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function CouponCountdown({ kickoff }: { kickoff: string | null }) {
     return () => window.clearInterval(id);
   }, []);
 
-  const { text, tone, started } = countdownTo(kickoff, now);
+  const { text, tone, started } = countdownTo(kickoff, now, t);
   const color = TONE[tone];
 
   return (
@@ -47,6 +49,7 @@ export function CouponCountdown({ kickoff }: { kickoff: string | null }) {
 
 /** Publiceringstid relativt nu. Samma tysta hydrering som nedräkningen. */
 export function CouponPublished({ publishedAt }: { publishedAt: string }) {
+  const t = useT();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -54,5 +57,5 @@ export function CouponPublished({ publishedAt }: { publishedAt: string }) {
     return () => window.clearInterval(id);
   }, []);
 
-  return <>{publishedLabel(publishedAt, now)}</>;
+  return <>{publishedLabel(publishedAt, now, t)}</>;
 }

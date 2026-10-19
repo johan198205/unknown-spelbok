@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { useDisplayPrefs } from "@/components/DisplayPrefsProvider";
+import { useT } from "@/components/TextsProvider";
 import { toUnits } from "@/lib/display";
 import {
   CHART_PERIOD_OPTIONS,
@@ -72,6 +73,7 @@ export function DashboardNettoChart({
   const [period, setPeriod] = useState<ChartPeriodFilter>("all");
   const uid = useId().replace(/:/g, "");
   const prefs = useDisplayPrefs();
+  const t = useT();
 
   const chart = useMemo(() => {
     const cut = periodCutoff(period);
@@ -138,7 +140,7 @@ export function DashboardNettoChart({
               : "bg-transparent text-muted hover:text-text"
           )}
         >
-          {o.label}
+          {t(o.key)}
         </button>
       ))}
     </div>
@@ -147,7 +149,7 @@ export function DashboardNettoChart({
   const header = (
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
       <h2 className="font-display text-[15px] font-semibold uppercase tracking-[0.09em]">
-        Ackumulerat netto
+        {t("statistik.dashboardChart.title")}
       </h2>
       {periodPicker}
     </div>
@@ -158,7 +160,7 @@ export function DashboardNettoChart({
       <section className="rounded-[14px] border border-line bg-panel p-4">
         {header}
         <p className="py-14 text-center text-[13px] text-muted">
-          Grafen fylls när du sätter resultat.
+          {t("statistik.dashboardChart.empty")}
         </p>
       </section>
     );
@@ -207,7 +209,7 @@ export function DashboardNettoChart({
             preserveAspectRatio="none"
             className="block h-[230px] w-full"
             role="img"
-            aria-label="Ackumulerat netto över tid"
+            aria-label={t("statistik.dashboardChart.ariaLabel")}
           >
             <defs>
               {/*
@@ -290,8 +292,8 @@ export function DashboardNettoChart({
           </svg>
 
           <div className="mt-2 flex justify-between font-mono-num text-[11px] text-faint">
-            {xTicks.map((t) => (
-              <span key={t.key}>{t.label}</span>
+            {xTicks.map((tick) => (
+              <span key={tick.key}>{tick.label}</span>
             ))}
           </div>
 
@@ -301,7 +303,7 @@ export function DashboardNettoChart({
                 className="h-[2px] w-[14px] shrink-0"
                 style={{ background: totalColor }}
               />
-              Totalt
+              {t("statistik.dashboardChart.legendTotal")}
             </span>
             {chart.series.map((s) => (
               <span

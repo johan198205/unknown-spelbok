@@ -1,10 +1,12 @@
 "use client";
 
 import { Bell, BellOff, BellRing } from "lucide-react";
+import { useT } from "@/components/TextsProvider";
 import { Button } from "@/components/ui/Button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export function PushToggle() {
+  const t = useT();
   const {
     isSupported,
     permission,
@@ -21,7 +23,7 @@ export function PushToggle() {
   if (!isSupported) {
     return (
       <p className="text-[14px] text-muted">
-        Notiser kräver att appen är installerad på hemskärmen.
+        {t("pwa.push.unsupported")}
       </p>
     );
   }
@@ -29,8 +31,7 @@ export function PushToggle() {
   if (permission === "denied") {
     return (
       <p className="text-[14px] text-muted">
-        Du har blockerat notiser. Aktivera dem i webbläsarens inställningar för
-        att kunna ta emot push.
+        {t("pwa.push.denied")}
       </p>
     );
   }
@@ -41,7 +42,7 @@ export function PushToggle() {
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 text-[14.5px] font-semibold text-win">
             <BellRing className="size-4" strokeWidth={2.25} />
-            Notiser aktiverade
+            {t("pwa.push.active")}
           </span>
           <Button
             variant="secondary"
@@ -50,7 +51,7 @@ export function PushToggle() {
             onClick={() => void unsubscribe()}
           >
             <BellOff className="size-3.5" />
-            {loading ? "Stänger av…" : "Stäng av"}
+            {loading ? t("pwa.push.disabling") : t("pwa.push.disable")}
           </Button>
         </div>
       ) : (
@@ -59,7 +60,7 @@ export function PushToggle() {
           onClick={() => void subscribe()}
         >
           <Bell className="size-4" />
-          {loading ? "Aktiverar…" : "Aktivera notiser"}
+          {loading ? t("pwa.push.enabling") : t("pwa.push.enable")}
         </Button>
       )}
       {error ? <p className="text-[13px] text-loss">{error}</p> : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { TeamLogo } from "@/components/bets/TeamPair";
+import { useT } from "@/components/TextsProvider";
 import { useClockTick } from "@/hooks/useClockTick";
 import {
   fixtureFromBet,
@@ -12,6 +13,7 @@ import { parseMatchSides, teamLogoUrl } from "@/lib/logos";
 import type { Bet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { SheetDensity } from "@/lib/sheet-filters";
+import { createT, type TFunction } from "@/lib/texts";
 
 type Side = {
   name: string;
@@ -44,23 +46,27 @@ const PHASE_COLOR: Record<MatchPhaseTone, string> = {
  * `now` skickas in i stället för att läsas här inne så klockan kan tickas
  * av komponenten — funktionen ska förbli ren och testbar.
  */
-export function betMatchSides(bet: Bet, now = Date.now()): Sides {
+export function betMatchSides(
+  bet: Bet,
+  now = Date.now(),
+  t: TFunction = createT({})
+): Sides {
   const fixture = fixtureFromBet(bet);
   const phase = matchPhase(fixture, {
     settled: bet.result !== "open",
     placedAt: bet.placed_at,
-  }, now);
+  }, now, t);
 
   if (fixture) {
     const sport = fixture.sport;
     return {
       home: {
-        name: fixture.home_name || "Hemma",
+        name: fixture.home_name || t("terms.fixture.homeFallback"),
         logo: teamLogoUrl(fixture.home_logo, fixture.home_team_id, sport),
         score: fixture.home_score ?? null,
       },
       away: {
-        name: fixture.away_name || "Borta",
+        name: fixture.away_name || t("terms.fixture.awayFallback"),
         logo: teamLogoUrl(fixture.away_logo, fixture.away_team_id, sport),
         score: fixture.away_score ?? null,
       },
@@ -163,8 +169,9 @@ export function SheetMatchCell({
   variant?: "table" | "card";
 }) {
   // Tick var 30:e sekund så fallback-minuten och HT/FT byter utan refresh.
+  const t = useT();
   const now = useClockTick(needsMatchPhaseTick(bet.fixtures), 30_000);
-  const sides = betMatchSides(bet, now);
+  const sides = betMatchSides(bet, now, t);
   const showScore = sides.hasScore;
   // density "slim" borttaget — prop behålls för anropare.
   void density;

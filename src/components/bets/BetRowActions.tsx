@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Copy, Trash2 } from "lucide-react";
+import { useT } from "@/components/TextsProvider";
 import { ACTION_ICON_SIZE, type BetActionSize } from "@/lib/bet-actions-ui";
 import { canRyggaBet } from "@/lib/rygga";
 import { canDeleteBet } from "@/lib/logos";
@@ -84,6 +85,7 @@ export function BetRowActions({
   size?: BetActionSize;
   hoverReveal?: boolean;
 }) {
+  const t = useT();
   const showRygga = canRygga && canRyggaBet(bet);
   const showDelete = canEdit && !!onRemove && canDeleteBet(bet);
 
@@ -102,13 +104,17 @@ export function BetRowActions({
       )}
     >
       {showRygga && onRygga ? (
-        <BetActionIconButton label="Rygga spel" onClick={onRygga} size={size}>
+        <BetActionIconButton
+          label={t("spelbok.actions.rygga")}
+          onClick={onRygga}
+          size={size}
+        >
           <Copy className="size-3.5" strokeWidth={2.25} />
         </BetActionIconButton>
       ) : null}
       {showDelete ? (
         <BetActionIconButton
-          label="Ta bort"
+          label={t("spelbok.actions.remove")}
           tone="danger"
           size={size}
           onClick={onRemove}

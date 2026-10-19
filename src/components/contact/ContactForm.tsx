@@ -3,13 +3,26 @@
 import { useRef, useState } from "react";
 import { CONTACT_TOPICS, type ContactTopic } from "@/lib/contact";
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/TextsProvider";
+import type { TextKey } from "@/lib/texts";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_MSG = 2000;
 
 type Status = "idle" | "sending" | "sent";
 
+/** Ärendet skickas som det står i CONTACT_TOPICS; bara etiketten är redigerbar. */
+const TOPIC_LABELS: Record<ContactTopic, TextKey> = {
+  Support: "kontakt.topics.support",
+  "Konto och data": "kontakt.topics.account",
+  Spelbolagslistan: "kontakt.topics.bookmakers",
+  Annonsering: "kontakt.topics.ads",
+  Press: "kontakt.topics.press",
+  Annat: "kontakt.topics.other",
+};
+
 export function ContactForm() {
+  const t = useT();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [topic, setTopic] = useState<ContactTopic>("Support");
@@ -33,16 +46,16 @@ export function ContactForm() {
 
   function validate(): string | null {
     if (!name.trim() || !email.trim()) {
-      return "Fyll i namn och e-post så vi kan svara.";
+      return t("kontakt.errors.nameEmail");
     }
     if (!EMAIL_RE.test(email.trim())) {
-      return "E-postadressen ser inte rätt ut.";
+      return t("kontakt.errors.email");
     }
     if (!message.trim()) {
-      return "Skriv ett meddelande.";
+      return t("kontakt.errors.message");
     }
     if (!consent) {
-      return "Du behöver godkänna att vi sparar meddelandet för att kunna svara.";
+      return t("kontakt.errors.consent");
     }
     return null;
   }
@@ -78,13 +91,13 @@ export function ContactForm() {
         error?: string;
       };
       if (!res.ok) {
-        setError(data.error || "Något gick fel. Försök igen om en stund.");
+        setError(data.error || t("kontakt.errors.generic"));
         setStatus("idle");
         return;
       }
       setStatus("sent");
     } catch {
-      setError("Något gick fel. Försök igen om en stund.");
+      setError(t("kontakt.errors.generic"));
       setStatus("idle");
     } finally {
       submitting.current = false;
@@ -98,10 +111,10 @@ export function ContactForm() {
       className="relative rounded-2xl border border-line bg-panel p-7"
     >
       <h2 className="font-display text-[22px] font-semibold text-text">
-        Skicka ett meddelande
+        {t("kontakt.form.title")}
       </h2>
       <p className="mt-1 text-[14px] text-[#8A94AB]">
-        Vi svarar till den e-post du anger.
+        {t("kontakt.form.subtitle")}
       </p>
 
       {/* Honeypot — dold för människor */}
@@ -109,7 +122,7 @@ export function ContactForm() {
         className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
         aria-hidden="true"
       >
-        <label htmlFor="contact-website">Webbplats</label>
+        <label htmlFor="contact-website">{t("kontakt.form.honeypot")}</label>
         <input
           id="contact-website"
           name="website"
@@ -121,7 +134,7 @@ export function ContactForm() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        <Field label="Namn" htmlFor="contact-name">
+        <Field label={t("kontakt.form.name")} htmlFor="contact-name">
           <input
             id="contact-name"
             name="name"
@@ -135,7 +148,7 @@ export function ContactForm() {
             autoComplete="name"
           />
         </Field>
-        <Field label="E-post" htmlFor="contact-email">
+        <Field label={t("kontakt.form.email")} htmlFor="contact-email">
           <input
             id="contact-email"
             name="email"
@@ -154,18 +167,18 @@ export function ContactForm() {
 
       <div className="mt-5">
         <span className="mb-2.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8A94AB]">
-          Ärende
+          {t("kontakt.form.topic")}
         </span>
         <div className="flex flex-wrap gap-2">
-          {CONTACT_TOPICS.map((t) => {
-            const on = topic === t;
+          {CONTACT_TOPICS.map((item) => {
+            const on = topic === item;
             return (
               <button
-                key={t}
+                key={item}
                 type="button"
                 disabled={status === "sent"}
                 onClick={() => {
-                  setTopic(t);
+                  setTopic(item);
                   setError("");
                 }}
                 className={cn(
@@ -175,7 +188,7 @@ export function ContactForm() {
                     : "border-line-strong bg-transparent text-[#C3CBDB]"
                 )}
               >
-                {t}
+                {t(TOPIC_LABELS[item])}
               </button>
             );
           })}
@@ -184,8 +197,7 @@ export function ContactForm() {
 
       {topic === "Spelbolagslistan" ? (
         <p className="mt-4 rounded-[10px] border border-[rgba(255,184,77,.3)] bg-[rgba(255,184,77,.08)] px-3.5 py-3 text-[13.5px] leading-relaxed text-[#FFC96B]">
-          Vi ändrar aldrig betyg eller rankning mot ersättning. Skriv gärna, men
-          vet att listan bygger på vår egen bedömning.
+          {t("kontakt.form.bookmakersNotice")}
         </p>
       ) : null}
 
@@ -195,13 +207,13 @@ export function ContactForm() {
             htmlFor="contact-message"
             className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8A94AB]"
           >
-            Meddelande
+            {t("kontakt.form.message")}
           </label>
           <span
             className="font-mono-num text-[12px]"
             style={{ color: counterColor }}
           >
-            {len}/{MAX_MSG}
+            {t("kontakt.form.counter", { count: len, max: MAX_MSG })}
           </span>
         </div>
         <textarea
@@ -231,8 +243,7 @@ export function ContactForm() {
           className="mt-0.5 size-[18px] shrink-0 accent-win"
         />
         <span>
-          Jag godkänner att Spelbok sparar mitt meddelande och min e-post för
-          att kunna svara. Uppgifterna raderas inom 12 månader.
+          {t("kontakt.form.consent")}
         </span>
       </label>
 
@@ -250,8 +261,7 @@ export function ContactForm() {
           role="status"
           className="mt-4 rounded-[10px] border border-win-border bg-win-soft px-3.5 py-3 text-[13.5px] leading-relaxed text-win"
         >
-          Tack, meddelandet är skickat. Du får en kopia till din e-post. Vi hör
-          av oss inom 24 timmar på vardagar.
+          {t("kontakt.form.sent")}
         </p>
       ) : null}
 
@@ -266,10 +276,10 @@ export function ContactForm() {
         )}
       >
         {status === "sent"
-          ? "Skickat"
+          ? t("kontakt.form.submitted")
           : status === "sending"
-            ? "Skickar…"
-            : "Skicka meddelande"}
+            ? t("kontakt.form.submitting")
+            : t("kontakt.form.submit")}
       </button>
     </form>
   );

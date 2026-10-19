@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { CouponCard } from "./CouponCard";
 import { CouponSidebar } from "./CouponSidebar";
+import { useT } from "@/components/TextsProvider";
 import {
   COUPON_GRID_MIN_WIDTH,
+  COUPON_TAB_LABEL,
   COUPON_TABS,
   COUPON_VIEWS,
   DEFAULT_COUPON_VIEW,
@@ -42,6 +44,7 @@ export function CouponsView({
   loggedIn: boolean;
   copiedIds: string[];
 }) {
+  const t = useT();
   const [tab, setTab] = useState<CouponTab>("Alla");
   const [view, setView] = useState<CouponView>(DEFAULT_COUPON_VIEW);
   const [canGrid, setCanGrid] = useState(false);
@@ -73,20 +76,25 @@ export function CouponsView({
       <div className="min-w-0">
         <div className="mb-[18px] flex flex-wrap items-center gap-2.5">
           <div className={PILL_TRACK}>
-            {COUPON_TABS.map((t) => (
+            {COUPON_TABS.map((key) => (
               <button
-                key={t}
+                key={key}
                 type="button"
-                onClick={() => setTab(t)}
-                className={pillClass(tab === t)}
+                onClick={() => setTab(key)}
+                className={pillClass(tab === key)}
               >
-                {t}
+                {t(COUPON_TAB_LABEL[key])}
               </button>
             ))}
           </div>
 
           <span className="font-mono-num ml-auto text-[14px] text-[#8A94AB]">
-            {shown.length} {shown.length === 1 ? "kupong" : "kuponger"}
+            {t(
+              shown.length === 1
+                ? "kuponger.list.count.one"
+                : "kuponger.list.count.other",
+              { count: shown.length }
+            )}
           </span>
 
           {canGrid ? (
@@ -95,11 +103,11 @@ export function CouponsView({
                 <button
                   key={v.key}
                   type="button"
-                  title={v.help}
+                  title={t(v.help)}
                   onClick={() => setView(v.key)}
                   className={cn(pillClass(view === v.key), "px-[13px] text-[13.5px]")}
                 >
-                  {v.label}
+                  {t(v.label)}
                 </button>
               ))}
             </div>
@@ -120,7 +128,7 @@ export function CouponsView({
 
         {!shown.length ? (
           <div className="rounded-[14px] border border-line bg-panel p-7 text-center text-[15px] text-muted">
-            Inga kuponger i det här urvalet.
+            {t("kuponger.list.empty")}
           </div>
         ) : null}
       </div>

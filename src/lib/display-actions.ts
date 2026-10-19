@@ -9,6 +9,7 @@ import {
   type DisplayMode,
 } from "@/lib/display";
 import { createClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/texts/server";
 
 export type DisplayPrefsResult = { ok: true } | { ok: false; error: string };
 
@@ -18,10 +19,13 @@ export type DisplayPrefsResult = { ok: true } | { ok: false; error: string };
  * stå i.
  */
 export async function setDisplayMode(mode: DisplayMode): Promise<DisplayPrefsResult> {
-  if (!isDisplayMode(mode)) return { ok: false, error: "Ogiltigt visningsläge." };
+  const t = await getT();
+  if (!isDisplayMode(mode)) {
+    return { ok: false, error: t("installningar.errors.invalidMode") };
+  }
 
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du är inte inloggad." };
+  if (!user) return { ok: false, error: t("installningar.errors.notSignedIn") };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -40,15 +44,18 @@ export async function setDisplayPrefs(input: {
   currency: CurrencyCode;
   unitSize: number;
 }): Promise<DisplayPrefsResult> {
-  if (!isCurrencyCode(input.currency)) return { ok: false, error: "Ogiltig valuta." };
+  const t = await getT();
+  if (!isCurrencyCode(input.currency)) {
+    return { ok: false, error: t("installningar.errors.invalidCurrency") };
+  }
 
   const unitSize = Number(input.unitSize);
   if (!Number.isFinite(unitSize) || unitSize <= 0) {
-    return { ok: false, error: "Unit-storleken måste vara större än 0." };
+    return { ok: false, error: t("installningar.errors.unitSize") };
   }
 
   const user = await getSessionUser();
-  if (!user) return { ok: false, error: "Du är inte inloggad." };
+  if (!user) return { ok: false, error: t("installningar.errors.notSignedIn") };
 
   const supabase = await createClient();
   const { error } = await supabase

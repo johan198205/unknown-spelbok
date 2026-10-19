@@ -1,3 +1,4 @@
+import { createT, type TFunction } from "./texts";
 import type { Bet } from "./types";
 import {
   computeStats,
@@ -14,6 +15,9 @@ export const MIN_BETS_WEEK = 2;
 export const MIN_WIN_STREAK = 3;
 /** Fönster för "senaste veckan". */
 export const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Standardtexterna, för anrop som inte skickar med t. */
+const DEFAULT_T = createT({});
 
 export type TopListEntry = {
   id: string;
@@ -157,7 +161,10 @@ function betsByUser(sheets: ToplistSheet[]) {
  * spelet, över spelarens alla publika spelböcker. Minst tre raka för att
  * komma med — tio raka går före sju raka.
  */
-export function formList(sheets: ToplistSheet[]): TopListEntry[] {
+export function formList(
+  sheets: ToplistSheet[],
+  t: TFunction = DEFAULT_T
+): TopListEntry[] {
   return take(
     [...betsByUser(sheets).entries()]
       .map(([id, v]) => ({
@@ -174,7 +181,7 @@ export function formList(sheets: ToplistSheet[]): TopListEntry[] {
         href: profileHref(r.owner),
         owner: r.owner,
         ownerAvatar: r.avatar,
-        display: `${r.streak} raka`,
+        display: t("topplista.lists.form.value", { streak: r.streak }),
         tone: "plain" as const,
         value: r.streak,
       }))
@@ -226,7 +233,8 @@ export function rankColor(index: number) {
 /** Spelböcker sorterade på netto (störst vinst i kronor). */
 export function sheetNettoList(
   sheets: ToplistSheet[],
-  opts: { minBets?: number } = {}
+  opts: { minBets?: number } = {},
+  t: TFunction = DEFAULT_T
 ): TopListEntry[] {
   const { minBets = MIN_BETS_TOTAL } = opts;
 
@@ -245,7 +253,7 @@ export function sheetNettoList(
         href: sheet.slug ? `/s/${sheet.slug}` : null,
         display: `${stats.netto > 0 ? "+" : ""}${Math.round(
           stats.netto
-        ).toLocaleString("sv-SE")} kr`,
+        ).toLocaleString("sv-SE")} ${t("topplista.unit.kr")}`,
         tone: "netto" as const,
         value: stats.netto,
       }))

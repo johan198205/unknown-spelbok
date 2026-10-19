@@ -2,6 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { useT } from "@/components/TextsProvider";
 import { cn } from "@/lib/utils";
 
 function IconBooks({ filled }: { filled?: boolean }) {
@@ -74,26 +75,26 @@ function IconBank({ filled }: { filled?: boolean }) {
 const TABS = [
   {
     href: "/spelbok",
-    label: "Spreadsheet",
+    label: "header.bottomNav.spreadsheet",
     match: (p: string) => p.startsWith("/spelbok"),
     Icon: IconBooks,
   },
   {
     href: "/topplista",
-    label: "Topplista",
+    label: "header.bottomNav.topplista",
     match: (p: string) =>
       p.startsWith("/topplista") || p.startsWith("/tavlingar"),
     Icon: IconBoard,
   },
   {
     href: "/planket",
-    label: "Planket",
+    label: "header.bottomNav.planket",
     match: (p: string) => p.startsWith("/planket"),
     Icon: IconPlanket,
   },
   {
     href: "/spelbolag",
-    label: "Spelbolag",
+    label: "header.bottomNav.spelbolag",
     match: (p: string) => p.startsWith("/spelbolag"),
     Icon: IconBank,
   },
@@ -107,6 +108,7 @@ type Tab = (typeof TABS)[number];
  * servern hunnit svara.
  */
 function TabBody({ tab, active }: { tab: Tab; active: boolean }) {
+  const t = useT();
   const { pending } = useLinkStatus();
   const lit = active || pending;
 
@@ -119,7 +121,7 @@ function TabBody({ tab, active }: { tab: Tab; active: boolean }) {
       )}
     >
       <tab.Icon filled={lit} />
-      {tab.label}
+      {t(tab.label)}
     </span>
   );
 }
@@ -139,12 +141,13 @@ function NavTab({ tab, pathname }: { tab: Tab; pathname: string }) {
 }
 
 export function BottomNav({ onAdd }: { onAdd: () => void }) {
+  const t = useT();
   const pathname = usePathname() || "";
 
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(17,17,19,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
-      aria-label="Huvudnavigering"
+      aria-label={t("header.bottomNav.label")}
     >
       {/*
         Fem kolumner med plusknappen exakt i mitten: Spreadsheet, Topplista,
@@ -160,7 +163,7 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
           <button
             type="button"
             onClick={onAdd}
-            aria-label="Lägg nytt spel"
+            aria-label={t("header.bottomNav.add")}
             className="-mt-[26px] flex h-14 w-14 items-center justify-center rounded-full border-4 border-bg-soft bg-win text-win-ink shadow-[0_8px_22px_rgba(102,227,138,.3)]"
           >
             {/* SVG i stället för "+"-tecknet, som typsnittet placerar för lågt. */}

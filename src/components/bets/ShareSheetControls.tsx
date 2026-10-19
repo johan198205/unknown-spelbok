@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Copy, CopyCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { useT } from "@/components/TextsProvider";
 import { createClient } from "@/lib/supabase/client";
 import { randomSheetSlug, sheetShareUrl } from "@/lib/sheet-slug";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ export function ShareSheetButton({
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md";
 }) {
+  const t = useT();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
@@ -28,10 +30,10 @@ export function ShareSheetButton({
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast("Länk kopierad");
+      toast(t("spelbok.share.copied"));
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast("Kunde inte kopiera länken");
+      toast(t("spelbok.share.copyFailed"));
     }
   }
 
@@ -48,22 +50,23 @@ export function ShareSheetButton({
       ) : (
         <Copy className="size-3.5" strokeWidth={2.25} />
       )}
-      Dela
+      {t("spelbok.share.button")}
     </Button>
   );
 }
 
 export function FollowSheetButtonStub({ className }: { className?: string }) {
+  const t = useT();
   return (
     <Button
       type="button"
       variant="ghost"
       size="sm"
       disabled
-      title="Kommer snart"
+      title={t("spelbok.follow.soon")}
       className={cn("opacity-50", className)}
     >
-      Följ
+      {t("spelbok.follow.button")}
     </Button>
   );
 }
@@ -85,6 +88,7 @@ export function SheetVisibilityBadge({
   slug: string | null;
   canEdit: boolean;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
@@ -100,7 +104,7 @@ export function SheetVisibilityBadge({
           value ? "bg-win" : "bg-faint"
         )}
       />
-      {value ? "Publik" : "Privat"}
+      {value ? t("spelbok.visibility.public") : t("spelbok.visibility.private")}
     </>
   );
 
@@ -132,11 +136,15 @@ export function SheetVisibilityBadge({
     setBusy(false);
     if (error) {
       setOptimistic(!next);
-      toast(error.message || "Kunde inte uppdatera");
+      toast(error.message || t("spelbok.visibility.updateFailed"));
       return;
     }
     setOptimistic(null);
-    toast(next ? "Spelboken är publik" : "Spelboken är privat");
+    toast(
+      next
+        ? t("spelbok.visibility.toastPublic")
+        : t("spelbok.visibility.toastPrivate")
+    );
     router.refresh();
   }
 
@@ -147,8 +155,8 @@ export function SheetVisibilityBadge({
       onClick={() => void toggle()}
       title={
         value
-          ? "Synlig för alla med länken. Klicka för att göra privat."
-          : "Endast du kan se spelboken. Klicka för att göra publik."
+          ? t("spelbok.visibility.titlePublic")
+          : t("spelbok.visibility.titlePrivate")
       }
       className={cn(className, "cursor-pointer transition hover:brightness-125")}
     >
@@ -166,6 +174,7 @@ export function SheetPublicToggle({
   isPublic: boolean;
   slug: string | null;
 }) {
+  const t = useT();
   const router = useRouter();
   const { toast } = useToast();
   const [optimistic, setOptimistic] = useState<boolean | null>(null);
@@ -190,7 +199,7 @@ export function SheetPublicToggle({
     setBusy(false);
     if (error) {
       setOptimistic(!next);
-      toast(error.message || "Kunde inte uppdatera");
+      toast(error.message || t("spelbok.visibility.updateFailed"));
       return;
     }
     setOptimistic(null);
@@ -209,15 +218,15 @@ export function SheetPublicToggle({
         />
         <span>
           <span className="block text-[14px] font-semibold text-text">
-            Publik spelbok
+            {t("spelbok.publicToggle.label")}
           </span>
           {value ? (
             <span className="mt-0.5 block text-[12.5px] text-muted">
-              Din spelbok blir synlig för alla och kan delas via länk.
+              {t("spelbok.publicToggle.onBody")}
             </span>
           ) : (
             <span className="mt-0.5 block text-[12.5px] text-muted">
-              Endast du kan se spelboken.
+              {t("spelbok.publicToggle.offBody")}
             </span>
           )}
         </span>

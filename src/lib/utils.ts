@@ -1,3 +1,4 @@
+import { createT, type TFunction } from "./texts";
 import type { Bet, BetResult, BetStats } from "./types";
 
 export function cn(...parts: Array<string | false | null | undefined>) {
@@ -80,16 +81,9 @@ export function nettoColor(value: number) {
   return "text-muted";
 }
 
-export function resultLabel(result: BetResult) {
-  const map: Record<BetResult, string> = {
-    open: "Öppen",
-    win: "Vinst",
-    loss: "Förlust",
-    void: "Void",
-    halfwin: "Halv vinst",
-    halfloss: "Halv förlust",
-  };
-  return map[result];
+/** Utan `t` blir det standardtexterna, utan adminens överskrivningar. */
+export function resultLabel(result: BetResult, t: TFunction = createT({})) {
+  return t(`common.result.${result}`);
 }
 
 export function resultTone(result: BetResult) {

@@ -12,6 +12,7 @@ import {
 } from "@/lib/bet-stats";
 import type { Bet, Bookmaker, Sheet } from "@/lib/types";
 import { attachManualLogos } from "@/lib/manual-logos";
+import { getT } from "@/lib/texts/server";
 
 function toPlain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -134,6 +135,7 @@ export default async function PublicSheetPage({
     unitSize
   );
 
+  const t = await getT();
   const viewerSheets = toPlain(
     ((viewerSheetsResult.data || []) as Sheet[]) ?? []
   );
@@ -153,7 +155,11 @@ export default async function PublicSheetPage({
         />
       </div>
       <Suspense
-        fallback={<div className="py-10 text-center text-muted">Laddar…</div>}
+        fallback={
+          <div className="py-10 text-center text-muted">
+            {t("delad.page.loading")}
+          </div>
+        }
       >
         <SpelbokSheetView
           sheet={toPlain(sheet)}

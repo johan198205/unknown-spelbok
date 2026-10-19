@@ -1,3 +1,4 @@
+import { createT, type TFunction } from "./texts";
 
 /**
  * Visningsläge och valuta för belopp. Allt som visar pengar i appen går genom
@@ -50,6 +51,14 @@ export function isDisplayMode(value: unknown): value is DisplayMode {
 
 export function isCurrencyCode(value: unknown): value is CurrencyCode {
   return CURRENCIES.some((c) => c.code === value);
+}
+
+/**
+ * Valutans namn (t.ex. "Svenska kronor"). `label` i CURRENCIES är
+ * standardtexten; den redigerbara texten ligger under common.currency.*.
+ */
+export function currencyLabel(code: CurrencyCode, t: TFunction = createT({})) {
+  return t(`common.currency.${code}`);
 }
 
 export function currencySuffix(code: CurrencyCode) {
@@ -115,8 +124,13 @@ export function formatAmount(
 }
 
 /** Bara enheten — för fältetiketter som "Insats (kr)" / "Insats (units)". */
-export function amountUnitLabel(prefs: DisplayPrefs) {
-  return prefs.mode === "units" ? "units" : currencySuffix(prefs.currency);
+export function amountUnitLabel(
+  prefs: DisplayPrefs,
+  t: TFunction = createT({})
+) {
+  return prefs.mode === "units"
+    ? t("common.unit.units")
+    : currencySuffix(prefs.currency);
 }
 
 /** Största tillåtna insats i användarens valuta. */
@@ -128,15 +142,22 @@ export function maxStake(prefs: DisplayPrefs) {
  * Validerar en insats mot unit-taket. Returnerar ett felmeddelande eller null.
  * Körs både i formuläret och i importen — taket ska hålla oavsett väg in.
  */
-export function stakeError(stake: number, prefs: DisplayPrefs): string | null {
-  if (!Number.isFinite(stake) || stake <= 0) return "Insatsen måste vara större än 0.";
+export function stakeError(
+  stake: number,
+  prefs: DisplayPrefs,
+  t: TFunction = createT({})
+): string | null {
+  if (!Number.isFinite(stake) || stake <= 0) return t("common.stake.tooLow");
   const units = stake / unitSizeOf(prefs);
   if (units > MAX_UNITS_PER_BET + 1e-9) {
-    return `Max ${MAX_UNITS_PER_BET} units per spel — ${formatAmount(
-      maxStake(prefs),
-      { ...prefs, mode: "money" },
-      { sign: false }
-    )} med din unit-storlek.`;
+    return t("common.stake.tooHigh", {
+      max: MAX_UNITS_PER_BET,
+      amount: formatAmount(
+        maxStake(prefs),
+        { ...prefs, mode: "money" },
+        { sign: false }
+      ),
+    });
   }
   return null;
 }

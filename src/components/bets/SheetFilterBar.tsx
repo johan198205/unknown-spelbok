@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LeagueLogo } from "@/components/bets/LeagueLogo";
 import { Select } from "@/components/ui/Input";
+import { useT } from "@/components/TextsProvider";
 import {
   PERIOD_FILTER_OPTIONS,
   RESULT_FILTER_OPTIONS,
@@ -11,6 +12,7 @@ import {
   activeFilterChips,
   activeFilterCount,
   clearPanelFilters,
+  translateOptions,
   type BookmakerOption,
   type LeagueOption,
   type SheetFilterState,
@@ -19,7 +21,7 @@ import {
   type SheetSportFilter,
   type SheetViewMode,
 } from "@/lib/sheet-filters";
-import type { BetCategory } from "@/lib/bet-category";
+import { betCategoryLabel, type BetCategory } from "@/lib/bet-category";
 import { cn } from "@/lib/utils";
 
 /**
@@ -110,10 +112,11 @@ export function SheetFilterBar({
   totalCount: number;
   onChange: (patch: Partial<SheetFilterState>) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const count = activeFilterCount(filters);
-  const allChips = activeFilterChips(filters, bookmakers);
+  const allChips = activeFilterChips(filters, bookmakers, t);
 
   // Chipet ska försvinna på klicket, inte när servern svarat. Listan nollställs
   // så fort filtren faktiskt ändrats, så inget chip göms i onödan.
@@ -145,7 +148,7 @@ export function SheetFilterBar({
     <div className="flex flex-wrap items-center gap-2.5">
       <PillGroup<SheetPeriodFilter>
         value={filters.period}
-        options={PERIOD_FILTER_OPTIONS}
+        options={translateOptions(PERIOD_FILTER_OPTIONS, t)}
         onChange={(period) => onChange({ period })}
       />
 
@@ -163,7 +166,7 @@ export function SheetFilterBar({
                 : "border-line hover:border-line-strong"
           )}
         >
-          Filter
+          {t("spelbok.filter.button")}
           {count > 0 ? (
             <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-win px-1.5 font-mono-num text-[11px] font-bold text-win-ink">
               {count}
@@ -175,7 +178,7 @@ export function SheetFilterBar({
           <div className="absolute left-0 top-full z-30 mt-2 w-[264px] rounded-[12px] border border-line-strong bg-panel-elevated p-3 shadow-[var(--shadow-dropdown)]">
             <div className="space-y-2.5">
               <Select
-                label="Sport"
+                label={t("spelbok.filter.sport")}
                 value={filters.sport}
                 onChange={(e) =>
                   onChange({ sport: e.target.value as SheetSportFilter })
@@ -184,18 +187,18 @@ export function SheetFilterBar({
               >
                 {SPORT_FILTER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(o.key)}
                   </option>
                 ))}
               </Select>
 
               <Select
-                label="Liga"
+                label={t("spelbok.filter.league")}
                 value={filters.league}
                 onChange={(e) => onChange({ league: e.target.value })}
                 className="py-2.5"
               >
-                <option value="">Alla ligor</option>
+                <option value="">{t("spelbok.filter.allLeagues")}</option>
                 {leagues.map((l) => (
                   <option key={l.name} value={l.name}>
                     {l.name}
@@ -204,35 +207,38 @@ export function SheetFilterBar({
               </Select>
 
               <Select
-                label="Kategori"
+                label={t("spelbok.filter.category")}
                 value={filters.category}
                 onChange={(e) => onChange({ category: e.target.value })}
                 className="py-2.5"
               >
-                <option value="">Alla kategorier</option>
+                <option value="">{t("spelbok.filter.allCategories")}</option>
                 {categories.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {betCategoryLabel(c, t)}
                   </option>
                 ))}
               </Select>
 
               <Select
-                label="Spelbolag"
+                label={t("spelbok.filter.bookmaker")}
                 value={filters.bookmaker}
                 onChange={(e) => onChange({ bookmaker: e.target.value })}
                 className="py-2.5"
               >
-                <option value="">Alla spelbolag</option>
+                <option value="">{t("spelbok.filter.allBookmakers")}</option>
                 {bookmakers.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name} ({b.count})
+                    {t("spelbok.filter.bookmakerOption", {
+                      name: b.name,
+                      count: b.count,
+                    })}
                   </option>
                 ))}
               </Select>
 
               <Select
-                label="Rättning"
+                label={t("spelbok.filter.result")}
                 value={filters.result}
                 onChange={(e) =>
                   onChange({ result: e.target.value as SheetResultFilter })
@@ -241,7 +247,7 @@ export function SheetFilterBar({
               >
                 {RESULT_FILTER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
-                    {o.label}
+                    {t(o.key)}
                   </option>
                 ))}
               </Select>
@@ -253,7 +259,7 @@ export function SheetFilterBar({
               disabled={count === 0}
               className="mt-3 w-full cursor-pointer rounded-[8px] border border-line px-3 py-2 text-[13px] font-semibold text-muted transition hover:text-text disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Rensa filter
+              {t("spelbok.filter.clear")}
             </button>
           </div>
         ) : null}
@@ -288,17 +294,20 @@ export function SheetFilterBar({
           <span aria-hidden className="text-[15px] leading-none">
             ×
           </span>
-          <span className="sr-only">Ta bort filtret</span>
+          <span className="sr-only">{t("spelbok.filter.removeChip")}</span>
         </button>
       ))}
 
       <div className="ml-auto flex flex-wrap items-center gap-2.5">
         <span className="font-mono-num text-[14px] text-muted">
-          {filteredCount} av {totalCount} spel
+          {t("spelbok.filter.count", {
+            filtered: filteredCount,
+            total: totalCount,
+          })}
         </span>
         <PillGroup<SheetViewMode>
           value={filters.view}
-          options={VIEW_OPTIONS}
+          options={translateOptions(VIEW_OPTIONS, t)}
           onChange={(view) => onChange({ view })}
           className="max-sheet:hidden"
         />
