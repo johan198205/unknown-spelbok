@@ -82,7 +82,7 @@ export function RegistrationsChart({
               strokeWidth={2}
               fill="url(#regFill)"
               dot={false}
-              activeDot={{ r: 4, fill: "#66E38A", stroke: "#0a0a0d", strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: "#66E38A", stroke: "#121217", strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

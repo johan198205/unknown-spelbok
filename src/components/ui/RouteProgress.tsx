@@ -74,7 +74,7 @@ export function RouteProgress() {
       aria-hidden
       className="pointer-events-none fixed inset-x-0 top-0 z-[200] h-[3px] overflow-hidden"
     >
-      <div className="animate-sbprogress h-full w-full bg-win shadow-[0_0_12px_var(--win)]" />
+      <div className="animate-sbprogress h-full w-full bg-accent shadow-[0_0_12px_var(--accent)]" />
     </div>
   );
 }

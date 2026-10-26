@@ -232,7 +232,7 @@ export function DashboardNettoChart({
                 y1={gy}
                 x2={W}
                 y2={gy}
-                stroke="#1b1b21"
+                stroke="#25262d"
                 strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
               />
@@ -242,7 +242,7 @@ export function DashboardNettoChart({
               y1={zeroY}
               x2={W}
               y2={zeroY}
-              stroke="#40424d"
+              stroke="#4a4c57"
               strokeWidth="1"
               strokeDasharray="4 4"
               vectorEffect="non-scaling-stroke"

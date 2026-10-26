@@ -116,7 +116,7 @@ function TabBody({ tab, active }: { tab: Tab; active: boolean }) {
     <span
       className={cn(
         "flex flex-col items-center gap-1 transition-colors duration-100",
-        lit ? "text-win" : "text-faint",
+        lit ? "text-text" : "text-faint",
         pending && !active ? "opacity-70" : null,
       )}
     >
@@ -146,7 +146,7 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(10,10,13,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(0,0,0,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
       aria-label={t("header.bottomNav.label")}
     >
       {/*
@@ -164,7 +164,7 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
             type="button"
             onClick={onAdd}
             aria-label={t("header.bottomNav.add")}
-            className="-mt-[26px] flex h-14 w-14 items-center justify-center rounded-full border-4 border-bg-soft bg-win text-win-ink shadow-[0_8px_22px_rgba(102,227,138,.3)]"
+            className="-mt-[26px] flex h-14 w-14 items-center justify-center rounded-full border-4 border-bg-soft bg-cta text-cta-ink shadow-[0_8px_22px_rgba(0,0,0,.45)]"
           >
             {/* SVG i stället för "+"-tecknet, som typsnittet placerar för lågt. */}
             <svg

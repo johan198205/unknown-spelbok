@@ -125,7 +125,7 @@ export function InstallPrompt({ betCount }: { betCount: number }) {
           <button
             type="button"
             onClick={install}
-            className="rounded-[10px] bg-win px-3 py-2 text-[13px] font-bold text-win-ink"
+            className="rounded-[10px] bg-cta px-3 py-2 text-[13px] font-bold text-cta-ink"
           >
             {t("pwa.install.add")}
           </button>

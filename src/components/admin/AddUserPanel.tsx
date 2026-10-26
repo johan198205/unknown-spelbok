@@ -145,7 +145,7 @@ export function AddUserPanel() {
           <button
             type="submit"
             disabled={pending}
-            className="rounded-[10px] border border-transparent bg-win px-4 py-2.5 text-[14px] font-bold text-win-ink disabled:opacity-50"
+            className="rounded-[10px] border border-transparent bg-cta px-4 py-2.5 text-[14px] font-bold text-cta-ink disabled:opacity-50"
           >
             {pending ? "Skapar…" : "Skapa konto"}
           </button>

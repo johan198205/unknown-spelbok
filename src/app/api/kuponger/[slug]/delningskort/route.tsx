@@ -326,7 +326,7 @@ export async function GET(
             display: "flex",
             alignItems: "flex-end",
             paddingTop: 30,
-            borderTop: "1px solid #25262d",
+            borderTop: "1px solid #2e2f37",
             flexShrink: 0,
           }}
         >
@@ -374,7 +374,7 @@ export async function GET(
                 width: 150,
                 height: 56,
                 borderRadius: 10,
-                backgroundColor: "#1e1e24",
+                backgroundColor: "#26272e",
               }}
             >
               {bookmakerLogo ? (

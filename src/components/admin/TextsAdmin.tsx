@@ -338,7 +338,7 @@ export function TextsAdmin({
             type="button"
             disabled={pending || !dirtyCount}
             onClick={save}
-            className="cursor-pointer rounded-[11px] bg-win px-[26px] py-[13px] text-[15px] font-bold text-win-ink shadow-[0_10px_28px_rgba(0,0,0,.45)] transition disabled:cursor-not-allowed disabled:opacity-45"
+            className="cursor-pointer rounded-[11px] bg-cta px-[26px] py-[13px] text-[15px] font-bold text-cta-ink shadow-[0_10px_28px_rgba(0,0,0,.45)] transition disabled:cursor-not-allowed disabled:opacity-45"
           >
             {pending
               ? "Sparar…"

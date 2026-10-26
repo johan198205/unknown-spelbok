@@ -635,7 +635,7 @@ export function PopupsAdmin({ items }: { items: PopupRow[] }) {
                     {draft.body || "Beskrivningen visas här."}
                   </p>
                   {draft.button_label.trim() ? (
-                    <div className="mt-3 rounded-[10px] bg-win px-4 py-2.5 text-center text-[14px] font-bold text-win-ink">
+                    <div className="mt-3 rounded-[10px] bg-cta px-4 py-2.5 text-center text-[14px] font-bold text-cta-ink">
                       {draft.button_label}
                     </div>
                   ) : null}

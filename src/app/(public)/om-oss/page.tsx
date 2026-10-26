@@ -77,7 +77,7 @@ export default async function OmOssPage() {
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Link
               href={page.cta.primaryHref}
-              className="rounded-[10px] bg-win px-6 py-[13px] text-center text-[15px] font-bold text-win-ink no-underline hover:text-win-ink hover:no-underline hover:brightness-105"
+              className="rounded-[10px] bg-cta px-6 py-[13px] text-center text-[15px] font-bold text-cta-ink no-underline hover:text-cta-ink hover:no-underline hover:brightness-110"
             >
               {page.cta.primaryLabel}
             </Link>

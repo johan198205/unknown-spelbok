@@ -95,7 +95,7 @@ export function BookmakersGrid({
                   "rounded-full border px-4 py-2.5 text-sm font-semibold transition",
                   on
                     ? "border-[rgba(102,227,138,.45)] bg-[rgba(102,227,138,.14)] text-[#66E38A]"
-                    : "border-[#25262d] bg-[#111115] text-[#C3CBDB] hover:border-[#40424d]"
+                    : "border-[#2e2f37] bg-[#1e1e24] text-[#C3CBDB] hover:border-[#4a4c57]"
                 )}
               >
                 {t(BOOK_FILTER_LABEL[p])}
@@ -108,7 +108,7 @@ export function BookmakersGrid({
           <button
             type="button"
             onClick={() => setSortOpen((v) => !v)}
-            className="inline-flex items-center gap-2.5 rounded-full border border-[#25262d] bg-[#111115] px-4 py-2.5 text-sm font-semibold text-[#E6EAF2]"
+            className="inline-flex items-center gap-2.5 rounded-full border border-[#2e2f37] bg-[#1e1e24] px-4 py-2.5 text-sm font-semibold text-[#E6EAF2]"
           >
             <span>
               {sortBy
@@ -118,7 +118,7 @@ export function BookmakersGrid({
             <span className="text-[11px] text-[#5D6883]">▾</span>
           </button>
           {sortOpen ? (
-            <div className="absolute right-0 top-full z-20 mt-2 min-w-[190px] rounded-[11px] border border-[#31323a] bg-[#16161b] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.6)]">
+            <div className="absolute right-0 top-full z-20 mt-2 min-w-[190px] rounded-[11px] border border-[#3a3b44] bg-[#22222a] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.6)]">
               {SORT_OPTIONS.map((o) => (
                 <button
                   key={o}
@@ -131,8 +131,8 @@ export function BookmakersGrid({
                   className={cn(
                     "w-full rounded-[7px] border-0 px-2.5 py-[9px] text-left text-[13.5px]",
                     o === sortBy
-                      ? "bg-[#25262d] text-[#E6EAF2]"
-                      : "bg-transparent text-[#C3CBDB] hover:bg-[#25262d]"
+                      ? "bg-[#2e2f37] text-[#E6EAF2]"
+                      : "bg-transparent text-[#C3CBDB] hover:bg-[#2e2f37]"
                   )}
                 >
                   {t(BOOK_SORT_LABEL[o])}

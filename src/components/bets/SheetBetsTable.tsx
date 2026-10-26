@@ -121,7 +121,7 @@ export function BookmakerPlate({
       </BookmakerLink>
     );
   }
-  const brand = bet.bookmakers.brand_color?.trim() || "#1e1e24";
+  const brand = bet.bookmakers.brand_color?.trim() || "#26272e";
   return (
     <BookmakerLink bet={bet}>
       <span

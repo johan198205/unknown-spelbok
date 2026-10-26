@@ -200,7 +200,7 @@ export default async function LandingPage() {
             board.map((r, i) => (
               <div
                 key={r.id}
-                className="flex items-center gap-3 border-b border-[#19191f] px-[18px] py-3"
+                className="flex items-center gap-3 border-b border-[#2a2b33] px-[18px] py-3"
               >
                 <span className={`font-display w-[26px] text-lg font-semibold ${rankColor(i)}`}>
                   {i + 1}

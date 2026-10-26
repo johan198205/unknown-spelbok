@@ -114,7 +114,7 @@ export function PostThread({
               >
                 <Avatar username={r.author_username} src={r.author_avatar} size={28} />
               </Link>
-              <div className="min-w-0 flex-1 rounded-[10px] border border-line-soft bg-[#19191f] px-3 py-2">
+              <div className="min-w-0 flex-1 rounded-[10px] border border-line-soft bg-[#2a2b33] px-3 py-2">
                 <div className="mb-1 flex items-baseline gap-2">
                   <Link
                     href={`/profil/${encodeURIComponent(r.author_username)}`}
@@ -163,8 +163,8 @@ export function PostThread({
                 className={cn(
                   "self-end rounded-[9px] px-4 py-2 text-[13.5px] font-bold",
                   draft.trim() && !pending
-                    ? "cursor-pointer bg-win text-win-ink"
-                    : "cursor-not-allowed bg-[#19191f] text-[#5D6883]"
+                    ? "cursor-pointer bg-cta text-cta-ink"
+                    : "cursor-not-allowed bg-[#2a2b33] text-[#5D6883]"
                 )}
               >
                 {pending ? "…" : t("planket.thread.submit")}

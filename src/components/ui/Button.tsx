@@ -8,9 +8,9 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants = {
   primary:
-    "bg-win text-win-ink hover:brightness-105 border-transparent font-bold",
+    "bg-cta text-cta-ink hover:brightness-110 border-transparent font-bold",
   secondary:
-    "bg-panel border-line text-text hover:border-[#40424d] font-semibold",
+    "bg-panel border-line text-text hover:border-[#4a4c57] font-semibold",
   ghost:
     "bg-transparent border-line text-muted hover:text-text font-semibold",
   danger:
@@ -64,7 +64,7 @@ export function ButtonLink({
         "inline-flex items-center justify-center gap-2 border transition no-underline hover:no-underline",
         variants[variant || "primary"],
         sizes[size || "md"],
-        variant === "primary" && "hover:text-win-ink",
+        variant === "primary" && "hover:text-cta-ink",
         variant === "secondary" && "hover:text-text",
         variant === "ghost" && "hover:text-text",
         variant === "danger" && "hover:text-loss",

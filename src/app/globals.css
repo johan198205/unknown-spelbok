@@ -7,43 +7,52 @@
 
 :root {
   /*
-    Ytor och text — Spelbokens gråskala (Brand Guidelines 2026).
-    Botten är helt svart, som bakom den vita loggan. Ytorna ovanpå
-    trappar upp mot Phantom (#1E1E24) och Arsenic (#40424D): samma svala,
-    lätt blåaktiga grå som i emblemets lager, så rutor och sektioner hör
-    ihop med loggan i stället för att vara neutralt grå.
+    Ytor och text — Spelbokens gråskala (Brand Guidelines 2026), variant
+    "Graphite" (förslag E). Header och footer är helt svarta, där loggan
+    står; ytan mellan dem ligger ett snäpp över svart, och rutor och
+    sektioner i Phantom (#1E1E24) — samma svala grå som emblemets lager.
       Black #000000 · Phantom #1E1E24 · Arsenic #40424D · Graphite #6E7180
       Space #9DA2B3 · Steel #BCBFCC · Smoke #D3D6E0 · Cloud #EDEFF7
   */
-  --bg: #000000;
+  --bg: #0c0c10;
   --bg-deep: #000000;
-  --bg-soft: #0a0a0d;
+  --bg-soft: #121217;
   --bg-footer: #000000;
+  --bg-header: #000000;
   --sidebar: #000000;
-  --panel: #111115;
-  --panel-2: #1e1e24;
-  --panel-elevated: #16161b;
-  --shimmer: #18181e;
-  --row-alt: #0c0c10;
-  --rowline: #19191f;
-  --hover: #17171c;
-  --hover2: #25262d;
-  --dropdown-hover: #25262d;
-  --bar-bg: rgba(10, 10, 13, 0.94);
+  --panel: #1e1e24;
+  --panel-2: #26272e;
+  --panel-elevated: #22222a;
+  --shimmer: #26272e;
+  --row-alt: #1a1a20;
+  --rowline: #2a2b33;
+  --hover: #25262d;
+  --hover2: #2e2f37;
+  --dropdown-hover: #2e2f37;
+  --bar-bg: rgba(0, 0, 0, 0.94);
   --dim: #8a8e9e;
 
   /* Borders */
-  --line: #25262d;
-  --line-soft: #1b1b21;
-  --line-row: #19191f;
-  --line-strong: #31323a;
-  --line-hover: #40424d;
+  --line: #2e2f37;
+  --line-soft: #25262d;
+  --line-row: #2a2b33;
+  --line-strong: #3a3b44;
+  --line-hover: #4a4c57;
 
   /* Text */
   --text: #edeff7;
   --text-soft: #d3d6e0;
   --muted: #b1b4c2;
   --faint: #8a8e9e;
+
+  /*
+    Knappar och navigeringsmarkering. Skilda från --win med flit: grönt
+    betyder vinst/plus och rött förlust/minus, knapparna har egen färg.
+    Byt här när kunden valt slutlig accent.
+  */
+  --cta: #6e7180;
+  --cta-ink: #ffffff;
+  --accent: #9da2b3;
 
   /* Accents — App.dc.html constants */
   --win: #66e38a;
@@ -84,14 +93,14 @@
 
   /* Badge */
   --badge-pub-bg: rgba(102, 227, 138, 0.14);
-  --badge-priv-bg: #1e1e24;
+  --badge-priv-bg: #26272e;
   --badge-auto-bg: rgba(76, 141, 255, 0.14);
 
   /* Ad slot stripes */
-  --ad-a: #0e0e12;
-  --ad-b: #131317;
-  --ad-a-app: #0f0f13;
-  --ad-b-app: #141419;
+  --ad-a: #16161b;
+  --ad-b: #1b1b21;
+  --ad-a-app: #16161b;
+  --ad-b-app: #1b1b21;
 
   /* Radius scale (from dc) */
   --radius-badge: 6px;
@@ -166,6 +175,10 @@
   --color-text-soft: var(--text-soft);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
+  --color-cta: var(--cta);
+  --color-cta-ink: var(--cta-ink);
+  --color-accent: var(--accent);
+  --color-bg-header: var(--bg-header);
   --color-win: var(--win);
   --color-win-ink: var(--win-ink);
   --color-loss: var(--loss);

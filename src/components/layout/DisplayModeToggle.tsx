@@ -85,7 +85,7 @@ export function DisplayModeToggle({
               : "min-w-[44px] rounded-[6px] px-2 py-1 text-[12px]",
             prefs.mode === opt.value
               ? variant === "menu"
-                ? "bg-win text-win-ink"
+                ? "bg-cta text-cta-ink"
                 : "bg-panel text-text"
               : "text-muted hover:text-text",
           )}

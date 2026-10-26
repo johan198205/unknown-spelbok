@@ -688,11 +688,11 @@ export function BetRow({
   return (
     <tr
       className={cn(
-        "group/row border-b border-[#19191f] transition-colors hover:bg-[#1f1f22]",
+        "group/row border-b border-[#2a2b33] transition-colors hover:bg-[#1f1f22]",
         isLive
           ? "bg-live/[0.07] hover:bg-live/[0.11]"
           : isPending
-            ? "bg-[#141419]"
+            ? "bg-[#1b1b21]"
             : undefined
       )}
     >

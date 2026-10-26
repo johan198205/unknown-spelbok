@@ -142,7 +142,7 @@ export function CouponShareModal({
             type="button"
             disabled={busy}
             onClick={() => void download()}
-            className="cursor-pointer rounded-[10px] bg-win px-5 py-[13px] text-[15px] font-bold text-win-ink disabled:opacity-60"
+            className="cursor-pointer rounded-[10px] bg-cta px-5 py-[13px] text-[15px] font-bold text-cta-ink disabled:opacity-60"
           >
             {busy ? t("kuponger.share.rendering") : t("kuponger.share.download")}
           </button>
@@ -319,7 +319,7 @@ function ShareCard({
           alignItems: "flex-end",
           gap: 52,
           paddingTop: 30,
-          borderTop: "1px solid #25262d",
+          borderTop: "1px solid #2e2f37",
         }}
       >
         <Field label={t("kuponger.card.stake")} value={formatMoney(Number(coupon.stake), t("kuponger.unit.kr")).replace("+", "")} size={32} />
@@ -348,7 +348,7 @@ function ShareCard({
               width: 150,
               height: 56,
               borderRadius: 10,
-              backgroundColor: "#1e1e24",
+              backgroundColor: "#26272e",
               backgroundImage: logo ? `url(${JSON.stringify(logo)})` : undefined,
               backgroundRepeat: "no-repeat",
               backgroundPosition: "center",

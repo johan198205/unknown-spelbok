@@ -631,7 +631,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               <input
                 value={draft.brand_color}
                 onChange={(e) => patch({ brand_color: e.target.value })}
-                placeholder="#1e1e24"
+                placeholder="#26272e"
                 className={cn(monoInputClass, "text-[12.5px]")}
               />
             </Field>
@@ -851,7 +851,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
             type="button"
             onClick={save}
             disabled={pending}
-            className="flex-1 rounded-[11px] bg-win px-4 py-3.5 text-[15px] font-bold text-win-ink transition hover:brightness-105 disabled:opacity-50"
+            className="flex-1 rounded-[11px] bg-cta px-4 py-3.5 text-[15px] font-bold text-cta-ink transition hover:brightness-110 disabled:opacity-50"
           >
             {pending ? "Sparar…" : "Spara ändringar"}
           </button>

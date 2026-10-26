@@ -30,7 +30,7 @@ export default async function RegisterPage() {
             </p>
             <Link
               href="/login"
-              className="mt-5 inline-flex rounded-[10px] bg-win px-5 py-3 text-[14.5px] font-bold text-win-ink no-underline hover:text-win-ink hover:no-underline"
+              className="mt-5 inline-flex rounded-[10px] bg-cta px-5 py-3 text-[14.5px] font-bold text-cta-ink no-underline hover:text-cta-ink hover:no-underline"
             >
               {t("auth.closed.login")}
             </Link>

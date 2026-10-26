@@ -271,7 +271,7 @@ export function ContactForm() {
         className={cn(
           "mt-5 w-full rounded-[11px] px-4 py-[15px] text-[15.5px] font-bold transition-colors",
           ready && status === "idle"
-            ? "cursor-pointer border border-win bg-win text-win-ink hover:brightness-105"
+            ? "cursor-pointer border border-cta bg-cta text-cta-ink hover:brightness-110"
             : "cursor-not-allowed border border-line-strong bg-panel-2 text-[#5D6883]"
         )}
       >
@@ -308,4 +308,4 @@ function Field({
 }
 
 const fieldClass =
-  "w-full rounded-[10px] border border-line bg-[#0a0a0d] px-3.5 py-[13px] text-[15px] text-text outline-none placeholder:text-[#5D6883] focus:border-line-hover disabled:opacity-60";
+  "w-full rounded-[10px] border border-line bg-[#121217] px-3.5 py-[13px] text-[15px] text-text outline-none placeholder:text-[#5D6883] focus:border-line-hover disabled:opacity-60";

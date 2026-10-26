@@ -269,7 +269,7 @@ export function MobileAddBetFlow({
                   type="button"
                   disabled={!match.trim()}
                   onClick={() => setStep(2)}
-                  className="w-full rounded-[13px] bg-win py-3.5 font-bold text-win-ink disabled:opacity-40"
+                  className="w-full rounded-[13px] bg-cta py-3.5 font-bold text-cta-ink disabled:opacity-40"
                 >
                   {t("betform.mobile.continue")}
                 </button>
@@ -401,7 +401,7 @@ export function MobileAddBetFlow({
               type="button"
               disabled={!pick.trim()}
               onClick={() => setStep(3)}
-              className="w-full rounded-[13px] bg-win py-3.5 font-bold text-win-ink disabled:opacity-40"
+              className="w-full rounded-[13px] bg-cta py-3.5 font-bold text-cta-ink disabled:opacity-40"
             >
               {t("betform.mobile.continue")}
             </button>
@@ -468,7 +468,7 @@ export function MobileAddBetFlow({
             type="button"
             disabled={loading || !match || !pick}
             onClick={save}
-            className="w-full rounded-[13px] bg-win py-4 text-[15px] font-bold text-win-ink disabled:opacity-40"
+            className="w-full rounded-[13px] bg-cta py-4 text-[15px] font-bold text-cta-ink disabled:opacity-40"
           >
             {loading
               ? t("betform.submit.saving")

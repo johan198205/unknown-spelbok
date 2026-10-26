@@ -419,7 +419,7 @@ function MatchDropdown({
                           setOpen(false);
                           onPick(merged);
                         }}
-                        className="flex w-full items-center rounded-[7px] px-2.5 py-2 text-left text-sm transition hover:bg-[#25262d]"
+                        className="flex w-full items-center rounded-[7px] px-2.5 py-2 text-left text-sm transition hover:bg-[#2e2f37]"
                       >
                         <PickerMatchOption fixture={merged} />
                       </button>

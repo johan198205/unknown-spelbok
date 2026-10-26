@@ -366,7 +366,7 @@ function CouponCta({ coupon }: { coupon: Coupon }) {
           target="_blank"
           rel="noopener sponsored nofollow"
           onClick={() => track({ event: "affiliate_click", bookmaker: bookmaker.slug })}
-          className="mt-3 block rounded-[9px] bg-win px-2.5 py-2.5 text-center text-[13.5px] font-bold text-win-ink no-underline hover:text-win-ink hover:no-underline hover:brightness-105"
+          className="mt-3 block rounded-[9px] bg-cta px-2.5 py-2.5 text-center text-[13.5px] font-bold text-cta-ink no-underline hover:text-cta-ink hover:no-underline hover:brightness-110"
         >
           {t("kuponger.card.ctaPlay", { name: short })}
         </a>

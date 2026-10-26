@@ -39,13 +39,13 @@ export function PublicNav() {
             className={cn(
               "flex items-center gap-2 whitespace-nowrap px-3.5 py-2 text-[14px] font-semibold no-underline hover:no-underline",
               active
-                ? "border-b-2 border-win text-[#E6EAF2]"
+                ? "border-b-2 border-accent text-text"
                 : "border-b-2 border-transparent text-muted hover:text-text"
             )}
           >
             <NavIcon
               name={item.icon}
-              className={cn("size-4 shrink-0", active ? "text-win" : "text-[#5D6883]")}
+              className={cn("size-4 shrink-0", active ? "text-text" : "text-[#5D6883]")}
             />
             {t(item.label)}
           </Link>

@@ -419,7 +419,7 @@ export function PageEditor({ page }: { page: Page }) {
                 router.refresh();
               })
             }
-            className="mb-2 w-full rounded-[10px] bg-win py-3 text-[14.5px] font-bold text-win-ink disabled:opacity-60"
+            className="mb-2 w-full rounded-[10px] bg-cta py-3 text-[14.5px] font-bold text-cta-ink disabled:opacity-60"
           >
             {published ? "Publicera ändringar" : "Publicera"}
           </button>

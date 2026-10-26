@@ -159,7 +159,7 @@ export default async function TopplistaPage() {
             <RowLink
               key={row.id}
               href={row.href}
-              className="grid grid-cols-[40px_1fr_80px_100px_100px] items-center gap-3 border-b border-[#19191f] px-5 py-3"
+              className="grid grid-cols-[40px_1fr_80px_100px_100px] items-center gap-3 border-b border-[#2a2b33] px-5 py-3"
             >
               <span className={`font-display text-lg font-semibold ${medal(i)}`}>
                 {i + 1}

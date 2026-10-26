@@ -153,7 +153,7 @@ export function starRowDataUri(rating: number | null | undefined): string {
   let base = "";
   let fill = "";
   for (let i = 0; i < 5; i++) {
-    base += `<polygon points="${pts}" transform="translate(${i * 21},0)" fill="#31323a"/>`;
+    base += `<polygon points="${pts}" transform="translate(${i * 21},0)" fill="#3a3b44"/>`;
     fill += `<polygon points="${pts}" transform="translate(${i * 21},0)" fill="#FFD166"/>`;
   }
   const w = (value / 5) * 104;

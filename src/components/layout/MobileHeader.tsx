@@ -21,7 +21,7 @@ export async function MobileHeader({
   const t = await getT();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(10,10,13,.92)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-[10px] lg:hidden">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(0,0,0,.92)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-[10px] lg:hidden">
       {/* min-w-0 hela vägen: ett långt saldo får krympa i stället för att
           trycka ut headern bredare än skärmen (sidledsscroll i mobil). */}
       <div className="flex min-w-0 items-center gap-3">
@@ -60,8 +60,8 @@ export async function MobileHeader({
             <NotificationBell
               userId={profile.id}
               initialUnread={unread}
-              /* Mobilheadern ligger på #0a0a0d, inte sidans #000000. */
-              badgeBorder="#0a0a0d"
+              /* Mobilheadern ligger på #000000, inte sidans #000000. */
+              badgeBorder="#000000"
             />
           ) : null}
           <MobileMenu

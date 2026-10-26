@@ -25,14 +25,14 @@ function NavItemBody({
       className={cn(
         "flex items-center gap-2 rounded-[8px] px-3.5 py-2 transition-colors duration-100",
         active || pending
-          ? "bg-[#1e1e24] text-[#E6EAF2]"
-          : "bg-transparent text-[#8A94AB] group-hover:bg-[#1e1e24] group-hover:text-[#E6EAF2]"
+          ? "bg-[#26272e] text-[#E6EAF2]"
+          : "bg-transparent text-[#8A94AB] group-hover:bg-[#26272e] group-hover:text-[#E6EAF2]"
       )}
     >
       {icon ? (
         <NavIcon
           name={icon}
-          className={cn("size-4 shrink-0", active || pending ? "text-win" : "text-[#5D6883]")}
+          className={cn("size-4 shrink-0", active || pending ? "text-text" : "text-[#5D6883]")}
         />
       ) : null}
       {label}

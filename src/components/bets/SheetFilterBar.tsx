@@ -168,7 +168,7 @@ export function SheetFilterBar({
         >
           {t("spelbok.filter.button")}
           {count > 0 ? (
-            <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-win px-1.5 font-mono-num text-[11px] font-bold text-win-ink">
+            <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-cta px-1.5 font-mono-num text-[11px] font-bold text-cta-ink">
               {count}
             </span>
           ) : null}

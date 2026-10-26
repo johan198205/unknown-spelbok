@@ -167,7 +167,7 @@ export function PlanketFeed({
             onPosted={() => void afterPost()}
           />
         ) : (
-          <div className="rounded-[14px] border border-line bg-[#111115] p-4 text-[14.5px] text-[#C3CBDB]">
+          <div className="rounded-[14px] border border-line bg-[#1e1e24] p-4 text-[14.5px] text-[#C3CBDB]">
             <Link href="/registrera" className="font-semibold text-win">
               {t("planket.feed.guest.register")}
             </Link>{" "}
@@ -211,7 +211,7 @@ export function PlanketFeed({
         ) : null}
 
         {posts.length === 0 && !loading ? (
-          <div className="rounded-[14px] border border-line bg-[#111115] px-5 py-10 text-center text-[14px] text-muted">
+          <div className="rounded-[14px] border border-line bg-[#1e1e24] px-5 py-10 text-center text-[14px] text-muted">
             {t("planket.feed.empty")}
           </div>
         ) : null}

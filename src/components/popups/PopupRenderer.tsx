@@ -224,7 +224,7 @@ export function PopupRenderer({
           type="button"
           onClick={close}
           aria-label={t("popups.dialog.close")}
-          className="absolute right-3 top-3 z-10 flex size-[30px] items-center justify-center rounded-full border border-line-strong bg-[rgba(10,10,13,.75)] text-[17px] leading-none text-muted backdrop-blur-[2px] transition hover:text-text"
+          className="absolute right-3 top-3 z-10 flex size-[30px] items-center justify-center rounded-full border border-line-strong bg-[rgba(0,0,0,.75)] text-[17px] leading-none text-muted backdrop-blur-[2px] transition hover:text-text"
         >
           ×
         </button>
@@ -254,7 +254,7 @@ export function PopupRenderer({
               <button
                 type="button"
                 onClick={activate}
-                className="mt-4 w-full rounded-[10px] bg-win px-4 py-3 text-[14.5px] font-bold text-win-ink transition hover:brightness-105"
+                className="mt-4 w-full rounded-[10px] bg-cta px-4 py-3 text-[14.5px] font-bold text-cta-ink transition hover:brightness-110"
               >
                 {visible.button_label}
               </button>

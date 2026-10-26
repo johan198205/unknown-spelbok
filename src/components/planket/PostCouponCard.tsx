@@ -65,7 +65,7 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
     <>
       {/* ---------- Desktop ---------- */}
       <div
-        className="mb-[13px] hidden overflow-hidden rounded-[12px] border border-line bg-[#19191f] lg:block"
+        className="mb-[13px] hidden overflow-hidden rounded-[12px] border border-line bg-[#2a2b33] lg:block"
         style={settled ? { borderColor: tone.border } : undefined}
       >
         <div className="flex items-center gap-[9px] border-b border-line px-[14px] py-[11px]">
@@ -166,7 +166,7 @@ export function PostCouponCard({ coupon }: { coupon: PlanketCoupon }) {
 
       {/* ---------- Mobil ---------- */}
       <div
-        className="mb-3 overflow-hidden rounded-[11px] border border-line bg-[#19191f] lg:hidden"
+        className="mb-3 overflow-hidden rounded-[11px] border border-line bg-[#2a2b33] lg:hidden"
         style={settled ? { borderColor: tone.border } : undefined}
       >
         <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">

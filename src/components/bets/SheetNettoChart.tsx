@@ -195,7 +195,7 @@ export function SheetNettoChart({
                   y1={(tick.top / 100) * H}
                   x2={W}
                   y2={(tick.top / 100) * H}
-                  stroke="#1b1b21"
+                  stroke="#25262d"
                   strokeWidth="1"
                   vectorEffect="non-scaling-stroke"
                 />
@@ -205,7 +205,7 @@ export function SheetNettoChart({
                 y1={zeroY}
                 x2={W}
                 y2={zeroY}
-                stroke="#40424d"
+                stroke="#4a4c57"
                 strokeWidth="1"
                 strokeDasharray="4 4"
                 vectorEffect="non-scaling-stroke"

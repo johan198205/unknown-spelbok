@@ -139,7 +139,7 @@ export function MobileMenu({ user }: { user: MobileMenuUser | null }) {
                   <span className="flex items-center gap-3">
                     <NavIcon
                       name={l.icon}
-                      className={cn("size-[18px] shrink-0", active ? "text-win" : "text-muted")}
+                      className={cn("size-[18px] shrink-0", active ? "text-text" : "text-muted")}
                     />
                     {t(l.label)}
                   </span>

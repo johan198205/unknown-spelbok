@@ -137,7 +137,7 @@ export function Onboarding() {
             if (index >= SLIDES.length - 1) finish();
             else setIndex(index + 1);
           }}
-          className="rounded-[12px] bg-win px-5 py-2.5 text-sm font-bold text-win-ink"
+          className="rounded-[12px] bg-cta px-5 py-2.5 text-sm font-bold text-cta-ink"
         >
           {index >= SLIDES.length - 1
             ? t("pwa.onboarding.start")

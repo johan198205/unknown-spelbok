@@ -94,7 +94,7 @@ export function PagesAdmin({ rows, q }: { rows: PageListRow[]; q: string }) {
           type="button"
           disabled={pending}
           onClick={() => startTransition(() => createPage())}
-          className="ml-auto rounded-[11px] bg-win px-5 py-3 font-bold text-win-ink disabled:opacity-60"
+          className="ml-auto rounded-[11px] bg-cta px-5 py-3 font-bold text-cta-ink disabled:opacity-60"
         >
           + Ny sida
         </button>

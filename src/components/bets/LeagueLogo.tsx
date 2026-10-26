@@ -38,7 +38,7 @@ export function LeagueLogo({
     return (
       <span
         className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-full bg-[#1e1e24] font-semibold text-[#7FB0FF]",
+          "inline-flex shrink-0 items-center justify-center rounded-full bg-[#26272e] font-semibold text-[#7FB0FF]",
           className
         )}
         style={{
