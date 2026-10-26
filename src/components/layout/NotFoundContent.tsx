@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/components/ui/Button";
+import { Emblem } from "@/components/brand/Logo";
 import { getProfile } from "@/lib/auth";
 import { getT } from "@/lib/texts/server";
 
@@ -14,6 +15,7 @@ export async function NotFoundContent() {
     <div className="animate-sbfade mx-auto flex w-full max-w-[640px] flex-col items-start px-5 py-16 lg:py-24">
       {/* React lyfter <title> till <head>; not-found.js stöder inte metadata. */}
       <title>{t("errors.notFound.metaTitle")}</title>
+      <Emblem className="mb-6 h-9 w-auto text-text" />
       <div className="label-caps mb-3">{t("errors.notFound.eyebrow")}</div>
       <h1 className="font-display text-[28px] font-semibold lg:text-[34px]">
         {t("errors.notFound.title")}

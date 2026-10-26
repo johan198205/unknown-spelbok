@@ -34,8 +34,8 @@ function Toggle({
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
       )}
       style={{
-        background: on ? "rgba(102,227,138,.22)" : "#111113",
-        borderColor: on ? "rgba(102,227,138,.5)" : "#333338",
+        background: on ? "rgba(102,227,138,.22)" : "#0a0a0d",
+        borderColor: on ? "rgba(102,227,138,.5)" : "#31323a",
       }}
     >
       <span

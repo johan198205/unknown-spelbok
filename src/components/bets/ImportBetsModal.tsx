@@ -786,7 +786,7 @@ function PreviewStep({
                 <tr
                   key={id}
                   className={cn(
-                    "border-b border-[#1c1c1f]",
+                    "border-b border-[#19191f]",
                     disabled ? "text-faint" : "text-[#C3CBDB]"
                   )}
                 >

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Emblem, Logo } from "@/components/brand/Logo";
 import { AppNav } from "@/components/layout/AppNav";
 import { PublicNav } from "@/components/layout/PublicNav";
 import { DisplayModeToggle } from "@/components/layout/DisplayModeToggle";
@@ -59,14 +60,14 @@ export async function SiteHeader({
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(10,10,11,.92)] pt-[env(safe-area-inset-top)] backdrop-blur-[10px]">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(0,0,0,.86)] pt-[env(safe-area-inset-top)] backdrop-blur-[10px]">
       <div className="mx-auto flex min-w-0 max-w-[1360px] items-center gap-3 px-4 py-3 lg:gap-[22px] lg:px-5">
         <Link
           href={profile ? "/hem" : "/"}
           title={t("header.brandTitle")}
-          className="shrink-0 font-display text-[19px] font-bold tracking-[0.14em] text-text no-underline hover:text-text hover:no-underline"
+          className="flex shrink-0 items-center text-text no-underline hover:text-text hover:no-underline"
         >
-          {t("header.brand")}
+          <Logo title={t("header.brand")} className="h-[22px] w-auto lg:h-6" />
         </Link>
 
         {/* I mobil ersätts menyraden av hamburgermenyn längst till höger. */}
@@ -245,8 +246,10 @@ export async function SiteFooter() {
   const visibleColumns = columns.filter((col) => col.links.length > 0);
 
   return (
-    <footer className="mt-auto border-t border-line-soft bg-bg-footer text-[13.5px]">
-      <div className="mx-auto max-w-[1360px] px-5">
+    <footer className="relative mt-auto overflow-hidden border-t border-line-soft bg-bg-footer text-[13.5px]">
+      {/* Emblemet som stor, svag vattenstämpel i footerns hörn. */}
+      <Emblem className="pointer-events-none absolute -bottom-16 -right-20 h-[300px] w-auto text-white opacity-[0.035]" />
+      <div className="relative mx-auto max-w-[1360px] px-5">
         <div className="grid gap-10 py-12 md:grid-cols-[1.3fr_3fr]">
           <div className="max-w-[360px]">
             <Link
@@ -254,12 +257,7 @@ export async function SiteFooter() {
               title={t("header.brandTitle")}
               className="inline-flex items-center gap-3 text-text no-underline hover:text-text hover:no-underline"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-[7px] border border-line-strong bg-panel font-display text-[14px] font-bold">
-                {t("header.footer.brandMark")}
-              </span>
-              <span className="font-display text-[20px] font-bold tracking-[0.14em]">
-                {t("header.brand")}
-              </span>
+              <Logo title={t("header.brand")} className="h-7 w-auto" />
             </Link>
             <p className="mt-4 leading-relaxed text-faint">
               {t("header.footer.about")}

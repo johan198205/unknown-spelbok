@@ -7,7 +7,7 @@ export default defineTextArea({
   paths: ["/", "/hem"],
   texts: {
     // Loggan och toppmenyn på desktop
-    "header.brand": "SPELBOK",
+    "header.brand": "Spelboken",
     "header.brandTitle": "Till startsidan",
     "header.nav.spreadsheet": "Spreadsheet",
     "header.nav.planket": "Planket",
@@ -52,7 +52,6 @@ export default defineTextArea({
     "header.bottomNav.spelbolag": "Spelbolag",
 
     // Footern
-    "header.footer.brandMark": "S",
     "header.footer.about":
       "Spelbok är ett verktyg för bokföring och statistik av dina bettingspel. Följ din ROI, jämför dig i topplistan. Inga spel förmedlas.",
     "header.footer.col.spelbok": "Spelbok",
@@ -77,7 +76,7 @@ export default defineTextArea({
     "header.footer.copyright": "© {year} Spelbok",
   },
   hints: {
-    "header.brand": "Loggan i headern, mobilheadern och footern.",
+    "header.brand": "Skärmläsartext på loggan i headern, mobilheadern och footern. Själva loggan är en bild.",
     "header.brandTitle": "Tooltip på loggan i headern och footern.",
     "header.nav.spreadsheet": "Toppmenyn på desktop, inloggad.",
     "header.nav.tavlingar": "Visas bara när tävlingar är påslagna.",
@@ -97,7 +96,6 @@ export default defineTextArea({
     "header.menu.displayMode": "Rubriken över växeln valuta/units i hamburgermenyn.",
     "header.bottomNav.label": "Skärmläsarnamn på bottenmenyn.",
     "header.bottomNav.add": "Skärmläsartext på plusknappen i mitten.",
-    "header.footer.brandMark": "Bokstaven i rutan bredvid loggan i footern.",
     "header.footer.about": "Texten under loggan i footern.",
     "header.footer.link.saFungerar":
       "Visas bara när CMS-sidan är publicerad. Sidans titel i CMS:et vinner över texten här.",

@@ -185,7 +185,7 @@ export function BookmakerCard({
 }) {
   const t = useT();
   const c = compactOnMobile;
-  const brand = displayText(data.brand_color) || "#212124";
+  const brand = displayText(data.brand_color) || "#1e1e24";
   const goHref = `/go/${data.slug}${src ? `?src=${src}` : ""}`;
   const isTop = data.rank === 1;
   const heroUrl = getBookmakerHeroUrl(data.hero_url);

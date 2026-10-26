@@ -631,7 +631,7 @@ export function BookmakersAdmin({ items }: { items: BookmakerRow[] }) {
               <input
                 value={draft.brand_color}
                 onChange={(e) => patch({ brand_color: e.target.value })}
-                placeholder="#212124"
+                placeholder="#1e1e24"
                 className={cn(monoInputClass, "text-[12.5px]")}
               />
             </Field>
@@ -1133,7 +1133,7 @@ function ClicksChart({ data }: { data: ClickPoint[] }) {
             tick={{
               fill: "var(--dim)",
               fontSize: 10,
-              fontFamily: "var(--font-plex)",
+              fontFamily: "var(--font-manrope)",
             }}
             tickLine={false}
             axisLine={false}
@@ -1146,7 +1146,7 @@ function ClicksChart({ data }: { data: ClickPoint[] }) {
             tick={{
               fill: "var(--dim)",
               fontSize: 10,
-              fontFamily: "var(--font-plex)",
+              fontFamily: "var(--font-manrope)",
             }}
             tickLine={false}
             axisLine={false}

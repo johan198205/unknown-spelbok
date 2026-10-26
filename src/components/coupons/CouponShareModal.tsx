@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Logo } from "@/components/brand/Logo";
 import { useT } from "@/components/TextsProvider";
 import { useToast } from "@/components/ui/Toast";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
@@ -192,14 +193,16 @@ function ShareCard({
         display: "flex",
         flexDirection: "column",
         background:
-          "radial-gradient(circle at 82% 8%, #1f1f22, #0a0a0b 62%)",
+          "radial-gradient(circle at 82% 8%, #1f1f22, #000000 62%)",
         ...style,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 30 }}>
-        <span className="font-display" style={{ fontWeight: 700, fontSize: 30, letterSpacing: "0.2em", color: "#E6EAF2" }}>
-          {t("kuponger.shareCard.brand")}
-        </span>
+        <Logo
+          title={t("kuponger.shareCard.brand")}
+          className="w-auto shrink-0 text-[#EDEFF7]"
+          style={{ height: 38 }}
+        />
         {coupon.kicker ? (
           <span
             className="font-display"
@@ -316,7 +319,7 @@ function ShareCard({
           alignItems: "flex-end",
           gap: 52,
           paddingTop: 30,
-          borderTop: "1px solid #2a2a2e",
+          borderTop: "1px solid #25262d",
         }}
       >
         <Field label={t("kuponger.card.stake")} value={formatMoney(Number(coupon.stake), t("kuponger.unit.kr")).replace("+", "")} size={32} />
@@ -345,7 +348,7 @@ function ShareCard({
               width: 150,
               height: 56,
               borderRadius: 10,
-              backgroundColor: "#212124",
+              backgroundColor: "#1e1e24",
               backgroundImage: logo ? `url(${JSON.stringify(logo)})` : undefined,
               backgroundRepeat: "no-repeat",
               backgroundPosition: "center",

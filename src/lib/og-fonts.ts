@@ -10,17 +10,15 @@
  * inbyggda typsnitt i stället för att bilden uteblir.
  */
 
-export const OG_DISPLAY = "Oswald";
-export const OG_MONO = "IBM Plex Mono";
-export const OG_SANS = "Barlow";
+// Varumärkets typsnitt. Rubriker, brödtext och siffror är samma familj;
+// namnen finns kvar så att bilderna kan välja vikt per roll.
+export const OG_DISPLAY = "Manrope";
+export const OG_MONO = "Manrope";
+export const OG_SANS = "Manrope";
 
 const LEGACY_UA = "Mozilla/5.0 (Windows NT 6.1; WOW64)";
 
-const FAMILIES = [
-  { name: OG_SANS, weights: [400, 700] },
-  { name: OG_DISPLAY, weights: [600] },
-  { name: OG_MONO, weights: [600] },
-];
+const FAMILIES = [{ name: OG_SANS, weights: [400, 600, 700] }];
 
 export type OgFont = {
   name: string;

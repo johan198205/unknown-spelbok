@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
@@ -61,9 +62,7 @@ export function AdminSidebar({
   return (
     <aside className="sticky top-0 flex h-screen w-[240px] shrink-0 flex-col border-r border-line bg-sidebar">
       <div className="flex items-center gap-[9px] border-b border-line-soft px-5 pb-[18px] pt-[22px]">
-        <span className="font-display text-[19px] font-bold tracking-[0.16em]">
-          SPELBOK
-        </span>
+        <Logo className="h-5 w-auto text-text" />
         <span className="rounded-[5px] bg-yellow/15 px-[7px] py-[3px] text-[9.5px] font-bold tracking-[0.12em] text-yellow">
           ADMIN
         </span>

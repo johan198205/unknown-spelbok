@@ -92,7 +92,7 @@ export function PostCard({
     <article
       id={`inlagg-${post.id}`}
       className={cn(
-        "min-w-0 rounded-[14px] border bg-[#161618] p-[14px] lg:px-[18px] lg:pb-[14px] lg:pt-4",
+        "min-w-0 rounded-[14px] border bg-[#111115] p-[14px] lg:px-[18px] lg:pb-[14px] lg:pt-4",
         post.isEditorial
           ? "border-[rgba(255,209,102,.45)] shadow-[0_0_0_1px_rgba(255,209,102,.12)]"
           : "border-line"
@@ -183,7 +183,7 @@ export function PostCard({
             maxLength={PLANKET_MAX_BODY}
             rows={4}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full resize-y rounded-[10px] border border-line-hover bg-[#111113] p-3 text-[15px] leading-[1.6] text-text outline-none"
+            className="w-full resize-y rounded-[10px] border border-line-hover bg-[#0a0a0d] p-3 text-[15px] leading-[1.6] text-text outline-none"
           />
           <div className="mt-2 flex items-center gap-2">
             <button
@@ -197,7 +197,7 @@ export function PostCard({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="cursor-pointer rounded-[9px] border border-line-strong bg-[#1e1e21] px-4 py-2 text-[13.5px] font-semibold text-[#C3CBDB]"
+              className="cursor-pointer rounded-[9px] border border-line-strong bg-[#19191f] px-4 py-2 text-[13.5px] font-semibold text-[#C3CBDB]"
             >
               {t("planket.post.cancel")}
             </button>
@@ -217,7 +217,7 @@ export function PostCard({
         <img
           src={post.image_url}
           alt=""
-          className="mb-3 max-h-[420px] w-full rounded-[12px] border border-line object-contain bg-[#111113]"
+          className="mb-3 max-h-[420px] w-full rounded-[12px] border border-line object-contain bg-[#0a0a0d]"
         />
       ) : null}
 
@@ -238,7 +238,7 @@ export function PostCard({
                   label: t(REACTION_LABEL[kind]),
                 })}
                 title={t("planket.reactions.loginTitle")}
-                className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-[#1e1e21] px-[11px] py-[7px] text-[13px] text-[#C3CBDB] no-underline hover:border-[#46464d] hover:no-underline lg:gap-[7px] lg:px-3 lg:text-[13.5px]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-[#19191f] px-[11px] py-[7px] text-[13px] text-[#C3CBDB] no-underline hover:border-[#40424d] hover:no-underline lg:gap-[7px] lg:px-3 lg:text-[13.5px]"
               >
                 <span aria-hidden className="text-[13px] lg:text-[14px]">
                   {REACTION_ICON[kind]}
@@ -260,7 +260,7 @@ export function PostCard({
                 "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-[11px] py-[7px] text-[13px] transition-colors lg:gap-[7px] lg:px-3 lg:text-[13.5px]",
                 active
                   ? "border border-[rgba(255,209,102,.4)] bg-[rgba(255,209,102,.12)] text-yellow"
-                  : "border border-line-strong bg-[#1e1e21] text-[#C3CBDB] hover:border-[#46464d]"
+                  : "border border-line-strong bg-[#19191f] text-[#C3CBDB] hover:border-[#40424d]"
               )}
             >
               <span aria-hidden className="text-[13px] lg:text-[14px]">
@@ -284,7 +284,7 @@ export function PostCard({
               {t("planket.post.back")}
             </a>
           ) : (
-            <span className="ml-auto rounded-[9px] border border-line-strong bg-[#1e1e21] px-[15px] py-2 text-[13px] font-bold text-[#5D6883] lg:px-[17px] lg:text-[13.5px]">
+            <span className="ml-auto rounded-[9px] border border-line-strong bg-[#19191f] px-[15px] py-2 text-[13px] font-bold text-[#5D6883] lg:px-[17px] lg:text-[13.5px]">
               {isSettledAttachment(post)
                 ? t("planket.post.settled")
                 : t("planket.post.started")}

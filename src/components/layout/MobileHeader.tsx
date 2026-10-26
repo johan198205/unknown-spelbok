@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { FormattedAmount } from "@/components/FormattedAmount";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -20,15 +21,15 @@ export async function MobileHeader({
   const t = await getT();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(17,17,19,.92)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-[10px] lg:hidden">
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-[rgba(10,10,13,.92)] px-4 pb-3 pt-[calc(12px+env(safe-area-inset-top))] backdrop-blur-[10px] lg:hidden">
       {/* min-w-0 hela vägen: ett långt saldo får krympa i stället för att
           trycka ut headern bredare än skärmen (sidledsscroll i mobil). */}
       <div className="flex min-w-0 items-center gap-3">
         <Link
           href="/hem"
-          className="shrink-0 font-display text-[17px] font-bold tracking-[0.14em] text-text no-underline"
+          className="flex shrink-0 items-center text-text no-underline hover:text-text"
         >
-          {t("header.brand")}
+          <Logo title={t("header.brand")} className="h-5 w-auto" />
         </Link>
         <div className="ml-auto flex min-w-0 items-center gap-2">
           <span
@@ -59,8 +60,8 @@ export async function MobileHeader({
             <NotificationBell
               userId={profile.id}
               initialUnread={unread}
-              /* Mobilheadern ligger på #111113, inte sidans #0a0a0b. */
-              badgeBorder="#111113"
+              /* Mobilheadern ligger på #0a0a0d, inte sidans #000000. */
+              badgeBorder="#0a0a0d"
             />
           ) : null}
           <MobileMenu

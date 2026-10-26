@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
-import { Barlow, IBM_Plex_Mono, Oswald } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { GoogleTagManager } from "@next/third-parties/google";
 import { AuthEventTracker } from "@/components/layout/AuthEventTracker";
 import { DisplayPrefsProvider } from "@/components/DisplayPrefsProvider";
@@ -13,22 +13,13 @@ import { getGtmContainerId } from "@/lib/tracking-settings";
 import { getT, getTextOverrides } from "@/lib/texts/server";
 import "./globals.css";
 
-const oswald = Oswald({
+// Varumärkets typsnitt (Brand Guidelines): Manrope i alla vikter, för
+// rubriker, brödtext och siffror. Siffrorna får tabulära bredder via
+// font-variant-numeric där de ska linjera.
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-oswald",
-  weight: ["400", "500", "600", "700"],
-});
-
-const barlow = Barlow({
-  subsets: ["latin"],
-  variable: "--font-barlow",
-  weight: ["400", "500", "600", "700"],
-});
-
-const plex = IBM_Plex_Mono({
-  subsets: ["latin"],
-  variable: "--font-plex",
-  weight: ["400", "500", "600"],
+  variable: "--font-manrope",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -70,7 +61,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#111113",
+  themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
   colorScheme: "dark",
@@ -96,7 +87,7 @@ export default async function RootLayout({
   return (
     <html
       lang="sv"
-      className={`${oswald.variable} ${barlow.variable} ${plex.variable} h-full`}
+      className={`${manrope.variable} h-full`}
     >
       {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
       <body className="min-h-full flex flex-col bg-bg text-text antialiased">

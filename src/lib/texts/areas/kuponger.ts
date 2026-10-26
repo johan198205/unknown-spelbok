@@ -126,7 +126,7 @@ export default defineTextArea({
     "kuponger.share.download": "Ladda ner PNG",
     "kuponger.share.rendering": "Renderar…",
     "kuponger.share.copyLink": "Kopiera länk",
-    "kuponger.shareCard.brand": "SPELBOK",
+    "kuponger.shareCard.brand": "Spelboken",
     "kuponger.shareCard.moreLegs": "+{count} fler",
     "kuponger.shareCard.footer": "spelbok.se · 18+ · Spela ansvarsfullt",
     "kuponger.shareCard.notFound": "Kupongen finns inte",

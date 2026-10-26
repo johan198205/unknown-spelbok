@@ -29,7 +29,7 @@ export function ApiUsageChart({ data }: { data: ApiUsagePoint[] }) {
             tick={{
               fill: "var(--dim)",
               fontSize: 10.5,
-              fontFamily: "var(--font-plex)",
+              fontFamily: "var(--font-manrope)",
             }}
             tickLine={false}
             axisLine={false}
@@ -41,7 +41,7 @@ export function ApiUsageChart({ data }: { data: ApiUsagePoint[] }) {
             tick={{
               fill: "var(--dim)",
               fontSize: 10.5,
-              fontFamily: "var(--font-plex)",
+              fontFamily: "var(--font-manrope)",
             }}
             tickLine={false}
             axisLine={false}

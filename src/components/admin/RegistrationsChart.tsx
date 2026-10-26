@@ -51,7 +51,7 @@ export function RegistrationsChart({
             />
             <XAxis
               dataKey="label"
-              tick={{ fill: "var(--dim)", fontSize: 10.5, fontFamily: "var(--font-plex)" }}
+              tick={{ fill: "var(--dim)", fontSize: 10.5, fontFamily: "var(--font-manrope)" }}
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
@@ -59,7 +59,7 @@ export function RegistrationsChart({
             />
             <YAxis
               allowDecimals={false}
-              tick={{ fill: "var(--dim)", fontSize: 10.5, fontFamily: "var(--font-plex)" }}
+              tick={{ fill: "var(--dim)", fontSize: 10.5, fontFamily: "var(--font-manrope)" }}
               tickLine={false}
               axisLine={false}
               width={36}
@@ -82,7 +82,7 @@ export function RegistrationsChart({
               strokeWidth={2}
               fill="url(#regFill)"
               dot={false}
-              activeDot={{ r: 4, fill: "#66E38A", stroke: "#111113", strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: "#66E38A", stroke: "#0a0a0d", strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

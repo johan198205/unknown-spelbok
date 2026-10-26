@@ -29,7 +29,7 @@ export function TopListCard({
           {entries.map((entry, i) => (
             <li
               key={entry.id}
-              className="flex items-center gap-2 border-b border-[#1c1c1f] py-2 text-[13.5px] last:border-0"
+              className="flex items-center gap-2 border-b border-[#19191f] py-2 text-[13.5px] last:border-0"
             >
               <span
                 className={`w-5 shrink-0 text-right font-display text-[14px] font-semibold ${rankColor(i)}`}

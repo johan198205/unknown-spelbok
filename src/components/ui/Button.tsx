@@ -10,7 +10,7 @@ const variants = {
   primary:
     "bg-win text-win-ink hover:brightness-105 border-transparent font-bold",
   secondary:
-    "bg-panel border-line text-text hover:border-[#46464d] font-semibold",
+    "bg-panel border-line text-text hover:border-[#40424d] font-semibold",
   ghost:
     "bg-transparent border-line text-muted hover:text-text font-semibold",
   danger:

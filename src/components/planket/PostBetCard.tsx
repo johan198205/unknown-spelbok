@@ -59,7 +59,7 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
     <>
       {/* ---------- Desktop ---------- */}
       <div
-        className="mb-[13px] hidden overflow-hidden rounded-[12px] bg-[#1e1e21] lg:block"
+        className="mb-[13px] hidden overflow-hidden rounded-[12px] bg-[#19191f] lg:block"
         style={{ border: `1px solid ${border}` }}
       >
         <div className="flex items-center gap-[9px] border-b border-line px-[14px] py-[11px]">
@@ -151,7 +151,7 @@ export function PostBetCard({ post }: { post: PlanketPost }) {
 
       {/* ---------- Mobil ---------- */}
       <div
-        className="mb-3 rounded-[11px] bg-[#1e1e21] p-3 lg:hidden"
+        className="mb-3 rounded-[11px] bg-[#19191f] p-3 lg:hidden"
         style={{ border: `1px solid ${border}` }}
       >
         <div className="mb-[10px] flex items-center gap-2">

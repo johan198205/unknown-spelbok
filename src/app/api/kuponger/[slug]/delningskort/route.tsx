@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { logoDataUri } from "@/components/brand/Logo";
 import { getBookmakerLogoUrl } from "@/lib/bookmakers";
 import {
   couponNetto,
@@ -24,7 +25,7 @@ const GREEN = "#66E38A";
 const RED = "#FF5C6C";
 const AMBER = "#FFB84D";
 const CYAN = "#35D6F5";
-const TEXT = "#E6EAF2";
+const TEXT = "#EDEFF7";
 const MUTED = "#8A94AB";
 const FAINT = "#5D6883";
 
@@ -152,9 +153,9 @@ export async function GET(
           display: "flex",
           flexDirection: "column",
           padding: "56px 60px",
-          backgroundColor: "#0a0a0b",
+          backgroundColor: "#000000",
           backgroundImage:
-            "radial-gradient(circle at 82% 8%, #1f1f22, #0a0a0b 62%)",
+            "radial-gradient(circle at 82% 8%, #1f1f22, #000000 62%)",
           fontFamily: SANS,
         }}
       >
@@ -166,19 +167,13 @@ export async function GET(
             flexShrink: 0,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              fontFamily: DISPLAY,
-              fontSize: 30,
-              fontWeight: 600,
-              letterSpacing: 6,
-              color: TEXT,
-              marginRight: 16,
-            }}
-          >
-            {t("kuponger.shareCard.brand")}
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+          <img
+            src={logoDataUri(TEXT)}
+            width={264}
+            height={38}
+            style={{ marginRight: 18 }}
+          />
           {coupon.kicker ? (
             <div
               style={{
@@ -331,7 +326,7 @@ export async function GET(
             display: "flex",
             alignItems: "flex-end",
             paddingTop: 30,
-            borderTop: "1px solid #2a2a2e",
+            borderTop: "1px solid #25262d",
             flexShrink: 0,
           }}
         >
@@ -379,7 +374,7 @@ export async function GET(
                 width: 150,
                 height: 56,
                 borderRadius: 10,
-                backgroundColor: "#212124",
+                backgroundColor: "#1e1e24",
               }}
             >
               {bookmakerLogo ? (

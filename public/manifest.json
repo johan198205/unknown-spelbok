@@ -4,8 +4,8 @@
   "description": "Bokför varje spel, se din riktiga ROI och jämför dig i topplistan.",
   "start_url": "/spelbok",
   "display": "standalone",
-  "background_color": "#0F1420",
-  "theme_color": "#0F1420",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait",
   "lang": "sv",
   "icons": [

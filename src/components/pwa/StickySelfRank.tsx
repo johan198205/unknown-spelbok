@@ -14,7 +14,7 @@ export function StickySelfRank({
 }) {
   const t = useT();
   return (
-    <div className="fixed inset-x-0 bottom-[96px] z-40 border-t border-win/30 bg-[rgba(17,17,19,.96)] px-4 py-2.5 backdrop-blur-md lg:hidden">
+    <div className="fixed inset-x-0 bottom-[96px] z-40 border-t border-win/30 bg-[rgba(10,10,13,.96)] px-4 py-2.5 backdrop-blur-md lg:hidden">
       <div className="mx-auto flex max-w-lg items-center gap-3">
         <span className="font-display w-6 font-semibold text-win">{rank}</span>
         <div className="flex h-8 w-8 items-center justify-center rounded-full border border-win/40 bg-win/10 font-display text-sm font-semibold text-win">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Emblem } from "@/components/brand/Logo";
 import { ButtonLink } from "@/components/ui/Button";
 import { Badge, Panel } from "@/components/ui/Panel";
 import { fetchLandingPage } from "@/lib/landing-content.server";
@@ -199,7 +200,7 @@ export default async function LandingPage() {
             board.map((r, i) => (
               <div
                 key={r.id}
-                className="flex items-center gap-3 border-b border-[#1c1c1f] px-[18px] py-3"
+                className="flex items-center gap-3 border-b border-[#19191f] px-[18px] py-3"
               >
                 <span className={`font-display w-[26px] text-lg font-semibold ${rankColor(i)}`}>
                   {i + 1}
@@ -265,14 +266,16 @@ export default async function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-[1180px] px-7 py-16">
-        <Panel className="flex flex-col items-start justify-between gap-6 p-8 md:flex-row md:items-center">
-          <div>
+        <Panel className="relative flex flex-col items-start justify-between gap-6 overflow-hidden p-8 md:flex-row md:items-center">
+          {/* Emblemet som vattenstämpel — beskuret i panelens högerkant. */}
+          <Emblem className="pointer-events-none absolute -bottom-10 -right-12 h-[220px] w-auto text-white opacity-[0.06] md:right-40" />
+          <div className="relative">
             <h2 className="font-display mb-2 text-[32px] font-semibold">
               {landing.cta.title}
             </h2>
             <p className="max-w-[520px] text-muted">{landing.cta.body}</p>
           </div>
-          <ButtonLink href={landing.cta.buttonHref} size="lg">
+          <ButtonLink href={landing.cta.buttonHref} size="lg" className="relative">
             {landing.cta.buttonLabel}
           </ButtonLink>
         </Panel>

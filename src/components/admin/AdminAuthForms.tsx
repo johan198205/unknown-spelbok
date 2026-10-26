@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
@@ -25,9 +26,7 @@ export function AdminAuthShell({
     <div className="flex min-h-screen flex-1 items-center justify-center bg-bg-soft px-5 py-12">
       <div className="w-full max-w-[400px]">
         <div className="mb-6 text-center">
-          <div className="font-display text-2xl font-bold tracking-[0.14em]">
-            SPELBOK
-          </div>
+          <Logo className="mx-auto h-8 w-auto text-text" />
           <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
             Admin
           </div>

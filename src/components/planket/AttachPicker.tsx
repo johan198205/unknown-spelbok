@@ -100,7 +100,7 @@ export function AttachPicker({
     (mode === "bet" ? visibleBets?.length === 0 : visibleCoupons?.length === 0);
 
   return (
-    <div className="mt-3 overflow-hidden rounded-[11px] border border-line-strong bg-[#111113]">
+    <div className="mt-3 overflow-hidden rounded-[11px] border border-line-strong bg-[#0a0a0d]">
       {mode === "bet" ? (
         <div className="flex gap-1 border-b border-line px-2 pt-2">
           <SourceTab
@@ -117,7 +117,7 @@ export function AttachPicker({
             type="button"
             onClick={onClose}
             aria-label={t("planket.picker.close")}
-            className="ml-auto mb-1.5 shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#1e1e21] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
+            className="ml-auto mb-1.5 shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#19191f] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
           >
             ×
           </button>
@@ -142,7 +142,7 @@ export function AttachPicker({
               type="button"
               onClick={onClose}
               aria-label={t("planket.picker.close")}
-              className="shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#1e1e21] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
+              className="shrink-0 cursor-pointer rounded-[7px] border border-line-strong bg-[#19191f] px-2 py-1 text-[13px] leading-none text-[#8A94AB] hover:text-text"
             >
               ×
             </button>

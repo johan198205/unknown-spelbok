@@ -177,7 +177,7 @@ export function NettoChart({
                 y1={tick.y}
                 x2={w}
                 y2={tick.y}
-                stroke="#222225"
+                stroke="#1b1b21"
                 strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
               />
@@ -187,7 +187,7 @@ export function NettoChart({
             y1={zeroY}
             x2={w}
             y2={zeroY}
-            stroke="#46464d"
+            stroke="#40424d"
             strokeWidth="1"
             strokeDasharray="4 4"
             vectorEffect="non-scaling-stroke"
@@ -246,7 +246,7 @@ export function NettoChart({
               cy={activePoint.y}
               r="7"
               fill={activePoint.value >= 0 ? "#66E38A" : "#FF5C6C"}
-              stroke="#111113"
+              stroke="#0a0a0d"
               strokeWidth="3"
             />
           ) : null}

@@ -53,7 +53,7 @@ export function BookmakerLogo({
       aria-hidden
       title={label || undefined}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-[#333338] font-semibold text-[#9AA6BD]",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-[#31323a] font-semibold text-[#9AA6BD]",
         className
       )}
       style={{ width: size, height: size, fontSize: Math.max(9, size * 0.55) }}

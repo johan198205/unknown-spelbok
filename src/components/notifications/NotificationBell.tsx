@@ -53,7 +53,7 @@ function rowToNotification(row: Record<string, unknown>): AppNotification | null
 export function NotificationBell({
   userId,
   initialUnread,
-  badgeBorder = "#0a0a0b",
+  badgeBorder = "#000000",
   className,
 }: {
   userId: string;

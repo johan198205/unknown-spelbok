@@ -146,7 +146,7 @@ export function BottomNav({ onAdd }: { onAdd: () => void }) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(17,17,19,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-[rgba(10,10,13,.94)] pb-[max(22px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-[14px] lg:hidden"
       aria-label={t("header.bottomNav.label")}
     >
       {/*

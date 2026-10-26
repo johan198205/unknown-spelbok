@@ -6,36 +6,44 @@
 */
 
 :root {
-  /* Surfaces */
-  --bg: #0a0a0b;
-  --bg-deep: #050506;
-  --bg-soft: #111113;
-  --bg-footer: #08080a;
-  --sidebar: #0a0a0b;
-  --panel: #161618;
-  --panel-2: #212124;
-  --panel-elevated: #1a1a1d;
-  --shimmer: #18181b;
-  --row-alt: #141416;
-  --rowline: #1c1c1f;
-  --hover: #1a1a1d;
-  --hover2: #26262a;
-  --dropdown-hover: #26262a;
-  --bar-bg: rgba(17,17,19, 0.94);
-  --dim: #8e99b0;
+  /*
+    Ytor och text — Spelbokens gråskala (Brand Guidelines 2026).
+    Botten är helt svart, som bakom den vita loggan. Ytorna ovanpå
+    trappar upp mot Phantom (#1E1E24) och Arsenic (#40424D): samma svala,
+    lätt blåaktiga grå som i emblemets lager, så rutor och sektioner hör
+    ihop med loggan i stället för att vara neutralt grå.
+      Black #000000 · Phantom #1E1E24 · Arsenic #40424D · Graphite #6E7180
+      Space #9DA2B3 · Steel #BCBFCC · Smoke #D3D6E0 · Cloud #EDEFF7
+  */
+  --bg: #000000;
+  --bg-deep: #000000;
+  --bg-soft: #0a0a0d;
+  --bg-footer: #000000;
+  --sidebar: #000000;
+  --panel: #111115;
+  --panel-2: #1e1e24;
+  --panel-elevated: #16161b;
+  --shimmer: #18181e;
+  --row-alt: #0c0c10;
+  --rowline: #19191f;
+  --hover: #17171c;
+  --hover2: #25262d;
+  --dropdown-hover: #25262d;
+  --bar-bg: rgba(10, 10, 13, 0.94);
+  --dim: #8a8e9e;
 
   /* Borders */
-  --line: #2a2a2e;
-  --line-soft: #222225;
-  --line-row: #1e1e21;
-  --line-strong: #333338;
-  --line-hover: #46464d;
+  --line: #25262d;
+  --line-soft: #1b1b21;
+  --line-row: #19191f;
+  --line-strong: #31323a;
+  --line-hover: #40424d;
 
   /* Text */
-  --text: #e6eaf2;
-  --text-soft: #d5dbe8;
-  --muted: #aab4c9;
-  --faint: #8e99b0;
+  --text: #edeff7;
+  --text-soft: #d3d6e0;
+  --muted: #b1b4c2;
+  --faint: #8a8e9e;
 
   /* Accents — App.dc.html constants */
   --win: #66e38a;
@@ -76,14 +84,14 @@
 
   /* Badge */
   --badge-pub-bg: rgba(102, 227, 138, 0.14);
-  --badge-priv-bg: #212124;
+  --badge-priv-bg: #1e1e24;
   --badge-auto-bg: rgba(76, 141, 255, 0.14);
 
   /* Ad slot stripes */
-  --ad-a: #121214;
-  --ad-b: #161618;
-  --ad-a-app: #131315;
-  --ad-b-app: #17171a;
+  --ad-a: #0e0e12;
+  --ad-b: #131317;
+  --ad-a-app: #0f0f13;
+  --ad-b-app: #141419;
 
   /* Radius scale (from dc) */
   --radius-badge: 6px;
@@ -190,9 +198,9 @@
   --shadow-dropdown: var(--shadow-dropdown);
   --shadow-toast: var(--shadow-toast);
 
-  --font-display: var(--font-oswald);
-  --font-sans: var(--font-barlow);
-  --font-mono: var(--font-plex);
+  --font-display: var(--font-manrope);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-manrope);
 }
 
 /*
@@ -337,7 +345,7 @@
   }
 
   body {
-    font-family: var(--font-barlow), Helvetica, sans-serif;
+    font-family: var(--font-manrope), Helvetica, sans-serif;
     font-size: var(--text-body);
     min-height: 100vh;
     /* Skyddsnät: sidan ska aldrig gå att dra i sidled i mobil. Orsakerna
@@ -399,11 +407,11 @@
 }
 
 .font-display {
-  font-family: var(--font-oswald), sans-serif;
+  font-family: var(--font-manrope), sans-serif;
 }
 
 .font-mono-num {
-  font-family: var(--font-plex), monospace;
+  font-family: var(--font-manrope), monospace;
   font-variant-numeric: tabular-nums;
 }
 

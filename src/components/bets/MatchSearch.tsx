@@ -143,8 +143,8 @@ function ResultRow({
       className={cn(
         "w-full rounded-[10px] border px-3 py-2.5 text-left transition",
         highlighted
-          ? "border-blue/60 bg-[#26262a]"
-          : "border-line bg-bg-soft hover:bg-[#26262a]"
+          ? "border-blue/60 bg-[#25262d]"
+          : "border-line bg-bg-soft hover:bg-[#25262d]"
       )}
     >
       <div className="mb-2 flex items-center gap-1.5 text-[12px] text-muted">

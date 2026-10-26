@@ -49,7 +49,7 @@ export function ActiveUsersChart({
             tick={{
               fill: "var(--dim)",
               fontSize: 10.5,
-              fontFamily: "var(--font-plex)",
+              fontFamily: "var(--font-manrope)",
             }}
             tickLine={false}
             axisLine={false}
@@ -61,7 +61,7 @@ export function ActiveUsersChart({
             tick={{
               fill: "var(--dim)",
               fontSize: 10.5,
-              fontFamily: "var(--font-plex)",
+              fontFamily: "var(--font-manrope)",
             }}
             tickLine={false}
             axisLine={false}
@@ -86,7 +86,7 @@ export function ActiveUsersChart({
               strokeWidth={2}
               strokeDasharray="6 5"
               dot={false}
-              activeDot={{ r: 3, fill: CYAN, stroke: "#111113", strokeWidth: 2 }}
+              activeDot={{ r: 3, fill: CYAN, stroke: "#0a0a0d", strokeWidth: 2 }}
             />
           ) : null}
           <Line
@@ -96,7 +96,7 @@ export function ActiveUsersChart({
             stroke={GREEN}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: GREEN, stroke: "#111113", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: GREEN, stroke: "#0a0a0d", strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>
