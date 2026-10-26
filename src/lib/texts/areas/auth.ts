@@ -6,7 +6,7 @@ export default defineTextArea({
   description: "Inloggning, registrering och utloggning.",
   paths: ["/login", "/registrera"],
   texts: {
-    "auth.brand": "SPELBOK",
+    "auth.brand": "Spelboken",
     "auth.loading": "LADDAR …",
     "auth.tabs.login": "Logga in",
     "auth.tabs.register": "Registrera",
@@ -45,7 +45,7 @@ export default defineTextArea({
     "auth.closed.login": "Logga in",
   },
   hints: {
-    "auth.brand": "Loggan ovanför formuläret.",
+    "auth.brand": "Skärmläsartext på loggan ovanför formuläret.",
     "auth.loading": "Visas en kort stund medan formuläret laddas.",
     "auth.tabs.login": "Fliken överst i formuläret.",
     "auth.google.loading": "Google-knappen medan Google öppnas.",

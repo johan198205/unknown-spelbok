@@ -57,7 +57,7 @@ export const DEFAULT_LANDING: LandingContent = {
     secondaryCta: { label: "Se ett publikt spreadsheet", href: "/topplista" },
     image: "/mockups/spelbok-devices.png",
     imageAlt:
-      "Spelbok på laptop och mobil — dashboard med netto, ROI, vinstprocent och bokförda spel.",
+      "Spelboken på laptop och mobil — dashboard med netto, ROI, vinstprocent och bokförda spel.",
   },
   howItWorks: {
     title: "Så funkar det",

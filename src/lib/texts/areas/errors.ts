@@ -7,7 +7,7 @@ export default defineTextArea({
     "404, offline, underhållsläge och felmeddelanden när en sida kraschar.",
   paths: ["/sidan-finns-inte", "/offline", "/underhall"],
   texts: {
-    "errors.notFound.metaTitle": "Sidan hittades inte · Spelbok",
+    "errors.notFound.metaTitle": "Sidan hittades inte · Spelboken",
     "errors.notFound.eyebrow": "404",
     "errors.notFound.title": "Sidan hittades inte",
     "errors.notFound.body":
@@ -17,7 +17,7 @@ export default defineTextArea({
 
     // /offline
     "errors.offline.metaTitle": "Offline",
-    "errors.offline.brand": "SPELBOK",
+    "errors.offline.brand": "Spelboken",
     "errors.offline.title": "Du är offline",
     "errors.offline.body":
       "Öppna spel synkas när uppkopplingen är tillbaka. Du kan bläddra i cachade sidor under tiden.",
@@ -25,7 +25,7 @@ export default defineTextArea({
 
     // /underhall
     "errors.maintenance.metaTitle": "Underhåll",
-    "errors.maintenance.metaDescription": "Spelbok är tillfälligt nere för underhåll.",
+    "errors.maintenance.metaDescription": "Spelboken är tillfälligt nere för underhåll.",
     "errors.maintenance.title": "Underhåll pågår",
     "errors.maintenance.body":
       "Vi jobbar på {site} just nu. Dina spel och din statistik är orörda — appen är tillbaka om en liten stund.",
@@ -39,9 +39,9 @@ export default defineTextArea({
   },
   hints: {
     "errors.notFound.metaTitle": "Fliktiteln i webbläsaren",
-    "errors.offline.metaTitle": "Fliktiteln. Får · Spelbok efter sig.",
-    "errors.offline.brand": "Loggan överst på offlinesidan.",
-    "errors.maintenance.metaTitle": "Fliktiteln. Får · Spelbok efter sig.",
+    "errors.offline.metaTitle": "Fliktiteln. Får · Spelboken efter sig.",
+    "errors.offline.brand": "Skärmläsartext på loggan överst på offlinesidan.",
+    "errors.maintenance.metaTitle": "Fliktiteln. Får · Spelboken efter sig.",
     "errors.maintenance.metaDescription": "Beskrivningen i sökresultat.",
     "errors.maintenance.body": "{site} är sajtens namn från inställningarna.",
     "errors.maintenance.adminQuestion": "Följs av länken till adminpanelen.",

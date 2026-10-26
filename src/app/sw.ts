@@ -102,7 +102,7 @@ self.addEventListener("push", (event) => {
     payload = {};
   }
 
-  const title = payload.title || "Spelbok";
+  const title = payload.title || "Spelboken";
   const body = payload.body || "";
   const url = payload.url || "/";
 

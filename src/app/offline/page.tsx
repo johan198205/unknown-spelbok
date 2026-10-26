@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 import { getT } from "@/lib/texts/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,9 +16,7 @@ export default async function OfflinePage() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col items-center justify-center bg-bg-soft px-6 py-16 text-center">
-      <p className="font-display text-[28px] font-bold tracking-[0.14em] text-text">
-        {t("errors.offline.brand")}
-      </p>
+      <Logo title={t("errors.offline.brand")} className="h-8 w-auto text-text" />
       <h1 className="mt-8 font-display text-[32px] font-semibold tracking-wide text-text">
         {t("errors.offline.title")}
       </h1>

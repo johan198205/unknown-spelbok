@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -133,9 +134,7 @@ function AuthForm({ mode }: { mode: "login" | "register" }) {
     <div className="flex flex-1 items-center justify-center px-5 py-12">
       <div className="w-full max-w-[400px]">
         <div className="mb-6 text-center">
-          <div className="font-display text-2xl font-bold tracking-[0.14em]">
-            {t("auth.brand")}
-          </div>
+          <Logo title={t("auth.brand")} className="mx-auto h-8 w-auto text-text" />
         </div>
         <Panel className="p-[26px]">
           <div className="mb-5 flex gap-1 rounded-[10px] border border-line-soft bg-bg-soft p-1">

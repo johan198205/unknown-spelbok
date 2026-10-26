@@ -73,7 +73,7 @@ const CORE_PAGES: Array<{
     slug: "startsida",
     title: "TA KONTROLL ÖVER DITT SPELANDE.",
     content: serializeLandingContent(DEFAULT_LANDING),
-    seo_title: "Spelbok — ta kontroll över ditt spelande",
+    seo_title: "Spelboken — ta kontroll över ditt spelande",
     seo_description:
       "Bokför varje spel, se din riktiga ROI och jämför dig i topplistorna.",
     show_in_footer: false,
@@ -82,7 +82,7 @@ const CORE_PAGES: Array<{
     slug: "om-oss",
     title: "Om oss",
     content: serializeAboutContent(DEFAULT_ABOUT),
-    seo_title: "Om Spelbok",
+    seo_title: "Om Spelboken",
     seo_description:
       "Vi byggde verktyget vi själva saknade. Läs om Spelboks principer.",
     show_in_footer: true,
@@ -91,9 +91,9 @@ const CORE_PAGES: Array<{
     slug: "kontakt",
     title: "Kontakt",
     content: serializeContactContent(DEFAULT_CONTACT),
-    seo_title: "Kontakta Spelbok",
+    seo_title: "Kontakta Spelboken",
     seo_description:
-      "Hör av dig till Spelbok — support, press, annonsering och samarbeten.",
+      "Hör av dig till Spelboken — support, press, annonsering och samarbeten.",
     show_in_footer: true,
   },
   // Rubrik + intro (och SEO-text) för undersidorna. Egna routes — CMS:et

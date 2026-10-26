@@ -17,7 +17,7 @@ export const TOPIC_INBOX: Record<ContactTopic, string> = {
 };
 
 const FROM =
-  process.env.CONTACT_FROM_EMAIL || "Spelbok <noreply@spelbok.se>";
+  process.env.CONTACT_FROM_EMAIL || "Spelboken <noreply@spelbok.se>";
 
 export async function sendContactEmails(input: {
   name: string;
@@ -34,7 +34,7 @@ export async function sendContactEmails(input: {
     return { ok: false, reason: "missing_api_key" };
   }
 
-  const subject = `[Spelbok · ${input.topic}] Meddelande från ${input.name}`;
+  const subject = `[Spelboken · ${input.topic}] Meddelande från ${input.name}`;
   const text = [
     `Namn: ${input.name}`,
     `E-post: ${input.email}`,
@@ -44,7 +44,7 @@ export async function sendContactEmails(input: {
   ].join("\n");
 
   const copyText = [
-    "Tack för ditt meddelande till Spelbok.",
+    "Tack för ditt meddelande till Spelboken.",
     "Vi svarar inom 24 timmar på vardagar.",
     "",
     "— Din kopia —",

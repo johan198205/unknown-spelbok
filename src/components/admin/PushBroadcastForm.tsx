@@ -179,7 +179,7 @@ export function PushBroadcastForm({
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
-                  Spelbok
+                  Spelboken
                 </span>
                 <span className="font-mono-num text-[11px] text-dim">nu</span>
               </div>

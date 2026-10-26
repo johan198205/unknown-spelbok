@@ -32,10 +32,10 @@ export type AboutPage = AboutContent & {
 const ABOUT_TYPE = "about" as const;
 
 export const DEFAULT_ABOUT: AboutContent = {
-  eyebrow: "Om Spelbok",
+  eyebrow: "Om Spelboken",
   headline: "Vi byggde verktyget vi själva saknade.",
   intro:
-    "Spelbok startade 2025 som ett kalkylark mellan tre vänner som tröttnat på att gissa om de låg plus eller minus. Idag är det en plattform för alla som vill bokföra sina spel, se sin riktiga ROI och jämföra sig med andra på lika villkor.",
+    "Spelboken startade 2025 som ett kalkylark mellan tre vänner som tröttnat på att gissa om de låg plus eller minus. Idag är det en plattform för alla som vill bokföra sina spel, se sin riktiga ROI och jämföra sig med andra på lika villkor.",
   principlesTitle: "Det vi tror på",
   principlesIntro:
     "Fyra principer som styr varje beslut om produkten. De står här så att du kan hålla oss ansvariga.",
@@ -48,7 +48,7 @@ export const DEFAULT_ABOUT: AboutContent = {
     {
       n: "02",
       title: "Vi förmedlar inga spel",
-      body: "Spelbok tar inga insatser och betalar inga vinster. Du spelar hos ditt licensierade spelbolag och bokför resultatet här.",
+      body: "Spelboken tar inga insatser och betalar inga vinster. Du spelar hos ditt licensierade spelbolag och bokför resultatet här.",
     },
     {
       n: "03",

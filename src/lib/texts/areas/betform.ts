@@ -7,7 +7,7 @@ export default defineTextArea({
   paths: ["/spelbok"],
   texts: {
     // Formuläret "Lägg nytt spel" (desktop)
-    "betform.empty.noSheet": "Skapa ett spreadsheet först under Spelbok.",
+    "betform.empty.noSheet": "Skapa ett spreadsheet först under Spelboken.",
     "betform.trigger": "+ Lägg nytt spel",
     "betform.modal.title": "Lägg nytt spel",
     "betform.modal.close": "Stäng",

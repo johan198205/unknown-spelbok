@@ -30,7 +30,7 @@ export default defineTextArea({
 
     // Samtycke, kvitto och knapp
     "kontakt.form.consent":
-      "Jag godkänner att Spelbok sparar mitt meddelande och min e-post för att kunna svara. Uppgifterna raderas inom 12 månader.",
+      "Jag godkänner att Spelboken sparar mitt meddelande och min e-post för att kunna svara. Uppgifterna raderas inom 12 månader.",
     "kontakt.form.sent":
       "Tack, meddelandet är skickat. Du får en kopia till din e-post. Vi hör av oss inom 24 timmar på vardagar.",
     "kontakt.form.submit": "Skicka meddelande",

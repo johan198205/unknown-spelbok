@@ -7,11 +7,11 @@ export default defineTextArea({
   paths: [],
   texts: {
     // Sajtens metadata
-    "common.meta.siteName": "Spelbok",
-    "common.meta.titleTemplate": "%s · Spelbok",
+    "common.meta.siteName": "Spelboken",
+    "common.meta.titleTemplate": "%s · Spelboken",
     "common.meta.description":
       "Bokför varje spel, se din riktiga ROI och jämför dig i topplistan.",
-    "common.meta.appleTitle": "Spelbok",
+    "common.meta.appleTitle": "Spelboken",
 
     // Resultat på ett spel
     "common.result.open": "Öppen",

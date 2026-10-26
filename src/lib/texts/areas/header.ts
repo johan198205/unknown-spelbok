@@ -53,14 +53,14 @@ export default defineTextArea({
 
     // Footern
     "header.footer.about":
-      "Spelbok är ett verktyg för bokföring och statistik av dina bettingspel. Följ din ROI, jämför dig i topplistan. Inga spel förmedlas.",
-    "header.footer.col.spelbok": "Spelbok",
+      "Spelboken är ett verktyg för bokföring och statistik av dina bettingspel. Följ din ROI, jämför dig i topplistan. Inga spel förmedlas.",
+    "header.footer.col.spelbok": "Spelboken",
     "header.footer.link.planket": "Planket",
     "header.footer.link.topplista": "Topplista",
     "header.footer.link.spelbolag": "Spelbolag",
     "header.footer.link.omOss": "Om oss",
     "header.footer.col.hjalp": "Hjälp",
-    "header.footer.link.saFungerar": "Så fungerar Spelbok",
+    "header.footer.link.saFungerar": "Så fungerar Spelboken",
     "header.footer.link.faq": "FAQ",
     "header.footer.link.kontakt": "Kontakt",
     "header.footer.col.juridiskt": "Juridiskt",
@@ -73,7 +73,7 @@ export default defineTextArea({
     "header.footer.stodlinjen": "Stödlinjen – för spelare och anhöriga",
     "header.footer.spelpaus": "Spelpaus – stäng av dig från spel",
     "header.footer.spelinspektionen": "Spelinspektionen",
-    "header.footer.copyright": "© {year} Spelbok",
+    "header.footer.copyright": "© {year} Spelboken",
   },
   hints: {
     "header.brand": "Skärmläsartext på loggan i headern, mobilheadern och footern. Själva loggan är en bild.",

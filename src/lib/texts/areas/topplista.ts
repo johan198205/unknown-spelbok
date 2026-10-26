@@ -18,7 +18,7 @@ export default defineTextArea({
     "topplista.table.hitrate": "vinstprocent {hitrate}%",
     "topplista.table.rowAria": "Till spelboken",
     "topplista.table.empty":
-      "Inga publika spreadsheets ännu. Markera din bok som publik under Spelbok.",
+      "Inga publika spreadsheets ännu. Markera din bok som publik under Spelboken.",
 
     // Huvudlistan, mobil
     "topplista.mobile.you": "Du",

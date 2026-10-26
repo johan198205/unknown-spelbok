@@ -55,7 +55,7 @@ export default defineTextArea({
 
     // Push till enheten
     "installningar.push.title": "Push till enheten",
-    "installningar.push.body": "Meddelanden på låsskärmen, även när Spelbok är stängt.",
+    "installningar.push.body": "Meddelanden på låsskärmen, även när Spelboken är stängt.",
 
     // Fel från servern när visningsinställningar sparas
     "installningar.errors.invalidMode": "Ogiltigt visningsläge.",

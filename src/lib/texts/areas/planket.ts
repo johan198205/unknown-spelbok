@@ -9,7 +9,7 @@ export default defineTextArea({
     // ---------- Sidan ----------
     "planket.meta.title": "Planket",
     "planket.meta.description":
-      "Community-flödet i Spelbok. Användare postar spel och kuponger ur sin egen spelbok — och andra kan rygga dem.",
+      "Community-flödet i Spelboken. Användare postar spel och kuponger ur sin egen spelbok — och andra kan rygga dem.",
 
     // ---------- Flödet ----------
     "planket.feed.guest.register": "Skapa ett konto",
@@ -57,7 +57,7 @@ export default defineTextArea({
 
     // ---------- Nytt spel i väljaren ----------
     "planket.newBet.noSheets":
-      "Skapa en spelbok först under Spelbok — spelet sparas där när du bifogar det.",
+      "Skapa en spelbok först under Spelboken — spelet sparas där när du bifogar det.",
     "planket.newBet.match": "Match",
     "planket.newBet.changeMatch": "Ändra match",
     "planket.newBet.pickLabel": "Speltyp",

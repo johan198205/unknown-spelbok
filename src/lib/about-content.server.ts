@@ -18,7 +18,7 @@ export async function fetchAboutPage(): Promise<AboutPage> {
     return {
       ...DEFAULT_ABOUT,
       title: "Om oss",
-      seoTitle: "Om Spelbok",
+      seoTitle: "Om Spelboken",
       seoDescription: DEFAULT_ABOUT.intro.slice(0, 160),
     };
   }

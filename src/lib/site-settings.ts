@@ -30,7 +30,7 @@ export type SiteSettings = {
 };
 
 export const SITE_DEFAULTS: SiteSettings = {
-  name: "Spelbok",
+  name: "Spelboken",
   currency: "SEK",
   registrations_open: true,
   maintenance: false,

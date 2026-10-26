@@ -18,7 +18,7 @@ export async function fetchContactPage(): Promise<ContactPage> {
     return {
       ...DEFAULT_CONTACT,
       title: "Kontakt",
-      seoTitle: "Kontakta Spelbok",
+      seoTitle: "Kontakta Spelboken",
       seoDescription: DEFAULT_CONTACT.intro.slice(0, 160),
     };
   }
